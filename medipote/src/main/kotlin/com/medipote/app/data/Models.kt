@@ -1,0 +1,189 @@
+package com.medipote.app.data
+
+import java.time.LocalDate
+import java.time.LocalDateTime
+import kotlinx.serialization.KSerializer
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.descriptors.PrimitiveKind
+import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
+import kotlinx.serialization.encoding.Decoder
+import kotlinx.serialization.encoding.Encoder
+
+/** Everything the app stores, saved as one JSON file in the app's private storage. */
+@Serializable
+data class AppState(
+    val profile: Profile? = null,
+    val treatments: List<Treatment> = emptyList(),
+    val doseLogs: List<DoseLog> = emptyList(),
+    val game: GameState = GameState(),
+    val settings: Settings = Settings(),
+    /** True once the first-run flow (profile, pet, treatments) is finished. */
+    val onboarded: Boolean = false,
+)
+
+@Serializable
+enum class Sex(val label: String) { FEMALE("Femme"), MALE("Homme"), OTHER("Autre") }
+
+@Serializable
+data class Profile(
+    val name: String,
+    val age: Int? = null,
+    val weightKg: Double? = null,
+    val heightCm: Int? = null,
+    val sex: Sex? = null,
+    val medicalHistory: List<String> = emptyList(),
+    val allergies: List<String> = emptyList(),
+    val menstruating: Boolean = false,
+    val cycle: CycleInfo? = null,
+) {
+    /** Body-mass index, or null when weight or height is missing. */
+    val bmi: Double?
+        get() {
+            val w = weightKg ?: return null
+            val h = heightCm?.takeIf { it > 0 } ?: return null
+            val m = h / 100.0
+            return w / (m * m)
+        }
+}
+
+@Serializable
+data class CycleInfo(
+    /** Start dates of known periods, oldest first. The last one is the current cycle. */
+    val periodStarts: List<@Serializable(with = LocalDateSerializer::class) LocalDate>,
+    val cycleLength: Int = 28,
+    val periodLength: Int = 5,
+)
+
+@Serializable
+data class Treatment(
+    val id: String,
+    /** Id in the built-in drug guide, or null for a medication typed in by hand. */
+    val drugId: String? = null,
+    val name: String,
+    val strength: String = "",
+    val unit: DoseUnit = DoseUnit.TABLET,
+    val doses: List<DoseTime>,
+    /** ISO days of week (1 = Monday … 7 = Sunday) on which the doses are due. */
+    val daysOfWeek: Set<Int> = ALL_DAYS,
+    @Serializable(with = LocalDateSerializer::class) val startDate: LocalDate,
+    @Serializable(with = LocalDateSerializer::class) val endDate: LocalDate? = null,
+    val withFood: Boolean = false,
+    val notes: String = "",
+    /** When the treatment was added: doses planned before that moment don't count as missed. */
+    @Serializable(with = LocalDateTimeSerializer::class) val createdAt: LocalDateTime? = null,
+) {
+    val displayName: String get() = if (strength.isBlank()) name else "$name $strength"
+
+    fun isActiveOn(date: LocalDate): Boolean =
+        !date.isBefore(startDate) && (endDate == null || !date.isAfter(endDate)) &&
+            date.dayOfWeek.value in daysOfWeek
+
+    companion object {
+        val ALL_DAYS: Set<Int> = (1..7).toSet()
+    }
+}
+
+@Serializable
+data class DoseTime(
+    /** Minutes after midnight, e.g. 8:30 → 510. */
+    val minuteOfDay: Int,
+    val quantity: Double = 1.0,
+) {
+    val timeLabel: String get() = "%02d:%02d".format(minuteOfDay / 60, minuteOfDay % 60)
+}
+
+@Serializable
+enum class DoseUnit(val singular: String, val plural: String) {
+    TABLET("comprimé", "comprimés"),
+    CAPSULE("gélule", "gélules"),
+    SACHET("sachet", "sachets"),
+    ML("mL", "mL"),
+    DROP("goutte", "gouttes"),
+    PUFF("bouffée", "bouffées"),
+    INJECTION("injection", "injections"),
+    UNIT("unité", "unités"),
+    PATCH("patch", "patchs"),
+    SUPPOSITORY("suppositoire", "suppositoires"),
+    APPLICATION("application", "applications"),
+    VIAL("ampoule", "ampoules");
+
+    fun format(quantity: Double): String {
+        val q = formatQuantity(quantity)
+        return "$q ${if (quantity > 1.0) plural else singular}"
+    }
+
+    companion object {
+        fun formatQuantity(quantity: Double): String = when (quantity) {
+            0.25 -> "¼"
+            0.5 -> "½"
+            0.75 -> "¾"
+            else -> if (quantity % 1.0 == 0.0) quantity.toInt().toString()
+            else quantity.toString().replace('.', ',')
+        }
+    }
+}
+
+/** How punctually a dose was given. */
+@Serializable
+enum class TakeStatus { ON_TIME, LATE, VERY_LATE }
+
+@Serializable
+data class DoseLog(
+    val key: String,
+    val treatmentId: String,
+    @Serializable(with = LocalDateTimeSerializer::class) val scheduled: LocalDateTime,
+    @Serializable(with = LocalDateTimeSerializer::class) val takenAt: LocalDateTime,
+    val status: TakeStatus,
+    val points: Int,
+)
+
+@Serializable
+data class GameState(
+    val points: Int = 0,
+    val totalEarned: Int = 0,
+    val streak: Int = 0,
+    val bestStreak: Int = 0,
+    @Serializable(with = LocalDateSerializer::class) val lastCheckIn: LocalDate? = null,
+    val petName: String = "Pilou",
+    val owned: Set<String> = DEFAULT_OWNED,
+    /** Slot name → item id. */
+    val equipped: Map<String, String> = DEFAULT_EQUIPPED,
+    val perfectDays: Set<@Serializable(with = LocalDateSerializer::class) LocalDate> = emptySet(),
+    val history: List<PointEvent> = emptyList(),
+) {
+    companion object {
+        val DEFAULT_OWNED = setOf("color_mint", "bg_room")
+        val DEFAULT_EQUIPPED = mapOf("COLOR" to "color_mint", "BACKGROUND" to "bg_room")
+    }
+}
+
+@Serializable
+data class PointEvent(
+    @Serializable(with = LocalDateTimeSerializer::class) val at: LocalDateTime,
+    val amount: Int,
+    val reason: String,
+)
+
+@Serializable
+enum class ThemeMode(val label: String) { SYSTEM("Système"), LIGHT("Clair"), DARK("Sombre") }
+
+@Serializable
+data class Settings(
+    val themeMode: ThemeMode = ThemeMode.SYSTEM,
+    val dynamicColor: Boolean = false,
+    val notificationsEnabled: Boolean = true,
+    /** Send a second notification when a dose is still not given 30 minutes after its time. */
+    val followUpReminder: Boolean = true,
+)
+
+object LocalDateSerializer : KSerializer<LocalDate> {
+    override val descriptor = PrimitiveSerialDescriptor("LocalDate", PrimitiveKind.STRING)
+    override fun serialize(encoder: Encoder, value: LocalDate) = encoder.encodeString(value.toString())
+    override fun deserialize(decoder: Decoder): LocalDate = LocalDate.parse(decoder.decodeString())
+}
+
+object LocalDateTimeSerializer : KSerializer<LocalDateTime> {
+    override val descriptor = PrimitiveSerialDescriptor("LocalDateTime", PrimitiveKind.STRING)
+    override fun serialize(encoder: Encoder, value: LocalDateTime) = encoder.encodeString(value.toString())
+    override fun deserialize(decoder: Decoder): LocalDateTime = LocalDateTime.parse(decoder.decodeString())
+}

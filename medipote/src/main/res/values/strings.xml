@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">MédiPote</string>
+    <string name="channel_reminders">Rappels de traitement</string>
+    <string name="channel_reminders_desc">Notifications à l\'heure de chaque prise de médicament</string>
+</resources>
