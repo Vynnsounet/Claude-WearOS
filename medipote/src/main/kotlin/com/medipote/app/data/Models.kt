@@ -19,7 +19,13 @@ data class AppState(
     val settings: Settings = Settings(),
     /** True once the first-run flow (profile, pet, treatments) is finished. */
     val onboarded: Boolean = false,
-)
+    /** Daily journal: wellbeing, symptoms, cycle notes and water, one entry per day. */
+    val journal: List<DayEntry> = emptyList(),
+    val appointments: List<Appointment> = emptyList(),
+    val documents: List<HealthDocument> = emptyList(),
+) {
+    fun entryFor(date: LocalDate): DayEntry = journal.firstOrNull { it.date == date } ?: DayEntry(date)
+}
 
 @Serializable
 enum class Sex(val label: String) { FEMALE("Femme"), MALE("Homme"), OTHER("Autre") }
@@ -71,12 +77,38 @@ data class Treatment(
     val notes: String = "",
     /** When the treatment was added: doses planned before that moment don't count as missed. */
     @Serializable(with = LocalDateTimeSerializer::class) val createdAt: LocalDateTime? = null,
+    /** Units left (tablets, sachets…), or null when the stock isn't tracked. */
+    val stock: Double? = null,
+    /** Units in one box, used by "I bought a box". */
+    val packSize: Int? = null,
+    /** Warn when fewer than this many days of treatment are left. */
+    val lowStockDays: Int = 7,
+    /** Set for a contraceptive pill: its pack rhythm decides which days are taken. */
+    val pill: PillPack? = null,
 ) {
     val displayName: String get() = if (strength.isBlank()) name else "$name $strength"
 
     fun isActiveOn(date: LocalDate): Boolean =
         !date.isBefore(startDate) && (endDate == null || !date.isAfter(endDate)) &&
-            date.dayOfWeek.value in daysOfWeek
+            date.dayOfWeek.value in daysOfWeek && (pill == null || pill.mustTake(date))
+
+    /** Average units used per day, taking the days of the week and pill breaks into account. */
+    val dailyUse: Double
+        get() {
+            val perDay = doses.sumOf { it.quantity }
+            val pillRatio = pill?.let { if (it.placebo) 1.0 else it.activeDays.toDouble() / it.cycleLength } ?: 1.0
+            return perDay * daysOfWeek.size / 7.0 * pillRatio
+        }
+
+    /** Whole days of treatment left in stock, or null when not tracked. */
+    val daysLeft: Int?
+        get() {
+            val s = stock ?: return null
+            val use = dailyUse.takeIf { it > 0 } ?: return null
+            return kotlin.math.floor(s / use).toInt()
+        }
+
+    val isLowStock: Boolean get() = daysLeft?.let { it <= lowStockDays } ?: false
 
     companion object {
         val ALL_DAYS: Set<Int> = (1..7).toSet()
@@ -149,6 +181,9 @@ data class GameState(
     /** Slot name → item id. */
     val equipped: Map<String, String> = DEFAULT_EQUIPPED,
     val perfectDays: Set<@Serializable(with = LocalDateSerializer::class) LocalDate> = emptySet(),
+    /** Days already rewarded for filling the journal / reaching the water goal. */
+    val journalRewardDays: Set<@Serializable(with = LocalDateSerializer::class) LocalDate> = emptySet(),
+    val waterRewardDays: Set<@Serializable(with = LocalDateSerializer::class) LocalDate> = emptySet(),
     val history: List<PointEvent> = emptyList(),
 ) {
     companion object {
@@ -168,9 +203,16 @@ data class PointEvent(
 enum class ThemeMode(val label: String) { SYSTEM("Système"), LIGHT("Clair"), DARK("Sombre") }
 
 @Serializable
+enum class Accent(val label: String) {
+    MINT("Menthe"), OCEAN("Océan"), LAVENDER("Lavande"), CORAL("Corail"), AMBER("Ambre"), ROSE("Rose")
+}
+
+@Serializable
 data class Settings(
     val themeMode: ThemeMode = ThemeMode.SYSTEM,
+    val accent: Accent = Accent.MINT,
     val dynamicColor: Boolean = false,
+    val water: WaterSettings = WaterSettings(),
     val notificationsEnabled: Boolean = true,
     /** Send a second notification when a dose is still not given 30 minutes after its time. */
     val followUpReminder: Boolean = true,

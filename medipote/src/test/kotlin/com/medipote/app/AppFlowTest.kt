@@ -81,8 +81,11 @@ class AppFlowTest {
         }
 
         // Tabs are reachable
+        compose.onNodeWithText("Suivi").performClick()
         compose.onNodeWithText("Stats").performClick()
-        compose.onNodeWithText("Statistiques").assertExists()
+        compose.onNodeWithText("14 derniers jours").assertExists()
+        compose.onNodeWithText("Santé").performClick()
+        compose.onNodeWithText("À venir").assertExists()
         compose.onNodeWithText("Boutique").performClick()
         compose.onNodeWithText("Touche un objet", substring = true).assertExists()
         compose.onNodeWithText("Accueil").performClick()

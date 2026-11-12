@@ -1,6 +1,15 @@
 package com.medipote.app.ui.cycle
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.material3.ScaffoldDefaults
+import androidx.compose.material.icons.rounded.EditNote
+import androidx.compose.material.icons.rounded.Favorite
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import com.medipote.app.data.DayEntry
+import com.medipote.app.domain.PhaseRange
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -72,16 +81,21 @@ import java.util.Locale
 @Composable
 fun CycleScreen(
     info: CycleInfo?,
+    journal: List<DayEntry>,
     today: LocalDate,
     onLogPeriod: (LocalDate) -> Unit,
     onUpdate: ((CycleInfo) -> CycleInfo) -> Unit,
+    onOpenDay: (LocalDate) -> Unit,
+    embedded: Boolean = false,
 ) {
     var picking by remember { mutableStateOf(false) }
     val status = remember(info, today) { info?.let { Cycle.status(it, today) } }
+    val entries = remember(journal) { journal.associateBy { it.date } }
 
     Scaffold(
+        contentWindowInsets = if (embedded) WindowInsets(0) else ScaffoldDefaults.contentWindowInsets,
         topBar = {
-            TopAppBar(
+            if (!embedded) TopAppBar(
                 title = { Text("Mon cycle") },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background),
             )
@@ -91,6 +105,7 @@ fun CycleScreen(
             Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).padding(horizontal = 16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
+            if (embedded) Spacer(Modifier.height(4.dp))
             if (info == null || status == null) {
                 Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)) {
                     Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -104,6 +119,8 @@ fun CycleScreen(
                 }
             } else {
                 PhaseCard(status.dayOfCycle, status.cycleLength, status.phase, status.lateDays, status.daysUntilNextPeriod, status.nextPeriod)
+                PhaseTimeline(Cycle.phases(status.cycleLength, info.periodLength), status.dayOfCycle, status.phase)
+                TodayLog(entries[today], onOpen = { onOpenDay(today) })
                 Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)) {
                     Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                         InfoRow(AppTheme.status.period, "Prochaines règles", status.nextPeriod.format(dayMonthYear))
@@ -119,7 +136,7 @@ fun CycleScreen(
                     Spacer(Modifier.width(8.dp))
                     Text("Mes règles ont commencé")
                 }
-                CalendarCard(info, today)
+                CalendarCard(info, entries, today, onOpenDay)
                 Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)) {
                     Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                         Text("Réglages", style = MaterialTheme.typography.titleMedium)
@@ -179,6 +196,105 @@ fun CycleScreen(
 }
 
 @Composable
+fun phaseColor(phase: CyclePhase): Color = when (phase) {
+    CyclePhase.MENSTRUAL -> AppTheme.status.period
+    CyclePhase.FOLLICULAR -> AppTheme.status.good
+    CyclePhase.OVULATION -> AppTheme.status.fertile
+    CyclePhase.LUTEAL -> MaterialTheme.colorScheme.tertiary
+}
+
+/** The four phases as one bar, with a marker on today. */
+@Composable
+private fun PhaseTimeline(phases: List<PhaseRange>, day: Int, current: CyclePhase) {
+    val total = phases.sumOf { it.days }.coerceAtLeast(1)
+    val ink = MaterialTheme.colorScheme.onSurface
+    val colors = phases.map { phaseColor(it.phase) }
+    Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Text("Les 4 phases de ton cycle", style = MaterialTheme.typography.titleMedium)
+            Canvas(
+                Modifier.fillMaxWidth().height(30.dp)
+                    .semantics { contentDescription = "Jour $day : ${current.label}" },
+            ) {
+                val barTop = 12.dp.toPx()
+                val barH = size.height - barTop
+                var x = 0f
+                phases.forEachIndexed { i, p ->
+                    val w = size.width * p.days / total
+                    drawRoundRect(
+                        colors[i], Offset(x, barTop), Size((w - 2.dp.toPx()).coerceAtLeast(1f), barH),
+                        androidx.compose.ui.geometry.CornerRadius(4.dp.toPx()),
+                    )
+                    x += w
+                }
+                val mx = size.width * (day.coerceIn(1, total) - 0.5f) / total
+                val path = androidx.compose.ui.graphics.Path().apply {
+                    moveTo(mx - 6.dp.toPx(), 0f)
+                    lineTo(mx + 6.dp.toPx(), 0f)
+                    lineTo(mx, 9.dp.toPx())
+                    close()
+                }
+                drawPath(path, ink)
+            }
+            phases.forEachIndexed { i, p ->
+                val now = p.phase == current
+                Row(verticalAlignment = Alignment.Top) {
+                    Box(Modifier.padding(top = 5.dp).size(10.dp).clip(CircleShape).background(colors[i]))
+                    Spacer(Modifier.width(10.dp))
+                    Column(Modifier.weight(1f)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                p.phase.label,
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = if (now) FontWeight.Bold else FontWeight.Medium,
+                            )
+                            Spacer(Modifier.width(8.dp))
+                            Text(
+                                if (p.firstDay == p.lastDay) "J${p.firstDay}" else "J${p.firstDay}–J${p.lastDay}",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                            if (now) {
+                                Spacer(Modifier.width(8.dp))
+                                com.medipote.app.ui.components.Pill(
+                                    "maintenant", MaterialTheme.colorScheme.primaryContainer, MaterialTheme.colorScheme.onPrimaryContainer,
+                                )
+                            }
+                        }
+                        Text(p.phase.description, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun TodayLog(entry: DayEntry?, onOpen: () -> Unit) {
+    Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow), modifier = Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text("Aujourd'hui", style = MaterialTheme.typography.titleMedium)
+            val parts = buildList {
+                entry?.flow?.let { add("Flux : ${it.label.lowercase()}") }
+                entry?.cycleSymptoms?.takeIf { it.isNotEmpty() }?.let { add(it.joinToString(", ")) }
+                entry?.intercourse?.let { add("Rapport ${it.label.lowercase()}") }
+            }
+            Text(
+                if (parts.isEmpty()) "Rien de noté pour l'instant : flux, symptômes physiques ou émotionnels, rapports…"
+                else parts.joinToString(" · "),
+                style = MaterialTheme.typography.bodyMedium,
+                color = if (parts.isEmpty()) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
+            )
+            androidx.compose.material3.FilledTonalButton(onClick = onOpen) {
+                Icon(Icons.Rounded.EditNote, null)
+                Spacer(Modifier.width(6.dp))
+                Text(if (parts.isEmpty()) "Noter mes symptômes" else "Modifier")
+            }
+        }
+    }
+}
+
+@Composable
 private fun PhaseCard(day: Int, length: Int, phase: CyclePhase, late: Long, until: Long, next: LocalDate) {
     val ring = AppTheme.status.period
     val track = MaterialTheme.colorScheme.surfaceContainerHighest
@@ -233,7 +349,7 @@ private fun InfoRow(color: Color, label: String, value: String) {
 }
 
 @Composable
-private fun CalendarCard(info: CycleInfo, today: LocalDate) {
+private fun CalendarCard(info: CycleInfo, entries: Map<LocalDate, DayEntry>, today: LocalDate, onOpenDay: (LocalDate) -> Unit) {
     var month by rememberSaveable { mutableStateOf(YearMonth.from(today).toString()) }
     val ym = YearMonth.parse(month)
     val status = AppTheme.status
@@ -283,6 +399,8 @@ private fun CalendarCard(info: CycleInfo, today: LocalDate) {
                                 var m = Modifier.fillMaxSize().clip(CircleShape).background(bg)
                                 if (outlined) m = m.border(1.5.dp, status.period, CircleShape)
                                 if (date == today) m = m.border(2.dp, MaterialTheme.colorScheme.onSurface, CircleShape)
+                                if (!date.isAfter(today)) m = m.clickable { onOpenDay(date) }
+                                val entry = entries[date]
                                 Box(m, contentAlignment = Alignment.Center) {
                                     Text(
                                         "$dayNum",
@@ -290,6 +408,19 @@ private fun CalendarCard(info: CycleInfo, today: LocalDate) {
                                         color = fg,
                                         fontWeight = if (date == today) FontWeight.Bold else FontWeight.Normal,
                                     )
+                                    if (entry?.intercourse != null) {
+                                        Icon(
+                                            Icons.Rounded.Favorite, "Rapport",
+                                            tint = if (type == CycleDayType.PERIOD || type == CycleDayType.OVULATION) Color.White else status.period,
+                                            modifier = Modifier.align(Alignment.TopEnd).padding(top = 2.dp, end = 2.dp).size(9.dp),
+                                        )
+                                    }
+                                    if (entry != null && (entry.cycleSymptoms.isNotEmpty() || entry.flow != null || entry.hasJournal)) {
+                                        Box(
+                                            Modifier.align(Alignment.BottomCenter).padding(bottom = 3.dp).size(4.dp).clip(CircleShape)
+                                                .background(if (type == CycleDayType.PERIOD || type == CycleDayType.OVULATION) Color.White else MaterialTheme.colorScheme.onSurface),
+                                        )
+                                    }
                                 }
                             }
                         }
@@ -303,6 +434,12 @@ private fun CalendarCard(info: CycleInfo, today: LocalDate) {
                 LegendDot(status.fertile.copy(alpha = 0.35f), "Fertilité")
                 LegendDot(status.fertile, "Ovulation")
             }
+            Text(
+                "Touche un jour pour noter tes symptômes. • = notes, ♥ = rapport.",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(horizontal = 4.dp, vertical = 4.dp),
+            )
         }
     }
 }

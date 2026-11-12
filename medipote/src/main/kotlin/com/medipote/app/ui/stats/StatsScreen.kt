@@ -25,6 +25,8 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.ScaffoldDefaults
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
@@ -66,14 +68,15 @@ private fun pct(v: Float?) = v?.let { "${(it * 100).roundToInt()} %" } ?: "—"
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun StatsScreen(state: AppState, now: LocalDateTime) {
+fun StatsScreen(state: AppState, now: LocalDateTime, embedded: Boolean = false) {
     val days = remember(state, now.toLocalDate(), now.hour) { Stats.daily(state, now, 14) }
     val summary = remember(state, now.toLocalDate(), now.hour) { Stats.summary(state, now) }
     val perTreatment = remember(state, now.toLocalDate()) { Stats.perTreatment(state, now) }
 
     Scaffold(
+        contentWindowInsets = if (embedded) WindowInsets(0) else ScaffoldDefaults.contentWindowInsets,
         topBar = {
-            TopAppBar(
+            if (!embedded) TopAppBar(
                 title = { Text("Statistiques") },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background),
             )

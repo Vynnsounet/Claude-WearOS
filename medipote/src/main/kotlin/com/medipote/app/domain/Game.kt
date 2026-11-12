@@ -1,6 +1,7 @@
 package com.medipote.app.domain
 
 import com.medipote.app.data.AppState
+import com.medipote.app.data.DayEntry
 import com.medipote.app.data.DoseLog
 import com.medipote.app.data.GameState
 import com.medipote.app.data.PointEvent
@@ -23,7 +24,8 @@ data class CheckInReward(val streak: Int, val points: Int, val milestoneBonus: I
     val total: Int get() = points + milestoneBonus
 }
 
-data class GiveResult(val state: AppState, val log: DoseLog, val perfectDayBonus: Int)
+/** [lowStock] is set when this dose made the treatment's stock fall to its warning level. */
+data class GiveResult(val state: AppState, val log: DoseLog, val perfectDayBonus: Int, val lowStock: com.medipote.app.data.Treatment? = null)
 
 private const val HISTORY_LIMIT = 300
 
@@ -67,6 +69,15 @@ object Game {
         var game = addPoints(state.game, points, "${occ.treatment.displayName} $label", now)
         val logs = state.doseLogs + log
 
+        // Stock: one dose less; warn once when it reaches the warning level.
+        var lowStock: com.medipote.app.data.Treatment? = null
+        val treatments = state.treatments.map { t ->
+            if (t.id != occ.treatment.id || t.stock == null) return@map t
+            val updated = t.copy(stock = (t.stock - occ.dose.quantity).coerceAtLeast(0.0))
+            if (updated.isLowStock && !t.isLowStock) lowStock = updated
+            updated
+        }
+
         // Perfect-day bonus: every dose of that day given on time.
         var bonus = 0
         val day = occ.date
@@ -79,7 +90,40 @@ object Game {
                 game = addPoints(game, bonus, "Journée parfaite", now).copy(perfectDays = game.perfectDays + day)
             }
         }
-        return GiveResult(state.copy(doseLogs = logs, game = game), log, bonus)
+        return GiveResult(state.copy(doseLogs = logs, game = game, treatments = treatments), log, bonus, lowStock)
+    }
+
+    /** Saves a journal entry; the first filled-in entry of a day earns a small bonus. */
+    fun saveEntry(state: AppState, entry: DayEntry, now: LocalDateTime): Pair<AppState, Int> {
+        val journal = state.journal.filterNot { it.date == entry.date }.let { if (entry.isEmpty) it else it + entry }
+            .sortedByDescending { it.date }
+        var game = state.game
+        var bonus = 0
+        val rewardable = entry.hasJournal || entry.hasCycleData
+        if (rewardable && entry.date == now.toLocalDate() && entry.date !in game.journalRewardDays) {
+            bonus = Rules.JOURNAL_BONUS
+            game = addPoints(game, bonus, "Journal du jour", now).copy(journalRewardDays = game.journalRewardDays + entry.date)
+        }
+        return state.copy(journal = journal, game = game) to bonus
+    }
+
+    /** Adds (or removes, with a negative delta) a glass of water today; reaching the goal earns a bonus once. */
+    fun addWater(state: AppState, delta: Int, now: LocalDateTime): Pair<AppState, Int> {
+        val today = now.toLocalDate()
+        val entry = state.entryFor(today)
+        val glasses = (entry.waterGlasses + delta).coerceIn(0, 40)
+        // Water alone doesn't count as a journal entry, so this never earns the journal bonus.
+        var updated = saveEntry(state, entry.copy(waterGlasses = glasses), now).first
+        var bonus = 0
+        val goal = state.settings.water.goalGlasses
+        if (glasses >= goal && today !in updated.game.waterRewardDays) {
+            bonus = Rules.WATER_BONUS
+            updated = updated.copy(
+                game = addPoints(updated.game, bonus, "Objectif d'hydratation atteint", now)
+                    .copy(waterRewardDays = updated.game.waterRewardDays + today),
+            )
+        }
+        return updated to bonus
     }
 
     /** The pet's health reflects the last two days of doses and anything overdue right now. */

@@ -8,6 +8,21 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
 import com.medipote.app.data.AppState
+import com.medipote.app.data.Accent
+import com.medipote.app.data.Appointment
+import com.medipote.app.data.DayEntry
+import com.medipote.app.data.Flow
+import com.medipote.app.data.Intercourse
+import com.medipote.app.data.PillPack
+import com.medipote.app.data.WaterSettings
+import com.medipote.app.ui.agenda.AgendaScreen
+import com.medipote.app.ui.agenda.AppointmentEditorScreen
+import com.medipote.app.ui.documents.DocumentsScreen
+import com.medipote.app.ui.journal.DayEntryScreen
+import com.medipote.app.ui.journal.JournalScreen
+import com.medipote.app.ui.pill.PillScreen
+import com.medipote.app.ui.pill.PillSetupScreen
+import com.medipote.app.ui.Hub
 import com.medipote.app.data.CycleInfo
 import com.medipote.app.data.DoseLog
 import com.medipote.app.data.DoseTime
@@ -22,6 +37,9 @@ import com.medipote.app.data.Treatment
 import com.medipote.app.domain.Game
 import com.medipote.app.domain.Rules
 import com.medipote.app.domain.Schedule
+import com.medipote.app.domain.Shop
+import androidx.compose.foundation.layout.size
+import androidx.compose.ui.unit.dp
 import com.medipote.app.ui.cycle.CycleScreen
 import com.medipote.app.ui.home.HomeScreen
 import com.medipote.app.ui.onboarding.ProfileSetupScreen
@@ -62,7 +80,8 @@ class ScreensTest {
         Treatment("levo", "levothyroxine", "Lévothyroxine", "75 µg", DoseUnit.TABLET, listOf(DoseTime(7 * 60 + 30)),
             startDate = today.minusDays(60), createdAt = today.minusDays(20).atStartOfDay()),
         Treatment("metf", "metformine", "Metformine", "1000 mg", DoseUnit.TABLET, listOf(DoseTime(8 * 60), DoseTime(20 * 60)),
-            startDate = today.minusDays(60), withFood = true, createdAt = today.minusDays(20).atStartOfDay()),
+            startDate = today.minusDays(60), withFood = true, createdAt = today.minusDays(20).atStartOfDay(),
+            stock = 9.0, packSize = 60),
         Treatment("aml", "amlodipine", "Amlodipine", "5 mg", DoseUnit.CAPSULE, listOf(DoseTime(12 * 60)),
             startDate = today.minusDays(60), createdAt = today.minusDays(20).atStartOfDay()),
         Treatment("vitd", "vitamine_d", "Vitamine D3", "100 000 UI", DoseUnit.VIAL, listOf(DoseTime(9 * 60)),
@@ -75,6 +94,12 @@ class ScreensTest {
         medicalHistory = listOf("Hypothyroïdie", "Diabète de type 2"), allergies = listOf("Pénicilline"),
         menstruating = true,
         cycle = CycleInfo(listOf(LocalDate.of(2026, 9, 7), LocalDate.of(2026, 10, 6), LocalDate.of(2026, 11, 3))),
+    )
+
+    private val pill = Treatment(
+        "pill", "levonorgestrel_ee", "Leeloo", "", DoseUnit.TABLET, listOf(DoseTime(21 * 60)),
+        startDate = today.minusDays(40), createdAt = today.minusDays(20).atStartOfDay(),
+        pill = PillPack(21, 7, false, today.minusDays(10)), stock = 50.0, packSize = 21,
     )
 
     /** Two weeks of history: mostly on time, a few late, a couple forgotten. */
@@ -106,7 +131,25 @@ class ScreensTest {
                 state = Game.give(state, item, takenAt)?.state ?: state
             }
         }
-        return state.copy(game = state.game.copy(points = state.game.points + 120))
+        state = state.copy(
+            game = state.game.copy(points = state.game.points + 120),
+            journal = listOf(
+                DayEntry(today, physical = 4, mental = 3, mentalSymptoms = listOf("Stress"), waterGlasses = 5,
+                    cycleSymptoms = listOf("Ballonnements")),
+                DayEntry(today.minusDays(1), physical = 2, mental = 2, physicalSymptoms = listOf("Fatigue", "Maux de tête"),
+                    illness = "Rhume", notes = "Nuit agitée, nez bouché."),
+                DayEntry(today.minusDays(3), physical = 5, mental = 4, intercourse = Intercourse.PROTECTED),
+                DayEntry(today.minusDays(5), physical = 3, mental = 5),
+                DayEntry(today.minusDays(8), flow = Flow.MEDIUM, cycleSymptoms = listOf("Crampes"), physical = 2, mental = 3),
+            ),
+            appointments = listOf(
+                Appointment("a1", "Dentiste", "Dr Martin", "12 rue des Lilas, Lyon", today.plusDays(2).atTime(14, 30)),
+                Appointment("a2", "Prise de sang", "", "Laboratoire du centre", today.plusDays(9).atTime(8, 0)),
+                Appointment("a3", "Médecin généraliste", "Dr Bernard", "", today.minusDays(12).atTime(10, 0)),
+            ),
+            settings = state.settings.copy(water = WaterSettings(enabled = true)),
+        )
+        return state
     }
 
     @Test
@@ -173,7 +216,7 @@ class ScreensTest {
     @Test
     fun shop() {
         render("shop") { ShopScreen(sampleState().game, {}, {}, animate = false) }
-        compose.onNodeWithText("Couronne").assertExists()
+        compose.onNodeWithText("Nœud").assertExists()
     }
 
     @Test
@@ -189,13 +232,14 @@ class ScreensTest {
 
     @Test
     fun cycle() {
-        render("cycle") { CycleScreen(profile.cycle, today, {}, {}) }
+        render("cycle") { CycleScreen(profile.cycle, sampleState().journal, today, {}, {}, {}) }
         compose.onNodeWithText("Jour").assertExists()
+        compose.onNodeWithText("Les 4 phases de ton cycle").assertExists()
     }
 
     @Test
     fun cycleDark() {
-        render("cycle_dark", ThemeMode.DARK) { CycleScreen(profile.cycle, today, {}, {}) }
+        render("cycle_dark", ThemeMode.DARK) { CycleScreen(profile.cycle, sampleState().journal, today, {}, {}, {}) }
     }
 
     @Test
@@ -211,9 +255,116 @@ class ScreensTest {
         compose.onNodeWithText("+${Rules.POINTS_ON_TIME} pts").assertExists()
     }
 
-    private fun render(name: String, theme: ThemeMode = ThemeMode.LIGHT, content: @Composable () -> Unit) {
+
+    @Test
+    fun journal() {
+        render("journal") { Hub("Suivi", listOf("Journal", "Cycle", "Stats"), 0, {}, {}) { JournalScreen(sampleState().journal, today) {} } }
+        compose.onNodeWithText("Mes 14 derniers jours").assertExists()
+    }
+
+    @Test
+    fun dayEntry() {
+        render("day_entry") { DayEntryScreen(sampleState().entryFor(today.minusDays(1)), showCycle = true, onSave = {}, onBack = {}) }
+        compose.onNodeWithText("État physique").assertExists()
+    }
+
+    @Test
+    fun agenda() {
+        render("agenda") {
+            Hub("Santé", listOf("Agenda", "Documents"), 0, {}, {}) { AgendaScreen(sampleState().appointments, now, {}, {}) }
+        }
+        compose.onNodeWithText("Dentiste").assertExists()
+    }
+
+    @Test
+    fun appointmentEditor() {
+        render("appointment_editor") { AppointmentEditorScreen(sampleState().appointments.first(), today, {}, {}, {}) }
+        compose.onNodeWithText("La veille").assertExists()
+    }
+
+    @Test
+    fun documentsEmpty() {
+        render("documents") { Hub("Santé", listOf("Agenda", "Documents"), 1, {}, {}) { DocumentsScreen(emptyList(), {}, {}, {}) } }
+        compose.onNodeWithText("Ton carnet de santé numérique").assertExists()
+    }
+
+    /** The pill taken most evenings, once late, once forgotten. */
+    private fun withPill(p: Treatment): AppState {
+        var state = sampleState().let { it.copy(treatments = it.treatments + p) }
+        for (offset in 12 downTo 1) {
+            val date = today.minusDays(offset.toLong())
+            val logs = state.doseLogs.associateBy { it.key }
+            val item = Schedule.itemsOn(listOf(p), logs, date, date.atTime(21, 5)).firstOrNull() ?: continue
+            if (offset == 4) continue
+            val at = if (offset == 7) date.atTime(22, 40) else date.atTime(21, 5)
+            state = Game.give(state, item, at)?.state ?: state
+        }
+        return state
+    }
+
+    @Test
+    fun pillTab() {
+        val state = withPill(pill)
+        render("pill") {
+            Hub("Traitements", listOf("Médicaments", "Pilule"), 1, {}, {}) { PillScreen(state, now, {}, {}, {}, animate = false) }
+        }
+        compose.onNodeWithText("Comprimé 11 sur 21").assertExists()
+    }
+
+    @Test
+    fun pillBreakWeek() {
+        val onBreak = pill.copy(pill = pill.pill!!.copy(packStart = today.minusDays(23)))
+        val state = withPill(onBreak)
+        render("pill_break", ThemeMode.DARK) {
+            Hub("Traitements", listOf("Médicaments", "Pilule"), 1, {}, {}) { PillScreen(state, now, {}, {}, {}, animate = false) }
+        }
+        compose.onNodeWithText("Semaine de pause 🌙").assertExists()
+    }
+
+    @Test
+    fun pillSetup() {
+        render("pill_setup") { PillSetupScreen(null, today, {}, {}, {}) }
+        compose.onNodeWithText("21 jours + 7 jours de pause").assertExists()
+    }
+
+    @Test
+    fun shopToys() {
+        val game = sampleState().game.copy(
+            equipped = mapOf("COLOR" to "color_rainbow", "BACKGROUND" to "bg_city", "HAT" to "hat_witch", "TOY" to "toy_balloon", "EFFECT" to "fx_sparkles", "NECK" to "neck_cape"),
+            owned = Shop.items.map { it.id }.toSet(),
+        )
+        render("shop_new", ThemeMode.DARK) { ShopScreen(game, {}, {}, animate = false) }
+    }
+
+    @Test
+    fun petGallery() {
+        // Every new item on one sheet, for review.
+        val ids = Shop.items.filter { it.price > 0 }.takeLast(40)
+        render("pet_gallery") {
+            androidx.compose.foundation.lazy.grid.LazyVerticalGrid(androidx.compose.foundation.lazy.grid.GridCells.Fixed(5)) {
+                items(Shop.items.size) { i ->
+                    val item = Shop.items[i]
+                    androidx.compose.foundation.layout.Column {
+                        com.medipote.app.ui.pet.ItemPreview(item.id, item.slot.name, androidx.compose.ui.Modifier.size(78.dp))
+                        androidx.compose.material3.Text(item.name, style = androidx.compose.material3.MaterialTheme.typography.labelSmall, maxLines = 1)
+                    }
+                }
+            }
+        }
+        check(ids.isNotEmpty())
+    }
+
+    @Test
+    fun homeAccent() {
+        val state = sampleState().let { it.copy(settings = it.settings.copy(accent = Accent.LAVENDER)) }
+        render("home_lavender", accent = Accent.LAVENDER) {
+            HomeScreen(state, today.atTime(16, 0), 0, 0, {}, {}, {}, {}, animate = false)
+        }
+    }
+
+    private fun render(name: String, theme: ThemeMode = ThemeMode.LIGHT, accent: Accent = Accent.MINT, content: @Composable () -> Unit) {
         compose.setContent {
-            MediPoteTheme(themeMode = theme) {
+            MediPoteTheme(themeMode = theme, accent = accent) {
                 androidx.compose.material3.Surface(color = androidx.compose.material3.MaterialTheme.colorScheme.background) {
                     content()
                 }

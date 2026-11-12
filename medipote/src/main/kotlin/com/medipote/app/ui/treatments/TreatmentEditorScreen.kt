@@ -112,10 +112,16 @@ fun TreatmentEditorScreen(
     var editingTime by remember { mutableStateOf<Int?>(null) }
     var showInfo by remember { mutableStateOf(existing == null && drug != null) }
     var confirmDelete by remember { mutableStateOf(false) }
+    var trackStock by remember { mutableStateOf(existing?.stock != null) }
+    var stockText by remember { mutableStateOf(existing?.stock?.let { if (it % 1.0 == 0.0) it.toInt().toString() else it.toString().replace('.', ',') }.orEmpty()) }
+    var packText by remember { mutableStateOf(existing?.packSize?.toString().orEmpty()) }
+    var lowDays by remember { mutableStateOf(existing?.lowStockDays ?: 7) }
+    val stockValue = stockText.replace(',', '.').toDoubleOrNull()
 
     val allergyHits = remember(drug, allergies) { drug?.let { DrugGuide.allergyMatches(it, allergies) }.orEmpty() }
     val valid = name.isNotBlank() && doses.isNotEmpty() && days.isNotEmpty() &&
-        (longTerm || (endDate != null && !endDate!!.isBefore(startDate)))
+        (longTerm || (endDate != null && !endDate!!.isBefore(startDate))) &&
+        (!trackStock || stockValue != null)
 
     Scaffold(
         topBar = {
@@ -146,6 +152,10 @@ fun TreatmentEditorScreen(
                                 withFood = withFood,
                                 notes = notes.trim(),
                                 createdAt = existing?.createdAt,
+                                stock = if (trackStock) stockValue else null,
+                                packSize = if (trackStock) packText.toIntOrNull() else null,
+                                lowStockDays = lowDays,
+                                pill = existing?.pill,
                             ),
                         )
                     },
@@ -249,6 +259,34 @@ fun TreatmentEditorScreen(
                     minDate = startDate,
                     supporting = "Dernier jour de prise inclus",
                 )
+            }
+
+            SectionTitle("Stock")
+            SwitchRow("Suivre mon stock", trackStock, supporting = "Le stock diminue à chaque prise et tu es prévenu·e avant d'en manquer") { trackStock = it }
+            AnimatedVisibility(trackStock) {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        OutlinedTextField(
+                            value = stockText,
+                            onValueChange = { v -> stockText = v.filter { it.isDigit() || it == ',' || it == '.' }.take(6) },
+                            label = { Text("Quantité restante") },
+                            suffix = { Text(unit.plural) },
+                            isError = stockText.isNotEmpty() && stockValue == null,
+                            singleLine = true,
+                            keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Decimal),
+                            modifier = Modifier.weight(1f),
+                        )
+                        OutlinedTextField(
+                            value = packText,
+                            onValueChange = { v -> packText = v.filter { it.isDigit() }.take(4) },
+                            label = { Text("Par boîte") },
+                            singleLine = true,
+                            keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Number),
+                            modifier = Modifier.weight(1f),
+                        )
+                    }
+                    com.medipote.app.ui.components.NumberStepper("Me prévenir à", lowDays, { lowDays = it }, 1..30, suffix = " j")
+                }
             }
 
             SectionTitle("Conseils")

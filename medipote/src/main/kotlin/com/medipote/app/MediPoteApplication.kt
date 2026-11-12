@@ -12,7 +12,7 @@ class MediPoteApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
-        Notifications.createChannel(this)
+        Notifications.createChannels(this)
     }
 }
 

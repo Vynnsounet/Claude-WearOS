@@ -1,6 +1,13 @@
 package com.medipote.app.ui.settings
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.size
+import androidx.compose.material.icons.rounded.Check
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -94,6 +101,8 @@ fun SettingsScreen(
                         ) { Text(mode.label) }
                     }
                 }
+                Text("Couleur d'accent", style = MaterialTheme.typography.bodyLarge)
+                AccentPicker(settings.accent, enabled = !settings.dynamicColor) { a -> onChange { it.copy(accent = a) } }
                 if (dynamicColorAvailable) {
                     SwitchRow(
                         "Couleurs du fond d'écran",
@@ -124,6 +133,34 @@ fun SettingsScreen(
                         colors = ListItemDefaults.colors(containerColor = Color.Transparent),
                         modifier = Modifier.clickable(onClick = onRequestExactAlarms),
                     )
+                }
+            }
+
+            SectionTitle("Hydratation")
+            SettingsCard {
+                val w = settings.water
+                fun update(f: (com.medipote.app.data.WaterSettings) -> com.medipote.app.data.WaterSettings) = onChange { it.copy(water = f(it.water)) }
+                SwitchRow("Rappels pour boire de l'eau", w.enabled, supporting = "Une notification régulière tant que l'objectif du jour n'est pas atteint") { v -> update { it.copy(enabled = v) } }
+                com.medipote.app.ui.components.NumberStepper("Objectif", w.goalGlasses, { v -> update { it.copy(goalGlasses = v) } }, 1..20, suffix = " verres")
+                com.medipote.app.ui.components.NumberStepper("Taille d'un verre", w.glassMl / 50, { v -> update { it.copy(glassMl = v * 50) } }, 2..10, display = { "${it * 50} mL" })
+                Text(
+                    "Soit ${"%.1f".format(java.util.Locale.FRANCE, w.goalGlasses * w.glassMl / 1000.0)} L par jour.",
+                    style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                if (w.enabled) {
+                    com.medipote.app.ui.components.NumberStepper("De", w.startMinute / 60, { v -> update { it.copy(startMinute = v * 60) } }, 5..(w.endMinute / 60 - 1), suffix = " h")
+                    com.medipote.app.ui.components.NumberStepper("À", w.endMinute / 60, { v -> update { it.copy(endMinute = v * 60) } }, (w.startMinute / 60 + 1)..23, suffix = " h")
+                    Text("Fréquence", style = MaterialTheme.typography.bodyLarge)
+                    SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
+                        val options = listOf(60 to "1 h", 90 to "1 h 30", 120 to "2 h", 180 to "3 h")
+                        options.forEachIndexed { i, (m, label) ->
+                            SegmentedButton(
+                                selected = w.intervalMinutes == m,
+                                onClick = { update { it.copy(intervalMinutes = m) } },
+                                shape = SegmentedButtonDefaults.itemShape(i, options.size),
+                            ) { Text(label) }
+                        }
+                    }
                 }
             }
 
@@ -201,6 +238,29 @@ fun SettingsScreen(
             confirmButton = { TextButton(onClick = { confirmReset = false; onReset() }) { Text("Effacer", color = MaterialTheme.colorScheme.error) } },
             dismissButton = { TextButton(onClick = { confirmReset = false }) { Text("Annuler") } },
         )
+    }
+}
+
+@Composable
+private fun AccentPicker(selected: com.medipote.app.data.Accent, enabled: Boolean, onPick: (com.medipote.app.data.Accent) -> Unit) {
+    androidx.compose.foundation.layout.Row(Modifier.fillMaxWidth(), horizontalArrangement = androidx.compose.foundation.layout.Arrangement.SpaceBetween) {
+        com.medipote.app.data.Accent.entries.forEach { a ->
+            val on = a == selected
+            Column(horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally) {
+                androidx.compose.foundation.layout.Box(
+                    Modifier.padding(2.dp).size(44.dp)
+                        .clip(androidx.compose.foundation.shape.CircleShape)
+                        .background(com.medipote.app.ui.theme.accentSwatch(a).copy(alpha = if (enabled) 1f else 0.35f))
+                        .border(if (on) 3.dp else 0.dp, if (on) MaterialTheme.colorScheme.onSurface else Color.Transparent, androidx.compose.foundation.shape.CircleShape)
+                        .clickable(enabled = enabled) { onPick(a) }
+                        .semantics { contentDescription = "Accent ${a.label}" + if (on) ", sélectionné" else "" },
+                    contentAlignment = androidx.compose.ui.Alignment.Center,
+                ) {
+                    if (on) Icon(androidx.compose.material.icons.Icons.Rounded.Check, null, tint = Color.White)
+                }
+                Text(a.label, style = MaterialTheme.typography.labelSmall)
+            }
+        }
     }
 }
 

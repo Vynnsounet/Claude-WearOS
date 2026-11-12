@@ -6,36 +6,48 @@ import android.net.Uri
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.consumeWindowInsets
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.BarChart
+import androidx.compose.material.icons.outlined.AccountCircle
+import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.Home
+import androidx.compose.material.icons.outlined.Insights
 import androidx.compose.material.icons.outlined.Medication
+import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.outlined.Storefront
-import androidx.compose.material.icons.outlined.WaterDrop
-import androidx.compose.material.icons.rounded.BarChart
+import androidx.compose.material.icons.rounded.Favorite
 import androidx.compose.material.icons.rounded.Home
+import androidx.compose.material.icons.rounded.Insights
 import androidx.compose.material.icons.rounded.LocalFireDepartment
 import androidx.compose.material.icons.rounded.Medication
 import androidx.compose.material.icons.rounded.Storefront
-import androidx.compose.material.icons.rounded.WaterDrop
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -44,24 +56,35 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.medipote.app.data.DocCategory
+import com.medipote.app.data.DocumentStore
 import com.medipote.app.data.DrugGuide
+import com.medipote.app.data.HealthDocument
 import com.medipote.app.data.TakeStatus
 import com.medipote.app.domain.Rules
 import com.medipote.app.notifications.Notifications
 import com.medipote.app.notifications.ReminderScheduler
+import com.medipote.app.ui.agenda.AgendaScreen
+import com.medipote.app.ui.agenda.AppointmentEditorScreen
 import com.medipote.app.ui.cycle.CycleScreen
+import com.medipote.app.ui.documents.DocumentInfoScreen
+import com.medipote.app.ui.documents.DocumentViewerScreen
+import com.medipote.app.ui.documents.DocumentsScreen
 import com.medipote.app.ui.home.HomeScreen
+import com.medipote.app.ui.journal.DayEntryScreen
+import com.medipote.app.ui.journal.JournalScreen
 import com.medipote.app.ui.onboarding.PetNamingScreen
 import com.medipote.app.ui.onboarding.ProfileScreen
 import com.medipote.app.ui.onboarding.ProfileSetupScreen
 import com.medipote.app.ui.onboarding.WelcomeScreen
+import com.medipote.app.ui.pill.PillScreen
+import com.medipote.app.ui.pill.PillSetupScreen
 import com.medipote.app.ui.settings.SettingsScreen
 import com.medipote.app.ui.shop.ShopScreen
 import com.medipote.app.ui.stats.StatsScreen
@@ -70,22 +93,62 @@ import com.medipote.app.ui.theme.MediPoteTheme
 import com.medipote.app.ui.treatments.DrugSearchScreen
 import com.medipote.app.ui.treatments.TreatmentEditorScreen
 import com.medipote.app.ui.treatments.TreatmentsScreen
+import java.io.File
+import java.time.LocalDate
+import java.util.UUID
 
 private data class Tab(val route: String, val label: String, val icon: ImageVector, val selectedIcon: ImageVector)
 
 private val TABS = listOf(
     Tab("home", "Accueil", Icons.Outlined.Home, Icons.Rounded.Home),
     Tab("treatments", "Traitements", Icons.Outlined.Medication, Icons.Rounded.Medication),
-    Tab("stats", "Stats", Icons.Outlined.BarChart, Icons.Rounded.BarChart),
+    Tab("suivi", "Suivi", Icons.Outlined.Insights, Icons.Rounded.Insights),
+    Tab("sante", "Santé", Icons.Outlined.FavoriteBorder, Icons.Rounded.Favorite),
     Tab("shop", "Boutique", Icons.Outlined.Storefront, Icons.Rounded.Storefront),
-    Tab("cycle", "Cycle", Icons.Outlined.WaterDrop, Icons.Rounded.WaterDrop),
 )
+
+/** A top-level tab split into sub-tabs ("Journal | Cycle | Stats"). */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun Hub(
+    title: String,
+    tabs: List<String>,
+    initial: Int,
+    onOpenProfile: () -> Unit,
+    onOpenSettings: () -> Unit,
+    content: @Composable (Int) -> Unit,
+) {
+    var selected by rememberSaveable(tabs.size) { mutableIntStateOf(initial.coerceIn(0, tabs.lastIndex)) }
+    Scaffold(
+        topBar = {
+            Column {
+                TopAppBar(
+                    title = { Text(title) },
+                    actions = {
+                        IconButton(onClick = onOpenProfile) { Icon(Icons.Outlined.AccountCircle, "Profil médical") }
+                        IconButton(onClick = onOpenSettings) { Icon(Icons.Outlined.Settings, "Paramètres") }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background),
+                )
+                if (tabs.size > 1) {
+                    PrimaryTabRow(selectedTabIndex = selected, containerColor = MaterialTheme.colorScheme.background) {
+                        tabs.forEachIndexed { i, label ->
+                            Tab(selected = selected == i, onClick = { selected = i }, text = { Text(label, maxLines = 1) })
+                        }
+                    }
+                }
+            }
+        },
+    ) { padding ->
+        Box(Modifier.fillMaxSize().padding(padding).consumeWindowInsets(padding)) { content(selected) }
+    }
+}
 
 @Composable
 fun MediPoteApp(vm: AppViewModel) {
     val state by vm.state.collectAsStateWithLifecycle()
     val now by vm.now.collectAsStateWithLifecycle()
-    MediPoteTheme(state.settings.themeMode, state.settings.dynamicColor) {
+    MediPoteTheme(state.settings.themeMode, state.settings.dynamicColor, state.settings.accent) {
         val context = LocalContext.current
         val nav = rememberNavController()
         val snackbar = remember { SnackbarHostState() }
@@ -94,8 +157,11 @@ fun MediPoteApp(vm: AppViewModel) {
         var checkIn by remember { mutableStateOf<UiEvent.CheckedIn?>(null) }
         var notificationsAllowed by remember { mutableStateOf(Notifications.canPost(context)) }
         var exactAllowed by remember { mutableStateOf(ReminderScheduler.canScheduleExact(context)) }
+        var pendingPhoto by rememberSaveable { mutableStateOf<String?>(null) }
         val today = now.toLocalDate()
         val pet = state.game.petName
+        val menstruating = state.profile?.menstruating == true
+        val hasPill = state.treatments.any { it.pill != null }
 
         val notificationPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
             notificationsAllowed = granted
@@ -105,6 +171,18 @@ fun MediPoteApp(vm: AppViewModel) {
             if (Build.VERSION.SDK_INT >= 33 && !Notifications.canPost(context)) {
                 notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
             }
+        }
+        val takePicture = rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { ok ->
+            val name = pendingPhoto
+            pendingPhoto = null
+            if (name == null) return@rememberLauncherForActivityResult
+            if (ok) nav.navigate("doc_info?file=$name&mime=${Uri.encode("image/jpeg")}")
+            else File(DocumentStore.dir(context), name).delete()
+        }
+        val importFile = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+            val imported = uri?.let { DocumentStore.import(context, it) }
+            if (imported != null) nav.navigate("doc_info?file=${imported.first}&mime=${Uri.encode(imported.second)}")
+            else if (uri != null) vm.message("Impossible d'importer ce fichier")
         }
 
         LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
@@ -133,21 +211,26 @@ fun MediPoteApp(vm: AppViewModel) {
                         snackbar.currentSnackbarData?.dismiss()
                         snackbar.showSnackbar("${e.item.name} acheté et équipé !")
                     }
+                    is UiEvent.Message -> {
+                        snackbar.currentSnackbarData?.dismiss()
+                        snackbar.showSnackbar(e.text)
+                    }
                 }
             }
         }
 
         val backStack by nav.currentBackStackEntryAsState()
-        val route = backStack?.destination?.route
-        val tabs = if (state.profile?.menstruating == true) TABS else TABS.dropLast(1)
-        val showBar = tabs.any { it.route == route }
+        val route = backStack?.destination?.route?.substringBefore('?')
+        val showBar = TABS.any { it.route == route }
+        val openProfile = { nav.navigate("profile") }
+        val openSettings = { nav.navigate("settings") }
 
         Scaffold(
             snackbarHost = { SnackbarHost(snackbar) },
             bottomBar = {
                 if (showBar) {
                     NavigationBar {
-                        tabs.forEach { tab ->
+                        TABS.forEach { tab ->
                             val selected = route == tab.route
                             NavigationBarItem(
                                 selected = selected,
@@ -189,13 +272,14 @@ fun MediPoteApp(vm: AppViewModel) {
                     TreatmentsScreen(
                         state.treatments, today,
                         onAdd = { nav.navigate("search") },
-                        onEdit = { nav.navigate("editor?treatment=${it.id}") },
+                        onEdit = { nav.navigate(if (it.pill != null) "pill_setup" else "editor?treatment=${it.id}") },
                         onboarding = true,
                         onFinishOnboarding = {
                             vm.finishOnboarding()
                             askNotifications()
                             nav.navigate("home") { popUpTo(0) { inclusive = true } }
                         },
+                        onRefill = { vm.refill(it.id) },
                     )
                 }
 
@@ -205,22 +289,70 @@ fun MediPoteApp(vm: AppViewModel) {
                         state, now, feedSignal, lastPoints,
                         onGive = vm::give,
                         onAddTreatment = { nav.navigate("search") },
-                        onOpenProfile = { nav.navigate("profile") },
-                        onOpenSettings = { nav.navigate("settings") },
+                        onOpenProfile = openProfile,
+                        onOpenSettings = openSettings,
+                        onAddWater = vm::addWater,
+                        onOpenJournal = { nav.navigate("day/$today") },
+                        onOpenAppointment = { nav.navigate("appointment?id=${it.id}") },
+                        onOpenTreatments = { nav.navigate("treatments") { launchSingleTop = true } },
                     )
                 }
                 composable("treatments") {
-                    TreatmentsScreen(
-                        state.treatments, today,
-                        onAdd = { nav.navigate("search") },
-                        onEdit = { nav.navigate("editor?treatment=${it.id}") },
-                    )
+                    val tabs = if (menstruating || hasPill) listOf("Médicaments", "Pilule") else listOf("Médicaments")
+                    Hub("Traitements", tabs, 0, openProfile, openSettings) { i ->
+                        when (i) {
+                            0 -> TreatmentsScreen(
+                                state.treatments, today,
+                                onAdd = { nav.navigate("search") },
+                                onEdit = { nav.navigate(if (it.pill != null) "pill_setup" else "editor?treatment=${it.id}") },
+                                embedded = true,
+                                onRefill = { vm.refill(it.id) },
+                            )
+                            else -> PillScreen(
+                                state, now,
+                                onSetup = { nav.navigate("pill_setup") },
+                                onTake = vm::give,
+                                onNewPack = { date -> state.treatments.firstOrNull { it.pill != null }?.let { vm.startNewPillPack(it.id, date) } },
+                            )
+                        }
+                    }
                 }
-                composable("stats") { StatsScreen(state, now) }
+                composable("suivi") {
+                    val tabs = if (menstruating) listOf("Journal", "Cycle", "Stats") else listOf("Journal", "Stats")
+                    Hub("Suivi", tabs, 0, openProfile, openSettings) { i ->
+                        when (tabs[i]) {
+                            "Journal" -> JournalScreen(state.journal, today) { nav.navigate("day/$it") }
+                            "Cycle" -> CycleScreen(
+                                state.profile?.cycle, state.journal, today, vm::logPeriod, vm::updateCycle,
+                                onOpenDay = { nav.navigate("day/$it") }, embedded = true,
+                            )
+                            else -> StatsScreen(state, now, embedded = true)
+                        }
+                    }
+                }
+                composable("sante") {
+                    Hub("Santé", listOf("Agenda", "Documents"), 0, openProfile, openSettings) { i ->
+                        if (i == 0) {
+                            AgendaScreen(
+                                state.appointments, now,
+                                onNew = { date -> nav.navigate("appointment?date=${date ?: today}") },
+                                onOpen = { nav.navigate("appointment?id=${it.id}") },
+                            )
+                        } else {
+                            DocumentsScreen(
+                                state.documents,
+                                onTakePhoto = {
+                                    val file = DocumentStore.newPhotoFile(context)
+                                    pendingPhoto = file.name
+                                    takePicture.launch(DocumentStore.uriFor(context, file))
+                                },
+                                onImport = { importFile.launch(arrayOf("application/pdf", "image/*")) },
+                                onOpen = { nav.navigate("document/${it.id}") },
+                            )
+                        }
+                    }
+                }
                 composable("shop") { ShopScreen(state.game, vm::buy, vm::equip) }
-                composable("cycle") {
-                    CycleScreen(state.profile?.cycle, today, vm::logPeriod, vm::updateCycle)
-                }
 
                 // ── Treatments flow ──
                 composable("search") {
@@ -258,6 +390,86 @@ fun MediPoteApp(vm: AppViewModel) {
                         onBack = { nav.popBackStack() },
                     )
                 }
+                composable("pill_setup") {
+                    val existing = state.treatments.firstOrNull { it.pill != null }
+                    PillSetupScreen(
+                        existing, today,
+                        onSave = { vm.saveTreatment(it); nav.popBackStack() },
+                        onDelete = { existing?.let { vm.deleteTreatment(it.id) }; nav.popBackStack() },
+                        onBack = { nav.popBackStack() },
+                    )
+                }
+
+                // ── Journal ──
+                composable("day/{date}") { entry ->
+                    val date = entry.arguments?.getString("date")?.let(LocalDate::parse) ?: today
+                    DayEntryScreen(
+                        entry = state.entryFor(date),
+                        showCycle = menstruating,
+                        onSave = { vm.saveEntry(it); nav.popBackStack() },
+                        onBack = { nav.popBackStack() },
+                    )
+                }
+
+                // ── Appointments ──
+                composable(
+                    "appointment?id={id}&date={date}",
+                    arguments = listOf(
+                        navArgument("id") { type = NavType.StringType; nullable = true },
+                        navArgument("date") { type = NavType.StringType; nullable = true },
+                    ),
+                ) { entry ->
+                    val existing = entry.arguments?.getString("id")?.let { id -> state.appointments.firstOrNull { it.id == id } }
+                    val date = entry.arguments?.getString("date")?.let(LocalDate::parse) ?: today
+                    AppointmentEditorScreen(
+                        existing, date,
+                        onSave = { vm.saveAppointment(it); nav.popBackStack() },
+                        onDelete = { existing?.let { vm.deleteAppointment(it.id) }; nav.popBackStack() },
+                        onBack = { nav.popBackStack() },
+                    )
+                }
+
+                // ── Health record ──
+                composable(
+                    "doc_info?file={file}&mime={mime}&id={id}",
+                    arguments = listOf(
+                        navArgument("file") { type = NavType.StringType; nullable = true },
+                        navArgument("mime") { type = NavType.StringType; nullable = true },
+                        navArgument("id") { type = NavType.StringType; nullable = true },
+                    ),
+                ) { entry ->
+                    val args = entry.arguments
+                    val existing = args?.getString("id")?.let { id -> state.documents.firstOrNull { it.id == id } }
+                    val doc = existing ?: HealthDocument(
+                        id = UUID.randomUUID().toString(),
+                        title = DocCategory.PRESCRIPTION.label,
+                        category = DocCategory.PRESCRIPTION,
+                        date = today,
+                        fileName = args?.getString("file").orEmpty(),
+                        mimeType = args?.getString("mime") ?: "image/jpeg",
+                    )
+                    val newDoc = remember { doc }
+                    DocumentInfoScreen(
+                        existing ?: newDoc, isNew = existing == null,
+                        onSave = { vm.saveDocument(it); nav.popBackStack() },
+                        onCancel = {
+                            if (existing == null) DocumentStore.delete(context, newDoc)
+                            nav.popBackStack()
+                        },
+                    )
+                }
+                composable("document/{id}") { entry ->
+                    val doc = state.documents.firstOrNull { it.id == entry.arguments?.getString("id") }
+                    if (doc != null) {
+                        DocumentViewerScreen(
+                            doc,
+                            onBack = { nav.popBackStack() },
+                            onEdit = { nav.navigate("doc_info?id=${doc.id}") },
+                            onShare = { context.startActivity(DocumentStore.shareIntent(context, doc)) },
+                            onDelete = { vm.deleteDocument(doc); nav.popBackStack() },
+                        )
+                    }
+                }
 
                 // ── Settings ──
                 composable("settings") {
@@ -278,7 +490,7 @@ fun MediPoteApp(vm: AppViewModel) {
                             }
                         },
                         onRenamePet = vm::namePet,
-                        onOpenProfile = { nav.navigate("profile") },
+                        onOpenProfile = openProfile,
                         onReset = {
                             vm.resetAll()
                             nav.navigate("welcome") { popUpTo(0) { inclusive = true } }
@@ -292,7 +504,6 @@ fun MediPoteApp(vm: AppViewModel) {
         }
 
         checkIn?.let { event -> CheckInDialog(event, pet) { checkIn = null } }
-        LeaveCycleTabIfDisabled(nav, route, state.profile?.menstruating == true)
     }
 }
 
@@ -311,7 +522,7 @@ private fun CheckInDialog(event: UiEvent.CheckedIn, pet: String, onDismiss: () -
         text = {
             Text(
                 buildString {
-                    append("$pet est content de te voir : +${r.points} points.")
+                    append("Quel plaisir pour $pet de te revoir : +${r.points} points.")
                     if (r.milestoneBonus > 0) append("\nPalier atteint : +${r.milestoneBonus} points bonus !")
                     if (r.points < Rules.STREAK_POINTS_CAP) append("\nReviens demain pour gagner encore plus.")
                 },
@@ -321,11 +532,4 @@ private fun CheckInDialog(event: UiEvent.CheckedIn, pet: String, onDismiss: () -
         },
         confirmButton = { TextButton(onClick = onDismiss) { Text("Super !") } },
     )
-}
-
-@Composable
-private fun LeaveCycleTabIfDisabled(nav: NavHostController, route: String?, enabled: Boolean) {
-    LaunchedEffect(route, enabled) {
-        if (route == "cycle" && !enabled) nav.navigate("home") { popUpTo("home") }
-    }
 }

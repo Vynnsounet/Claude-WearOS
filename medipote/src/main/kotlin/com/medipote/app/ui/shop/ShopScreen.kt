@@ -104,7 +104,7 @@ fun ShopScreen(game: GameState, onBuy: (ShopItem) -> Unit, onEquip: (ShopItem) -
                     }
                 }
             }
-            items(Shop.items.filter { it.slot == slot }, key = { it.id }) { item ->
+            items(Shop.items.filter { it.slot == slot }.sortedBy { it.price }, key = { it.id }) { item ->
                 ItemCell(
                     item = item,
                     owned = item.id in game.owned,

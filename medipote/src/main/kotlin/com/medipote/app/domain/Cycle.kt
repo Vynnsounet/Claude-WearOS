@@ -5,10 +5,15 @@ import java.time.LocalDate
 import java.time.temporal.ChronoUnit
 
 enum class CyclePhase(val label: String, val description: String) {
-    MENSTRUAL("Règles", "Phase menstruelle : le cycle recommence."),
-    FOLLICULAR("Phase folliculaire", "L'énergie remonte souvent pendant cette phase."),
-    OVULATION("Ovulation (estimée)", "Fenêtre de fertilité estimée."),
-    LUTEAL("Phase lutéale", "Des symptômes prémenstruels peuvent apparaître en fin de phase."),
+    MENSTRUAL("Menstruation", "Les hormones sont au plus bas : fatigue et crampes sont fréquentes."),
+    FOLLICULAR("Phase folliculaire", "Les œstrogènes remontent : l'énergie et le moral reviennent souvent."),
+    OVULATION("Ovulation", "Libération de l'ovule (estimée) : c'est la fenêtre de fertilité."),
+    LUTEAL("Phase lutéale", "La progestérone domine : des symptômes prémenstruels peuvent apparaître."),
+}
+
+/** Days (1-based, inclusive) covered by a phase in a cycle of a given length. */
+data class PhaseRange(val phase: CyclePhase, val firstDay: Int, val lastDay: Int) {
+    val days: Int get() = lastDay - firstDay + 1
 }
 
 enum class CycleDayType { PERIOD, PREDICTED_PERIOD, FERTILE, OVULATION, NONE }
@@ -109,6 +114,20 @@ object Cycle {
             in (ovulationOffset - 5)..(ovulationOffset + 1) -> CycleDayType.FERTILE
             else -> CycleDayType.NONE
         }
+    }
+
+    /** The four phases laid out over one cycle, for the timeline. */
+    fun phases(length: Int, periodLength: Int): List<PhaseRange> {
+        val ovulationDay = (length - LUTEAL_DAYS.toInt() + 1).coerceAtLeast(2)
+        val fertileStart = (ovulationDay - 5).coerceAtLeast(2)
+        val fertileEnd = (ovulationDay + 1).coerceAtMost(length)
+        val periodEnd = periodLength.coerceAtMost(fertileStart - 1)
+        return listOf(
+            PhaseRange(CyclePhase.MENSTRUAL, 1, periodEnd),
+            PhaseRange(CyclePhase.FOLLICULAR, periodEnd + 1, fertileStart - 1),
+            PhaseRange(CyclePhase.OVULATION, fertileStart, fertileEnd),
+            PhaseRange(CyclePhase.LUTEAL, fertileEnd + 1, length),
+        ).filter { it.firstDay <= it.lastDay }
     }
 
     fun logPeriod(info: CycleInfo, start: LocalDate): CycleInfo {

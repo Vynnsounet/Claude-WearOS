@@ -132,6 +132,7 @@ fun NumberStepper(
     range: IntRange,
     modifier: Modifier = Modifier,
     suffix: String = "",
+    display: (Int) -> String = { "$it$suffix" },
 ) {
     Row(modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         Text(label, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
@@ -139,7 +140,7 @@ fun NumberStepper(
             Icon(Icons.Rounded.Remove, "Diminuer")
         }
         Text(
-            "$value$suffix",
+            display(value),
             style = MaterialTheme.typography.titleMedium,
             textAlign = TextAlign.Center,
             modifier = Modifier.width(72.dp),
@@ -227,11 +228,11 @@ fun DatePickerModal(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun TimePickerModal(minuteOfDay: Int, onDismiss: () -> Unit, onConfirm: (Int) -> Unit) {
+fun TimePickerModal(minuteOfDay: Int, onDismiss: () -> Unit, title: String = "Heure", onConfirm: (Int) -> Unit) {
     val state = rememberTimePickerState(minuteOfDay / 60, minuteOfDay % 60, is24Hour = true)
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Heure de la prise") },
+        title = { Text(title) },
         text = { Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) { TimePicker(state = state) } },
         confirmButton = { TextButton(onClick = { onConfirm(state.hour * 60 + state.minute) }) { Text("Valider") } },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Annuler") } },

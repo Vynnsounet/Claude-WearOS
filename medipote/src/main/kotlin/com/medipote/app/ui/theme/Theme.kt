@@ -20,6 +20,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.medipote.app.data.Accent
 import com.medipote.app.data.ThemeMode
 
 private val LightColors = lightColorScheme(
@@ -150,10 +151,46 @@ fun isDark(mode: ThemeMode): Boolean = when (mode) {
     ThemeMode.DARK -> true
 }
 
+/** Accent tones: primary and secondary roles for light and dark themes. */
+private data class AccentTones(
+    val primary: Long, val onPrimary: Long, val primaryContainer: Long, val onPrimaryContainer: Long,
+    val secondary: Long, val secondaryContainer: Long, val onSecondaryContainer: Long,
+)
+
+private fun tones(accent: Accent, dark: Boolean): AccentTones = when (accent) {
+    Accent.MINT -> if (dark) AccentTones(0xFF7FD8BE, 0xFF00382C, 0xFF005141, 0xFFB4EEDB, 0xFFB1CCC2, 0xFF334B44, 0xFFCDE9DE)
+    else AccentTones(0xFF1F7F69, 0xFFFFFFFF, 0xFFB4EEDB, 0xFF00382C, 0xFF4A635B, 0xFFCDE9DE, 0xFF062019)
+    Accent.OCEAN -> if (dark) AccentTones(0xFFA0CAFF, 0xFF003258, 0xFF00497D, 0xFFD2E4FF, 0xFFBBC7DB, 0xFF3C4858, 0xFFD7E3F7)
+    else AccentTones(0xFF0B61A4, 0xFFFFFFFF, 0xFFD2E4FF, 0xFF001C37, 0xFF535F70, 0xFFD7E3F7, 0xFF101C2B)
+    Accent.LAVENDER -> if (dark) AccentTones(0xFFCFBCFF, 0xFF381E72, 0xFF4F378A, 0xFFE9DDFF, 0xFFCCC2DC, 0xFF4A4458, 0xFFE8DEF8)
+    else AccentTones(0xFF6750A4, 0xFFFFFFFF, 0xFFE9DDFF, 0xFF22005D, 0xFF625B71, 0xFFE8DEF8, 0xFF1E192B)
+    Accent.CORAL -> if (dark) AccentTones(0xFFFFB4A6, 0xFF5F150B, 0xFF7E2B1F, 0xFFFFDAD3, 0xFFE7BDB6, 0xFF5D3F3B, 0xFFFFDAD4)
+    else AccentTones(0xFF9C4234, 0xFFFFFFFF, 0xFFFFDAD3, 0xFF3E0400, 0xFF775651, 0xFFFFDAD4, 0xFF2C1512)
+    Accent.AMBER -> if (dark) AccentTones(0xFFFFB870, 0xFF4A2800, 0xFF693C00, 0xFFFFDCBE, 0xFFE1C1A4, 0xFF5A4330, 0xFFFFDCBE)
+    else AccentTones(0xFF8B5000, 0xFFFFFFFF, 0xFFFFDCBE, 0xFF2C1600, 0xFF725A42, 0xFFFFDCBE, 0xFF291806)
+    Accent.ROSE -> if (dark) AccentTones(0xFFFFB0C8, 0xFF5E1133, 0xFF7B2949, 0xFFFFD9E2, 0xFFE3BDC6, 0xFF5A3F47, 0xFFFFD9E2)
+    else AccentTones(0xFF984061, 0xFFFFFFFF, 0xFFFFD9E2, 0xFF3E001D, 0xFF74565F, 0xFFFFD9E2, 0xFF2B151C)
+}
+
+/** Swatch shown in the settings for an accent (its light primary). */
+fun accentSwatch(accent: Accent): Color = Color(tones(accent, false).primary)
+
+private fun ColorScheme.withAccent(accent: Accent, dark: Boolean): ColorScheme {
+    val t = tones(accent, dark)
+    return copy(
+        primary = Color(t.primary), onPrimary = Color(t.onPrimary),
+        primaryContainer = Color(t.primaryContainer), onPrimaryContainer = Color(t.onPrimaryContainer),
+        secondary = Color(t.secondary), secondaryContainer = Color(t.secondaryContainer),
+        onSecondaryContainer = Color(t.onSecondaryContainer),
+        surfaceTint = Color(t.primary),
+    )
+}
+
 @Composable
 fun MediPoteTheme(
     themeMode: ThemeMode = ThemeMode.SYSTEM,
     dynamicColor: Boolean = false,
+    accent: Accent = Accent.MINT,
     content: @Composable () -> Unit,
 ) {
     val dark = isDark(themeMode)
@@ -162,8 +199,8 @@ fun MediPoteTheme(
             val context = LocalContext.current
             if (dark) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
         }
-        dark -> DarkColors
-        else -> LightColors
+        dark -> DarkColors.withAccent(accent, true)
+        else -> LightColors.withAccent(accent, false)
     }
     androidx.compose.runtime.CompositionLocalProvider(LocalStatusColors provides if (dark) DarkStatus else LightStatus) {
         MaterialTheme(colorScheme = colors, typography = AppTypography, shapes = AppShapes, content = content)

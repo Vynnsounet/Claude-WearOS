@@ -4,7 +4,12 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.medipote.app.data.AppState
+import com.medipote.app.data.Appointment
 import com.medipote.app.data.CycleInfo
+import com.medipote.app.data.DayEntry
+import com.medipote.app.data.DocumentStore
+import com.medipote.app.data.Flow
+import com.medipote.app.data.HealthDocument
 import com.medipote.app.data.Profile
 import com.medipote.app.data.Settings
 import com.medipote.app.data.TakeStatus
@@ -33,6 +38,7 @@ sealed interface UiEvent {
     data class Fed(val treatmentName: String, val status: TakeStatus, val points: Int, val perfectDayBonus: Int) : UiEvent
     data class CheckedIn(val reward: CheckInReward) : UiEvent
     data class Bought(val item: ShopItem) : UiEvent
+    data class Message(val text: String) : UiEvent
 }
 
 class AppViewModel(app: Application) : AndroidViewModel(app) {
@@ -73,10 +79,16 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     fun give(item: DoseItem) {
         val now = repo.now()
         var fed: UiEvent.Fed? = null
+        var lowStock: Treatment? = null
         repo.update { s ->
             val result = Game.give(s, item, now) ?: return@update s
             fed = UiEvent.Fed(item.occurrence.treatment.name, result.log.status, result.log.points, result.perfectDayBonus)
+            lowStock = result.lowStock
             result.state
+        }
+        lowStock?.let {
+            Notifications.showStock(getApplication(), state.value)
+            reschedule()
         }
         fed?.let {
             _now.value = now
@@ -152,8 +164,90 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun resetAll() {
+        DocumentStore.dir(getApplication()).deleteRecursively()
         repo.reset()
         reschedule()
+    }
+
+    // ── Journal and water ──
+
+    fun saveEntry(entry: DayEntry) {
+        var bonus = 0
+        repo.update { s ->
+            val (updated, b) = Game.saveEntry(s, entry, repo.now())
+            bonus = b
+            // Logging a period flow with no period start in the previous 10 days starts a new cycle.
+            val p = updated.profile
+            if (entry.flow != null && entry.flow != Flow.SPOTTING && p != null && p.menstruating) {
+                val info = p.cycle ?: CycleInfo(emptyList())
+                val recent = info.periodStarts.any { !it.isAfter(entry.date) && !it.isBefore(entry.date.minusDays(10)) }
+                if (!recent) return@update updated.copy(profile = p.copy(cycle = Cycle.logPeriod(info, entry.date)))
+            }
+            updated
+        }
+        _events.tryEmit(UiEvent.Message(if (bonus > 0) "Journal enregistré : +$bonus pts" else "Journal enregistré"))
+    }
+
+    fun addWater(delta: Int) {
+        var bonus = 0
+        repo.update { s ->
+            val (updated, b) = Game.addWater(s, delta, repo.now())
+            bonus = b
+            updated
+        }
+        if (bonus > 0) {
+            Notifications.cancelWater(getApplication())
+            _events.tryEmit(UiEvent.Message("Objectif d'hydratation atteint : +$bonus pts 💧"))
+        }
+    }
+
+    // ── Appointments ──
+
+    fun saveAppointment(a: Appointment) {
+        repo.update { s -> s.copy(appointments = (s.appointments.filterNot { it.id == a.id } + a).sortedBy { it.dateTime }) }
+        reschedule()
+    }
+
+    fun deleteAppointment(id: String) {
+        repo.update { s -> s.copy(appointments = s.appointments.filterNot { it.id == id }) }
+        reschedule()
+    }
+
+    // ── Health record ──
+
+    fun saveDocument(doc: HealthDocument) {
+        repo.update { s -> s.copy(documents = (s.documents.filterNot { it.id == doc.id } + doc).sortedByDescending { it.date }) }
+    }
+
+    fun deleteDocument(doc: HealthDocument) {
+        DocumentStore.delete(getApplication(), doc)
+        repo.update { s -> s.copy(documents = s.documents.filterNot { it.id == doc.id }) }
+    }
+
+    // ── Stock and pill ──
+
+    fun refill(treatmentId: String) {
+        repo.update { s ->
+            s.copy(treatments = s.treatments.map { t ->
+                if (t.id == treatmentId && t.packSize != null) t.copy(stock = (t.stock ?: 0.0) + t.packSize) else t
+            })
+        }
+        _events.tryEmit(UiEvent.Message("Stock mis à jour"))
+        reschedule()
+    }
+
+    fun startNewPillPack(treatmentId: String, date: LocalDate) {
+        repo.update { s ->
+            s.copy(treatments = s.treatments.map { t ->
+                val pack = t.pill
+                if (t.id == treatmentId && pack != null) t.copy(pill = pack.copy(packStart = date), startDate = minOf(t.startDate, date)) else t
+            })
+        }
+        reschedule()
+    }
+
+    fun message(text: String) {
+        _events.tryEmit(UiEvent.Message(text))
     }
 
     fun reschedule() {

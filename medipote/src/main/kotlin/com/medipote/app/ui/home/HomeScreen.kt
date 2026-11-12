@@ -29,7 +29,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.AccountCircle
+import androidx.compose.material.icons.outlined.Inventory2
 import androidx.compose.material.icons.outlined.Restaurant
+import androidx.compose.material.icons.rounded.Remove
+import androidx.compose.material.icons.rounded.WaterDrop
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Check
@@ -107,6 +110,10 @@ fun HomeScreen(
     onOpenProfile: () -> Unit,
     onOpenSettings: () -> Unit,
     animate: Boolean = true,
+    onAddWater: (Int) -> Unit = {},
+    onOpenJournal: () -> Unit = {},
+    onOpenAppointment: (com.medipote.app.data.Appointment) -> Unit = {},
+    onOpenTreatments: () -> Unit = {},
 ) {
     val logs = remember(state.doseLogs) { state.doseLogs.associateBy { it.key } }
     val today = remember(state.treatments, logs, now) {
@@ -217,6 +224,22 @@ fun HomeScreen(
                 }
                 today.forEach { item -> DoseCard(item, onGive) }
             }
+
+            val low = state.treatments.filter { it.isLowStock }
+            if (low.isNotEmpty()) StockBanner(low, onOpenTreatments)
+
+            val water = state.settings.water
+            WaterCard(state.entryFor(now.toLocalDate()).waterGlasses, water.goalGlasses, water.glassMl, onAddWater)
+
+            if (!state.entryFor(now.toLocalDate()).hasJournal) JournalPrompt(state.game.petName, onOpenJournal)
+
+            state.appointments
+                .filter { !it.dateTime.isBefore(now.minusHours(1)) && it.dateTime.isBefore(now.plusDays(8)) }
+                .minByOrNull { it.dateTime }
+                ?.let { a ->
+                    SectionTitle("Prochain rendez-vous")
+                    com.medipote.app.ui.agenda.AppointmentCard(a, now) { onOpenAppointment(a) }
+                }
             Spacer(Modifier.height(8.dp))
         }
     }
@@ -476,6 +499,87 @@ private fun EmptyTreatments(petName: String, onAdd: () -> Unit) {
                 Icon(Icons.Rounded.Add, null)
                 Spacer(Modifier.width(6.dp))
                 Text("Ajouter un traitement")
+            }
+        }
+    }
+}
+
+@Composable
+private fun StockBanner(low: List<com.medipote.app.data.Treatment>, onClick: () -> Unit) {
+    Card(
+        onClick = onClick,
+        colors = CardDefaults.cardColors(containerColor = AppTheme.status.criticalContainer),
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Row(Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
+            Icon(Icons.Outlined.Inventory2, null, tint = AppTheme.status.critical)
+            Spacer(Modifier.width(12.dp))
+            Column(Modifier.weight(1f)) {
+                Text("Pense à racheter", style = MaterialTheme.typography.titleSmall)
+                Text(
+                    low.joinToString(" · ") { t -> "${t.displayName} : ${t.daysLeft} j" },
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+            }
+        }
+    }
+}
+
+/** Water of the day: one drop per glass, tap + after each glass. */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun WaterCard(glasses: Int, goal: Int, glassMl: Int, onAdd: (Int) -> Unit) {
+    val water = Color(0xFF3A9BDC)
+    Card(
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    Text("Hydratation", style = MaterialTheme.typography.titleMedium)
+                    Text(
+                        "$glasses / $goal verres · ${"%.2f".format(java.util.Locale.FRANCE, glasses * glassMl / 1000.0).trimEnd('0').trimEnd(',')} L" +
+                            if (glasses >= goal) " · objectif atteint 🎉" else "",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                androidx.compose.material3.FilledTonalIconButton(onClick = { onAdd(-1) }, enabled = glasses > 0) {
+                    Icon(Icons.Rounded.Remove, "Retirer un verre")
+                }
+                Spacer(Modifier.width(4.dp))
+                androidx.compose.material3.FilledIconButton(onClick = { onAdd(1) }) { Icon(Icons.Rounded.Add, "Ajouter un verre") }
+            }
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                repeat(maxOf(goal, glasses)) { i ->
+                    Icon(
+                        Icons.Rounded.WaterDrop, null,
+                        tint = if (i < glasses) water else MaterialTheme.colorScheme.outlineVariant,
+                        modifier = Modifier.size(24.dp),
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun JournalPrompt(pet: String, onOpen: () -> Unit) {
+    Card(
+        onClick = onOpen,
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.tertiaryContainer),
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+            Text("🙂", style = MaterialTheme.typography.headlineMedium)
+            Spacer(Modifier.width(12.dp))
+            Column(Modifier.weight(1f)) {
+                Text("Comment te sens-tu aujourd'hui ?", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onTertiaryContainer)
+                Text(
+                    "$pet aimerait savoir ! Note ton état dans ton journal : +5 pts.",
+                    style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onTertiaryContainer,
+                )
             }
         }
     }

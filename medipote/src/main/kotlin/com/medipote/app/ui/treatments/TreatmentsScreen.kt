@@ -22,6 +22,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material.icons.outlined.Edit
+import androidx.compose.material.icons.outlined.Inventory2
 import androidx.compose.material.icons.outlined.Restaurant
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Close
@@ -39,6 +40,8 @@ import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.ScaffoldDefaults
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -86,11 +89,14 @@ fun TreatmentsScreen(
     onEdit: (Treatment) -> Unit,
     onboarding: Boolean = false,
     onFinishOnboarding: () -> Unit = {},
+    embedded: Boolean = false,
+    onRefill: (Treatment) -> Unit = {},
 ) {
     val (current, finished) = treatments.partition { it.endDate == null || !it.endDate.isBefore(today) }
     Scaffold(
+        contentWindowInsets = if (embedded) WindowInsets(0) else ScaffoldDefaults.contentWindowInsets,
         topBar = {
-            TopAppBar(
+            if (!embedded) TopAppBar(
                 title = { Text(if (onboarding) "Tes traitements en cours" else "Mes traitements") },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background),
             )
@@ -137,10 +143,10 @@ fun TreatmentsScreen(
                     }
                 }
             }
-            items(current, key = { it.id }) { TreatmentCard(it, onClick = { onEdit(it) }) }
+            items(current, key = { it.id }) { TreatmentCard(it, onClick = { onEdit(it) }, onRefill = { onRefill(it) }) }
             if (finished.isNotEmpty()) {
                 item { SectionTitle("Terminés") }
-                items(finished, key = { it.id }) { TreatmentCard(it, onClick = { onEdit(it) }, finished = true) }
+                items(finished, key = { it.id }) { TreatmentCard(it, onClick = { onEdit(it) }, onRefill = { onRefill(it) }, finished = true) }
             }
             if (onboarding) {
                 item {
@@ -157,7 +163,7 @@ fun TreatmentsScreen(
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun TreatmentCard(t: Treatment, onClick: () -> Unit, finished: Boolean = false) {
+private fun TreatmentCard(t: Treatment, onClick: () -> Unit, onRefill: () -> Unit, finished: Boolean = false) {
     val drug = t.drugId?.let(DrugGuide::byId)
     Card(
         onClick = onClick,
@@ -198,7 +204,7 @@ private fun TreatmentCard(t: Treatment, onClick: () -> Unit, finished: Boolean =
                 }
             }
             val period = buildString {
-                append(daysSummary(t.daysOfWeek))
+                append(t.pill?.let { com.medipote.app.data.PillRegimen.of(it).label } ?: daysSummary(t.daysOfWeek))
                 append(" · ")
                 append(t.endDate?.let { "jusqu'au ${it.format(shortDate)}" } ?: "au long cours")
             }
@@ -209,6 +215,30 @@ private fun TreatmentCard(t: Treatment, onClick: () -> Unit, finished: Boolean =
                     Icon(Icons.Outlined.Restaurant, "Pendant le repas", Modifier.size(14.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
+            t.stock?.let { stock -> StockLine(t, stock, onRefill) }
+        }
+    }
+}
+
+@Composable
+private fun StockLine(t: Treatment, stock: Double, onRefill: () -> Unit) {
+    val low = t.isLowStock
+    val color = if (low) com.medipote.app.ui.theme.AppTheme.status.critical else MaterialTheme.colorScheme.onSurfaceVariant
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Icon(Icons.Outlined.Inventory2, null, Modifier.size(16.dp), tint = color)
+        Spacer(Modifier.width(6.dp))
+        Text(
+            buildString {
+                append("Stock : ${t.unit.format(stock)}")
+                t.daysLeft?.let { append(" · environ $it jour${if (it > 1) "s" else ""}") }
+                if (low) append(" · à racheter")
+            },
+            style = MaterialTheme.typography.bodySmall,
+            color = color,
+            modifier = Modifier.weight(1f),
+        )
+        if (t.packSize != null) {
+            androidx.compose.material3.TextButton(onClick = onRefill) { Text("+ ${t.packSize}") }
         }
     }
 }
