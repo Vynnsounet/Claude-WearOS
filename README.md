@@ -17,11 +17,16 @@ needs no phone app.
 - **Safe failures**: a bad key, rate limits, overload and network errors each
   get a clear message on the watch.
 
+> This repository also contains **MédiPote** (`medipote/`), a separate Android
+> phone app that turns taking medication into caring for a virtual pet. See
+> [medipote/README.md](medipote/README.md).
+
 ## Project layout
 
 | Module | What it is |
 |---|---|
 | `core/` | Plain Kotlin/JVM library around the official [Anthropic Java SDK](https://github.com/anthropics/anthropic-sdk-java): `ClaudeChat` (conversation history and streaming as a `Flow<ChatEvent>`) and `ChatConfig`. It has no Android dependencies, so it is unit-tested on the JVM against a local fake server. |
+| `medipote/` | MédiPote, a standalone Android phone app for medication reminders (see its README). |
 | `app/` | The Wear OS app: Compose for Wear OS (Material 3), a `ChatViewModel`, voice and keyboard input, and settings. The API key is kept in DataStore. |
 
 ### API settings (`core/.../ChatConfig.kt`)
