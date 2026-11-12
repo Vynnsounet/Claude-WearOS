@@ -32,6 +32,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -199,7 +200,7 @@ private fun ChartCard(days: List<DayStats>) {
     val grid = MaterialTheme.colorScheme.outlineVariant
     val surface = MaterialTheme.colorScheme.surfaceContainerLow
     val highlight = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.06f)
-    var selected by remember(days) { mutableStateOf(days.lastIndex) }
+    var selected by remember(days) { mutableIntStateOf(days.lastIndex) }
     val maxPlanned = (days.maxOfOrNull { it.planned } ?: 0).coerceAtLeast(1)
     val description = days.joinToString("; ") { "${it.date.format(dayMonth)} : ${it.onTime} à l'heure, ${it.late} en retard, ${it.missed} oubliées" }
 

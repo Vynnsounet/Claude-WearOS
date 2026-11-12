@@ -51,6 +51,7 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -115,7 +116,7 @@ fun TreatmentEditorScreen(
     var trackStock by remember { mutableStateOf(existing?.stock != null) }
     var stockText by remember { mutableStateOf(existing?.stock?.let { if (it % 1.0 == 0.0) it.toInt().toString() else it.toString().replace('.', ',') }.orEmpty()) }
     var packText by remember { mutableStateOf(existing?.packSize?.toString().orEmpty()) }
-    var lowDays by remember { mutableStateOf(existing?.lowStockDays ?: 7) }
+    var lowDays by remember { mutableIntStateOf(existing?.lowStockDays ?: 7) }
     val stockValue = stockText.replace(',', '.').toDoubleOrNull()
 
     val allergyHits = remember(drug, allergies) { drug?.let { DrugGuide.allergyMatches(it, allergies) }.orEmpty() }

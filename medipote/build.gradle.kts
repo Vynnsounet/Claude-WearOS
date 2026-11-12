@@ -1,8 +1,24 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlin.serialization)
 }
+
+/**
+ * Release signing: put the keystore details in medipote/keystore.properties (never committed),
+ * or in environment variables for CI. Without them, the release build is produced unsigned.
+ */
+val signing = Properties().apply {
+    val file = project.file("keystore.properties")
+    if (file.exists()) file.inputStream().use { load(it) }
+    System.getenv("MEDIPOTE_STORE_FILE")?.let { setProperty("storeFile", it) }
+    System.getenv("MEDIPOTE_STORE_PASSWORD")?.let { setProperty("storePassword", it) }
+    System.getenv("MEDIPOTE_KEY_ALIAS")?.let { setProperty("keyAlias", it) }
+    System.getenv("MEDIPOTE_KEY_PASSWORD")?.let { setProperty("keyPassword", it) }
+}
+val hasSigning = listOf("storeFile", "storePassword", "keyAlias", "keyPassword").all { signing.getProperty(it) != null }
 
 android {
     namespace = "com.medipote.app"
@@ -13,14 +29,57 @@ android {
         minSdk = 26
         targetSdk = 36
         versionCode = 1
-        versionName = "1.0"
+        versionName = "1.0.0"
+        manifestPlaceholders["appLabel"] = "@string/app_name"
+    }
+
+    // The app is in French: drop the other languages bundled by libraries (smaller download).
+    androidResources {
+        localeFilters += listOf("fr")
+    }
+
+    signingConfigs {
+        if (hasSigning) {
+            create("release") {
+                storeFile = project.file(signing.getProperty("storeFile"))
+                storePassword = signing.getProperty("storePassword")
+                keyAlias = signing.getProperty("keyAlias")
+                keyPassword = signing.getProperty("keyPassword")
+            }
+        }
     }
 
     buildTypes {
+        debug {
+            // Installs next to the release version, with its own name.
+            applicationIdSuffix = ".debug"
+            versionNameSuffix = "-debug"
+            manifestPlaceholders["appLabel"] = "MédiPote (debug)"
+        }
         release {
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            if (hasSigning) signingConfig = signingConfigs.getByName("release")
+        }
+    }
+
+    // The dependency report is only useful to the Play Store, which reads it from the bundle.
+    dependenciesInfo {
+        includeInApk = false
+        includeInBundle = true
+    }
+
+    packaging {
+        resources {
+            excludes += setOf(
+                "META-INF/*.version",
+                "META-INF/{AL2.0,LGPL2.1}",
+                "META-INF/LICENSE*",
+                "META-INF/NOTICE*",
+                "DebugProbesKt.bin",
+                "kotlin-tooling-metadata.json",
+            )
         }
     }
 
@@ -48,6 +107,8 @@ dependencies {
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.glance.appwidget)
     implementation(libs.glance.material3)
+    implementation(libs.androidx.exifinterface)
+    implementation(libs.androidx.profileinstaller)
 
     implementation(platform(libs.compose.bom))
     implementation(libs.compose.ui)

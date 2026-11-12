@@ -21,7 +21,6 @@ class AppRepository(private val file: File, clock: Clock = Clock.systemDefaultZo
     @androidx.annotation.VisibleForTesting
     var clock: Clock = clock
 
-
     private val json = Json {
         ignoreUnknownKeys = true
         encodeDefaults = true
@@ -60,7 +59,11 @@ class AppRepository(private val file: File, clock: Clock = Clock.systemDefaultZo
         return try {
             json.decodeFromString(AppState.serializer(), AtomicFile(file).readFully().decodeToString())
         } catch (e: Exception) {
-            Log.e("MediPote", "Could not read saved data, starting fresh", e)
+            // Never lose data silently: keep the unreadable file aside before starting fresh,
+            // since the next save would overwrite it.
+            val aside = File(file.parentFile, "${file.name}.unreadable-${System.currentTimeMillis()}")
+            runCatching { file.copyTo(aside, overwrite = true) }
+            Log.e("MediPote", "Could not read saved data, kept a copy in ${aside.name}", e)
             AppState()
         }
     }

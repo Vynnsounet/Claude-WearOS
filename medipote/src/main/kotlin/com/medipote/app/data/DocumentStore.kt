@@ -7,11 +7,12 @@ import android.graphics.BitmapFactory
 import android.graphics.Color
 import android.graphics.Matrix
 import android.graphics.pdf.PdfRenderer
-import android.media.ExifInterface
+import androidx.exifinterface.media.ExifInterface
 import android.net.Uri
 import android.os.ParcelFileDescriptor
 import android.webkit.MimeTypeMap
 import androidx.core.content.FileProvider
+import androidx.core.graphics.createBitmap
 import java.io.File
 import java.util.UUID
 
@@ -85,7 +86,7 @@ object DocumentStore {
                 (0 until minOf(renderer.pageCount, maxPages)).map { i ->
                     renderer.openPage(i).use { page ->
                         val h = (widthPx.toFloat() * page.height / page.width).toInt().coerceAtLeast(1)
-                        Bitmap.createBitmap(widthPx, h, Bitmap.Config.ARGB_8888).also {
+                        createBitmap(widthPx, h).also {
                             it.eraseColor(Color.WHITE)
                             page.render(it, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
                         }

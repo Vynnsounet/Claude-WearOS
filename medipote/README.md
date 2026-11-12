@@ -152,11 +152,16 @@ JDK 17+ et le SDK Android (plateforme 37).
 
 ```bash
 ./gradlew :medipote:assembleDebug       # medipote/build/outputs/apk/debug/medipote-debug.apk
-./gradlew :medipote:testDebugUnitTest   # 72 tests : règles métier, alarmes et notifications, widgets, écrans (captures dans medipote/build/screenshots) et parcours complet
+./gradlew :medipote:testDebugUnitTest   # 75 tests : règles métier, alarmes et notifications, widgets, écrans (captures dans medipote/build/screenshots) et parcours complet
 adb install -r medipote/build/outputs/apk/debug/medipote-debug.apk
+./gradlew :medipote:assembleRelease     # APK release signé (voir RELEASE.md)
 ```
 
-Minimum : Android 8.0 (API 26).
+Minimum : Android 8.0 (API 26). La version debug s'installe à côté de la release,
+sous le nom « MédiPote (debug) ».
+
+Release signée, AAB pour le Play Store, optimisations et checklist de publication :
+voir [RELEASE.md](RELEASE.md). Politique de confidentialité : [PRIVACY.md](PRIVACY.md).
 
 ## Avertissement
 

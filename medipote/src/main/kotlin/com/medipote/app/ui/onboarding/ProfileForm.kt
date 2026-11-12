@@ -29,6 +29,7 @@ import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -66,8 +67,8 @@ class ProfileDraft(profile: Profile?, private val today: LocalDate) {
     var menstruating by mutableStateOf(profile?.menstruating ?: false)
     var menstruatingTouched by mutableStateOf(profile != null)
     var lastPeriod by mutableStateOf(profile?.cycle?.periodStarts?.maxOrNull())
-    var cycleLength by mutableStateOf(profile?.cycle?.cycleLength ?: 28)
-    var periodLength by mutableStateOf(profile?.cycle?.periodLength ?: 5)
+    var cycleLength by mutableIntStateOf(profile?.cycle?.cycleLength ?: 28)
+    var periodLength by mutableIntStateOf(profile?.cycle?.periodLength ?: 5)
     private val previousCycle = profile?.cycle
 
     val ageValue get() = age.toIntOrNull()?.takeIf { it in 0..125 }

@@ -52,6 +52,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -416,9 +417,9 @@ fun PillSetupScreen(existing: Treatment?, today: LocalDate, onSave: (Treatment) 
     var name by remember { mutableStateOf(existing?.name.orEmpty()) }
     var regimen by remember { mutableStateOf(existing?.pill?.let(PillRegimen::of) ?: PillRegimen.R21_7) }
     var packStart by remember { mutableStateOf(existing?.pill?.currentPackStart(today) ?: today) }
-    var minute by remember { mutableStateOf(existing?.doses?.firstOrNull()?.minuteOfDay ?: (21 * 60)) }
+    var minute by remember { mutableIntStateOf(existing?.doses?.firstOrNull()?.minuteOfDay ?: (21 * 60)) }
     var packs by remember {
-        mutableStateOf(existing?.stock?.let { s -> existing.packSize?.let { p -> kotlin.math.ceil(s / p).toInt() } } ?: 0)
+        mutableIntStateOf(existing?.stock?.let { s -> existing.packSize?.let { p -> kotlin.math.ceil(s / p).toInt() } } ?: 0)
     }
     var pickTime by remember { mutableStateOf(false) }
     var confirmDelete by remember { mutableStateOf(false) }

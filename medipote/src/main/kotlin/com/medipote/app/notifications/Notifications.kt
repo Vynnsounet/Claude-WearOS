@@ -14,6 +14,8 @@ import android.os.Build
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
+import androidx.core.content.edit
+import androidx.core.net.toUri
 import com.medipote.app.MainActivity
 import com.medipote.app.R
 import com.medipote.app.data.AppState
@@ -220,7 +222,7 @@ object ReminderScheduler {
         }
         val plan = ReminderPlanner.plan(state, now)
         for (spec in plan) set(alarms, spec.time, pendingIntent(context, spec.key, create = true)!!)
-        prefs.edit().putStringSet(KEY_SET, plan.mapTo(HashSet()) { it.key }).apply()
+        prefs.edit { putStringSet(KEY_SET, plan.mapTo(HashSet()) { it.key }) }
     }
 
     /** Fires a test notification in one minute, through the same alarm path as real reminders. */
@@ -247,7 +249,7 @@ object ReminderScheduler {
     private fun pendingIntent(context: Context, key: String, create: Boolean): PendingIntent? {
         val intent = Intent(context, ReminderReceiver::class.java)
             .setAction("com.medipote.app.REMINDER")
-            .setData(Uri.parse("medipote://alarm/" + Uri.encode(key)))
+            .setData(("medipote://alarm/" + Uri.encode(key)).toUri())
             .putExtra(EXTRA_KEY, key)
         val flags = PendingIntent.FLAG_IMMUTABLE or
             if (create) PendingIntent.FLAG_UPDATE_CURRENT else PendingIntent.FLAG_NO_CREATE
@@ -281,7 +283,17 @@ class ReminderReceiver : BroadcastReceiver() {
 }
 
 class BootReceiver : BroadcastReceiver() {
+    private val expected = setOf(
+        Intent.ACTION_BOOT_COMPLETED,
+        Intent.ACTION_MY_PACKAGE_REPLACED,
+        Intent.ACTION_TIME_CHANGED,
+        Intent.ACTION_TIMEZONE_CHANGED,
+        "android.app.action.SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED", // API 31+
+    )
+
     override fun onReceive(context: Context, intent: Intent) {
+        // Exported for system broadcasts only: ignore anything else.
+        if (intent.action !in expected) return
         val repo = context.repository
         ReminderScheduler.reschedule(context, repo.state.value, repo.now())
     }

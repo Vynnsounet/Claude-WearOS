@@ -1,0 +1,5 @@
+# Baseline profile: code compiled ahead of time at install, for a faster first launch and
+# smoother scrolling. Compose and the other AndroidX libraries ship their own profiles;
+# this covers the app's code (small enough to include whole).
+HSPLcom/medipote/app/**->**(**)**
+Lcom/medipote/app/**;

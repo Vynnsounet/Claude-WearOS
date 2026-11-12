@@ -53,6 +53,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -255,7 +256,7 @@ fun AppointmentEditorScreen(
     var doctor by remember { mutableStateOf(existing?.doctor.orEmpty()) }
     var location by remember { mutableStateOf(existing?.location.orEmpty()) }
     var date by remember { mutableStateOf(existing?.dateTime?.toLocalDate() ?: initialDate) }
-    var minute by remember { mutableStateOf(existing?.dateTime?.let { it.hour * 60 + it.minute } ?: (9 * 60)) }
+    var minute by remember { mutableIntStateOf(existing?.dateTime?.let { it.hour * 60 + it.minute } ?: (9 * 60)) }
     var reminders by remember { mutableStateOf(existing?.reminderMinutes?.toSet() ?: setOf(24 * 60, 60)) }
     var notes by remember { mutableStateOf(existing?.notes.orEmpty()) }
     var pickTime by remember { mutableStateOf(false) }
