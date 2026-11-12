@@ -39,6 +39,9 @@ sealed interface UiEvent {
     data class CheckedIn(val reward: CheckInReward) : UiEvent
     data class Bought(val item: ShopItem) : UiEvent
     data class Message(val text: String) : UiEvent
+
+    /** Points won outside a dose (water…), shown floating above the pet. */
+    data class Points(val amount: Int) : UiEvent
 }
 
 class AppViewModel(app: Application) : AndroidViewModel(app) {
@@ -189,15 +192,17 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun addWater(delta: Int) {
-        var bonus = 0
+        var reward: com.medipote.app.domain.WaterReward? = null
         repo.update { s ->
-            val (updated, b) = Game.addWater(s, delta, repo.now())
-            bonus = b
+            val (updated, r) = Game.addWater(s, delta, repo.now())
+            reward = r
             updated
         }
-        if (bonus > 0) {
+        val r = reward ?: return
+        if (r.total > 0) _events.tryEmit(UiEvent.Points(r.total))
+        if (r.goalBonus > 0) {
             Notifications.cancelWater(getApplication())
-            _events.tryEmit(UiEvent.Message("Objectif d'hydratation atteint : +$bonus pts 💧"))
+            _events.tryEmit(UiEvent.Message("Objectif d'hydratation atteint : +${r.goalBonus} pts bonus 💧"))
         }
     }
 

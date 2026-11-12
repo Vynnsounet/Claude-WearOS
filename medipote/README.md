@@ -47,8 +47,9 @@ Profil médical et paramètres sont accessibles en haut à droite.
 - **Compagnon** : il réclame son médicament, s'affaiblit en cas de retard,
   tombe malade au-delà de 2 h et dort la nuit. On le soigne en faisant glisser
   la pilule sur lui, ou avec « Donner ».
-- **Hydratation** : compteur de verres sur l'accueil, objectif réglable, rappels
-  toutes les 1 à 3 h dans une plage horaire, tant que l'objectif n'est pas atteint.
+- **Hydratation** : compteur de verres sur l'accueil (et en widget), objectif
+  réglable, +2 points par verre et +10 à l'objectif, rappels toutes les 1 à 3 h
+  dans une plage horaire tant que l'objectif n'est pas atteint.
 - **Journal** : chaque jour, état physique et psychologique (5 niveaux),
   symptômes, maladie du jour, notes ; carte des 14 derniers jours.
 - **Cycle** : les 4 phases (menstruation, folliculaire, ovulation, lutéale) sur
@@ -72,7 +73,8 @@ Profil médical et paramètres sont accessibles en haut à droite.
   | Très en retard (au-delà de 2 h) | +3 (malus −7) |
   | Journée parfaite (toutes les prises à l'heure) | +20 |
   | Journal du jour rempli | +5 |
-  | Objectif d'hydratation atteint | +5 |
+  | Verre d'eau (jusqu'à l'objectif du jour) | +2 par verre |
+  | Objectif d'hydratation atteint | +10 |
   | Connexion quotidienne | +5 × jours de série, plafonné à +50 (dès le 10e jour) |
   | Paliers de série | 7 j : +30 · 30 j : +100 · 100 j : +300 · 365 j : +1000 |
 
@@ -85,6 +87,16 @@ Profil médical et paramètres sont accessibles en haut à droite.
   (Menthe, Océan, Lavande, Corail, Ambre, Rose) ou couleurs du fond d'écran
   (Android 12+).
 
+- **Widgets d'écran d'accueil** (appui long sur l'écran d'accueil → Widgets → MédiPote) :
+
+  | Widget | Contenu | Tailles |
+  |---|---|---|
+  | Mon compagnon | Le compagnon avec son humeur, sa santé, la prochaine prise et un bouton « Donner » | 2×2 à 4×3 |
+  | Prises du jour | Les prises du jour avec leur état, et « Donner » pour celles à prendre | 3×2 et plus |
+  | Hydratation | Verres du jour, progression, boutons « +1 verre » et « − » | 2×2 et plus |
+
+  ![Widgets](docs/widgets.png)
+
 Les données (y compris de santé et les documents) restent sur le téléphone, dans
 le stockage privé de l'app, exclu de la sauvegarde cloud.
 
@@ -95,10 +107,29 @@ le stockage privé de l'app, exclu de la sauvegarde cloud.
 | `data/` | Modèles sérialisables (`Models.kt`, `Health.kt`), stockage JSON atomique (`AppRepository`), fichiers du carnet de santé (`DocumentStore`), guide des médicaments (`DrugGuide`) |
 | `domain/` | Règles pures et testées : planning des prises (`Schedule`), points, série et santé du compagnon (`Game`), boutique, statistiques, cycle |
 | `notifications/` | `ReminderPlanner` (calcul pur et testé des alarmes : prises, relances, rendez-vous, eau, stock), `ReminderScheduler` (AlarmManager) et récepteurs |
+| `widget/` | Widgets Jetpack Glance (compagnon, prises du jour, hydratation) et leurs actions |
 | `ui/` | Jetpack Compose + Material 3 : un écran par dossier, `PetView` (compagnon dessiné en Canvas), navigation dans `MediPoteApp` |
 
 Une prise prévue avant l'ajout du traitement n'est pas due : ajouter à 15 h un
 médicament prévu à 8 h ne rend pas le compagnon malade.
+
+## Notifications
+
+Les rappels utilisent des alarmes exactes (`USE_EXACT_ALARM` sur Android 13+,
+accordée automatiquement). Si un téléphone les refuse quand même, l'app se
+replie sur une fenêtre de 10 minutes au plus. Dans **Paramètres → Rappels** :
+
+- **Tester les notifications** envoie une notification tout de suite, puis une
+  autre une minute plus tard par le même chemin que les vrais rappels ;
+- un avertissement apparaît (ici et sur l'accueil) si les notifications sont
+  bloquées, avec un raccourci vers les réglages du téléphone ;
+- un raccourci vers l'**optimisation de la batterie** est proposé : sur
+  certains téléphones (Xiaomi, Huawei, Samsung…), choisir « Non restreinte »
+  pour MédiPote évite que les rappels soient retardés ou supprimés.
+
+> `USE_EXACT_ALARM` est réservée sur le Play Store aux applications de type
+> réveil ou calendrier. Pour une publication, il faudra peut-être la remplacer
+> par `SCHEDULE_EXACT_ALARM` (que l'utilisateur accorde lui-même).
 
 ## Compiler et tester
 
@@ -106,7 +137,7 @@ JDK 17+ et le SDK Android (plateforme 37).
 
 ```bash
 ./gradlew :medipote:assembleDebug       # medipote/build/outputs/apk/debug/medipote-debug.apk
-./gradlew :medipote:testDebugUnitTest   # 60 tests : règles métier, écrans (captures dans medipote/build/screenshots) et parcours complet
+./gradlew :medipote:testDebugUnitTest   # 68 tests : règles métier, alarmes et notifications, widgets, écrans (captures dans medipote/build/screenshots) et parcours complet
 adb install -r medipote/build/outputs/apk/debug/medipote-debug.apk
 ```
 

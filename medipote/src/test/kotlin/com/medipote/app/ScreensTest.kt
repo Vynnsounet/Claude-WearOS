@@ -252,7 +252,7 @@ class ScreensTest {
             )
         }
         compose.onNodeWithText("Sombre").assertExists()
-        compose.onNodeWithText("+${Rules.POINTS_ON_TIME} pts").assertExists()
+        compose.onNodeWithText("Verre d'eau (jusqu'à l'objectif du jour)").assertExists()
     }
 
 

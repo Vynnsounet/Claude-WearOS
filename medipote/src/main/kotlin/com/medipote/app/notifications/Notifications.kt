@@ -26,7 +26,7 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
-enum class AlarmKind { DOSE, FOLLOW_UP, APPOINTMENT, WATER, STOCK }
+enum class AlarmKind { DOSE, FOLLOW_UP, APPOINTMENT, WATER, STOCK, TEST }
 
 /** One planned alarm. [ref] identifies what it is about (an appointment id, for instance). */
 data class AlarmSpec(val kind: AlarmKind, val time: LocalDateTime, val ref: String = "") {
@@ -106,10 +106,20 @@ object Notifications {
         ).forEach(manager::createNotificationChannel)
     }
 
-    fun canPost(context: Context): Boolean =
-        Build.VERSION.SDK_INT < 33 ||
-            ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) ==
-            PackageManager.PERMISSION_GRANTED
+    /** Permission granted (Android 13+) and notifications not turned off for the app or its reminder channel. */
+    fun canPost(context: Context): Boolean {
+        val permission = Build.VERSION.SDK_INT < 33 ||
+            ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
+        val manager = NotificationManagerCompat.from(context)
+        val channelOn = manager.getNotificationChannel(CHANNEL_DOSES)?.importance != NotificationManager.IMPORTANCE_NONE
+        return permission && manager.areNotificationsEnabled() && channelOn
+    }
+
+    /** Opens the system screen where the user can turn the app's notifications back on. */
+    fun settingsIntent(context: Context): Intent =
+        Intent(android.provider.Settings.ACTION_APP_NOTIFICATION_SETTINGS)
+            .putExtra(android.provider.Settings.EXTRA_APP_PACKAGE, context.packageName)
+            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
 
     fun notificationId(time: LocalDateTime): Int = (time.atZone(ZoneId.systemDefault()).toEpochSecond() / 60).toInt()
 
@@ -180,6 +190,11 @@ object Notifications {
         post(context, CHANNEL_STOCK, STOCK_ID, "Pense à racheter tes médicaments", "Stock bas : $list.")
     }
 
+    /** Posted from the settings so the user can check notifications reach them. */
+    fun showTest(context: Context, state: AppState) {
+        post(context, CHANNEL_DOSES, 2003, "Test de notification ✅", "${state.game.petName} te dit coucou ! Les rappels de MédiPote arrivent bien.")
+    }
+
     fun cancel(context: Context, time: LocalDateTime) {
         NotificationManagerCompat.from(context).cancel(notificationId(time))
     }
@@ -192,6 +207,7 @@ object ReminderScheduler {
     private const val PREFS = "alarms"
     private const val KEY_SET = "keys"
     const val EXTRA_KEY = "key"
+    private const val FALLBACK_WINDOW_MS = 10 * 60_000L
 
     fun reschedule(context: Context, state: AppState, now: LocalDateTime = LocalDateTime.now()) {
         val alarms = context.getSystemService(AlarmManager::class.java)
@@ -207,6 +223,12 @@ object ReminderScheduler {
         prefs.edit().putStringSet(KEY_SET, plan.mapTo(HashSet()) { it.key }).apply()
     }
 
+    /** Fires a test notification in one minute, through the same alarm path as real reminders. */
+    fun scheduleTest(context: Context, now: LocalDateTime = LocalDateTime.now()) {
+        val spec = AlarmSpec(AlarmKind.TEST, now.plusMinutes(1).withSecond(0).withNano(0))
+        set(context.getSystemService(AlarmManager::class.java), spec.time, pendingIntent(context, spec.key, create = true)!!)
+    }
+
     fun canScheduleExact(context: Context): Boolean =
         Build.VERSION.SDK_INT < 31 || context.getSystemService(AlarmManager::class.java).canScheduleExactAlarms()
 
@@ -215,7 +237,9 @@ object ReminderScheduler {
         if (Build.VERSION.SDK_INT < 31 || alarms.canScheduleExactAlarms()) {
             alarms.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, millis, intent)
         } else {
-            alarms.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, millis, intent)
+            // Never use set()/setAndAllowWhileIdle() here: their default window is 75 % of the
+            // time left, so a reminder planned 10 h ahead could arrive 7 h late.
+            alarms.setWindow(AlarmManager.RTC_WAKEUP, millis, FALLBACK_WINDOW_MS, intent)
         }
     }
 
@@ -234,6 +258,10 @@ object ReminderScheduler {
 class ReminderReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         val spec = intent.getStringExtra(ReminderScheduler.EXTRA_KEY)?.let(AlarmSpec::parse) ?: return
+        if (spec.kind == AlarmKind.TEST) {
+            Notifications.showTest(context, context.repository.state.value)
+            return
+        }
         val repo = context.repository
         val state = repo.state.value
         if (state.settings.notificationsEnabled) {
@@ -243,9 +271,12 @@ class ReminderReceiver : BroadcastReceiver() {
                 AlarmKind.APPOINTMENT -> Notifications.showAppointment(context, state, spec.ref)
                 AlarmKind.WATER -> Notifications.showWater(context, state, repo.now())
                 AlarmKind.STOCK -> Notifications.showStock(context, state)
+                AlarmKind.TEST -> Unit
             }
         }
         ReminderScheduler.reschedule(context, state, repo.now())
+        // Dose states changed with the time: refresh the home-screen widgets.
+        com.medipote.app.widget.Widgets.requestUpdate(context)
     }
 }
 

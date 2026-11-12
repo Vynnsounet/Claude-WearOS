@@ -110,7 +110,7 @@ private fun mutableFloat(v: Float) = androidx.compose.runtime.mutableFloatStateO
 
 // ─────────────────────────────── Backgrounds ───────────────────────────────
 
-private fun DrawScope.drawBackground(id: String?) {
+internal fun DrawScope.drawBackground(id: String?) {
     val w = size.width
     val h = size.height
     when (id) {
@@ -312,7 +312,7 @@ private fun DrawScope.drawHeart(c: Offset, r: Float, color: Color) {
 
 // ─────────────────────────────── The pet ───────────────────────────────
 
-private fun DrawScope.drawPet(
+internal fun DrawScope.drawPet(
     mood: PetMood,
     equipped: Map<String, String>,
     breathe: Float,

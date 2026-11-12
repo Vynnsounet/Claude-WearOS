@@ -154,6 +154,9 @@ fun MediPoteApp(vm: AppViewModel) {
         val snackbar = remember { SnackbarHostState() }
         var feedSignal by remember { mutableIntStateOf(0) }
         var lastPoints by remember { mutableIntStateOf(0) }
+        var pointsSignal by remember { mutableIntStateOf(0) }
+        var askedThisSession by rememberSaveable { mutableStateOf(false) }
+        var batteryRestricted by remember { mutableStateOf(isBatteryRestricted(context)) }
         var checkIn by remember { mutableStateOf<UiEvent.CheckedIn?>(null) }
         var notificationsAllowed by remember { mutableStateOf(Notifications.canPost(context)) }
         var exactAllowed by remember { mutableStateOf(ReminderScheduler.canScheduleExact(context)) }
@@ -188,14 +191,36 @@ fun MediPoteApp(vm: AppViewModel) {
         LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
             notificationsAllowed = Notifications.canPost(context)
             exactAllowed = ReminderScheduler.canScheduleExact(context)
+            batteryRestricted = isBatteryRestricted(context)
             vm.onResume()
+            // Ask again once per session if reminders are on but the permission is missing.
+            if (state.onboarded && state.settings.notificationsEnabled && !notificationsAllowed && !askedThisSession) {
+                askedThisSession = true
+                askNotifications()
+            }
+        }
+        fun fixNotifications() {
+            if (Build.VERSION.SDK_INT >= 33 &&
+                androidx.core.content.ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) !=
+                android.content.pm.PackageManager.PERMISSION_GRANTED && !askedThisSession
+            ) {
+                askedThisSession = true
+                askNotifications()
+            } else {
+                context.startActivity(Notifications.settingsIntent(context))
+            }
         }
 
         LaunchedEffect(Unit) {
             vm.events.collect { e ->
                 when (e) {
+                    is UiEvent.Points -> {
+                        lastPoints = e.amount
+                        pointsSignal++
+                    }
                     is UiEvent.Fed -> {
                         feedSignal++
+                        pointsSignal++
                         lastPoints = e.points + e.perfectDayBonus
                         val base = when (e.status) {
                             TakeStatus.ON_TIME -> "Bravo ! $pet a pris ${e.treatmentName} à l'heure : +${e.points} pts"
@@ -295,6 +320,9 @@ fun MediPoteApp(vm: AppViewModel) {
                         onOpenJournal = { nav.navigate("day/$today") },
                         onOpenAppointment = { nav.navigate("appointment?id=${it.id}") },
                         onOpenTreatments = { nav.navigate("treatments") { launchSingleTop = true } },
+                        pointsSignal = pointsSignal,
+                        notificationsBlocked = !notificationsAllowed,
+                        onFixNotifications = ::fixNotifications,
                     )
                 }
                 composable("treatments") {
@@ -495,6 +523,20 @@ fun MediPoteApp(vm: AppViewModel) {
                             vm.resetAll()
                             nav.navigate("welcome") { popUpTo(0) { inclusive = true } }
                         },
+                        onTestNotifications = {
+                            if (!Notifications.canPost(context)) {
+                                fixNotifications()
+                            } else {
+                                Notifications.showTest(context, state)
+                                ReminderScheduler.scheduleTest(context)
+                                vm.message("Notification envoyée. Une autre arrivera dans 1 minute.")
+                            }
+                        },
+                        onOpenNotificationSettings = ::fixNotifications,
+                        batteryRestricted = batteryRestricted,
+                        onOpenBatterySettings = {
+                            context.startActivity(Intent(android.provider.Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS))
+                        },
                     )
                 }
                 composable("profile") {
@@ -506,6 +548,9 @@ fun MediPoteApp(vm: AppViewModel) {
         checkIn?.let { event -> CheckInDialog(event, pet) { checkIn = null } }
     }
 }
+
+private fun isBatteryRestricted(context: android.content.Context): Boolean =
+    !context.getSystemService(android.os.PowerManager::class.java).isIgnoringBatteryOptimizations(context.packageName)
 
 @Composable
 private fun CheckInDialog(event: UiEvent.CheckedIn, pet: String, onDismiss: () -> Unit) {

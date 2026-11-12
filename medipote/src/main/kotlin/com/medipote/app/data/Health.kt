@@ -90,6 +90,8 @@ data class DayEntry(
     val cycleSymptoms: List<String> = emptyList(),
     val intercourse: Intercourse? = null,
     val waterGlasses: Int = 0,
+    /** Glasses already rewarded today, so removing and re-adding a glass doesn't pay twice. */
+    val waterRewarded: Int = 0,
 ) {
     val hasJournal: Boolean
         get() = physical != null || mental != null || physicalSymptoms.isNotEmpty() || mentalSymptoms.isNotEmpty() ||
@@ -97,7 +99,7 @@ data class DayEntry(
 
     val hasCycleData: Boolean get() = flow != null || cycleSymptoms.isNotEmpty() || intercourse != null
 
-    val isEmpty: Boolean get() = !hasJournal && !hasCycleData && waterGlasses == 0
+    val isEmpty: Boolean get() = !hasJournal && !hasCycleData && waterGlasses == 0 && waterRewarded == 0
 }
 
 // ─────────────────────────── Appointments ───────────────────────────

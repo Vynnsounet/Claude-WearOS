@@ -172,6 +172,10 @@ private fun tones(accent: Accent, dark: Boolean): AccentTones = when (accent) {
     else AccentTones(0xFF984061, 0xFFFFFFFF, 0xFFFFD9E2, 0xFF3E001D, 0xFF74565F, 0xFFFFD9E2, 0xFF2B151C)
 }
 
+/** The app's colour scheme for an accent, also used by the home-screen widgets. */
+fun appColorScheme(accent: Accent, dark: Boolean): ColorScheme =
+    (if (dark) DarkColors else LightColors).withAccent(accent, dark)
+
 /** Swatch shown in the settings for an accent (its light primary). */
 fun accentSwatch(accent: Accent): Color = Color(tones(accent, false).primary)
 

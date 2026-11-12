@@ -15,7 +15,12 @@ import kotlinx.serialization.json.Json
  * Single source of truth. The whole state lives in memory and is written to one
  * JSON file in the app's private storage after every change (off the main thread).
  */
-class AppRepository(private val file: File, private val clock: Clock = Clock.systemDefaultZone()) {
+class AppRepository(private val file: File, clock: Clock = Clock.systemDefaultZone()) {
+
+    /** Replaceable in tests to freeze time. */
+    @androidx.annotation.VisibleForTesting
+    var clock: Clock = clock
+
 
     private val json = Json {
         ignoreUnknownKeys = true

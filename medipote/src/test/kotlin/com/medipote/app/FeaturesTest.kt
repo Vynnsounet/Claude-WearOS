@@ -108,19 +108,26 @@ class FeaturesTest {
     }
 
     @Test
-    fun waterGoalBonus() {
+    fun waterEarnsPointsPerGlassAndAGoalBonus() {
         var state = AppState(onboarded = true, settings = Settings(water = WaterSettings(goalGlasses = 3)))
-        var bonuses = 0
-        repeat(4) {
-            val (s, b) = Game.addWater(state, 1, at(10 + it))
+        val rewards = (0 until 4).map {
+            val (s, r) = Game.addWater(state, 1, at(10 + it))
             state = s
-            bonuses += b
+            r
         }
+        assertEquals(listOf(2, 2, 2, 0), rewards.map { it.glassPoints })
+        assertEquals(listOf(0, 0, Rules.WATER_BONUS, 0), rewards.map { it.goalBonus })
         assertEquals(4, state.entryFor(day).waterGlasses)
-        assertEquals(Rules.WATER_BONUS, bonuses)
+        assertEquals(3 * Rules.WATER_GLASS_POINTS + Rules.WATER_BONUS, state.game.points)
         assertEquals(0, state.game.journalRewardDays.size)
+        // Removing then re-adding glasses doesn't pay twice
         state = Game.addWater(state, -10, at(16)).first
         assertEquals(0, state.entryFor(day).waterGlasses)
+        val (again, r) = Game.addWater(state, 1, at(17))
+        assertEquals(0, r.total)
+        assertEquals(3 * Rules.WATER_GLASS_POINTS + Rules.WATER_BONUS, again.game.points)
+        // A new day starts over
+        assertEquals(Rules.WATER_GLASS_POINTS, Game.addWater(again, 1, at(9, 0, day.plusDays(1))).second.glassPoints)
     }
 
     @Test

@@ -54,7 +54,8 @@ object Rules {
     const val POINTS_VERY_LATE = 3
     const val PERFECT_DAY_BONUS = 20
     const val JOURNAL_BONUS = 5
-    const val WATER_BONUS = 5
+    const val WATER_GLASS_POINTS = 2
+    const val WATER_BONUS = 10
 
     const val STREAK_POINTS_PER_DAY = 5
     const val STREAK_POINTS_CAP = 50

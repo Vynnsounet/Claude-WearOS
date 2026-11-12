@@ -22,6 +22,9 @@ import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material.icons.outlined.AccountCircle
 import androidx.compose.material.icons.outlined.Alarm
+import androidx.compose.material.icons.outlined.BatteryAlert
+import androidx.compose.material.icons.outlined.NotificationsActive
+import androidx.compose.material.icons.outlined.NotificationsOff
 import androidx.compose.material.icons.outlined.DeleteForever
 import androidx.compose.material.icons.outlined.Pets
 import androidx.compose.material3.AlertDialog
@@ -73,6 +76,10 @@ fun SettingsScreen(
     onRenamePet: (String) -> Unit,
     onOpenProfile: () -> Unit,
     onReset: () -> Unit,
+    onTestNotifications: () -> Unit = {},
+    onOpenNotificationSettings: () -> Unit = {},
+    batteryRestricted: Boolean = false,
+    onOpenBatterySettings: () -> Unit = {},
 ) {
     var renaming by remember { mutableStateOf(false) }
     var confirmReset by remember { mutableStateOf(false) }
@@ -123,6 +130,38 @@ fun SettingsScreen(
                     settings.followUpReminder,
                     supporting = "Nouveau rappel 30 minutes après si la prise n'est pas validée",
                 ) { v -> onChange { it.copy(followUpReminder = v) } }
+                if (!notificationsAllowed) {
+                    HorizontalDivider()
+                    ListItem(
+                        headlineContent = { Text("Notifications bloquées") },
+                        supportingContent = { Text("Autorise les notifications de MédiPote dans les réglages du téléphone.") },
+                        leadingContent = { Icon(Icons.Outlined.NotificationsOff, null, tint = AppTheme.status.critical) },
+                        trailingContent = { Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, null) },
+                        colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+                        modifier = Modifier.clickable(onClick = onOpenNotificationSettings),
+                    )
+                }
+                if (batteryRestricted) {
+                    HorizontalDivider()
+                    ListItem(
+                        headlineContent = { Text("Optimisation de la batterie") },
+                        supportingContent = { Text("Sur certains téléphones, elle retarde ou bloque les rappels. Choisis « Non restreinte » pour MédiPote.") },
+                        leadingContent = { Icon(Icons.Outlined.BatteryAlert, null, tint = AppTheme.status.warning) },
+                        trailingContent = { Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, null) },
+                        colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+                        modifier = Modifier.clickable(onClick = onOpenBatterySettings),
+                    )
+                }
+                HorizontalDivider()
+                androidx.compose.material3.OutlinedButton(onClick = onTestNotifications, modifier = Modifier.fillMaxWidth()) {
+                    Icon(Icons.Outlined.NotificationsActive, null)
+                    androidx.compose.foundation.layout.Spacer(Modifier.size(8.dp))
+                    Text("Tester les notifications")
+                }
+                Text(
+                    "Une notification tout de suite, puis une autre dans 1 minute pour vérifier les rappels programmés.",
+                    style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
                 if (!exactAlarmsAllowed) {
                     HorizontalDivider()
                     ListItem(
@@ -191,6 +230,9 @@ fun SettingsScreen(
                 Rule("En retard (jusqu'à ${Rules.LATE_MINUTES / 60} h)", "+${Rules.POINTS_LATE} pts (malus −${Rules.POINTS_ON_TIME - Rules.POINTS_LATE})")
                 Rule("Très en retard (plus de ${Rules.LATE_MINUTES / 60} h)", "+${Rules.POINTS_VERY_LATE} pts (malus −${Rules.POINTS_ON_TIME - Rules.POINTS_VERY_LATE})")
                 Rule("Journée parfaite (tout à l'heure)", "+${Rules.PERFECT_DAY_BONUS} pts")
+                Rule("Verre d'eau (jusqu'à l'objectif du jour)", "+${Rules.WATER_GLASS_POINTS} pts")
+                Rule("Objectif d'hydratation atteint", "+${Rules.WATER_BONUS} pts")
+                Rule("Journal du jour rempli", "+${Rules.JOURNAL_BONUS} pts")
                 Rule("Connexion quotidienne", "+${Rules.STREAK_POINTS_PER_DAY} pts × jours de série, jusqu'à +${Rules.STREAK_POINTS_CAP}")
                 Rule("Paliers de série", Rules.STREAK_MILESTONES.entries.joinToString(" · ") { "${it.key} j : +${it.value}" })
                 Text(

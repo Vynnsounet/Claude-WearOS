@@ -37,6 +37,7 @@ import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.Medication
+import androidx.compose.material.icons.rounded.NotificationsOff
 import androidx.compose.material.icons.rounded.Schedule
 import androidx.compose.material.icons.rounded.TouchApp
 import androidx.compose.material.icons.rounded.WarningAmber
@@ -114,6 +115,9 @@ fun HomeScreen(
     onOpenJournal: () -> Unit = {},
     onOpenAppointment: (com.medipote.app.data.Appointment) -> Unit = {},
     onOpenTreatments: () -> Unit = {},
+    pointsSignal: Int = feedSignal,
+    notificationsBlocked: Boolean = false,
+    onFixNotifications: () -> Unit = {},
 ) {
     val logs = remember(state.doseLogs) { state.doseLogs.associateBy { it.key } }
     val today = remember(state.treatments, logs, now) {
@@ -157,6 +161,7 @@ fun HomeScreen(
                 StreakBadge(state.game.streak)
                 PointsBadge(state.game.points)
             }
+            if (notificationsBlocked && state.settings.notificationsEnabled) NotificationsBanner(onFixNotifications)
 
             // ── The companion ──
             Card(
@@ -181,7 +186,7 @@ fun HomeScreen(
                         modifier = Modifier.fillMaxSize(),
                     )
                     HealthTag(state.game.petName, condition, Modifier.align(Alignment.TopStart).padding(12.dp))
-                    FloatingPoints(feedSignal, lastPoints, Modifier.align(Alignment.TopCenter).padding(top = 32.dp))
+                    FloatingPoints(pointsSignal, lastPoints, Modifier.align(Alignment.TopCenter).padding(top = 32.dp))
                 }
                 MoodMessage(condition)
             }
@@ -540,7 +545,7 @@ private fun WaterCard(glasses: Int, goal: Int, glassMl: Int, onAdd: (Int) -> Uni
                     Text("Hydratation", style = MaterialTheme.typography.titleMedium)
                     Text(
                         "$glasses / $goal verres · ${"%.2f".format(java.util.Locale.FRANCE, glasses * glassMl / 1000.0).trimEnd('0').trimEnd(',')} L" +
-                            if (glasses >= goal) " · objectif atteint 🎉" else "",
+                            if (glasses >= goal) " · objectif atteint 🎉" else " · +${com.medipote.app.domain.Rules.WATER_GLASS_POINTS} pts par verre",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -580,6 +585,24 @@ private fun JournalPrompt(pet: String, onOpen: () -> Unit) {
                     "$pet aimerait savoir ! Note ton état dans ton journal : +5 pts.",
                     style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onTertiaryContainer,
                 )
+            }
+        }
+    }
+}
+
+@Composable
+private fun NotificationsBanner(onFix: () -> Unit) {
+    Card(
+        onClick = onFix,
+        colors = CardDefaults.cardColors(containerColor = AppTheme.status.warningContainer),
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Row(Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
+            Icon(Icons.Rounded.NotificationsOff, null, tint = AppTheme.status.warning)
+            Spacer(Modifier.width(12.dp))
+            Column(Modifier.weight(1f)) {
+                Text("Les notifications sont bloquées", style = MaterialTheme.typography.titleSmall)
+                Text("Tu ne recevras pas les rappels. Touche ici pour les autoriser.", style = MaterialTheme.typography.bodyMedium)
             }
         }
     }

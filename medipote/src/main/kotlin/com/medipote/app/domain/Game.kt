@@ -25,6 +25,10 @@ data class CheckInReward(val streak: Int, val points: Int, val milestoneBonus: I
 }
 
 /** [lowStock] is set when this dose made the treatment's stock fall to its warning level. */
+data class WaterReward(val glassPoints: Int, val goalBonus: Int) {
+    val total: Int get() = glassPoints + goalBonus
+}
+
 data class GiveResult(val state: AppState, val log: DoseLog, val perfectDayBonus: Int, val lowStock: com.medipote.app.data.Treatment? = null)
 
 private const val HISTORY_LIMIT = 300
@@ -107,15 +111,22 @@ object Game {
         return state.copy(journal = journal, game = game) to bonus
     }
 
-    /** Adds (or removes, with a negative delta) a glass of water today; reaching the goal earns a bonus once. */
-    fun addWater(state: AppState, delta: Int, now: LocalDateTime): Pair<AppState, Int> {
+    /**
+     * Adds (or removes, with a negative delta) a glass of water today. Each new glass up to the
+     * goal earns points, and reaching the goal earns a bonus, each only once a day.
+     */
+    fun addWater(state: AppState, delta: Int, now: LocalDateTime): Pair<AppState, WaterReward> {
         val today = now.toLocalDate()
+        val goal = state.settings.water.goalGlasses
         val entry = state.entryFor(today)
         val glasses = (entry.waterGlasses + delta).coerceIn(0, 40)
+        val newlyRewarded = (minOf(glasses, goal) - entry.waterRewarded).coerceAtLeast(0)
+        val glassPoints = newlyRewarded * Rules.WATER_GLASS_POINTS
+        val updatedEntry = entry.copy(waterGlasses = glasses, waterRewarded = entry.waterRewarded + newlyRewarded)
         // Water alone doesn't count as a journal entry, so this never earns the journal bonus.
-        var updated = saveEntry(state, entry.copy(waterGlasses = glasses), now).first
+        var updated = saveEntry(state, updatedEntry, now).first
+        if (glassPoints > 0) updated = updated.copy(game = addPoints(updated.game, glassPoints, "Verre d'eau", now))
         var bonus = 0
-        val goal = state.settings.water.goalGlasses
         if (glasses >= goal && today !in updated.game.waterRewardDays) {
             bonus = Rules.WATER_BONUS
             updated = updated.copy(
@@ -123,7 +134,7 @@ object Game {
                     .copy(waterRewardDays = updated.game.waterRewardDays + today),
             )
         }
-        return updated to bonus
+        return updated to WaterReward(glassPoints, bonus)
     }
 
     /** The pet's health reflects the last two days of doses and anything overdue right now. */
