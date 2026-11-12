@@ -137,6 +137,15 @@ object Game {
         return updated to WaterReward(glassPoints, bonus)
     }
 
+    /** The first cuddle of the day earns a small bonus. Returns the points won (0 if already cuddled today). */
+    fun cuddle(state: AppState, now: LocalDateTime): Pair<AppState, Int> {
+        val today = now.toLocalDate()
+        if (today in state.game.cuddleDays) return state to 0
+        val days = (state.game.cuddleDays + today).sorted().takeLast(60).toSet()
+        val game = addPoints(state.game, Rules.CUDDLE_BONUS, "Câlin du jour", now).copy(cuddleDays = days)
+        return state.copy(game = game) to Rules.CUDDLE_BONUS
+    }
+
     /** The pet's health reflects the last two days of doses and anything overdue right now. */
     fun petCondition(state: AppState, now: LocalDateTime): PetCondition {
         val logs = state.doseLogs.associateBy { it.key }

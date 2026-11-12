@@ -233,6 +233,7 @@ fun SettingsScreen(
                 Rule("Verre d'eau (jusqu'à l'objectif du jour)", "+${Rules.WATER_GLASS_POINTS} pts")
                 Rule("Objectif d'hydratation atteint", "+${Rules.WATER_BONUS} pts")
                 Rule("Journal du jour rempli", "+${Rules.JOURNAL_BONUS} pts")
+                Rule("Premier câlin du jour (caresse ou appui long sur ton compagnon)", "+${Rules.CUDDLE_BONUS} pts")
                 Rule("Connexion quotidienne", "+${Rules.STREAK_POINTS_PER_DAY} pts × jours de série, jusqu'à +${Rules.STREAK_POINTS_CAP}")
                 Rule("Paliers de série", Rules.STREAK_MILESTONES.entries.joinToString(" · ") { "${it.key} j : +${it.value}" })
                 Text(

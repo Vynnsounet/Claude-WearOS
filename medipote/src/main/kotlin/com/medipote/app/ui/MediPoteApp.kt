@@ -323,6 +323,7 @@ fun MediPoteApp(vm: AppViewModel) {
                         pointsSignal = pointsSignal,
                         notificationsBlocked = !notificationsAllowed,
                         onFixNotifications = ::fixNotifications,
+                        onCuddle = vm::cuddle,
                     )
                 }
                 composable("treatments") {

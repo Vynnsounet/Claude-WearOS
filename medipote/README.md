@@ -47,6 +47,20 @@ Profil médical et paramètres sont accessibles en haut à droite.
 - **Compagnon** : il réclame son médicament, s'affaiblit en cas de retard,
   tombe malade au-delà de 2 h et dort la nuit. On le soigne en faisant glisser
   la pilule sur lui, ou avec « Donner ».
+- **Jouer avec le compagnon** (accueil et boutique) :
+  - le toucher : il saute et dit quelque chose d'utile (prise à donner, prochaine
+    prise, verre d'eau, rendez-vous proche, journal, objet à s'offrir…) ;
+  - plusieurs touches rapides : fou rire ; trop de touches : il a le tournis ;
+  - le caresser en glissant le doigt de côté : il ronronne, des cœurs apparaissent ;
+  - appui long : gros câlin ;
+  - malade, il éternue ; la nuit, on le réveille et il bâille ;
+  - ses yeux suivent le doigt, il dit bonjour à l'ouverture de l'app, et le
+    premier câlin du jour rapporte +3 points.
+
+  ![Réactions](docs/pet_reactions.png)
+
+  Retour haptique à chaque réaction ; avec TalkBack, « Caresser » et « Faire un
+  câlin » sont proposés comme actions.
 - **Hydratation** : compteur de verres sur l'accueil (et en widget), objectif
   réglable, +2 points par verre et +10 à l'objectif, rappels toutes les 1 à 3 h
   dans une plage horaire tant que l'objectif n'est pas atteint.
@@ -75,6 +89,7 @@ Profil médical et paramètres sont accessibles en haut à droite.
   | Journal du jour rempli | +5 |
   | Verre d'eau (jusqu'à l'objectif du jour) | +2 par verre |
   | Objectif d'hydratation atteint | +10 |
+  | Premier câlin du jour | +3 |
   | Connexion quotidienne | +5 × jours de série, plafonné à +50 (dès le 10e jour) |
   | Paliers de série | 7 j : +30 · 30 j : +100 · 100 j : +300 · 365 j : +1000 |
 
@@ -137,7 +152,7 @@ JDK 17+ et le SDK Android (plateforme 37).
 
 ```bash
 ./gradlew :medipote:assembleDebug       # medipote/build/outputs/apk/debug/medipote-debug.apk
-./gradlew :medipote:testDebugUnitTest   # 68 tests : règles métier, alarmes et notifications, widgets, écrans (captures dans medipote/build/screenshots) et parcours complet
+./gradlew :medipote:testDebugUnitTest   # 72 tests : règles métier, alarmes et notifications, widgets, écrans (captures dans medipote/build/screenshots) et parcours complet
 adb install -r medipote/build/outputs/apk/debug/medipote-debug.apk
 ```
 

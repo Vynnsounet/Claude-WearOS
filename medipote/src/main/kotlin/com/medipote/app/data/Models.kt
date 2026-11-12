@@ -184,6 +184,8 @@ data class GameState(
     /** Days already rewarded for filling the journal / reaching the water goal. */
     val journalRewardDays: Set<@Serializable(with = LocalDateSerializer::class) LocalDate> = emptySet(),
     val waterRewardDays: Set<@Serializable(with = LocalDateSerializer::class) LocalDate> = emptySet(),
+    /** Days the daily cuddle bonus was already given. */
+    val cuddleDays: Set<@Serializable(with = LocalDateSerializer::class) LocalDate> = emptySet(),
     val history: List<PointEvent> = emptyList(),
 ) {
     companion object {

@@ -7,6 +7,13 @@ import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
+import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.click
+import androidx.compose.ui.test.longClick
+import androidx.compose.ui.test.swipeRight
+import androidx.compose.ui.test.onNodeWithContentDescription
+import com.medipote.app.ui.pet.drawBackground
+import com.medipote.app.ui.pet.drawPet
 import com.medipote.app.data.AppState
 import com.medipote.app.data.Accent
 import com.medipote.app.data.Appointment
@@ -360,6 +367,72 @@ class ScreensTest {
         render("home_lavender", accent = Accent.LAVENDER) {
             HomeScreen(state, today.atTime(16, 0), 0, 0, {}, {}, {}, {}, animate = false)
         }
+    }
+
+
+    @Test
+    fun petReactions() {
+        // Each reaction frozen mid-animation, for review.
+        val reactions = com.medipote.app.domain.PetReaction.entries
+        render("pet_reactions") {
+            androidx.compose.foundation.layout.Column {
+                reactions.chunked(4).forEach { row ->
+                    androidx.compose.foundation.layout.Row {
+                        row.forEach { r ->
+                            androidx.compose.foundation.layout.Column(horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally) {
+                                androidx.compose.foundation.Canvas(androidx.compose.ui.Modifier.size(100.dp)) {
+                                    drawBackground("bg_meadow")
+                                    run {
+                                        drawPet(
+                                            if (r == com.medipote.app.domain.PetReaction.YAWN) com.medipote.app.domain.PetMood.SLEEPING
+                                            else if (r == com.medipote.app.domain.PetReaction.SNEEZE) com.medipote.app.domain.PetMood.UNWELL
+                                            else com.medipote.app.domain.PetMood.CONTENT,
+                                            mapOf("COLOR" to "color_mint"), 0.5f, 0f, 0.3f, 1f, r,
+                                            if (r == com.medipote.app.domain.PetReaction.SNEEZE) 0.55f else 0.5f,
+                                            androidx.compose.ui.geometry.Offset(0.8f, -0.4f),
+                                        )
+                                    }
+                                }
+                                androidx.compose.material3.Text(r.name, style = androidx.compose.material3.MaterialTheme.typography.labelSmall)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    @Test
+    fun tappingThePetMakesItTalk() {
+        compose.mainClock.autoAdvance = false
+        var cuddles = 0
+        compose.setContent {
+            MediPoteTheme {
+                com.medipote.app.ui.pet.InteractivePet(
+                    mood = com.medipote.app.domain.PetMood.CONTENT,
+                    equipped = mapOf("COLOR" to "color_mint", "BACKGROUND" to "bg_room"),
+                    talk = { r -> "Réaction : ${r.name}" },
+                    petName = "Pilou",
+                    onCuddle = { cuddles++ },
+                    modifier = androidx.compose.ui.Modifier.size(300.dp, 240.dp),
+                )
+            }
+        }
+        compose.onRoot().performTouchInput { click(center) }
+        compose.mainClock.advanceTimeBy(400)
+        compose.onNodeWithText("Réaction : JUMP").assertExists()
+        // Long press: a hug, which counts as a cuddle
+        compose.onRoot().performTouchInput { longClick(center) }
+        compose.mainClock.advanceTimeBy(400)
+        compose.onNodeWithText("Réaction : HUG").assertExists()
+        // Stroke sideways: petting
+        compose.onRoot().performTouchInput { swipeRight(startX = left + 10f, endX = right - 10f) }
+        compose.mainClock.advanceTimeBy(400)
+        compose.onNodeWithText("Réaction : PETTED").assertExists()
+        check(cuddles >= 2) { "cuddles=$cuddles" }
+        // The bubble disappears on its own
+        compose.mainClock.advanceTimeBy(5000)
+        compose.onNodeWithText("Réaction : PETTED").assertDoesNotExist()
     }
 
     private fun render(name: String, theme: ThemeMode = ThemeMode.LIGHT, accent: Accent = Accent.MINT, content: @Composable () -> Unit) {

@@ -32,6 +32,7 @@ import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import com.medipote.app.domain.PetMood
+import com.medipote.app.domain.PetReaction
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.min
@@ -71,6 +72,9 @@ fun PetView(
     animate: Boolean = true,
     feedSignal: Int = 0,
     description: String = "",
+    reaction: PetReaction = PetReaction.NONE,
+    reactionSignal: Int = 0,
+    look: Offset = Offset.Zero,
 ) {
     val transition = rememberInfiniteTransition(label = "pet")
     val breathe by if (animate) transition.animateFloat(
@@ -100,9 +104,17 @@ fun PetView(
         }
     }
 
+    val react = remember { Animatable(1f) }
+    LaunchedEffect(reactionSignal) {
+        if (reactionSignal != 0 && reaction != PetReaction.NONE) {
+            react.snapTo(0f)
+            react.animateTo(1f, tween(reaction.durationMs, easing = LinearEasing))
+        }
+    }
+
     Canvas(modifier.semantics { if (description.isNotEmpty()) contentDescription = description }) {
         if (showBackground) drawBackground(equipped["BACKGROUND"])
-        drawPet(mood, equipped, breathe, blink, loop, feed.value)
+        drawPet(mood, equipped, breathe, blink, loop, feed.value, reaction, react.value, look)
     }
 }
 
@@ -319,18 +331,38 @@ internal fun DrawScope.drawPet(
     blink: Float,
     loop: Float,
     feed: Float,
+    reaction: PetReaction = PetReaction.NONE,
+    rp: Float = 1f,
+    look: Offset = Offset.Zero,
 ) {
     val s = min(size.width, size.height)
     val cx = size.width / 2
     val feeding = feed < 1f
+    val r = if (rp < 1f && !feeding) reaction else PetReaction.NONE
+    val wave = sin(rp * PI).toFloat()
     // Hop when fed, gentle breathing otherwise; sick pets sway slowly.
-    val hop = if (feeding && feed > 0.35f) sin(((feed - 0.35f) / 0.65f) * PI * 2).toFloat().coerceAtLeast(0f) * s * 0.06f else 0f
+    var hop = if (feeding && feed > 0.35f) sin(((feed - 0.35f) / 0.65f) * PI * 2).toFloat().coerceAtLeast(0f) * s * 0.06f else 0f
+    if (r == PetReaction.JUMP) hop = wave * s * 0.11f
     val bob = (breathe - 0.5f) * s * (if (mood == PetMood.SICK || mood == PetMood.SLEEPING) 0.006f else 0.015f)
-    val squash = (breathe - 0.5f) * 0.03f
+    val squash = (breathe - 0.5f) * 0.03f + when (r) {
+        PetReaction.HUG -> wave * 0.12f
+        PetReaction.PETTED -> kotlin.math.abs(sin(rp * PI * 3)).toFloat() * 0.05f
+        PetReaction.JUMP -> -wave * 0.05f
+        else -> 0f
+    }
     val bw = s * 0.56f * (1 + squash)
     val bh = s * 0.5f * (1 - squash)
-    val cy = size.height * 0.6f + bob - hop
-    val sway = if (mood == PetMood.SICK) sin(loop * 2 * PI).toFloat() * 3f else 0f
+    val cy = size.height * 0.6f + bob - hop + (s * 0.5f - bh) / 2
+    val sway = when (r) {
+        PetReaction.GIGGLE -> sin(rp * PI * 10).toFloat() * 7f * (1 - rp)
+        PetReaction.DIZZY -> sin(rp * PI * 6).toFloat() * 9f * (1 - rp * 0.5f)
+        PetReaction.SNEEZE -> when {
+            rp < 0.45f -> -9f * (rp / 0.45f)
+            rp < 0.6f -> -9f + 21f * ((rp - 0.45f) / 0.15f)
+            else -> 12f * (1 - (rp - 0.6f) / 0.4f)
+        }
+        else -> if (mood == PetMood.SICK) sin(loop * 2 * PI).toFloat() * 3f else 0f
+    }
 
     if (equipped["EFFECT"] == "fx_aura") {
         val glow = 0.85f + 0.15f * sin(loop * 2 * PI).toFloat()
@@ -368,7 +400,7 @@ internal fun DrawScope.drawPet(
         drawOval(shade, Offset(cx - bw * 0.3f, bottom - bh * 0.1f), Size(bw * 0.2f, bh * 0.14f))
         drawOval(shade, Offset(cx + bw * 0.1f, bottom - bh * 0.1f), Size(bw * 0.2f, bh * 0.14f))
         // Arms (raised when fed)
-        val armLift = if (feeding) bh * 0.15f else 0f
+        val armLift = if (feeding || r == PetReaction.JUMP || r == PetReaction.HUG || r == PetReaction.GIGGLE) bh * 0.15f * (if (feeding) 1f else wave) else 0f
         drawOval(shade, Offset(cx - hw - bw * 0.06f, cy + bh * 0.02f - armLift), Size(bw * 0.16f, bh * 0.24f))
         drawOval(shade, Offset(cx + hw - bw * 0.1f, cy + bh * 0.02f - armLift), Size(bw * 0.16f, bh * 0.24f))
 
@@ -405,14 +437,14 @@ internal fun DrawScope.drawPet(
         val hasHat = equipped["HAT"] != null
         if (!hasHat) drawSprout(cx, top, s, sick = mood == PetMood.SICK || mood == PetMood.UNWELL)
 
-        drawFace(mood, cx, cy, bw, bh, s, blink, loop, feed, shade)
+        drawFace(mood, cx, cy, bw, bh, s, blink, loop, feed, shade, r, rp, look)
 
         equipped["NECK"]?.let { drawNeck(it, cx, cy, bw, bh, s) }
         equipped["GLASSES"]?.let { drawGlasses(it, cx, cy, bw, bh, s) }
         equipped["HAT"]?.let { drawHat(it, cx, top, bw, s, base, cy, bh) }
         equipped["TOY"]?.let { drawToy(it, cx, cy, bw, bh, s, loop) }
 
-        if (mood == PetMood.SICK && !feeding) drawThermometer(cx, cy, bw, bh, s)
+        if (mood == PetMood.SICK && !feeding && r == PetReaction.NONE) drawThermometer(cx, cy, bw, bh, s)
         if ((mood == PetMood.SICK || mood == PetMood.UNWELL) && !feeding) {
             val dropY = top + bh * 0.15f + loop * bh * 0.2f
             drawDrop(Offset(cx + hw * 0.78f, dropY), s * 0.03f, Color(0xFF6EC6FF).copy(alpha = 1f - loop * 0.7f))
@@ -426,7 +458,53 @@ internal fun DrawScope.drawPet(
     }
     if (mood == PetMood.HUNGRY && !feeding) drawPillBubble(cx + s * 0.28f, size.height * 0.27f + (breathe - 0.5f) * s * 0.02f, s)
     if (feeding) drawFeeding(cx, cy, bh, s, feed)
+    if (r != PetReaction.NONE) drawReaction(r, rp, cx, cy, bw, bh, s)
     equipped["EFFECT"]?.let { if (it != "fx_aura") drawEffect(it, cx, cy, bw, bh, s, loop) }
+}
+
+/** Particles around the pet while it reacts. */
+private fun DrawScope.drawReaction(r: PetReaction, rp: Float, cx: Float, cy: Float, bw: Float, bh: Float, s: Float) {
+    val fade = (1f - rp).coerceIn(0f, 1f)
+    when (r) {
+        PetReaction.PETTED, PetReaction.HUG -> {
+            val count = if (r == PetReaction.HUG) 6 else 3
+            for (i in 0 until count) {
+                val t = (rp * 1.2f - i * 0.12f).coerceIn(0f, 1f)
+                val angle = -PI / 2 + (i - (count - 1) / 2f) * (if (r == PetReaction.HUG) 0.5 else 0.6)
+                val d = bw * (0.45f + t * 0.35f)
+                val c = Offset(cx + (cos(angle) * d).toFloat(), cy - bh * 0.1f + (sin(angle) * d).toFloat() - t * s * 0.05f)
+                drawHeart(c, s * (0.025f + 0.015f * t), Color(0xFFFF5C7A).copy(alpha = fade * (if (t > 0f) 1f else 0f)))
+            }
+        }
+        PetReaction.GIGGLE -> {
+            listOf(-1f, 1f).forEach { side ->
+                val c = Offset(cx + side * bw * 0.62f, cy - bh * 0.45f - rp * s * 0.06f)
+                drawNote(c, s * 0.055f, Color(0xFF7E57C2).copy(alpha = fade))
+            }
+        }
+        PetReaction.DIZZY -> {
+            for (i in 0 until 3) {
+                val a = rp * 2 * PI * 3 + i * 2 * PI / 3
+                val c = Offset(cx + (cos(a) * bw * 0.4f).toFloat(), cy - bh * 0.62f + (sin(a) * bh * 0.08f).toFloat())
+                drawStar(c, s * 0.03f, Color(0xFFFFC107).copy(alpha = fade.coerceAtLeast(0.3f)), 5, 0.45f)
+            }
+        }
+        PetReaction.SNEEZE -> if (rp in 0.45f..1f) {
+            val t = (rp - 0.45f) / 0.55f
+            val base = Offset(cx + bw * 0.35f + t * s * 0.12f, cy + bh * 0.05f)
+            listOf(0f to 0f, 0.6f to -0.5f, 0.5f to 0.6f, 1.1f to 0.1f).forEach { (dx, dy) ->
+                drawCircle(Color(0xFFE3F2FD).copy(alpha = (1f - t) * 0.95f), s * (0.025f + t * 0.025f), base + Offset(dx * s * 0.05f, dy * s * 0.05f))
+            }
+        }
+        PetReaction.YAWN -> drawZ(Offset(cx + s * 0.25f, cy - bh * 0.6f - rp * s * 0.05f), s * 0.04f, fade)
+        else -> Unit
+    }
+}
+
+private fun DrawScope.drawNote(c: Offset, h: Float, color: Color) {
+    drawOval(color, c - Offset(h * 0.45f, h * 0.2f), Size(h * 0.5f, h * 0.38f))
+    drawLine(color, c + Offset(0f, 0f), c + Offset(0f, -h), h * 0.12f, StrokeCap.Round)
+    drawLine(color, c + Offset(0f, -h), c + Offset(h * 0.45f, -h * 0.7f), h * 0.12f, StrokeCap.Round)
 }
 
 private fun DrawScope.drawSprout(cx: Float, top: Float, s: Float, sick: Boolean) {
@@ -454,8 +532,10 @@ private fun DrawScope.drawSprout(cx: Float, top: Float, s: Float, sick: Boolean)
 private fun DrawScope.drawFace(
     mood: PetMood, cx: Float, cy: Float, bw: Float, bh: Float, s: Float,
     blink: Float, loop: Float, feed: Float, shade: Color,
+    r: PetReaction = PetReaction.NONE, rp: Float = 1f, look: Offset = Offset.Zero,
 ) {
     val feeding = feed < 1f
+    val joyful = r == PetReaction.JUMP || r == PetReaction.PETTED || r == PetReaction.HUG
     val eyeY = cy - bh * 0.06f
     val eyeDx = bw * 0.19f
     val rx = s * 0.042f
@@ -465,16 +545,41 @@ private fun DrawScope.drawFace(
     for (side in listOf(-1f, 1f)) {
         val e = Offset(cx + side * eyeDx, eyeY)
         when {
-            feeding || mood == PetMood.HAPPY && blink > 0.5f -> // happy closed eyes ^ ^
+            r == PetReaction.GIGGLE -> { // > <
+                val p = Path().apply {
+                    moveTo(e.x - side * rx * 0.9f, e.y - ry * 0.6f)
+                    lineTo(e.x + side * rx * 0.6f, e.y)
+                    lineTo(e.x - side * rx * 0.9f, e.y + ry * 0.6f)
+                }
+                drawPath(p, Ink, style = line)
+            }
+            r == PetReaction.DIZZY -> { // spirals
+                val p = Path()
+                for (i in 0..40) {
+                    val a = i / 40f * 4 * PI + rp * 12
+                    val rr = rx * 1.05f * i / 40f
+                    val pt = e + Offset((cos(a) * rr).toFloat(), (sin(a) * rr).toFloat())
+                    if (i == 0) p.moveTo(pt.x, pt.y) else p.lineTo(pt.x, pt.y)
+                }
+                drawPath(p, Ink, style = Stroke(s * 0.009f, cap = StrokeCap.Round))
+            }
+            r == PetReaction.SNEEZE && rp < 0.7f ->
+                drawLine(Ink, e - Offset(rx, ry * 0.1f), e + Offset(rx, -ry * 0.1f), s * 0.013f, StrokeCap.Round)
+            r == PetReaction.YAWN ->
+                if (side < 0) drawLine(Ink, e - Offset(rx, 0f), e + Offset(rx, 0f), s * 0.013f, StrokeCap.Round)
+                else drawOval(Ink, e - Offset(rx * 0.8f, ry * 0.45f), Size(rx * 1.6f, ry * 0.9f))
+            feeding || joyful || mood == PetMood.HAPPY && blink > 0.5f -> // happy closed eyes ^ ^
                 drawArc(Ink, 200f, 140f, false, e - Offset(rx, ry * 0.4f), Size(rx * 2, ry * 1.4f), style = line)
             mood == PetMood.SLEEPING ->
                 drawArc(Ink, 20f, 140f, false, e - Offset(rx, ry * 0.9f), Size(rx * 2, ry * 1.2f), style = line)
             blink > 0.5f ->
                 drawLine(Ink, e - Offset(rx, 0f), e + Offset(rx, 0f), s * 0.013f, StrokeCap.Round)
             else -> {
-                drawOval(Ink, e - Offset(rx, ry), Size(rx * 2, ry * 2))
-                drawCircle(Color.White, rx * 0.38f, e + Offset(rx * 0.3f, -ry * 0.38f))
-                drawCircle(Color.White.copy(alpha = 0.7f), rx * 0.18f, e + Offset(-rx * 0.35f, ry * 0.35f))
+                // The eyes follow the finger.
+                val g = e + Offset(look.x.coerceIn(-1f, 1f) * rx * 0.3f, look.y.coerceIn(-1f, 1f) * ry * 0.25f)
+                drawOval(Ink, g - Offset(rx, ry), Size(rx * 2, ry * 2))
+                drawCircle(Color.White, rx * 0.38f, g + Offset(rx * 0.3f, -ry * 0.38f))
+                drawCircle(Color.White.copy(alpha = 0.7f), rx * 0.18f, g + Offset(-rx * 0.35f, ry * 0.35f))
                 if (mood == PetMood.UNWELL || mood == PetMood.SICK) {
                     // Heavy eyelids and dark circles
                     val lid = if (mood == PetMood.SICK) 1.15f else 0.8f
@@ -485,7 +590,7 @@ private fun DrawScope.drawFace(
             }
         }
         // Eyebrows for worried moods
-        if (!feeding && (mood == PetMood.UNWELL || mood == PetMood.SICK || mood == PetMood.HUNGRY)) {
+        if (!feeding && !joyful && r != PetReaction.GIGGLE && (mood == PetMood.UNWELL || mood == PetMood.SICK || mood == PetMood.HUNGRY)) {
             val inner = e + Offset(-side * rx * 0.6f, -ry * 1.65f)
             val outer = e + Offset(side * rx * 1.1f, -ry * 1.35f)
             drawLine(Ink, inner, outer, s * 0.01f, StrokeCap.Round)
@@ -493,8 +598,12 @@ private fun DrawScope.drawFace(
     }
 
     // Cheeks
-    if (mood != PetMood.SICK) {
-        val a = if (mood == PetMood.UNWELL) 0.25f else 0.55f
+    if (mood != PetMood.SICK || joyful) {
+        val a = when {
+            r == PetReaction.PETTED || r == PetReaction.HUG -> 0.9f
+            mood == PetMood.UNWELL -> 0.25f
+            else -> 0.55f
+        }
         drawOval(Cheek.copy(alpha = a), Offset(cx - eyeDx - bw * 0.14f, eyeY + ry * 1.1f), Size(bw * 0.13f, bh * 0.07f))
         drawOval(Cheek.copy(alpha = a), Offset(cx + eyeDx + bw * 0.01f, eyeY + ry * 1.1f), Size(bw * 0.13f, bh * 0.07f))
     }
@@ -503,6 +612,34 @@ private fun DrawScope.drawFace(
     val m = Offset(cx, cy + bh * 0.1f)
     val mw = bw * 0.1f
     when {
+        r == PetReaction.YAWN -> {
+            val open = sin(rp * PI).toFloat()
+            drawOval(Ink, m - Offset(mw * 0.6f, mw * 0.2f), Size(mw * 1.2f, mw * (0.4f + 1.4f * open)))
+        }
+        r == PetReaction.SNEEZE -> {
+            val open = if (rp in 0.4f..0.65f) 1f else 0.3f
+            drawOval(Ink, m - Offset(mw * 0.5f, 0f), Size(mw, mw * (0.3f + 0.8f * open)))
+        }
+        r == PetReaction.DIZZY -> {
+            val p = Path().apply {
+                moveTo(m.x - mw, m.y + mw * 0.3f)
+                quadraticTo(m.x - mw * 0.5f, m.y, m.x, m.y + mw * 0.3f)
+                quadraticTo(m.x + mw * 0.5f, m.y + mw * 0.6f, m.x + mw, m.y + mw * 0.3f)
+            }
+            drawPath(p, Ink, style = Stroke(s * 0.011f, cap = StrokeCap.Round))
+        }
+        r == PetReaction.GIGGLE || r == PetReaction.JUMP || r == PetReaction.HUG -> {
+            val big = if (r == PetReaction.GIGGLE) 1.35f else 1f
+            val p = Path().apply {
+                moveTo(m.x - mw * big, m.y - mw * 0.1f)
+                quadraticTo(m.x, m.y + mw * 1.7f * big, m.x + mw * big, m.y - mw * 0.1f)
+                close()
+            }
+            drawPath(p, Ink)
+            drawOval(Color(0xFFFF8A9A), m + Offset(-mw * 0.45f * big, mw * 0.4f * big), Size(mw * 0.9f * big, mw * 0.45f * big))
+        }
+        r == PetReaction.PETTED ->
+            drawArc(Ink, 20f, 140f, false, m - Offset(mw * 0.8f, mw * 0.8f), Size(mw * 1.6f, mw * 1.2f), style = Stroke(s * 0.012f, cap = StrokeCap.Round))
         feeding -> {
             val open = if (feed < 0.35f) feed / 0.35f else 1f - ((feed - 0.35f) / 0.65f).coerceAtMost(1f) * 0.6f
             drawOval(Ink, m - Offset(mw, mw * 0.2f), Size(mw * 2, mw * (0.6f + 1.2f * open)))

@@ -56,7 +56,7 @@ import com.medipote.app.domain.ShopItem
 import com.medipote.app.domain.Slot
 import com.medipote.app.ui.components.PointsBadge
 import com.medipote.app.ui.pet.ItemPreview
-import com.medipote.app.ui.pet.PetView
+import com.medipote.app.ui.pet.InteractivePet
 import com.medipote.app.ui.theme.AppTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -92,7 +92,20 @@ fun ShopScreen(game: GameState, onBuy: (ShopItem) -> Unit, onEquip: (ShopItem) -
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
                 ) {
                     Box(Modifier.fillMaxWidth().aspectRatio(1.6f).clip(MaterialTheme.shapes.extraLarge)) {
-                        PetView(PetMood.HAPPY, preview, Modifier.fillMaxSize(), animate = animate, description = "Aperçu de ${game.petName}")
+                        InteractivePet(
+                            mood = PetMood.HAPPY,
+                            equipped = preview,
+                            talk = { r ->
+                                when (r) {
+                                    com.medipote.app.domain.PetReaction.JUMP -> listOf("Ça me va bien ?", "Trop stylé !", "On le prend ? 😍", "Nouveau look !").random()
+                                    else -> com.medipote.app.domain.PetTalk.line(r, com.medipote.app.data.AppState(game = game), java.time.LocalDateTime.now())
+                                }
+                            },
+                            petName = game.petName,
+                            animate = animate,
+                            description = "Aperçu de ${game.petName}",
+                            modifier = Modifier.fillMaxSize(),
+                        )
                     }
                     SelectionBar(game, selected, onBuy, onEquip)
                 }

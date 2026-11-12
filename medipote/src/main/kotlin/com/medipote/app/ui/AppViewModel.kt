@@ -206,6 +206,13 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
+    /** Petting or hugging the companion: a little bonus the first time each day. */
+    fun cuddle() {
+        var bonus = 0
+        repo.update { s -> Game.cuddle(s, repo.now()).let { (u, b) -> bonus = b; u } }
+        if (bonus > 0) _events.tryEmit(UiEvent.Points(bonus))
+    }
+
     // ── Appointments ──
 
     fun saveAppointment(a: Appointment) {

@@ -12,6 +12,8 @@ import com.medipote.app.data.WaterSettings
 import com.medipote.app.domain.Cycle
 import com.medipote.app.domain.CyclePhase
 import com.medipote.app.domain.Game
+import com.medipote.app.domain.PetReaction
+import com.medipote.app.domain.PetTalk
 import com.medipote.app.domain.Rules
 import com.medipote.app.domain.Schedule
 import com.medipote.app.domain.Shop
@@ -176,6 +178,34 @@ class FeaturesTest {
         // Very short cycle: no gap and no overlap
         val short = Cycle.phases(21, 7)
         assertEquals(21, short.sumOf { it.days })
+    }
+
+    // ── Companion interactions ──
+
+    @Test
+    fun cuddleBonusOncePerDay() {
+        val state = AppState(onboarded = true)
+        val (s1, b1) = Game.cuddle(state, at(9))
+        assertEquals(Rules.CUDDLE_BONUS, b1)
+        assertEquals(0, Game.cuddle(s1, at(18)).second)
+        assertEquals(Rules.CUDDLE_BONUS, Game.cuddle(s1, at(9, 0, day.plusDays(1))).second)
+    }
+
+    @Test
+    fun petTalksAboutWhatMatters() {
+        val med = Treatment("m", name = "Amlodipine", doses = listOf(DoseTime(12 * 60)), startDate = day, createdAt = day.atStartOfDay())
+        val state = AppState(onboarded = true, treatments = listOf(med), profile = com.medipote.app.data.Profile(name = "Sam"))
+        // A dose to give always comes first
+        repeat(10) { assertEquals("C'est l'heure de Amlodipine ! Tu me le donnes ? 💊", PetTalk.line(PetReaction.JUMP, state, at(12, 5), kotlin.random.Random(it))) }
+        assertEquals("Atchoum ! Amlodipine m'aiderait à aller mieux…", PetTalk.line(PetReaction.SNEEZE, state, at(14)))
+        assertEquals("Bonjour Sam ! ☀️", PetTalk.greeting(state, at(8)))
+        assertTrue(PetTalk.greeting(state, at(12, 10)).startsWith("Coucou Sam ! C'est l'heure de Amlodipine"))
+        assertEquals("Tu ne dors pas Sam ? 🌙", PetTalk.greeting(state, at(2)))
+        // Otherwise: useful tips or a friendly word, never empty
+        val lines = (0 until 30).map { PetTalk.line(PetReaction.JUMP, state, at(9), kotlin.random.Random(it)) }.toSet()
+        assertTrue(lines.any { it.startsWith("Prochaine prise à 12:00") })
+        assertTrue(lines.all { it.isNotBlank() })
+        PetReaction.entries.forEach { assertTrue(PetTalk.line(it, state, at(9)).isNotBlank()) }
     }
 
     // ── Shop ──

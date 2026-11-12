@@ -93,7 +93,8 @@ import com.medipote.app.ui.components.StreakBadge
 import com.medipote.app.ui.components.capitalized
 import com.medipote.app.ui.components.fullDay
 import com.medipote.app.ui.components.hourMinute
-import com.medipote.app.ui.pet.PetView
+import com.medipote.app.ui.pet.InteractivePet
+import com.medipote.app.domain.PetTalk
 import com.medipote.app.ui.theme.AppTheme
 import java.time.LocalDateTime
 import kotlin.math.roundToInt
@@ -118,6 +119,7 @@ fun HomeScreen(
     pointsSignal: Int = feedSignal,
     notificationsBlocked: Boolean = false,
     onFixNotifications: () -> Unit = {},
+    onCuddle: () -> Unit = {},
 ) {
     val logs = remember(state.doseLogs) { state.doseLogs.associateBy { it.key } }
     val today = remember(state.treatments, logs, now) {
@@ -177,12 +179,16 @@ fun HomeScreen(
                         .clip(MaterialTheme.shapes.extraLarge)
                         .onGloballyPositioned { petBounds = it.boundsInRoot() },
                 ) {
-                    PetView(
+                    InteractivePet(
                         mood = condition.mood,
                         equipped = state.game.equipped,
+                        talk = { r -> PetTalk.line(r, state, now) },
+                        petName = state.game.petName,
                         feedSignal = feedSignal,
                         animate = animate,
                         description = "${state.game.petName} : ${condition.message}",
+                        greeting = remember(state.profile?.name) { PetTalk.greeting(state, now) },
+                        onCuddle = onCuddle,
                         modifier = Modifier.fillMaxSize(),
                     )
                     HealthTag(state.game.petName, condition, Modifier.align(Alignment.TopStart).padding(12.dp))
