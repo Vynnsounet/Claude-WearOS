@@ -19,7 +19,7 @@ object CrashReporter {
     private const val FILE = "last-crash.txt"
 
     fun install(context: Context) {
-        val app = context.applicationContext
+        val app = context
         val previous = Thread.getDefaultUncaughtExceptionHandler()
         Thread.setDefaultUncaughtExceptionHandler { thread, error ->
             runCatching { record(app, thread, error) }

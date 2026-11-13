@@ -15,3 +15,7 @@
 # Readable crash reports: keep file names and line numbers (mapped back with mapping.txt).
 -keepattributes SourceFile, LineNumberTable
 -renamesourcefileattribute SourceFile
+
+# Room creates its generated *_Impl databases by reflection (WorkManager's included): keep their
+# no-arg constructor. R8 full mode doesn't keep constructors for a plain "-keep class".
+-keep class * extends androidx.room.RoomDatabase { <init>(); }

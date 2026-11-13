@@ -8,7 +8,8 @@
 ./gradlew :medipote:bundleRelease      # AAB pour le Play Store : medipote/build/outputs/bundle/release/medipote-release.aab
 ```
 
-Avant chaque nouvelle version, augmenter `versionCode` (entier, +1) et `versionName`
+Avant chaque nouvelle version, tester l'APK release sur un téléphone (le debug ne suffit pas :
+R8 ne s'applique qu'à la release), et augmenter `versionCode` (entier, +1) et `versionName`
 dans `medipote/build.gradle.kts`.
 
 ### Signature
@@ -43,15 +44,27 @@ non signé.
 | Fichiers `META-INF` superflus et rapport de dépendances retirés de l'APK | Quelques Ko de moins |
 | Numéros de ligne conservés (`mapping.txt`) | Rapports de plantage lisibles |
 
-Résultat : **APK de 3,7 Mo** (debug : 22 Mo).
+Résultat : **APK de 3,8 Mo** (debug : 22 Mo).
 
-L'optimiseur de R8 est désactivé (`-dontoptimize` dans `proguard-rules.pro`) : il réécrit les
-accès atomiques de kotlinx.coroutines et de Compose en appels directs à `sun.misc.Unsafe`, du
-code qui n'existe que dans l'APK et ne peut être vérifié que sur un vrai téléphone. La 1.0.0
-(2,1 Mo) l'utilisait et ne s'ouvrait pas sur deux téléphones ; pour une app de rappels de
-médicaments, la fiabilité passe avant 1,6 Mo. Le fichier
-`medipote/build/outputs/mapping/release/mapping.txt` permet de décoder les traces
-de plantage : à conserver pour chaque version publiée (le Play Store le reçoit avec l'AAB).
+### Le plantage au lancement des versions 1.0.0 et 1.0.1
+
+Elles se fermaient dès l'ouverture, avant même que l'app ne démarre. Les widgets (Glance)
+tiraient **WorkManager 2.7.1**, qui embarque **Room 2.2.5**. La règle R8 de Room 2.2.5
+(`-keep class * extends RoomDatabase`) date d'avant le « mode complet » de R8, activé par
+défaut dans les versions récentes d'AGP. Dans ce mode, garder une classe ne garde pas son
+constructeur : `WorkDatabase_Impl`, créée par réflexion, n'en avait plus, et WorkManager
+plantait pendant son initialisation (androidx.startup, avant `Application.onCreate`). La
+version debug, sans R8, n'était pas touchée.
+
+Corrections (1.0.2) :
+- WorkManager 2.11.2 (Room récent, règles R8 à jour) déclaré explicitement ;
+- règle de sécurité dans `proguard-rules.pro` :
+  `-keep class * extends androidx.room.RoomDatabase { <init>(); }` ;
+- rapport d'erreur installé dès `attachBaseContext`, pour capturer aussi ce type de plantage.
+
+L'optimiseur de R8 reste désactivé (`-dontoptimize`) : APK de 3,8 Mo au lieu de ~2,2 Mo, mais
+le dex livré peut être reconverti et exécuté hors appareil pour vérification (voir plus bas),
+ce que l'optimiseur empêche. Il pourra être réactivé après des essais sur téléphone.
 
 ### Vérifications faites sur l'APK release
 
@@ -63,8 +76,10 @@ de plantage : à conserver pour chaque version publiée (le Play Store le reçoi
 - R8 conserve les sérialiseurs des données, l'activité, les récepteurs, les widgets,
   leurs actions et le constructeur du ViewModel (instanciés par réflexion).
 
-- Le code release réel (R8 rejoué avec la configuration exacte du build, en sortie bytecode
-  Java) démarre sous Robolectric avec Android 14, 15 et 16 et affiche l'écran d'accueil.
+- Le dex de l'APK, reconverti en bytecode Java (dex2jar), passe les initialiseurs de démarrage
+  sous Robolectric : c'est ce test qui a reproduit le plantage des 1.0.0/1.0.1.
+- Le code release (R8 rejoué avec la configuration exacte du build, en sortie bytecode Java)
+  passe les initialiseurs puis affiche l'écran d'accueil avec Android 14, 15 et 16.
 
 Ce qui n'a pas pu être fait ici faute d'émulateur : lancer l'APK lui-même sur un appareil.
 À tester avant publication : premier lancement, ajout d'un traitement, rappel reçu,

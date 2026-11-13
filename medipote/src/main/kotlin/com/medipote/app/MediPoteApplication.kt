@@ -21,10 +21,15 @@ class MediPoteApplication : Application() {
     /** Work that outlives a screen: widget refreshes. */
     val appScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
+    override fun attachBaseContext(base: Context) {
+        super.attachBaseContext(base)
+        // As early as possible: library initializers (androidx.startup) run before onCreate.
+        CrashReporter.install(this)
+    }
+
     @OptIn(FlowPreview::class)
     override fun onCreate() {
         super.onCreate()
-        CrashReporter.install(this)
         Notifications.createChannels(this)
         // Any change to the data (from the app, a notification or a widget) refreshes the widgets.
         appScope.launch {
