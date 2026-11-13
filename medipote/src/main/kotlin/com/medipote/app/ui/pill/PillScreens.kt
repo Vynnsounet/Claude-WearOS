@@ -118,7 +118,8 @@ fun blister(state: AppState, pill: Treatment, now: LocalDateTime): List<BlisterD
         val cell = when {
             i >= pack.activeDays && !pack.placebo -> PillCell.BREAK
             item == null -> if (date.isAfter(today)) (if (i >= pack.activeDays) PillCell.PLACEBO else PillCell.FUTURE) else PillCell.UNTRACKED
-            item.state == DoseState.TAKEN -> if (item.log?.status == TakeStatus.ON_TIME) PillCell.TAKEN else PillCell.TAKEN_LATE
+            item.state == DoseState.TAKEN ->
+                if (item.log?.status == TakeStatus.LATE || item.log?.status == TakeStatus.VERY_LATE) PillCell.TAKEN_LATE else PillCell.TAKEN
             item.state == DoseState.MISSED -> PillCell.MISSED
             item.canGive -> PillCell.TODAY
             i >= pack.activeDays -> PillCell.PLACEBO
@@ -137,8 +138,10 @@ fun PillScreen(
     onTake: (DoseItem) -> Unit,
     onNewPack: (LocalDate) -> Unit,
     animate: Boolean = true,
+    onTakeEarly: (DoseItem) -> Unit = {},
 ) {
     val pill = state.treatments.firstOrNull { it.pill != null }
+    var confirmEarly by remember { mutableStateOf<DoseItem?>(null) }
     Column(
         Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -203,10 +206,15 @@ fun PillScreen(
                             item != null && item.canGive -> Button(onClick = { onTake(item) }, modifier = Modifier.fillMaxWidth().height(52.dp)) {
                                 Text(if (item.state == DoseState.OVERDUE) "Prendre mon comprimé (en retard)" else "Prendre mon comprimé")
                             }
-                            item != null -> Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(Icons.Rounded.Schedule, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                                Spacer(Modifier.width(6.dp))
-                                Text("À prendre à ${pill.doses.first().timeLabel}", style = MaterialTheme.typography.bodyLarge)
+                            item != null -> Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(Icons.Rounded.Schedule, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    Spacer(Modifier.width(6.dp))
+                                    Text("À prendre à ${pill.doses.first().timeLabel}", style = MaterialTheme.typography.bodyLarge)
+                                }
+                                if (item.canMarkEarly(now)) {
+                                    OutlinedButton(onClick = { confirmEarly = item }) { Text("Je l'ai déjà prise") }
+                                }
                             }
                         }
                         if (pack.breakDays > 0 && !pack.placebo) {
@@ -258,6 +266,14 @@ fun PillScreen(
         )
         if (pickPack) {
             DatePickerModal(today, onDismiss = { pickPack = false }, onConfirm = { onNewPack(it); pickPack = false }, maxDate = today.plusDays(7))
+        }
+        confirmEarly?.let { early ->
+            com.medipote.app.ui.home.EarlyDialog(
+                name = pill.name,
+                time = early.occurrence.dose.timeLabel,
+                onConfirm = { confirmEarly = null; onTakeEarly(early) },
+                onDismiss = { confirmEarly = null },
+            )
         }
     }
 }

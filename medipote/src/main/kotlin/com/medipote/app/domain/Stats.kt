@@ -5,6 +5,7 @@ import com.medipote.app.data.TakeStatus
 import java.time.LocalDate
 import java.time.LocalDateTime
 
+/** [late] counts doses taken off time, late or early. */
 data class DayStats(val date: LocalDate, val onTime: Int, val late: Int, val missed: Int, val pending: Int) {
     val planned: Int get() = onTime + late + missed + pending
     val taken: Int get() = onTime + late

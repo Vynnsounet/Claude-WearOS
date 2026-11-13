@@ -229,6 +229,7 @@ fun SettingsScreen(
                 Rule("Prise à l'heure (jusqu'à ${Rules.ON_TIME_MINUTES} min de retard)", "+${Rules.POINTS_ON_TIME} pts")
                 Rule("En retard (jusqu'à ${Rules.LATE_MINUTES / 60} h)", "+${Rules.POINTS_LATE} pts (malus −${Rules.POINTS_ON_TIME - Rules.POINTS_LATE})")
                 Rule("Très en retard (plus de ${Rules.LATE_MINUTES / 60} h)", "+${Rules.POINTS_VERY_LATE} pts (malus −${Rules.POINTS_ON_TIME - Rules.POINTS_VERY_LATE})")
+                Rule("Noté « Déjà pris » plus d'une heure en avance", "+${Rules.POINTS_EARLY} pts")
                 Rule("Journée parfaite (tout à l'heure)", "+${Rules.PERFECT_DAY_BONUS} pts")
                 Rule("Verre d'eau (jusqu'à l'objectif du jour)", "+${Rules.WATER_GLASS_POINTS} pts")
                 Rule("Objectif d'hydratation atteint", "+${Rules.WATER_BONUS} pts")

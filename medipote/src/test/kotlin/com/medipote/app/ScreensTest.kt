@@ -7,7 +7,10 @@ import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
+import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.click
 import androidx.compose.ui.test.longClick
 import androidx.compose.ui.test.swipeRight
@@ -433,6 +436,25 @@ class ScreensTest {
         // The bubble disappears on its own
         compose.mainClock.advanceTimeBy(5000)
         compose.onNodeWithText("Réaction : PETTED").assertDoesNotExist()
+    }
+
+    @Test
+    fun markADoseAsAlreadyTaken() {
+        var early: com.medipote.app.domain.DoseItem? = null
+        // At 12:10 the 20:00 Metformine dose is still far away.
+        render("home_early") { HomeScreen(sampleState(), now, 0, 0, {}, {}, {}, {}, animate = false, onGiveEarly = { early = it }) }
+        compose.onNodeWithText("Déjà pris ?").performScrollTo()
+        save("home_early_card", compose.onAllNodes(androidx.compose.ui.test.isRoot()).onFirst().captureToImage().asAndroidBitmap())
+        compose.onNodeWithText("Déjà pris ?").performClick()
+        compose.onNodeWithText("Prise prévue à 20:00 : Metformine 1000 mg", substring = true).assertExists()
+        save("home_early_dialog", compose.onNode(androidx.compose.ui.test.isDialog()).captureToImage().asAndroidBitmap())
+        compose.onNodeWithText("Oui, c'est fait").performClick()
+        check(early?.occurrence?.dose?.minuteOfDay == 20 * 60) { "early=$early" }
+    }
+
+    private fun save(name: String, bitmap: Bitmap) {
+        val dir = File("build/screenshots").apply { mkdirs() }
+        File(dir, "$name.png").outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
     }
 
     private fun render(name: String, theme: ThemeMode = ThemeMode.LIGHT, accent: Accent = Accent.MINT, content: @Composable () -> Unit) {

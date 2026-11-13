@@ -157,7 +157,14 @@ enum class DoseUnit(val singular: String, val plural: String) {
 
 /** How punctually a dose was given. */
 @Serializable
-enum class TakeStatus { ON_TIME, LATE, VERY_LATE }
+enum class TakeStatus {
+    ON_TIME,
+    LATE,
+    VERY_LATE,
+
+    /** Marked as already taken more than an hour before the planned time. */
+    EARLY,
+}
 
 @Serializable
 data class DoseLog(

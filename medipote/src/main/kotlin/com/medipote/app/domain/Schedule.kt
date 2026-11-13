@@ -40,6 +40,10 @@ enum class DoseState {
 
 data class DoseItem(val occurrence: DoseOccurrence, val state: DoseState, val log: DoseLog?) {
     val canGive: Boolean get() = state == DoseState.DUE || state == DoseState.OVERDUE
+
+    /** A dose later today that the user can say they already took. */
+    fun canMarkEarly(now: java.time.LocalDateTime): Boolean =
+        state == DoseState.UPCOMING && occurrence.date == now.toLocalDate()
 }
 
 /** The game's timing and scoring rules, in one place so the UI can explain them. */
@@ -52,6 +56,9 @@ object Rules {
     const val POINTS_ON_TIME = 10
     const val POINTS_LATE = 6
     const val POINTS_VERY_LATE = 3
+
+    /** Taken more than an hour early: counted, but not rewarded like a dose taken on time. */
+    const val POINTS_EARLY = 6
     const val PERFECT_DAY_BONUS = 20
     const val JOURNAL_BONUS = 5
     const val WATER_GLASS_POINTS = 2
@@ -67,6 +74,7 @@ object Rules {
     fun statusFor(scheduled: LocalDateTime, takenAt: LocalDateTime): TakeStatus {
         val late = Duration.between(scheduled, takenAt).toMinutes()
         return when {
+            late < -EARLY_WINDOW_MINUTES -> TakeStatus.EARLY
             late <= ON_TIME_MINUTES -> TakeStatus.ON_TIME
             late <= LATE_MINUTES -> TakeStatus.LATE
             else -> TakeStatus.VERY_LATE
@@ -77,6 +85,7 @@ object Rules {
         TakeStatus.ON_TIME -> POINTS_ON_TIME
         TakeStatus.LATE -> POINTS_LATE
         TakeStatus.VERY_LATE -> POINTS_VERY_LATE
+        TakeStatus.EARLY -> POINTS_EARLY
     }
 
     /** Points for opening the app on the n-th consecutive day: +5 per day, capped at +50 from day 10. */

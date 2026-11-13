@@ -120,6 +120,7 @@ fun HomeScreen(
     notificationsBlocked: Boolean = false,
     onFixNotifications: () -> Unit = {},
     onCuddle: () -> Unit = {},
+    onGiveEarly: (DoseItem) -> Unit = {},
 ) {
     val logs = remember(state.doseLogs) { state.doseLogs.associateBy { it.key } }
     val today = remember(state.treatments, logs, now) {
@@ -233,7 +234,7 @@ fun HomeScreen(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
-                today.forEach { item -> DoseCard(item, onGive) }
+                today.forEach { item -> DoseCard(item, now, onGive, onGiveEarly) }
             }
 
             val low = state.treatments.filter { it.isLowStock }
@@ -430,7 +431,8 @@ private fun DraggablePill(item: DoseItem, petBounds: Rect?, onHover: (Boolean) -
 }
 
 @Composable
-private fun DoseCard(item: DoseItem, onGive: (DoseItem) -> Unit) {
+private fun DoseCard(item: DoseItem, now: LocalDateTime, onGive: (DoseItem) -> Unit, onGiveEarly: (DoseItem) -> Unit) {
+    var confirmEarly by remember { mutableStateOf(false) }
     val status = AppTheme.status
     val t = item.occurrence.treatment
     val (label, color, container) = when (item.state) {
@@ -442,6 +444,7 @@ private fun DoseCard(item: DoseItem, onGive: (DoseItem) -> Unit) {
             val log = item.log!!
             val txt = when (log.status) {
                 TakeStatus.ON_TIME -> "Donné à ${log.takenAt.format(hourMinute)} · +${log.points}"
+                TakeStatus.EARLY -> "Pris en avance (${log.takenAt.format(hourMinute)}) · +${log.points}"
                 else -> "En retard (${log.takenAt.format(hourMinute)}) · +${log.points}"
             }
             Triple(txt, MaterialTheme.colorScheme.onSurface, if (log.status == TakeStatus.ON_TIME) status.goodContainer else status.warningContainer)
@@ -489,9 +492,39 @@ private fun DoseCard(item: DoseItem, onGive: (DoseItem) -> Unit) {
                 } else {
                     FilledTonalButton(onClick = { onGive(item) }) { Text("Donner") }
                 }
+            } else if (item.canMarkEarly(now)) {
+                Spacer(Modifier.width(8.dp))
+                androidx.compose.material3.TextButton(onClick = { confirmEarly = true }) { Text("Déjà pris ?") }
             }
         }
     }
+    if (confirmEarly) {
+        EarlyDialog(
+            name = item.occurrence.treatment.displayName,
+            time = item.occurrence.dose.timeLabel,
+            onConfirm = { confirmEarly = false; onGiveEarly(item) },
+            onDismiss = { confirmEarly = false },
+        )
+    }
+}
+
+/** Confirms marking a dose planned later today as already taken. */
+@Composable
+fun EarlyDialog(name: String, time: String, onConfirm: () -> Unit, onDismiss: () -> Unit) {
+    androidx.compose.material3.AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Prise déjà faite ?") },
+        text = {
+            Text(
+                "Prise prévue à $time : $name. Déjà faite ? Elle sera notée et le rappel ne sonnera pas.\n\n" +
+                    "Plus d'une heure en avance, elle rapporte ${com.medipote.app.domain.Rules.POINTS_EARLY} points " +
+                    "au lieu de ${com.medipote.app.domain.Rules.POINTS_ON_TIME}. En cas de doute sur le moment de la prise, " +
+                    "demande conseil à ton pharmacien.",
+            )
+        },
+        confirmButton = { androidx.compose.material3.TextButton(onClick = onConfirm) { Text("Oui, c'est fait") } },
+        dismissButton = { androidx.compose.material3.TextButton(onClick = onDismiss) { Text("Annuler") } },
+    )
 }
 
 @Composable

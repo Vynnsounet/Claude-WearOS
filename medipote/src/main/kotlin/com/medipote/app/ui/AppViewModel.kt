@@ -79,12 +79,12 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         reschedule()
     }
 
-    fun give(item: DoseItem) {
+    fun give(item: DoseItem, early: Boolean = false) {
         val now = repo.now()
         var fed: UiEvent.Fed? = null
         var lowStock: Treatment? = null
         repo.update { s ->
-            val result = Game.give(s, item, now) ?: return@update s
+            val result = Game.give(s, item, now, early) ?: return@update s
             fed = UiEvent.Fed(item.occurrence.treatment.name, result.log.status, result.log.points, result.perfectDayBonus)
             lowStock = result.lowStock
             result.state
@@ -207,6 +207,9 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     /** Petting or hugging the companion: a little bonus the first time each day. */
+    /** "Already taken": a dose planned later today, taken in advance. */
+    fun giveEarly(item: DoseItem) = give(item, early = true)
+
     fun cuddle() {
         var bonus = 0
         repo.update { s -> Game.cuddle(s, repo.now()).let { (u, b) -> bonus = b; u } }

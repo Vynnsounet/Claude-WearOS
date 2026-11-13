@@ -46,7 +46,8 @@ Profil médical et paramètres sont accessibles en haut à droite.
   pause), réserve de plaquettes.
 - **Compagnon** : il réclame son médicament, s'affaiblit en cas de retard,
   tombe malade au-delà de 2 h et dort la nuit. On le soigne en faisant glisser
-  la pilule sur lui, ou avec « Donner ».
+  la pilule sur lui, ou avec « Donner ». Une prise déjà faite plus tôt dans la
+  journée se note avec « Déjà pris ? » (après confirmation) : son rappel ne sonne pas.
 - **Jouer avec le compagnon** (accueil et boutique) :
   - le toucher : il saute et dit quelque chose d'utile (prise à donner, prochaine
     prise, verre d'eau, rendez-vous proche, journal, objet à s'offrir…) ;
@@ -85,6 +86,7 @@ Profil médical et paramètres sont accessibles en haut à droite.
   | Prise à l'heure (de 1 h avant à 30 min après) | +10 |
   | En retard (jusqu'à 2 h) | +6 (malus −4) |
   | Très en retard (au-delà de 2 h) | +3 (malus −7) |
+  | Noté « Déjà pris ? » plus d'1 h avant l'horaire (le jour même) | +6 |
   | Journée parfaite (toutes les prises à l'heure) | +20 |
   | Journal du jour rempli | +5 |
   | Verre d'eau (jusqu'à l'objectif du jour) | +2 par verre |

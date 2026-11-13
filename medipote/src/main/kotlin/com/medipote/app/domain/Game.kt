@@ -58,9 +58,12 @@ object Game {
         return updated to reward
     }
 
-    /** Records that the dose was given to the pet at [now] and awards points. */
-    fun give(state: AppState, item: DoseItem, now: LocalDateTime): GiveResult? {
-        if (!item.canGive) return null
+    /**
+     * Records that the dose was given to the pet at [now] and awards points. With [early], a dose
+     * planned later today can be marked as already taken (status EARLY, fewer points).
+     */
+    fun give(state: AppState, item: DoseItem, now: LocalDateTime, early: Boolean = false): GiveResult? {
+        if (!item.canGive && !(early && item.canMarkEarly(now))) return null
         val occ = item.occurrence
         val status = Rules.statusFor(occ.scheduled, now)
         val points = Rules.pointsFor(status)
@@ -69,6 +72,7 @@ object Game {
             TakeStatus.ON_TIME -> "à l'heure"
             TakeStatus.LATE -> "en retard"
             TakeStatus.VERY_LATE -> "très en retard"
+            TakeStatus.EARLY -> "pris en avance"
         }
         var game = addPoints(state.game, points, "${occ.treatment.displayName} $label", now)
         val logs = state.doseLogs + log

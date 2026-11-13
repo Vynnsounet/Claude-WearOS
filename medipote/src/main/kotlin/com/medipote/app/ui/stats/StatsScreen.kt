@@ -202,19 +202,19 @@ private fun ChartCard(days: List<DayStats>) {
     val highlight = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.06f)
     var selected by remember(days) { mutableIntStateOf(days.lastIndex) }
     val maxPlanned = (days.maxOfOrNull { it.planned } ?: 0).coerceAtLeast(1)
-    val description = days.joinToString("; ") { "${it.date.format(dayMonth)} : ${it.onTime} à l'heure, ${it.late} en retard, ${it.missed} oubliées" }
+    val description = days.joinToString("; ") { "${it.date.format(dayMonth)} : ${it.onTime} à l'heure, ${it.late} décalées, ${it.missed} oubliées" }
 
     Card(colors = CardDefaults.cardColors(containerColor = surface)) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Text("14 derniers jours", style = MaterialTheme.typography.titleMedium)
-            Legend(listOf("À l'heure" to onTimeColor, "En retard" to lateColor, "Oubliées" to missedColor))
+            Legend(listOf("À l'heure" to onTimeColor, "Décalées" to lateColor, "Oubliées" to missedColor))
             val sel = days.getOrNull(selected)
             Text(
                 sel?.let {
                     val d = it.date.format(DateTimeFormatter.ofPattern("EEEE d MMMM", Locale.FRANCE)).capitalized()
                     val parts = listOfNotNull(
                         "${it.onTime} à l'heure".takeIf { _ -> it.onTime > 0 },
-                        "${it.late} en retard".takeIf { _ -> it.late > 0 },
+                        "${it.late} décalée${if (it.late > 1) "s" else ""}".takeIf { _ -> it.late > 0 },
                         "${it.missed} oubliée${if (it.missed > 1) "s" else ""}".takeIf { _ -> it.missed > 0 },
                         "${it.pending} à venir".takeIf { _ -> it.pending > 0 },
                     )
@@ -310,7 +310,7 @@ private fun BreakdownCard(onTime: Int, late: Int, missed: Int) {
             }
             Canvas(
                 Modifier.fillMaxWidth().height(18.dp).clip(RoundedCornerShape(6.dp))
-                    .semantics { contentDescription = "$onTime à l'heure, $late en retard, $missed oubliées" },
+                    .semantics { contentDescription = "$onTime à l'heure, $late décalées, $missed oubliées" },
             ) {
                 var x = 0f
                 listOf(onTime to status.good, late to status.warning, missed to status.critical).filter { it.first > 0 }.forEach { (n, c) ->
@@ -321,9 +321,14 @@ private fun BreakdownCard(onTime: Int, late: Int, missed: Int) {
             }
             Row(Modifier.fillMaxWidth()) {
                 Count("À l'heure", onTime, total, status.good, Modifier.weight(1f))
-                Count("En retard", late, total, status.warning, Modifier.weight(1f))
+                Count("Décalées", late, total, status.warning, Modifier.weight(1f))
                 Count("Oubliées", missed, total, status.critical, Modifier.weight(1f))
             }
+            Text(
+                "Décalées : prises en retard, ou notées plus d'une heure en avance.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
     }
 }

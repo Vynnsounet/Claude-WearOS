@@ -12,6 +12,7 @@ import com.medipote.app.data.WaterSettings
 import com.medipote.app.domain.Cycle
 import com.medipote.app.domain.CyclePhase
 import com.medipote.app.domain.Game
+import com.medipote.app.domain.PetMood
 import com.medipote.app.domain.PetReaction
 import com.medipote.app.domain.PetTalk
 import com.medipote.app.domain.Rules
@@ -178,6 +179,50 @@ class FeaturesTest {
         // Very short cycle: no gap and no overlap
         val short = Cycle.phases(21, 7)
         assertEquals(21, short.sumOf { it.days })
+    }
+
+    // ── Taken in advance ──
+
+    @Test
+    fun aDoseLaterTodayCanBeMarkedAsAlreadyTaken() {
+        val med = Treatment("m", name = "Metformine", doses = listOf(DoseTime(8 * 60), DoseTime(20 * 60)), startDate = day, createdAt = day.atStartOfDay())
+        val state = AppState(onboarded = true, treatments = listOf(med))
+        val evening = Schedule.itemsOn(state.treatments, emptyMap(), day, at(9)).last()
+        assertEquals(com.medipote.app.domain.DoseState.UPCOMING, evening.state)
+        // Not without asking for it, and only for today
+        assertNull(Game.give(state, evening, at(9)))
+        val tomorrow = Schedule.itemsOn(state.treatments, emptyMap(), day.plusDays(1), at(9)).first()
+        assertFalse(tomorrow.canMarkEarly(at(9)))
+        assertNull(Game.give(state, tomorrow, at(9), early = true))
+
+        val r = Game.give(state, evening, at(9), early = true)!!
+        assertEquals(com.medipote.app.data.TakeStatus.EARLY, r.log.status)
+        assertEquals(Rules.POINTS_EARLY, r.state.game.points)
+        val logs = r.state.doseLogs.associateBy { it.key }
+        assertEquals(com.medipote.app.domain.DoseState.TAKEN, Schedule.itemsOn(r.state.treatments, logs, day, at(20, 30)).last().state)
+        // The pet isn't punished for it
+        assertEquals(PetMood.HUNGRY, Game.petCondition(r.state, at(8)).mood)
+        // No reminder for it any more: the receiver only notifies doses not yet logged
+        assertTrue(r.state.doseLogs.any { it.key == evening.occurrence.key })
+    }
+
+    @Test
+    fun withinAnHourItIsStillOnTime() {
+        assertEquals(com.medipote.app.data.TakeStatus.ON_TIME, Rules.statusFor(at(20), at(19, 0)))
+        assertEquals(com.medipote.app.data.TakeStatus.EARLY, Rules.statusFor(at(20), at(18, 59)))
+    }
+
+    @Test
+    fun anEarlyDoseBreaksThePerfectDayAndCountsAsOffTime() {
+        val med = Treatment("m", name = "Metformine", doses = listOf(DoseTime(8 * 60), DoseTime(20 * 60)), startDate = day, createdAt = day.atStartOfDay())
+        var state = AppState(onboarded = true, treatments = listOf(med))
+        state = Game.give(state, Schedule.itemsOn(state.treatments, emptyMap(), day, at(8)).first(), at(8))!!.state
+        val evening = Schedule.itemsOn(state.treatments, state.doseLogs.associateBy { it.key }, day, at(9)).last()
+        val r = Game.give(state, evening, at(9), early = true)!!
+        assertEquals(0, r.perfectDayBonus)
+        val stats = com.medipote.app.domain.Stats.daily(r.state, at(21), 1).single()
+        assertEquals(1, stats.onTime)
+        assertEquals(1, stats.late)
     }
 
     // ── Companion interactions ──

@@ -227,6 +227,7 @@ fun MediPoteApp(vm: AppViewModel) {
                             TakeStatus.ON_TIME -> "Bravo ! $pet a pris ${e.treatmentName} à l'heure : +${e.points} pts"
                             TakeStatus.LATE -> "${e.treatmentName} donné en retard : +${e.points} pts (malus −${Rules.POINTS_ON_TIME - e.points})"
                             TakeStatus.VERY_LATE -> "${e.treatmentName} donné très en retard : +${e.points} pts (malus −${Rules.POINTS_ON_TIME - e.points})"
+                            TakeStatus.EARLY -> "${e.treatmentName} noté comme pris en avance : +${e.points} pts"
                         }
                         val bonus = if (e.perfectDayBonus > 0) " · Journée parfaite : +${e.perfectDayBonus} !" else ""
                         snackbar.currentSnackbarData?.dismiss()
@@ -325,6 +326,7 @@ fun MediPoteApp(vm: AppViewModel) {
                         notificationsBlocked = !notificationsAllowed,
                         onFixNotifications = ::fixNotifications,
                         onCuddle = vm::cuddle,
+                        onGiveEarly = vm::giveEarly,
                     )
                 }
                 composable("treatments") {
@@ -343,6 +345,7 @@ fun MediPoteApp(vm: AppViewModel) {
                                 onSetup = { nav.navigate("pill_setup") },
                                 onTake = vm::give,
                                 onNewPack = { date -> state.treatments.firstOrNull { it.pill != null }?.let { vm.startNewPillPack(it.id, date) } },
+                                onTakeEarly = vm::giveEarly,
                             )
                         }
                     }

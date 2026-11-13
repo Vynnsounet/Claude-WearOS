@@ -323,7 +323,11 @@ fun DosesContent(state: AppState, now: LocalDateTime) {
 private fun DoseRow(item: DoseItem) {
     val t = item.occurrence.treatment
     val (label, color) = when (item.state) {
-        DoseState.TAKEN -> (if (item.log?.status == TakeStatus.ON_TIME) "✓ donné" else "✓ en retard") to GlanceTheme.colors.primary
+        DoseState.TAKEN -> when (item.log?.status) {
+            TakeStatus.EARLY -> "✓ pris en avance"
+            TakeStatus.LATE, TakeStatus.VERY_LATE -> "✓ en retard"
+            else -> "✓ donné"
+        } to GlanceTheme.colors.primary
         DoseState.MISSED -> "oublié" to GlanceTheme.colors.error
         DoseState.OVERDUE -> "en retard" to GlanceTheme.colors.error
         DoseState.DUE -> "c'est l'heure" to GlanceTheme.colors.primary
