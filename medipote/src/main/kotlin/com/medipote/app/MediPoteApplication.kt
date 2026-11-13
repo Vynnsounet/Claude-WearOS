@@ -24,6 +24,7 @@ class MediPoteApplication : Application() {
     @OptIn(FlowPreview::class)
     override fun onCreate() {
         super.onCreate()
+        CrashReporter.install(this)
         Notifications.createChannels(this)
         // Any change to the data (from the app, a notification or a widget) refreshes the widgets.
         appScope.launch {

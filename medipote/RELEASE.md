@@ -36,14 +36,20 @@ non signé.
 
 | Optimisation | Effet |
 |---|---|
-| R8 (réduction, optimisation, obfuscation, `-repackageclasses`) | APK ~10× plus petit que le debug |
+| R8 (réduction du code et renommage, **sans** l'optimiseur) | APK ~6× plus petit que le debug |
 | Suppression des ressources inutilisées | Images et layouts non utilisés retirés |
 | Langues limitées au français | Les traductions des bibliothèques ne sont pas embarquées |
 | Profil de référence (`baseline-prof.txt` + `profileinstaller`) | Code de l'app compilé à l'installation : premier lancement et défilement plus fluides |
 | Fichiers `META-INF` superflus et rapport de dépendances retirés de l'APK | Quelques Ko de moins |
 | Numéros de ligne conservés (`mapping.txt`) | Rapports de plantage lisibles |
 
-Résultat : **APK de 2,1 Mo** (debug : 22 Mo). Le fichier
+Résultat : **APK de 3,7 Mo** (debug : 22 Mo).
+
+L'optimiseur de R8 est désactivé (`-dontoptimize` dans `proguard-rules.pro`) : il réécrit les
+accès atomiques de kotlinx.coroutines et de Compose en appels directs à `sun.misc.Unsafe`, du
+code qui n'existe que dans l'APK et ne peut être vérifié que sur un vrai téléphone. La 1.0.0
+(2,1 Mo) l'utilisait et ne s'ouvrait pas sur deux téléphones ; pour une app de rappels de
+médicaments, la fiabilité passe avant 1,6 Mo. Le fichier
 `medipote/build/outputs/mapping/release/mapping.txt` permet de décoder les traces
 de plantage : à conserver pour chaque version publiée (le Play Store le reçoit avec l'AAB).
 
@@ -57,9 +63,30 @@ de plantage : à conserver pour chaque version publiée (le Play Store le reçoi
 - R8 conserve les sérialiseurs des données, l'activité, les récepteurs, les widgets,
   leurs actions et le constructeur du ViewModel (instanciés par réflexion).
 
-Ce qui n'a pas pu être fait ici faute d'émulateur : lancer l'APK minifié sur un appareil.
+- Le code release réel (R8 rejoué avec la configuration exacte du build, en sortie bytecode
+  Java) démarre sous Robolectric avec Android 14, 15 et 16 et affiche l'écran d'accueil.
+
+Ce qui n'a pas pu être fait ici faute d'émulateur : lancer l'APK lui-même sur un appareil.
 À tester avant publication : premier lancement, ajout d'un traitement, rappel reçu,
 widget posé, redémarrage du téléphone (les rappels doivent revenir).
+
+## Rapport d'erreur
+
+Si l'app plante, le rapport (modèle, version d'Android, détail de l'erreur) est gardé sur le
+téléphone ; au lancement suivant, une boîte de dialogue propose de le partager (SMS, e-mail…).
+Rien n'est envoyé automatiquement : l'app n'a pas accès à Internet. Pour lire les noms de
+classes du rapport : `retrace` du SDK avec le `mapping.txt` de la version concernée.
+
+## Si l'app ne s'installe pas ou ne s'ouvre pas
+
+- « Application non installée » / conflit de package : désinstaller d'abord toute version
+  précédente signée avec une autre clé (les APK de test d'avant la 1.0.0).
+- Samsung : **Paramètres → Sécurité et confidentialité → Auto Blocker** bloque les
+  installations hors Play Store ; le désactiver le temps de l'installation.
+- Play Protect peut avertir pour une app installée hors Play Store : « Plus de détails →
+  Installer quand même ».
+- Installer le fichier **.apk** ; le fichier .aab est réservé au Play Store et ne s'ouvre pas
+  sur un téléphone.
 
 ## Installer à la place de la version de test
 

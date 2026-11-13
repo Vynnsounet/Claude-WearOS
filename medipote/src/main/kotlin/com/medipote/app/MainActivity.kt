@@ -15,5 +15,6 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
         setContent { MediPoteApp(vm) }
+        CrashReporter.offerReport(this)
     }
 }
