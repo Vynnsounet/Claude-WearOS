@@ -21,6 +21,9 @@ interface ListingSource {
      * @throws java.io.IOException on network errors.
      */
     suspend fun search(criteria: SearchCriteria): List<Listing>
+
+    /** The listing completed from its own page (full description, history). Returns it unchanged when not supported. */
+    suspend fun details(listing: Listing): Listing = listing
 }
 
 class SourceBlockedException(message: String) : Exception(message)
@@ -31,4 +34,9 @@ abstract class HtmlListingSource(private val fetcher: HttpFetcher) : ListingSour
         parse(fetcher.get(searchUrl(criteria)))
 
     abstract fun parse(html: String): List<Listing>
+
+    override suspend fun details(listing: Listing): Listing = enrich(listing, fetcher.get(listing.url))
+
+    /** Reads a listing page; sources with a known layout override it. */
+    open fun enrich(listing: Listing, html: String): Listing = DetailExtractor.enrich(listing, html)
 }

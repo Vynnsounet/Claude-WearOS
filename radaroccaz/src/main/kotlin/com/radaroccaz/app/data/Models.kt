@@ -76,6 +76,7 @@ data class Priorities(
     val mileage: Int = 2,
     val age: Int = 2,
     val options: Int = 1,
+    val history: Int = 2,
 ) {
     companion object {
         const val MAX = 3
@@ -97,6 +98,10 @@ data class SearchCriteria(
     /** Department number ("33", "2A") or the start of a postal code; empty = all of France. */
     val department: String = "",
     val wantedOptions: Set<String> = emptySet(),
+    /** Drop cars known to have had more owners than this. */
+    val maxOwners: Int? = null,
+    /** Drop cars declared accidented, damaged or sold for parts. */
+    val excludeDamaged: Boolean = false,
     val priorities: Priorities = Priorities(),
 ) {
     val isValid: Boolean get() = make.isNotBlank() || model.isNotBlank()
@@ -117,6 +122,8 @@ data class SearchCriteria(
             gearbox?.let { add(it.label) }
             if (seller != SellerFilter.ALL) add(seller.label)
             if (department.isNotBlank()) add("Dép. ${department.trim()}")
+            maxOwners?.let { add(if (it == 1) "1re main" else "≤ $it propriétaires") }
+            if (excludeDamaged) add("Non accidentée")
             if (wantedOptions.isNotEmpty()) add("${wantedOptions.size} option${if (wantedOptions.size > 1) "s" else ""}")
         }.joinToString(" · ").ifEmpty { "Tous critères" }
 }
@@ -147,6 +154,10 @@ data class Listing(
     val options: Set<String> = emptySet(),
     /** Other sources where the same car was found. */
     val alsoOn: List<String> = emptyList(),
+    /** What the site and the seller's text say about the car's past. */
+    val history: VehicleHistory = VehicleHistory(),
+    /** True once the full listing page has been read (complete description, all attributes). */
+    val detailsLoaded: Boolean = false,
 ) {
     val location: String?
         get() = when {
@@ -203,4 +214,6 @@ data class AppState(
     val alerts: List<Alert> = emptyList(),
     val recentSearches: List<SearchCriteria> = emptyList(),
     val lastCriteria: SearchCriteria? = null,
+    /** History entered by the user (from a HistoVec report, the seller...), by listing id. */
+    val userHistory: Map<String, VehicleHistory> = emptyMap(),
 )

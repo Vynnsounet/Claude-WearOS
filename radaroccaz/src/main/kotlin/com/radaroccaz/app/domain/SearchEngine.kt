@@ -2,6 +2,7 @@ package com.radaroccaz.app.domain
 
 import com.radaroccaz.app.data.Listing
 import com.radaroccaz.app.data.SearchCriteria
+import com.radaroccaz.app.data.VehicleHistory
 import com.radaroccaz.app.sources.ListingSource
 import com.radaroccaz.app.sources.SourceBlockedException
 import kotlinx.coroutines.CancellationException
@@ -42,7 +43,11 @@ class SearchEngine(
 ) {
     fun source(id: String): ListingSource? = sources.firstOrNull { it.id == id }
 
-    fun search(criteria: SearchCriteria, sourceIds: Collection<String>): Flow<SearchProgress> = channelFlow {
+    fun search(
+        criteria: SearchCriteria,
+        sourceIds: Collection<String>,
+        userHistory: Map<String, VehicleHistory> = emptyMap(),
+    ): Flow<SearchProgress> = channelFlow {
         val active = sources.filter { it.id in sourceIds }
         val lock = Mutex()
         val statuses = active.associate {
@@ -57,7 +62,7 @@ class SearchEngine(
                 val status = try {
                     val found = withTimeout(timeoutMs) { source.search(criteria) }
                     lock.withLock { raw += found }
-                    statuses.getValue(source.id).copy(state = SourceState.OK, count = found.count { Ranking.matches(it, criteria) })
+                    statuses.getValue(source.id).copy(state = SourceState.OK, count = found.count { Ranking.matches(it, criteria, userHistory[it.id]) })
                 } catch (e: SourceBlockedException) {
                     statuses.getValue(source.id).copy(state = SourceState.BLOCKED, message = e.message)
                 } catch (e: TimeoutCancellationException) {
@@ -69,7 +74,7 @@ class SearchEngine(
                 }
                 lock.withLock {
                     statuses[source.id] = status
-                    send(SearchProgress(statuses.values.toList(), Ranking.rank(raw, criteria)))
+                    send(SearchProgress(statuses.values.toList(), Ranking.rank(raw, criteria, userHistory)))
                 }
             }
         }
@@ -78,8 +83,15 @@ class SearchEngine(
     }
 
     /** Waits for every source; used by the background alert checks. */
-    suspend fun searchAll(criteria: SearchCriteria, sourceIds: Collection<String>): SearchProgress =
-        search(criteria, sourceIds).last()
+    suspend fun searchAll(
+        criteria: SearchCriteria,
+        sourceIds: Collection<String>,
+        userHistory: Map<String, VehicleHistory> = emptyMap(),
+    ): SearchProgress = search(criteria, sourceIds, userHistory).last()
+
+    /** Reads the listing's own page for a complete analysis. */
+    suspend fun details(listing: Listing): Listing =
+        withTimeout(timeoutMs) { source(listing.source)?.details(listing) ?: listing }
 
     private fun describe(e: Exception): String = when (e) {
         is java.net.UnknownHostException -> "Pas de connexion Internet."

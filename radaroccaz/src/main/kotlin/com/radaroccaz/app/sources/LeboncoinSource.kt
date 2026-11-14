@@ -9,6 +9,7 @@ import com.radaroccaz.app.data.SellerType
 import com.radaroccaz.app.data.Text
 import com.radaroccaz.app.data.VehicleOptions
 import java.net.URLEncoder
+import com.radaroccaz.app.analysis.StructuredHistory
 import kotlinx.serialization.json.JsonObject
 
 /**
@@ -47,6 +48,20 @@ class LeboncoinSource(fetcher: HttpFetcher) : HtmlListingSource(fetcher) {
         return ads.mapNotNull { it.obj()?.let(::toListing) }
     }
 
+    /** The ad page embeds the same ad object as the search, with the full text and every attribute. */
+    override fun enrich(listing: Listing, html: String): Listing {
+        val root = JsonTools.nextData(JsonTools.document(html))
+        val nativeId = listing.id.substringAfter(':')
+        val ad = root?.let { JsonTools.objects(it).firstOrNull { o -> o.str("list_id") == nativeId && "subject" in o } }
+        val full = ad?.let(::toListing) ?: return DetailExtractor.enrich(listing, html)
+        val generic = DetailExtractor.enrich(full, html)
+        return generic.copy(
+            imageUrls = full.imageUrls.ifEmpty { listing.imageUrls },
+            alsoOn = listing.alsoOn,
+            history = listing.history.merge(generic.history),
+        )
+    }
+
     private fun toListing(ad: JsonObject): Listing? {
         val nativeId = ad.str("list_id") ?: return null
         val price = ad.int("price") ?: ad.int("price_cents")?.div(100) ?: return null
@@ -83,7 +98,7 @@ class LeboncoinSource(fetcher: HttpFetcher) : HtmlListingSource(fetcher) {
             publishedAt = ad.str("first_publication_date")?.replace(' ', 'T'),
             powerHp = Text.digits(rawValues["horse_power_din"]),
             options = VehicleOptions.detect(title, body),
-        )
+        ).withHistory(StructuredHistory.fromPairs(attrs.toList() + rawValues.toList()))
     }
 
     private fun fuelCodes(f: Fuel): List<String> = when (f) {

@@ -62,7 +62,13 @@ import androidx.compose.ui.unit.dp
 import com.radaroccaz.app.data.Format
 import com.radaroccaz.app.data.Listing
 import com.radaroccaz.app.data.VehicleOptions
+import com.radaroccaz.app.analysis.Analysis
+import com.radaroccaz.app.analysis.Severity
 import com.radaroccaz.app.domain.ScoredListing
+import com.radaroccaz.app.ui.DeepStatus
+import androidx.compose.material.icons.rounded.Info
+import androidx.compose.material.icons.rounded.ThumbUp
+import androidx.compose.material.icons.rounded.Warning
 import com.radaroccaz.app.ui.components.DealBadge
 import com.radaroccaz.app.ui.components.ListingImage
 import com.radaroccaz.app.ui.components.Pill
@@ -81,6 +87,7 @@ import java.util.Locale
 fun ListingDetailScreen(
     listing: Listing,
     scored: ScoredListing?,
+    analysis: Analysis,
     wantedOptions: Set<String>,
     favorite: Boolean,
     onBack: () -> Unit,
@@ -88,6 +95,9 @@ fun ListingDetailScreen(
     onShare: () -> Unit,
     onOpenUrl: (String) -> Unit,
     modifier: Modifier = Modifier,
+    deep: DeepStatus? = null,
+    onRetryDeep: () -> Unit = {},
+    onEditHistory: () -> Unit = {},
 ) {
     Box(modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
         Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(bottom = 96.dp)) {
@@ -121,6 +131,18 @@ fun ListingDetailScreen(
                 }
 
                 if (scored != null) ScoreCard(scored, wantedOptions.isNotEmpty())
+
+                ReliabilityCard(analysis, deep, listing.detailsLoaded, onRetryDeep, onEditHistory)
+                FindingsCard(
+                    "Points de vigilance", Icons.Rounded.Warning,
+                    analysis.findings.filter { it.severity == Severity.CRITICAL || it.severity == Severity.WARNING },
+                )
+                FindingsCard("Points forts", Icons.Rounded.ThumbUp, analysis.positives)
+                HistoryFactsCard(analysis)
+                analysis.history.reportUrl?.let { ReportLink(it, onOpenUrl) }
+                MileageCard(analysis)
+                FindingsCard("Autres remarques", Icons.Rounded.Info, analysis.findings.filter { it.severity == Severity.INFO })
+                QuestionsCard(analysis.questions)
 
                 SectionCard("Caractéristiques") {
                     val specs = buildList {
@@ -286,6 +308,7 @@ private fun ScoreCard(scored: ScoredListing, showOptions: Boolean) {
             ScoreBar("Kilométrage", b.mileage)
             ScoreBar("Année", b.age)
             if (showOptions) b.options?.let { ScoreBar("Options souhaitées", it) }
+            ScoreBar("Historique et fiabilité", b.history)
         }
     }
 }

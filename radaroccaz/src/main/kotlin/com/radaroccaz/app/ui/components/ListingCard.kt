@@ -15,7 +15,13 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.material.icons.rounded.CheckCircle
+import androidx.compose.material.icons.rounded.Error
+import androidx.compose.material.icons.rounded.People
+import androidx.compose.material.icons.rounded.VerifiedUser
+import androidx.compose.material.icons.rounded.Warning
 import androidx.compose.material.icons.rounded.Favorite
 import androidx.compose.material.icons.rounded.FavoriteBorder
 import androidx.compose.material3.Icon
@@ -44,6 +50,7 @@ fun Listing.specLine(): String = listOfNotNull(
     gearbox?.label,
 ).joinToString(" · ")
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun ListingCard(
     listing: Listing,
@@ -128,16 +135,44 @@ fun ListingCard(
                         )
                     }
                 }
-                if (scored != null && wantedOptions > 0) {
+                val x = LocalExtraColors.current
+                val owners = listing.history.owners?.value
+                val headline = scored?.analysis?.headline
+                val strength = scored?.analysis?.positives?.firstOrNull { it.topic == com.radaroccaz.app.analysis.Topic.HISTORY }
+                val showOptions = scored != null && wantedOptions > 0
+                if (showOptions || owners != null || headline != null || strength != null) {
                     Spacer(Modifier.height(6.dp))
-                    val x = LocalExtraColors.current
-                    val all = scored.matchedOptions.size == wantedOptions
-                    Pill(
-                        "${scored.matchedOptions.size}/$wantedOptions options",
-                        if (all) x.great else MaterialTheme.colorScheme.onSecondaryContainer,
-                        if (all) x.greatContainer else MaterialTheme.colorScheme.secondaryContainer,
-                        icon = Icons.Rounded.CheckCircle,
-                    )
+                    FlowRow(horizontalArrangement = Arrangement.spacedBy(5.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        if (showOptions) {
+                            val all = scored!!.matchedOptions.size == wantedOptions
+                            Pill(
+                                "${scored.matchedOptions.size}/$wantedOptions options",
+                                if (all) x.great else MaterialTheme.colorScheme.onSecondaryContainer,
+                                if (all) x.greatContainer else MaterialTheme.colorScheme.secondaryContainer,
+                                icon = Icons.Rounded.CheckCircle,
+                            )
+                        }
+                        if (owners != null && headline?.title?.contains("propriétaires") != true) {
+                            Pill(
+                                if (owners == 1) "1re main" else "$owners propr.",
+                                MaterialTheme.colorScheme.onSecondaryContainer, MaterialTheme.colorScheme.secondaryContainer,
+                                icon = Icons.Rounded.People,
+                            )
+                        }
+                        when {
+                            headline != null -> {
+                                val critical = headline.severity == com.radaroccaz.app.analysis.Severity.CRITICAL
+                                Pill(
+                                    headline.title,
+                                    if (critical) x.weak else x.fair,
+                                    if (critical) x.weakContainer else x.fairContainer,
+                                    icon = if (critical) Icons.Rounded.Error else Icons.Rounded.Warning,
+                                )
+                            }
+                            strength != null && strength.title != "Première main" ->
+                                Pill(strength.title, x.great, x.greatContainer, icon = Icons.Rounded.VerifiedUser)
+                        }
+                    }
                 }
             }
         }

@@ -8,6 +8,7 @@ import com.radaroccaz.app.data.SellerFilter
 import com.radaroccaz.app.data.SellerType
 import com.radaroccaz.app.data.Text
 import com.radaroccaz.app.data.VehicleOptions
+import com.radaroccaz.app.analysis.StructuredHistory
 import kotlinx.serialization.json.JsonObject
 
 /**
@@ -85,7 +86,7 @@ class AutoScout24Source(fetcher: HttpFetcher) : HtmlListingSource(fetcher) {
             description = o.str("vehicle", "subtitle").orEmpty(),
             powerHp = power,
             options = VehicleOptions.detect(title, o.str("vehicle", "subtitle")),
-        )
+        ).withHistory(StructuredHistory.fromJson(o))
     }
 
     private fun fuelCodes(f: Fuel): List<String> = when (f) {

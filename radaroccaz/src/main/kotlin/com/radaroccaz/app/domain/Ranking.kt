@@ -1,11 +1,17 @@
 package com.radaroccaz.app.domain
 
+import com.radaroccaz.app.analysis.Analysis
+import com.radaroccaz.app.analysis.HistoryText
+import com.radaroccaz.app.analysis.VehicleAnalysis
+import com.radaroccaz.app.data.AccidentStatus
 import com.radaroccaz.app.data.Fuel
 import com.radaroccaz.app.data.Listing
 import com.radaroccaz.app.data.SearchCriteria
 import com.radaroccaz.app.data.SellerFilter
 import com.radaroccaz.app.data.SellerType
 import com.radaroccaz.app.data.Text
+import com.radaroccaz.app.data.VehicleHistory
+import java.time.LocalDate
 import kotlin.math.abs
 import kotlin.math.exp
 import kotlin.math.ln
@@ -19,6 +25,8 @@ data class ScoreBreakdown(
     val options: Double?,
     /** Value for money compared with similar cars in the results (0.5 = market price). */
     val deal: Double?,
+    /** Reliability of the car's past and of the listing (see [VehicleAnalysis]). */
+    val history: Double = 0.7,
 )
 
 data class ScoredListing(
@@ -31,6 +39,7 @@ data class ScoredListing(
     /** Percent below (negative) or above (positive) [marketPrice]. */
     val dealPercent: Int?,
     val matchedOptions: Set<String>,
+    val analysis: Analysis,
 ) {
     val verdict: Verdict get() = Verdict.of(score)
 }
@@ -59,7 +68,7 @@ enum class SortOrder(val label: String) {
 object Ranking {
 
     /** Drops listings that contradict the criteria. Unknown values (no mileage given...) are kept. */
-    fun matches(l: Listing, c: SearchCriteria): Boolean {
+    fun matches(l: Listing, c: SearchCriteria, user: VehicleHistory? = null): Boolean {
         if (l.price < MIN_PLAUSIBLE_PRICE) return false
         if (c.budgetMax != null && l.price > c.budgetMax) return false
         if (c.budgetMin != null && l.price < c.budgetMin) return false
@@ -73,6 +82,16 @@ object Ranking {
             SellerFilter.PARTICULIER -> if (l.sellerType == SellerType.PRO) return false
             SellerFilter.PRO -> if (l.sellerType == SellerType.PARTICULIER) return false
             SellerFilter.ALL -> Unit
+        }
+        if (c.excludeDamaged || c.maxOwners != null) {
+            val h = if (user == null) l.history else l.history.merge(user)
+            if (c.excludeDamaged) {
+                val a = h.accident?.value
+                if (a == AccidentStatus.DAMAGED || a == AccidentStatus.SEVERE) return false
+                if (h.issues.any { it.value in HistoryText.CRITICAL_ISSUES }) return false
+            }
+            val owners = h.owners?.value
+            if (c.maxOwners != null && owners != null && owners > c.maxOwners) return false
         }
         val dep = c.department.trim()
         if (dep.isNotEmpty() && l.postalCode != null && !l.postalCode.startsWith(dep)) return false
@@ -118,7 +137,12 @@ object Ranking {
         return merged + singles
     }
 
-    fun score(listings: List<Listing>, c: SearchCriteria): List<ScoredListing> {
+    fun score(
+        listings: List<Listing>,
+        c: SearchCriteria,
+        userHistory: Map<String, VehicleHistory> = emptyMap(),
+        today: LocalDate = LocalDate.now(),
+    ): List<ScoredListing> {
         if (listings.isEmpty()) return emptyList()
         val market = MarketModel.fit(listings)
         val prices = listings.map { it.price }
@@ -143,22 +167,27 @@ object Ranking {
             val matched = l.options intersect c.wantedOptions
             val options = if (c.wantedOptions.isEmpty()) null else matched.size.toDouble() / c.wantedOptions.size
 
+            val analysis = VehicleAnalysis.analyze(l, userHistory[l.id], dealPercent, today)
+            val history = analysis.reliability / 100.0
+
             val parts = listOfNotNull(
                 priceScore to p.price,
                 km to p.mileage,
                 age to p.age,
                 options?.let { it to p.options },
+                history to p.history,
             )
             val totalWeight = parts.sumOf { it.second }
             val value = if (totalWeight == 0) parts.sumOf { it.first } / parts.size
             else parts.sumOf { it.first * it.second } / totalWeight
             ScoredListing(
                 listing = l,
-                score = (value * 100).roundToInt().coerceIn(0, 100),
-                breakdown = ScoreBreakdown(priceScore, km, age, options, deal),
+                score = ((value * 100).roundToInt() - 15 * analysis.critical.size).coerceIn(0, 100),
+                breakdown = ScoreBreakdown(priceScore, km, age, options, deal, history),
                 marketPrice = expected,
                 dealPercent = dealPercent,
                 matchedOptions = matched,
+                analysis = analysis,
             )
         }
     }
@@ -172,8 +201,13 @@ object Ranking {
     }
 
     /** Filter, merge duplicates and score in one go. */
-    fun rank(raw: List<Listing>, c: SearchCriteria): List<ScoredListing> =
-        score(deduplicate(raw.filter { matches(it, c) }.distinctBy { it.id }), c)
+    fun rank(
+        raw: List<Listing>,
+        c: SearchCriteria,
+        userHistory: Map<String, VehicleHistory> = emptyMap(),
+        today: LocalDate = LocalDate.now(),
+    ): List<ScoredListing> =
+        score(deduplicate(raw.filter { matches(it, c, userHistory[it.id]) }.distinctBy { it.id }), c, userHistory, today)
 
     const val MIN_PLAUSIBLE_PRICE = 500
     private const val UNKNOWN = 0.35

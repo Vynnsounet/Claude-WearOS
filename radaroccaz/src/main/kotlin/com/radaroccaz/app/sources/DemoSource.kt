@@ -73,7 +73,7 @@ class DemoSource(
             val description = buildString {
                 append("$make $model $engine $trim de $year, ${Format.km(km)}. ")
                 append("Équipements : ").append(opts.joinToString(", ") { it.keywords.first() }).append(". ")
-                append(if (seller == SellerType.PRO) "Véhicule révisé, garantie 12 mois." else "Vendue cause changement de véhicule, non fumeur.")
+                append(historyText(rnd, year, km, seller))
             }
             Listing(
                 id = "$ID:${Text.compact(make + model)}-$i",
@@ -94,8 +94,53 @@ class DemoSource(
                 publishedAt = today.minusDays(rnd.nextLong(0, 21)).toString(),
                 powerHp = Text.digits(engine.substringAfterLast(' '))?.takeIf { it in 60..400 },
                 options = VehicleOptions.detect(description),
-            )
+            ).withHistory()
         }
+    }
+
+    override suspend fun details(listing: Listing): Listing {
+        if (latencyMs > 0) delay(latencyMs / 2)
+        return listing.copy(detailsLoaded = true)
+    }
+
+    /** A plausible mix of what sellers write about a car's past, good and bad. */
+    private fun historyText(rnd: Random, year: Int, km: Int, seller: SellerType): String {
+        val age = (today.year - year).coerceAtLeast(0)
+        val parts = mutableListOf<String>()
+        when (rnd.nextInt(10)) {
+            in 0..3 -> parts += "Première main"
+            in 4..6 -> parts += "${2 + rnd.nextInt(2)} propriétaires"
+            else -> Unit
+        }
+        when (rnd.nextInt(12)) {
+            in 0..5 -> parts += "jamais accidentée"
+            6 -> parts += "petit choc arrière réparé"
+            7 -> parts += "accidentée à l'avant, réparée en garage"
+            else -> Unit
+        }
+        if (rnd.nextInt(3) > 0) parts += "carnet d'entretien à jour avec factures"
+        if (age > 4) {
+            val ctYear = today.year - 1
+            val ctKm = (km - rnd.nextInt(6_000, 16_000)).coerceAtLeast(1_000)
+            parts += when (rnd.nextInt(8)) {
+                0 -> "CT avec contre-visite (pneus)"
+                1 -> "CT à faire"
+                // A reading higher than today's mileage: what a rolled-back odometer looks like.
+                2 -> "CT de mars $ctYear à ${Format.km(km + 23_000)}"
+                else -> "CT OK, dernier CT de mars $ctYear à ${Format.km(ctKm)}"
+            }
+        }
+        if (km > 110_000 && rnd.nextBoolean()) parts += "distribution faite à ${Format.km(km - rnd.nextInt(5_000, 30_000))}"
+        when (rnd.nextInt(14)) {
+            0 -> parts += "embrayage à prévoir"
+            1 -> parts += "voyant moteur allumé"
+            2 -> parts += "kilométrage non garanti"
+            3 -> parts += "pneus neufs"
+            4 -> parts += "rapport HistoVec disponible sur demande"
+            else -> Unit
+        }
+        parts += if (seller == SellerType.PRO) "garantie 12 mois" else "non fumeur, aucun frais à prévoir"
+        return parts.joinToString(", ").replaceFirstChar { it.uppercase() } + "."
     }
 
     companion object {

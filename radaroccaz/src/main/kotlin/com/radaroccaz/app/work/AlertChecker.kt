@@ -29,7 +29,7 @@ class AlertChecker(
         val ids = sourceIds(state.settings)
         val hits = mutableListOf<AlertHit>()
         for (alert in state.alerts.filter { it.enabled && (force || isDue(it, now())) }) {
-            val progress = engine.searchAll(alert.criteria, ids)
+            val progress = engine.searchAll(alert.criteria, ids, state.userHistory)
             val checkedAt = now()
             if (progress.statuses.isNotEmpty() && progress.statuses.none { it.state == SourceState.OK }) {
                 val reason = progress.statuses.firstNotNullOfOrNull { it.message } ?: "Aucun site n'a répondu."

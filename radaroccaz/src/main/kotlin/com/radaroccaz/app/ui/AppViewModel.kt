@@ -10,6 +10,8 @@ import com.radaroccaz.app.data.AppState
 import com.radaroccaz.app.data.Listing
 import com.radaroccaz.app.data.SearchCriteria
 import com.radaroccaz.app.data.Settings
+import com.radaroccaz.app.data.VehicleHistory
+import com.radaroccaz.app.analysis.VehicleAnalysis
 import com.radaroccaz.app.domain.Ranking
 import com.radaroccaz.app.domain.ScoredListing
 import com.radaroccaz.app.domain.SortOrder
@@ -40,6 +42,11 @@ data class ResultsState(
     val sorted: List<ScoredListing> by lazy { Ranking.sort(results, sort) }
 }
 
+enum class DeepState { LOADING, DONE, FAILED }
+
+/** Progress of the full-page analysis of one listing. */
+data class DeepStatus(val state: DeepState, val message: String? = null)
+
 class AppViewModel(application: Application) : AndroidViewModel(application) {
     private val app = application as RadarApplication
     private val repo = app.repository
@@ -58,6 +65,9 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     /** Alert to open, set by a notification tap and consumed by the navigation. */
     private val _pendingAlert = MutableStateFlow<String?>(null)
     val pendingAlert: StateFlow<String?> = _pendingAlert.asStateFlow()
+
+    private val _deep = MutableStateFlow<Map<String, DeepStatus>>(emptyMap())
+    val deep: StateFlow<Map<String, DeepStatus>> = _deep.asStateFlow()
 
     private var searchJob: Job? = null
 
@@ -82,7 +92,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         _results.value = ResultsState(criteria = criteria, running = true, alertId = alertId, newIds = newIds,
             sort = _results.value.sort, demo = settings.demoMode)
         searchJob = viewModelScope.launch {
-            app.engine.search(criteria, app.activeSources(settings)).collect { progress ->
+            app.engine.search(criteria, app.activeSources(settings), repo.state.value.userHistory).collect { progress ->
                 _results.update { it.copy(statuses = progress.statuses, results = progress.results, running = !progress.done) }
             }
             _results.update { it.copy(running = false) }
@@ -112,6 +122,58 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
             ?: state.value.alerts.firstNotNullOfOrNull { a -> a.unread.firstOrNull { it.id == id } }
 
     fun scored(id: String): ScoredListing? = _results.value.results.firstOrNull { it.listing.id == id }
+
+    // ---- Full analysis and history ----
+
+    /** Reads the listing's own page (full text, every attribute) and re-analyses it. */
+    fun analyzeDeep(id: String, force: Boolean = false) {
+        val listing = findListing(id) ?: return
+        val current = _deep.value[id]?.state
+        if (!force && (listing.detailsLoaded || current == DeepState.LOADING || current == DeepState.DONE)) return
+        _deep.update { it + (id to DeepStatus(DeepState.LOADING)) }
+        viewModelScope.launch {
+            try {
+                val full = app.engine.details(listing)
+                replaceListing(full)
+                _deep.update { it + (id to DeepStatus(DeepState.DONE)) }
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                throw e
+            } catch (e: com.radaroccaz.app.sources.SourceBlockedException) {
+                _deep.update { it + (id to DeepStatus(DeepState.FAILED, "Le site a bloqué la lecture de l'annonce : analyse faite sur les données de la recherche.")) }
+            } catch (e: Exception) {
+                _deep.update { it + (id to DeepStatus(DeepState.FAILED, "Annonce complète illisible : analyse faite sur les données de la recherche.")) }
+            }
+        }
+    }
+
+    private fun replaceListing(full: Listing) {
+        val r = _results.value
+        if (r.criteria != null && r.results.any { it.listing.id == full.id }) {
+            val listings = r.results.map { if (it.listing.id == full.id) full else it.listing }
+            _results.update { it.copy(results = Ranking.score(listings, r.criteria, state.value.userHistory)) }
+        }
+        repo.update { s ->
+            s.copy(
+                favorites = s.favorites.map { if (it.id == full.id) full else it },
+                alerts = s.alerts.map { a -> a.copy(unread = a.unread.map { if (it.id == full.id) full else it }) },
+            )
+        }
+    }
+
+    /** What the user entered from a HistoVec report or the seller's answers. */
+    fun saveUserHistory(id: String, history: VehicleHistory) {
+        repo.update { s ->
+            s.copy(userHistory = if (history.isEmpty) s.userHistory - id else s.userHistory + (id to history))
+        }
+        val r = _results.value
+        if (r.criteria != null && r.results.isNotEmpty()) {
+            _results.update { it.copy(results = Ranking.score(r.results.map { s -> s.listing }, r.criteria, state.value.userHistory)) }
+        }
+    }
+
+    /** Analysis of a listing outside the current results (favorites, alerts): no market comparison. */
+    fun analysisFor(listing: Listing) =
+        scored(listing.id)?.analysis ?: VehicleAnalysis.analyze(listing, state.value.userHistory[listing.id])
 
     // ---- Alerts ----
 

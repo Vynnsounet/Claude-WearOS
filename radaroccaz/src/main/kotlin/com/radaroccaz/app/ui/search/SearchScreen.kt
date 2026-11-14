@@ -48,6 +48,7 @@ import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SuggestionChip
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -247,6 +248,43 @@ fun SearchScreen(
                     }
                 }
 
+                SectionCard("Historique du véhicule", icon = Icons.Rounded.History) {
+                    Text(
+                        "Lu dans les données des sites et le texte des annonces ; les annonces sans information restent affichées.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Spacer(Modifier.height(10.dp))
+                    SubLabel("Propriétaires au maximum")
+                    val ownerOptions = listOf<Int?>(null, 1, 2, 3)
+                    SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
+                        ownerOptions.forEachIndexed { i, n ->
+                            SegmentedButton(
+                                selected = criteria.maxOwners == n,
+                                onClick = { onChange { it.copy(maxOwners = n) } },
+                                shape = SegmentedButtonDefaults.itemShape(i, ownerOptions.size),
+                                label = { Text(when (n) { null -> "Indiff."; 1 -> "1re main"; else -> "$n" }, maxLines = 1) },
+                            )
+                        }
+                    }
+                    Spacer(Modifier.height(10.dp))
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Column(Modifier.weight(1f)) {
+                            Text("Exclure les véhicules accidentés", style = MaterialTheme.typography.bodyLarge)
+                            Text(
+                                "Accident, sinistre VE/VGA, moteur HS, vendu pour pièces",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                        Switch(
+                            checked = criteria.excludeDamaged,
+                            onCheckedChange = { v -> onChange { it.copy(excludeDamaged = v) } },
+                            modifier = Modifier.testTag("exclude_damaged"),
+                        )
+                    }
+                }
+
                 SectionCard("Ce qui compte pour vous", icon = Icons.Rounded.Star) {
                     Text(
                         "Règle le poids de chaque critère dans la note sur 100.",
@@ -261,6 +299,7 @@ fun SearchScreen(
                     PriorityRow("Options souhaitées", p.options, enabled = criteria.wantedOptions.isNotEmpty()) { v ->
                         onChange { it.copy(priorities = it.priorities.copy(options = v)) }
                     }
+                    PriorityRow("Historique et fiabilité", p.history) { v -> onChange { it.copy(priorities = it.priorities.copy(history = v)) } }
                 }
             }
         }

@@ -6,6 +6,7 @@ import com.radaroccaz.app.data.Listing
 import com.radaroccaz.app.data.SellerType
 import com.radaroccaz.app.data.Text
 import com.radaroccaz.app.data.VehicleOptions
+import com.radaroccaz.app.analysis.StructuredHistory
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
@@ -113,7 +114,7 @@ object GenericExtractor {
             description = description,
             powerHp = numberOf(o.pick("powerDIN", "horsePower", "powerHp", "puissanceDin")),
             options = VehicleOptions.detect(title, description),
-        )
+        ).withHistory(StructuredHistory.fromJson(o))
     }
 
     /** "PEUGEOT 308 1.2 PURETECH" → "Peugeot 308 1.2 Puretech"; mixed-case text is kept as is. */
@@ -167,6 +168,6 @@ object GenericExtractor {
             imageUrls = o["image"].strings(),
             description = description,
             options = VehicleOptions.detect(title, description),
-        )
+        ).withHistory()
     }
 }

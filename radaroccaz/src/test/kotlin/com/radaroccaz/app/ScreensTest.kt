@@ -15,6 +15,8 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performTextInput
+import com.radaroccaz.app.analysis.HistoryText
 import com.radaroccaz.app.data.Alert
 import com.radaroccaz.app.data.AlertFrequency
 import com.radaroccaz.app.data.Fuel
@@ -70,9 +72,23 @@ class ScreensTest {
         car("6", 10_990, 75_000, 2019, "leboncoin", "Peugeot 308 1.5 BlueHDi 100 Active Business", options = setOf("gps", "camera", "carplay", "premiere_main"), city = "Toulouse", postalCode = "31000"),
         car("7", 13_400, 101_000, 2018, "autoscout24", "Peugeot 308 2.0 BlueHDi 150 GT Line EAT8", gearbox = Gearbox.AUTOMATIQUE, seller = SellerType.PRO, city = "Paris", postalCode = "75015"),
         car("8", 12_200, 66_000, 2019, "leboncoin", "Peugeot 308 1.2 PureTech 130 Allure", fuel = Fuel.ESSENCE, options = setOf("carplay"), city = "Pau", postalCode = "64000"),
-    ).map { it.copy(description = "Véhicule en très bon état, entretien suivi chez Peugeot. " + it.options.joinToString(", ") { o -> VehicleOptions.label(o) } + ". Contrôle technique OK, aucun frais à prévoir.", publishedAt = "2026-11-13") }
+    ).mapIndexed { i, l ->
+        val past = listOf(
+            "Première main, jamais accidentée, carnet d'entretien complet. CT OK de mars 2026 à 91 000 km, CT de mars 2024 à 64 000 km. Distribution faite à 90 000 km.",
+            "2 propriétaires, entretien suivi en concession, garantie 12 mois.",
+            "3 propriétaires. Embrayage à prévoir, CT avec contre-visite (pneus).",
+            "Première main, non accidentée, carnet d'entretien à jour, garantie 12 mois.",
+            "Accidentée à l'avant, réparée en garage. Carnet d'entretien.",
+            "Première main, jamais accidentée, entretien suivi, CT OK. Non fumeur.",
+            "2 propriétaires, kilométrage non garanti.",
+            "Petit choc sur le pare-chocs arrière. Non fumeur.",
+        )[i]
+        val text = "Véhicule en bon état. " + l.options.joinToString(", ") { o -> VehicleOptions.label(o) } + ". " + past
+        l.copy(description = text, publishedAt = "2026-11-13", imageUrls = List(6) { "https://example.org/$it.jpg" })
+            .let { it.copy(history = HistoryText.extract(it.title, text)) }
+    }
 
-    private val results = Ranking.rank(raw, criteria)
+    private val results = Ranking.rank(raw, criteria, today = java.time.LocalDate.of(2026, 11, 14))
 
     private val statuses = listOf(
         SourceStatus("leboncoin", "Leboncoin", SourceState.OK, 5, searchUrl = "https://www.leboncoin.fr"),
@@ -166,15 +182,52 @@ class ScreensTest {
     )
 
     @Test
-    @Config(qualifiers = "w400dp-h1700dp-xhdpi")
+    @Config(qualifiers = "w400dp-h4200dp-xhdpi")
     fun detail() {
         val best = Ranking.sort(results, com.radaroccaz.app.domain.SortOrder.BEST).first()
         render {
-            ListingDetailScreen(best.listing, best, criteria.wantedOptions, favorite = true, {}, {}, {}, {})
+            ListingDetailScreen(best.listing, best, best.analysis, criteria.wantedOptions, favorite = true, {}, {}, {}, {})
         }
-        compose.onNodeWithText("Caractéristiques").assertIsDisplayed()
+        compose.onNodeWithText("Caractéristiques").assertExists()
+        compose.onNodeWithText("Fiabilité et historique").assertIsDisplayed()
         compose.onNodeWithText("Voir l'annonce sur ${if (best.listing.source == "leboncoin") "Leboncoin" else "AutoScout24"}").assertExists()
         shot("detail")
+    }
+
+    @Test
+    @Config(qualifiers = "w400dp-h2300dp-xhdpi")
+    fun detailWithWarnings() {
+        val risky = results.first { it.listing.id == "leboncoin:3" }
+        render {
+            ListingDetailScreen(risky.listing, risky, risky.analysis, criteria.wantedOptions, favorite = false, {}, {}, {}, {})
+        }
+        compose.onNodeWithText("Points de vigilance").assertExists()
+        compose.onNodeWithText("Contre-visite au contrôle technique").assertExists()
+        shot("detail_warnings")
+    }
+
+    @Test
+    @Config(qualifiers = "w400dp-h1500dp-xhdpi")
+    fun historyEditor() {
+        var saved: com.radaroccaz.app.data.VehicleHistory? = null
+        val initial = com.radaroccaz.app.data.VehicleHistory(
+            owners = com.radaroccaz.app.data.Fact(2, com.radaroccaz.app.data.FactSource.VOUS),
+            readings = listOf(
+                com.radaroccaz.app.data.MileageReading("2022-04", 41_000, com.radaroccaz.app.data.FactSource.VOUS, "Relevé saisi"),
+                com.radaroccaz.app.data.MileageReading("2024-04", 66_500, com.radaroccaz.app.data.FactSource.VOUS, "Relevé saisi"),
+            ),
+        )
+        render {
+            com.radaroccaz.app.ui.detail.HistoryEditorScreen(raw[0], initial, onSave = { saved = it }, onBack = {}, onOpenUrl = {})
+        }
+        compose.onNodeWithText("Ce que dit le rapport").assertIsDisplayed()
+        shot("history_editor")
+        compose.onNodeWithTag("reading_date").performTextInput("03/2026")
+        compose.onNodeWithTag("reading_km").performTextInput("91000")
+        compose.onNodeWithTag("reading_add").performClick()
+        compose.onNodeWithTag("history_save").performClick()
+        assertTrue(saved!!.readings.map { it.km } == listOf(41_000, 66_500, 91_000))
+        assertTrue(saved!!.owners?.value == 2)
     }
 
     @Test

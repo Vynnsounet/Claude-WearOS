@@ -46,6 +46,7 @@ import com.radaroccaz.app.ui.alerts.AlertsScreen
 import com.radaroccaz.app.ui.alerts.CreateAlertDialog
 import com.radaroccaz.app.ui.components.SourceInfo
 import com.radaroccaz.app.ui.components.specLine
+import com.radaroccaz.app.ui.detail.HistoryEditorScreen
 import com.radaroccaz.app.ui.detail.ListingDetailScreen
 import com.radaroccaz.app.ui.favorites.FavoritesScreen
 import com.radaroccaz.app.ui.results.ResultsScreen
@@ -62,7 +63,9 @@ private object Routes {
     const val ALERTS = "alerts"
     const val FAVORITES = "favorites"
     const val SETTINGS = "settings"
+    const val HISTORY = "history/{id}"
     fun detail(id: String) = "detail/${android.net.Uri.encode(id)}"
+    fun history(id: String) = "history/${android.net.Uri.encode(id)}"
 }
 
 private data class Tab(val route: String, val label: String, val icon: androidx.compose.ui.graphics.vector.ImageVector, val selectedIcon: androidx.compose.ui.graphics.vector.ImageVector)
@@ -83,6 +86,7 @@ fun RadarApp(vm: AppViewModel) {
         val results by vm.results.collectAsStateWithLifecycle()
         val checking by vm.checkingAlerts.collectAsStateWithLifecycle()
         val pendingAlert by vm.pendingAlert.collectAsStateWithLifecycle()
+        val deep by vm.deep.collectAsStateWithLifecycle()
         val favoriteIds = remember(app.favorites) { app.favorites.map { it.id }.toSet() }
         var showCreateAlert by remember { mutableStateOf(false) }
         var notificationsAllowed by remember { mutableStateOf(Notifications.canNotify(context)) }
@@ -183,14 +187,35 @@ fun RadarApp(vm: AppViewModel) {
                         LaunchedEffect(Unit) { nav.popBackStack() }
                         Box(Modifier.fillMaxSize())
                     } else {
+                        // Reading the full page gives the whole description and every attribute.
+                        LaunchedEffect(listing.id) { vm.analyzeDeep(listing.id) }
                         ListingDetailScreen(
                             listing = listing,
                             scored = vm.scored(listing.id),
+                            analysis = remember(listing, app.userHistory[listing.id], results) { vm.analysisFor(listing) },
+                            deep = deep[listing.id],
+                            onRetryDeep = { vm.analyzeDeep(listing.id, force = true) },
+                            onEditHistory = { nav.navigate(Routes.history(listing.id)) },
                             wantedOptions = results.criteria?.wantedOptions.orEmpty(),
                             favorite = listing.id in favoriteIds,
                             onBack = { nav.popBackStack() },
                             onToggleFavorite = { vm.toggleFavorite(listing) },
                             onShare = { share(context, listing) },
+                            onOpenUrl = { openUrl(context, it) },
+                        )
+                    }
+                }
+                composable(Routes.HISTORY) { entry ->
+                    val id = entry.arguments?.getString("id")?.let(android.net.Uri::decode)
+                    val listing = id?.let(vm::findListing)
+                    if (listing == null) {
+                        LaunchedEffect(Unit) { nav.popBackStack() }
+                    } else {
+                        HistoryEditorScreen(
+                            listing = listing,
+                            initial = app.userHistory[listing.id] ?: com.radaroccaz.app.data.VehicleHistory(),
+                            onSave = { vm.saveUserHistory(listing.id, it); nav.popBackStack() },
+                            onBack = { nav.popBackStack() },
                             onOpenUrl = { openUrl(context, it) },
                         )
                     }
