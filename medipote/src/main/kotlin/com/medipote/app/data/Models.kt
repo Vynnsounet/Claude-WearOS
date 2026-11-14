@@ -135,6 +135,8 @@ data class DoseTime(
     /** Minutes after midnight, e.g. 8:30 → 510. */
     val minuteOfDay: Int,
     val quantity: Double = 1.0,
+    /** When this dose time was added to an existing treatment: it isn't owed on earlier days. */
+    @Serializable(with = LocalDateTimeSerializer::class) val since: LocalDateTime? = null,
 ) {
     val timeLabel: String get() = "%02d:%02d".format(minuteOfDay / 60, minuteOfDay % 60)
 }

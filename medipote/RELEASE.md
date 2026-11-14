@@ -66,6 +66,13 @@ L'optimiseur de R8 reste désactivé (`-dontoptimize`) : APK de 3,8 Mo au lieu d
 le dex livré peut être reconverti et exécuté hors appareil pour vérification (voir plus bas),
 ce que l'optimiseur empêche. Il pourra être réactivé après des essais sur téléphone.
 
+### 1.2.1
+
+- Changer l'heure d'une prise ne la fait plus redonner : les prises déjà données (aujourd'hui
+  et les jours passés) suivent leur nouvelle heure, et l'historique ne montre pas d'oubli.
+- Une heure de prise ajoutée à un traitement n'est due qu'à partir de son ajout (pas
+  d'oublis rétroactifs, le compagnon n'est pas affaibli).
+
 ### 1.2.0
 
 - Suivi du sommeil : coucher, endormissement, réveils dans la nuit (heure, durée, cause),

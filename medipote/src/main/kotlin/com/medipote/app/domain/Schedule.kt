@@ -1,5 +1,6 @@
 package com.medipote.app.domain
 
+import com.medipote.app.data.AppState
 import com.medipote.app.data.DoseLog
 import com.medipote.app.data.DoseTime
 import com.medipote.app.data.TakeStatus
@@ -101,9 +102,9 @@ object Schedule {
         treatments.filter { it.isActiveOn(date) }
             .flatMap { t -> t.doses.map { DoseOccurrence(t, it, date) } }
             .filter { o ->
-                // A dose whose on-time window had already closed when the treatment was added is not owed.
-                val created = o.treatment.createdAt
-                created == null || !o.scheduled.plusMinutes(Rules.ON_TIME_MINUTES).isBefore(created)
+                // A dose whose on-time window had already closed when the treatment (or this dose time)
+                // was added is not owed.
+                listOfNotNull(o.treatment.createdAt, o.dose.since).all { !o.scheduled.plusMinutes(Rules.ON_TIME_MINUTES).isBefore(it) }
             }
             .sortedWith(compareBy({ it.dose.minuteOfDay }, { it.treatment.name }))
 
@@ -131,6 +132,65 @@ object Schedule {
         logs: Map<String, DoseLog>,
         now: LocalDateTime,
     ): List<DoseItem> = itemsOn(treatments, logs, now.toLocalDate().minusDays(1), now).filter { it.canGive }
+
+    /**
+     * Pairs the dose times of a treatment before and after an edit: unchanged times with themselves,
+     * then moved times in order (8:00 and 20:00 → 9:00 and 21:00) when there are as many, or else
+     * by closeness. Returns old minute → new minute; new times left out were added.
+     */
+    fun pairDoseTimes(old: List<Int>, new: List<Int>): Map<Int, Int> {
+        val oldSet = old.toSortedSet()
+        val newSet = new.toSortedSet()
+        val pairs = (oldSet intersect newSet).associateWith { it }.toMutableMap()
+        val oldRest = (oldSet - newSet).toList()
+        val newRest = (newSet - oldSet).toMutableList()
+        if (oldRest.size == newRest.size) {
+            oldRest.zip(newRest).forEach { (o, n) -> pairs[o] = n }
+        } else {
+            val candidates = oldRest.flatMap { o -> newRest.map { n -> Triple(o, n, kotlin.math.abs(o - n)) } }.sortedBy { it.third }
+            val usedOld = mutableSetOf<Int>()
+            for ((o, n, _) in candidates) {
+                if (o in usedOld || n !in newRest) continue
+                pairs[o] = n
+                usedOld += o
+                newRest -= n
+            }
+        }
+        return pairs
+    }
+
+    /**
+     * Saves an edited treatment. When its dose times change, doses already given (today or on earlier
+     * days) follow their time to its new value, so they don't have to be given again; a time that was
+     * added is only owed from now on.
+     */
+    fun applyEdit(state: AppState, edited: Treatment, now: LocalDateTime): AppState {
+        val old = state.treatments.firstOrNull { it.id == edited.id }
+            ?: return state.copy(treatments = state.treatments + edited)
+        val pairs = pairDoseTimes(old.doses.map { it.minuteOfDay }, edited.doses.map { it.minuteOfDay })
+        val oldSince = old.doses.associate { it.minuteOfDay to it.since }
+        val newToOld = pairs.entries.associate { (o, n) -> n to o }
+        val doses = edited.doses.map { d ->
+            val from = newToOld[d.minuteOfDay]
+            d.copy(since = if (from != null) oldSince[from] else now)
+        }
+        val treatment = edited.copy(doses = doses)
+
+        val moved = pairs.filter { (o, n) -> o != n }
+        val logs = if (moved.isEmpty()) state.doseLogs else {
+            val taken = state.doseLogs.filter { it.treatmentId == edited.id }.mapTo(HashSet()) { it.key }
+            state.doseLogs.map { log ->
+                if (log.treatmentId != edited.id) return@map log
+                val minute = log.scheduled.hour * 60 + log.scheduled.minute
+                val target = moved[minute] ?: return@map log
+                val date = log.scheduled.toLocalDate()
+                val key = DoseOccurrence.keyOf(edited.id, date, target)
+                if (key in taken) log // that day, the new time was already given
+                else log.copy(key = key, scheduled = date.atTime(LocalTime.of(target / 60, target % 60)))
+            }
+        }
+        return state.copy(treatments = state.treatments.map { if (it.id == edited.id) treatment else it }, doseLogs = logs)
+    }
 
     /** Next planned doses after [from], for the reminder alarms. */
     fun upcoming(treatments: List<Treatment>, from: LocalDateTime, hours: Long): List<DoseOccurrence> {

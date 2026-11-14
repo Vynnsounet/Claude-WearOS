@@ -38,7 +38,9 @@ Profil médical et paramètres sont accessibles en haut à droite.
   courte (indication, posologie habituelle, précautions, ordonnance) et alerte
   si une allergie déclarée peut être concernée. Saisie manuelle possible.
 - **Posologie** : 1 à 4 prises par jour ou horaires libres, quantité, forme,
-  jours de la semaine, date de fin ou traitement au long cours, prise au repas.
+  jours de la semaine, date de fin ou traitement au long cours, prise au repas. Changer l'heure d'une prise déjà donnée ne
+  la fait pas redonner : elle suit sa nouvelle heure (aujourd'hui comme dans
+  l'historique), et une heure ajoutée n'est due qu'à partir de son ajout.
 - **Médicaments « si besoin »** (antidouleur, antiallergique, anxiolytique…) :
   dans l'éditeur, type de prise « Si besoin » au lieu de « À heures fixes ».
   Pas d'horaire, pas de rappel, pas de points (pour ne jamais encourager à en

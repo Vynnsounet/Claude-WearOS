@@ -120,11 +120,9 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     fun saveTreatment(edited: Treatment) {
         val treatment = if (edited.createdAt == null) edited.copy(createdAt = repo.now()) else edited
-        repo.update { s ->
-            val exists = s.treatments.any { it.id == treatment.id }
-            s.copy(treatments = if (exists) s.treatments.map { if (it.id == treatment.id) treatment else it } else s.treatments + treatment)
-        }
+        repo.update { s -> com.medipote.app.domain.Schedule.applyEdit(s, treatment, repo.now()) }
         reschedule()
+        com.medipote.app.widget.Widgets.requestUpdate(getApplication())
     }
 
     fun deleteTreatment(id: String) {
