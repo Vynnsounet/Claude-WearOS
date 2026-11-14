@@ -20,6 +20,11 @@ needs no phone app.
 > This repository also contains **MédiPote** (`medipote/`), a separate Android
 > phone app that turns taking medication into caring for a virtual pet. See
 > [medipote/README.md](medipote/README.md).
+>
+> It also contains **Radar Occaz** (`radaroccaz/`), an Android phone app that
+> searches used-car listings on several French sites, ranks them against the
+> user's criteria and sends alerts for new listings. See
+> [radaroccaz/README.md](radaroccaz/README.md).
 
 ## Project layout
 
@@ -27,6 +32,7 @@ needs no phone app.
 |---|---|
 | `core/` | Plain Kotlin/JVM library around the official [Anthropic Java SDK](https://github.com/anthropics/anthropic-sdk-java): `ClaudeChat` (conversation history and streaming as a `Flow<ChatEvent>`) and `ChatConfig`. It has no Android dependencies, so it is unit-tested on the JVM against a local fake server. |
 | `medipote/` | MédiPote, a standalone Android phone app for medication reminders (see its README). |
+| `radaroccaz/` | Radar Occaz, an Android phone app that compares used-car listings and sends alerts (see its README). |
 | `app/` | The Wear OS app: Compose for Wear OS (Material 3), a `ChatViewModel`, voice and keyboard input, and settings. The API key is kept in DataStore. |
 
 ### API settings (`core/.../ChatConfig.kt`)
