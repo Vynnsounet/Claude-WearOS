@@ -1,5 +1,6 @@
 package com.medipote.app.ui.home
 
+import androidx.compose.foundation.clickable
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.VectorConverter
 import androidx.compose.animation.core.spring
@@ -121,6 +122,8 @@ fun HomeScreen(
     onFixNotifications: () -> Unit = {},
     onCuddle: () -> Unit = {},
     onGiveEarly: (DoseItem) -> Unit = {},
+    onLogPrn: (com.medipote.app.data.Treatment) -> Unit = {},
+    onOpenPrnIntake: (com.medipote.app.data.PrnIntake) -> Unit = {},
 ) {
     val logs = remember(state.doseLogs) { state.doseLogs.associateBy { it.key } }
     val today = remember(state.treatments, logs, now) {
@@ -210,7 +213,7 @@ fun HomeScreen(
             // ── Today's doses ──
             if (state.treatments.isEmpty()) {
                 EmptyTreatments(state.game.petName, onAddTreatment)
-            } else {
+            } else if (state.treatments.any { !it.asNeeded }) {
                 val todayOnly = today.filter { it.occurrence.date == now.toLocalDate() }
                 val done = todayOnly.count { it.state == DoseState.TAKEN }
                 SectionTitle("Aujourd'hui") {
@@ -236,6 +239,9 @@ fun HomeScreen(
                 }
                 today.forEach { item -> DoseCard(item, now, onGive, onGiveEarly) }
             }
+
+            val prn = state.treatments.filter { it.asNeeded && (it.endDate == null || !it.endDate.isBefore(now.toLocalDate())) }
+            if (prn.isNotEmpty()) PrnCard(state, prn, now, onLogPrn, onOpenPrnIntake)
 
             val low = state.treatments.filter { it.isLowStock }
             if (low.isNotEmpty()) StockBanner(low, onOpenTreatments)
@@ -564,6 +570,78 @@ private fun StockBanner(low: List<com.medipote.app.data.Treatment>, onClick: () 
                     low.joinToString(" · ") { t -> "${t.displayName} : ${t.daysLeft} j" },
                     style = MaterialTheme.typography.bodyMedium,
                 )
+            }
+        }
+    }
+}
+
+/** As-needed medications: one tap to log an intake, and a nudge to rate the last one. */
+@Composable
+private fun PrnCard(
+    state: AppState,
+    treatments: List<com.medipote.app.data.Treatment>,
+    now: LocalDateTime,
+    onLog: (com.medipote.app.data.Treatment) -> Unit,
+    onOpenIntake: (com.medipote.app.data.PrnIntake) -> Unit,
+) {
+    // An intake from the last 12 hours that asked to be rated and is now old enough.
+    val toRate = state.prnIntakes.firstOrNull {
+        it.askRelief && it.relief == null &&
+            !it.takenAt.plusMinutes(com.medipote.app.domain.Prn.RELIEF_CHECK_MINUTES).isAfter(now) &&
+            it.takenAt.isAfter(now.minusHours(12)) && treatments.any { t -> t.id == it.treatmentId }
+    }
+    SectionTitle("Si besoin")
+    Card(
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Column(Modifier.padding(vertical = 4.dp)) {
+            toRate?.let { intake ->
+                val name = treatments.first { it.id == intake.treatmentId }.name
+                Row(
+                    Modifier.fillMaxWidth().clickable { onOpenIntake(intake) }.padding(horizontal = 16.dp, vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text("💬", style = MaterialTheme.typography.titleLarge)
+                    Spacer(Modifier.width(12.dp))
+                    Column(Modifier.weight(1f)) {
+                        Text("Est-ce que $name a fait effet ?", style = MaterialTheme.typography.titleSmall)
+                        Text(
+                            "Pris à ${intake.takenAt.format(com.medipote.app.ui.components.hourMinute)} · touche pour noter l'effet",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+                androidx.compose.material3.HorizontalDivider(Modifier.padding(horizontal = 16.dp))
+            }
+            treatments.forEachIndexed { i, t ->
+                if (i > 0) androidx.compose.material3.HorizontalDivider(Modifier.padding(horizontal = 16.dp))
+                val intakes = com.medipote.app.domain.Prn.intakesOf(state, t.id)
+                val last = intakes.firstOrNull { !it.takenAt.isAfter(now) }
+                val today = intakes.count { it.takenAt.toLocalDate() == now.toLocalDate() }
+                Row(Modifier.fillMaxWidth().padding(start = 16.dp, end = 8.dp, top = 8.dp, bottom = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Column(Modifier.weight(1f)) {
+                        Text(t.displayName, style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                        Text(
+                            buildString {
+                                if (today > 0 && last != null) {
+                                    append("Dernière prise il y a ${com.medipote.app.domain.Prn.formatDuration(java.time.Duration.between(last.takenAt, now))}")
+                                    append(" · $today prise${if (today > 1) "s" else ""} aujourd'hui")
+                                } else {
+                                    append(last?.let { "Dernière prise ${com.medipote.app.ui.treatments.sinceLabel(it.takenAt, now)}" } ?: "Aucune prise notée")
+                                }
+                            },
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    androidx.compose.material3.FilledTonalButton(onClick = { onLog(t) }) {
+                        Icon(Icons.Rounded.Add, null, Modifier.size(18.dp))
+                        Spacer(Modifier.width(4.dp))
+                        Text("Noter")
+                    }
+                }
             }
         }
     }

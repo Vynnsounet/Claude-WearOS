@@ -53,7 +53,15 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.medipote.app.data.AppState
 import com.medipote.app.domain.DayStats
-import com.medipote.app.domain.Stats
+import com.medipote.app.domain.Prn
+import com.medipote.app.domain.PrnReport
+import com.medipote.app.domain.Reports
+import com.medipote.app.domain.Tone
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
+import androidx.compose.material3.Icon
+import androidx.compose.runtime.saveable.rememberSaveable
+import kotlin.math.abs
 import com.medipote.app.ui.components.SectionTitle
 import com.medipote.app.ui.components.capitalized
 import com.medipote.app.ui.components.dayMonth
@@ -65,14 +73,25 @@ import java.time.format.TextStyle
 import java.util.Locale
 import kotlin.math.roundToInt
 
-private fun pct(v: Float?) = v?.let { "${(it * 100).roundToInt()} %" } ?: "—"
+private enum class Period(val days: Int, val label: String) { WEEK(7, "7 j"), MONTH(30, "30 j"), QUARTER(90, "90 j") }
+
+private fun signedMinutes(m: Int) = when {
+    m == 0 -> "0 min"
+    abs(m) >= 120 -> (if (m > 0) "+" else "−") + Prn.formatDuration(java.time.Duration.ofMinutes(abs(m).toLong()))
+    else -> (if (m > 0) "+" else "−") + "${abs(m)} min"
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun StatsScreen(state: AppState, now: LocalDateTime, embedded: Boolean = false) {
-    val days = remember(state, now.toLocalDate(), now.hour) { Stats.daily(state, now, 14) }
-    val summary = remember(state, now.toLocalDate(), now.hour) { Stats.summary(state, now) }
-    val perTreatment = remember(state, now.toLocalDate()) { Stats.perTreatment(state, now) }
+fun StatsScreen(state: AppState, now: LocalDateTime, embedded: Boolean = false, onOpenPrn: (String) -> Unit = {}) {
+    var period by rememberSaveable { mutableStateOf(Period.MONTH) }
+    val report = remember(state, now.toLocalDate(), now.hour, period) { Reports.adherence(state, now, period.days) }
+    val prn = state.treatments.filter { it.asNeeded }
+    val prnReports = remember(state, now.toLocalDate(), now.hour, period) {
+        prn.map { Reports.prn(state, it.id, now, period.days) }
+    }
+    val status = AppTheme.status
+    val hasRegular = state.treatments.any { !it.asNeeded }
 
     Scaffold(
         contentWindowInsets = if (embedded) WindowInsets(0) else ScaffoldDefaults.contentWindowInsets,
@@ -87,42 +106,164 @@ fun StatsScreen(state: AppState, now: LocalDateTime, embedded: Boolean = false) 
             Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).padding(horizontal = 16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
+            PeriodSelector(Period.entries.map { it to it.label }, period, { period = it })
+
+            val rate = report.rate.value
+            val before = report.previousRate.value
+            val delta = if (rate != null && before != null && report.previousRate.decided >= 3) ((rate - before) * 100).roundToInt() else null
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                StatTile("Observance 7 j", pct(summary.adherence7), "prises données", Modifier.weight(1f))
-                StatTile("Observance 30 j", pct(summary.adherence30), "prises données", Modifier.weight(1f))
-            }
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                StatTile("Ponctualité", pct(summary.punctuality30), "à l'heure sur 30 j", Modifier.weight(1f))
+                StatTile(
+                    "Observance",
+                    pct(rate),
+                    when {
+                        delta == null -> if (report.rate.decided == 0) "pas encore de données" else "${report.rate.taken}/${report.rate.decided} prises"
+                        delta > 0 -> "▲ $delta pts vs période préc."
+                        delta < 0 -> "▼ ${-delta} pts vs période préc."
+                        else -> "= période précédente"
+                    },
+                    Modifier.weight(1f),
+                    captionColor = when {
+                        delta == null || delta == 0 -> null
+                        delta > 0 -> status.good
+                        else -> status.critical
+                    },
+                )
                 StatTile("Série", "${state.game.streak} j", "record : ${state.game.bestStreak} j", Modifier.weight(1f))
             }
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                StatTile("Ponctualité", pct(report.punctuality), "prises à l'heure", Modifier.weight(1f))
+                StatTile(
+                    "Écart moyen",
+                    report.averageDelayMinutes?.let(::signedMinutes) ?: "—",
+                    when {
+                        report.averageDelayMinutes == null -> "avec l'heure prévue"
+                        report.averageDelayMinutes > 0 -> "après l'heure prévue"
+                        report.averageDelayMinutes < 0 -> "avant l'heure prévue"
+                        else -> "pile à l'heure"
+                    },
+                    Modifier.weight(1f),
+                )
+            }
 
-            ChartCard(days)
-            BreakdownCard(summary.onTime30, summary.late30, summary.missed30)
+            InsightsCard(report.insights + prnReports.flatMap { r -> r.insights.filter { it.tone == Tone.WARN }.map { it.copy(text = "${r.name} : ${it.text.replaceFirstChar { c -> c.lowercase() }}") } })
 
-            if (perTreatment.isNotEmpty()) {
-                Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)) {
-                    Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                        Text("Par traitement · 30 jours", style = MaterialTheme.typography.titleMedium)
-                        perTreatment.forEach { t ->
+            if (hasRegular) {
+                ChartCard(report.heatmap.takeLast(14))
+                StatCard("Évolution sur 12 semaines", subtitle = "Part des prises faites, semaine par semaine") {
+                    val weeks = report.weekly
+                    BarChart(
+                        values = weeks.map { it.second.value ?: 0f },
+                        axisLabels = mapOf(0 to weeks.first().first.format(dayMonth), 6 to weeks[6].first.format(dayMonth), 11 to "Cette sem."),
+                        describe = { i ->
+                            val (start, r) = weeks[i]
+                            "Semaine du ${start.format(dayMonth)} · " + if (r.decided == 0) "aucune prise prévue" else "${pct(r.value)} (${r.taken}/${r.decided})"
+                        },
+                        maxValue = 1f,
+                        gridLabel = { "${(it * 100).roundToInt()} %" },
+                    )
+                }
+                StatCard("Calendrier", subtitle = "12 dernières semaines · touche un jour pour le détail") {
+                    AdherenceHeatmap(report.heatmap)
+                }
+                BreakdownCard(report.onTime, report.offTime, report.missed, period.label)
+                StatCard("Selon le moment", subtitle = "Part des prises faites sur ${period.label}") {
+                    RateRows(report.bySlot.filter { it.value.decided > 0 }.map { it.key.label to it.value })
+                    if (report.bySlot.all { it.value.decided == 0 }) EmptyText()
+                }
+                StatCard("Selon le jour de la semaine") {
+                    if (report.byWeekday.all { it.value.decided == 0 }) EmptyText()
+                    else RateRows(report.byWeekday.map { it.key.getDisplayName(TextStyle.FULL, Locale.FRANCE).capitalized() to it.value })
+                }
+                if (report.perTreatment.isNotEmpty()) {
+                    StatCard("Par traitement", subtitle = "Sur ${period.label}") {
+                        report.perTreatment.forEach { t ->
                             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                                 Row {
                                     Text(t.name, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis)
                                     Text(
-                                        if (t.planned == 0) "—" else "${t.taken}/${t.planned} · ${pct(t.adherence)}",
+                                        if (t.rate.decided == 0) "—" else "${t.rate.taken}/${t.rate.decided} · ${pct(t.rate.value)}",
                                         style = MaterialTheme.typography.labelLarge,
                                     )
                                 }
-                                LinearProgressIndicator(
-                                    progress = { if (t.planned == 0) 0f else t.adherence },
-                                    modifier = Modifier.fillMaxWidth().height(8.dp).clip(CircleShape),
-                                    drawStopIndicator = {},
-                                )
+                                Meter(t.rate.value ?: 0f, MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.surfaceContainerHighest)
+                                t.averageDelayMinutes?.let {
+                                    Text(
+                                        "Écart moyen : ${signedMinutes(it)}",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                }
                             }
                         }
                     }
                 }
             }
 
+            if (prn.isNotEmpty()) {
+                SectionTitle("Si besoin")
+                prnReports.forEach { r -> PrnSummaryCard(r, state, now, period.label) { onOpenPrn(r.treatmentId) } }
+            }
+
+            if (report.waterDays > 0 || report.physicalAverage != null || report.mentalAverage != null) {
+                StatCard("Bien-être et hydratation", subtitle = "Moyennes sur ${period.label}") {
+                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        MiniValue("Verres d'eau / jour", report.waterAverage?.let { decimal(it) } ?: "—", Modifier.weight(1f))
+                        MiniValue("Objectif atteint", if (report.waterDays == 0) "—" else "${report.waterGoalDays}/${report.waterDays} j", Modifier.weight(1f))
+                    }
+                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        MiniValue("Forme physique", report.physicalAverage?.let { "${decimal(it)}/5" } ?: "—", Modifier.weight(1f))
+                        MiniValue("Moral", report.mentalAverage?.let { "${decimal(it)}/5" } ?: "—", Modifier.weight(1f))
+                    }
+                }
+            }
+
+            PointsCard(state)
+            Spacer(Modifier.height(8.dp))
+        }
+    }
+}
+
+@Composable
+private fun EmptyText() {
+    Text(
+        "Les statistiques apparaîtront après tes premières prises.",
+        style = MaterialTheme.typography.bodyMedium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+}
+
+@Composable
+private fun PrnSummaryCard(r: PrnReport, state: AppState, now: LocalDateTime, periodLabel: String, onOpen: () -> Unit) {
+    val last = Prn.last(state, r.treatmentId, now)
+    Card(
+        onClick = onOpen,
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(r.name, style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, "Voir le détail", tint = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                MiniValue("prises sur $periodLabel", "${r.count}", Modifier.weight(1f))
+                MiniValue("par semaine", decimal(r.perWeek), Modifier.weight(1f))
+                MiniValue("heure habituelle", r.typicalMinuteOfDay?.let { Reports.formatTime(it) } ?: "—", Modifier.weight(1f))
+            }
+            val line = listOfNotNull(
+                last?.let { "Dernière prise ${com.medipote.app.ui.treatments.sinceLabel(it.takenAt, now)}" },
+                r.reasons.firstOrNull()?.let { "Motif principal : ${it.first.lowercase()}" },
+            )
+            line.forEach { Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+            if (r.count == 0 && last == null) {
+                Text("Aucune prise notée pour l'instant.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        }
+    }
+}
+
+@Composable
+private fun PointsCard(state: AppState) {
             Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)) {
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text("Points", style = MaterialTheme.typography.titleMedium)
@@ -153,20 +294,6 @@ fun StatsScreen(state: AppState, now: LocalDateTime, embedded: Boolean = false) 
                     }
                 }
             }
-            Spacer(Modifier.height(8.dp))
-        }
-    }
-}
-
-@Composable
-private fun StatTile(label: String, value: String, caption: String, modifier: Modifier) {
-    Card(modifier, colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)) {
-        Column(Modifier.padding(16.dp)) {
-            Text(label, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Text(value, style = MaterialTheme.typography.headlineMedium)
-            Text(caption, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        }
-    }
 }
 
 @Composable
@@ -293,13 +420,13 @@ private fun DrawScope.drawSegment(topLeft: Offset, size: Size, color: Color, rou
 }
 
 @Composable
-private fun BreakdownCard(onTime: Int, late: Int, missed: Int) {
+private fun BreakdownCard(onTime: Int, late: Int, missed: Int, periodLabel: String) {
     val status = AppTheme.status
     val total = onTime + late + missed
     val surface = MaterialTheme.colorScheme.surfaceContainerLow
     Card(colors = CardDefaults.cardColors(containerColor = surface)) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            Text("Répartition sur 30 jours", style = MaterialTheme.typography.titleMedium)
+            Text("Répartition sur $periodLabel", style = MaterialTheme.typography.titleMedium)
             if (total == 0) {
                 Text(
                     "Les statistiques apparaîtront après tes premières prises.",

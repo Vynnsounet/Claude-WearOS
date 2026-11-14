@@ -91,6 +91,10 @@ fun TreatmentsScreen(
     onFinishOnboarding: () -> Unit = {},
     embedded: Boolean = false,
     onRefill: (Treatment) -> Unit = {},
+    lastIntakes: Map<String, java.time.LocalDateTime> = emptyMap(),
+    now: java.time.LocalDateTime = today.atTime(12, 0),
+    onLogPrn: (Treatment) -> Unit = {},
+    onPrnStats: (Treatment) -> Unit = {},
 ) {
     val (current, finished) = treatments.partition { it.endDate == null || !it.endDate.isBefore(today) }
     Scaffold(
@@ -143,7 +147,14 @@ fun TreatmentsScreen(
                     }
                 }
             }
-            items(current, key = { it.id }) { TreatmentCard(it, onClick = { onEdit(it) }, onRefill = { onRefill(it) }) }
+            val (prn, scheduled) = current.partition { it.asNeeded }
+            items(scheduled, key = { it.id }) { TreatmentCard(it, onClick = { onEdit(it) }, onRefill = { onRefill(it) }) }
+            if (prn.isNotEmpty()) {
+                item { SectionTitle("Si besoin") }
+                items(prn, key = { it.id }) {
+                    PrnCard(it, lastIntakes[it.id], now, onClick = { onEdit(it) }, onRefill = { onRefill(it) }, onLog = { onLogPrn(it) }, onStats = { onPrnStats(it) })
+                }
+            }
             if (finished.isNotEmpty()) {
                 item { SectionTitle("Terminés") }
                 items(finished, key = { it.id }) { TreatmentCard(it, onClick = { onEdit(it) }, onRefill = { onRefill(it) }, finished = true) }
@@ -216,6 +227,87 @@ private fun TreatmentCard(t: Treatment, onClick: () -> Unit, onRefill: () -> Uni
                 }
             }
             t.stock?.let { stock -> StockLine(t, stock, onRefill) }
+        }
+    }
+}
+
+/** "il y a 3 h · hier à 21:10" */
+fun sinceLabel(at: java.time.LocalDateTime, now: java.time.LocalDateTime): String {
+    val ago = com.medipote.app.domain.Prn.formatDuration(java.time.Duration.between(at, now))
+    val time = "%02d:%02d".format(at.hour, at.minute)
+    val day = when (java.time.temporal.ChronoUnit.DAYS.between(at.toLocalDate(), now.toLocalDate())) {
+        0L -> "aujourd'hui à $time"
+        1L -> "hier à $time"
+        else -> "le ${at.format(shortDate)} à $time"
+    }
+    return if (at.isAfter(now)) day else "il y a $ago · $day"
+}
+
+fun limitsLabel(t: Treatment): String? = listOfNotNull(
+    t.maxPerDay?.let { "max $it / 24 h" },
+    t.minIntervalHours?.let { "$it h entre deux prises" },
+).joinToString(" · ").ifEmpty { null }
+
+@Composable
+private fun PrnCard(
+    t: Treatment,
+    last: java.time.LocalDateTime?,
+    now: java.time.LocalDateTime,
+    onClick: () -> Unit,
+    onRefill: () -> Unit,
+    onLog: () -> Unit,
+    onStats: () -> Unit,
+) {
+    val drug = t.drugId?.let(DrugGuide::byId)
+    Card(
+        onClick = onClick,
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Surface(shape = CircleShape, color = MaterialTheme.colorScheme.tertiaryContainer, modifier = Modifier.size(40.dp)) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(Icons.Rounded.Medication, null, tint = MaterialTheme.colorScheme.onTertiaryContainer)
+                    }
+                }
+                Spacer(Modifier.width(12.dp))
+                Column(Modifier.weight(1f)) {
+                    Text(t.displayName, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Text(
+                        drug?.let { "${it.dci} · ${it.drugClass}" } ?: "Saisie manuelle",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+                Icon(Icons.Outlined.Edit, "Modifier", tint = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                Pill("Si besoin", container = MaterialTheme.colorScheme.tertiaryContainer, content = MaterialTheme.colorScheme.onTertiaryContainer)
+                Pill(
+                    "${t.unit.format(t.prnQuantity)} par prise",
+                    container = MaterialTheme.colorScheme.secondaryContainer,
+                    content = MaterialTheme.colorScheme.onSecondaryContainer,
+                )
+            }
+            limitsLabel(t)?.let {
+                Text(it.replaceFirstChar { c -> c.uppercase() }, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            Text(
+                last?.let { "Dernière prise : ${sinceLabel(it, now)}" } ?: "Aucune prise notée pour l'instant",
+                style = MaterialTheme.typography.bodyMedium,
+            )
+            t.stock?.let { stock -> StockLine(t, stock, onRefill) }
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                androidx.compose.material3.FilledTonalButton(onClick = onLog) {
+                    Icon(Icons.Rounded.Add, null, Modifier.size(18.dp))
+                    Spacer(Modifier.width(6.dp))
+                    Text("Noter une prise")
+                }
+                androidx.compose.material3.TextButton(onClick = onStats) { Text("Statistiques") }
+            }
         }
     }
 }

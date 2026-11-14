@@ -452,6 +452,96 @@ class ScreensTest {
         check(early?.occurrence?.dose?.minuteOfDay == 20 * 60) { "early=$early" }
     }
 
+    // ── As-needed medications ──
+
+    private val ibu = Treatment(
+        "ibu", "ibuprofene", "Ibuprofène", "400 mg", DoseUnit.TABLET, emptyList(),
+        startDate = today.minusDays(120), createdAt = today.minusDays(120).atStartOfDay(),
+        asNeeded = true, maxPerDay = 3, minIntervalHours = 6, stock = 7.0, packSize = 20,
+    )
+
+    /** Three months of as-needed intakes: mostly headaches in the evening, at work or after screens. */
+    private fun prnState(): AppState {
+        val base = sampleState()
+        val reasons = listOf("Mal de tête", "Mal de tête", "Règles douloureuses", "Mal de tête", "Mal de dos")
+        val contexts = listOf(listOf("Au travail", "Écrans"), listOf("Stress", "Fatigue"), listOf("Règles"), listOf("Écrans"), listOf("Manque de sommeil"))
+        val intakes = (0 until 26).map { i ->
+            val day = today.minusDays((i * 3.4).toLong() + 1)
+            val hour = listOf(21, 19, 13, 22, 8, 20)[i % 6]
+            com.medipote.app.data.PrnIntake(
+                "p$i", "ibu", day.atTime(hour, (i * 7) % 60),
+                reason = reasons[i % reasons.size], intensity = 4 + i % 5,
+                contexts = contexts[i % contexts.size], relief = if (i % 3 == 0) null else 3 + i % 3,
+            )
+        } + com.medipote.app.data.PrnIntake("today", "ibu", today.atTime(9, 40), reason = "Mal de tête", askRelief = true)
+        return base.copy(treatments = base.treatments + ibu, prnIntakes = intakes)
+    }
+
+    @Test
+    @Config(qualifiers = "w400dp-h1500dp-xhdpi")
+    fun homeWithAsNeeded() {
+        render("home_prn") { HomeScreen(prnState(), now, 0, 0, {}, {}, {}, {}, animate = false) }
+        compose.onNodeWithText("Est-ce que Ibuprofène a fait effet ?").assertExists()
+        compose.onNodeWithText("Dernière prise il y a 2 h 30 · 1 prise aujourd'hui").assertExists()
+    }
+
+    @Test
+    @Config(qualifiers = "w400dp-h1200dp-xhdpi")
+    fun treatmentsWithAsNeeded() {
+        val state = prnState()
+        render("treatments_prn") {
+            TreatmentsScreen(state.treatments, today, {}, {}, lastIntakes = mapOf("ibu" to today.atTime(9, 40)), now = now)
+        }
+        compose.onAllNodes(androidx.compose.ui.test.hasText("Si besoin"), useUnmergedTree = true).onFirst().assertExists()
+        compose.onNodeWithText("Max 3 / 24 h · 6 h entre deux prises").assertExists()
+    }
+
+    @Test
+    @Config(qualifiers = "w400dp-h1500dp-xhdpi")
+    fun prnLog() {
+        render("prn_log") {
+            com.medipote.app.ui.prn.PrnLogScreen(prnState(), ibu, null, now, {}, {}, {})
+        }
+        // The previous intake was 2 h 30 ago, the minimum is 6 h.
+        compose.onNodeWithText("Seulement 2 h 30 depuis la prise précédente", substring = true).assertExists()
+        compose.onNodeWithText("Me demander dans 1 h si ça a marché").assertExists()
+    }
+
+    @Test
+    @Config(qualifiers = "w400dp-h3200dp-xhdpi")
+    fun prnStats() {
+        val state = prnState()
+        render("prn_stats") { com.medipote.app.ui.prn.PrnStatsScreen(state, ibu, now, {}, {}, {}, {}) }
+        compose.onNodeWithText("À quelle heure ?").assertExists()
+        compose.onNodeWithText("Motif le plus fréquent : mal de tête", substring = true).assertExists()
+    }
+
+    @Test
+    @Config(qualifiers = "w400dp-h3600dp-xhdpi")
+    fun statsFull() {
+        render("stats_full") { StatsScreen(prnState(), now) }
+        compose.onNodeWithText("Calendrier").assertExists()
+        compose.onNodeWithText("Selon le moment").assertExists()
+    }
+
+    @Test
+    @Config(qualifiers = "w400dp-h3600dp-xhdpi")
+    fun statsFullDark() {
+        render("stats_full_dark", ThemeMode.DARK) { StatsScreen(prnState().let { it.copy(settings = it.settings.copy(themeMode = ThemeMode.DARK)) }, now) }
+    }
+
+    @Test
+    @Config(qualifiers = "w400dp-h1300dp-xhdpi")
+    fun editorAsNeeded() {
+        render("editor_prn") {
+            TreatmentEditorScreen(
+                existing = ibu, drug = DrugGuide.byId("ibuprofene"), customName = "",
+                allergies = emptyList(), today = today, onSave = {}, onDelete = {}, onBack = {},
+            )
+        }
+        compose.onNodeWithText("Nombre maximum de prises").assertExists()
+    }
+
     private fun save(name: String, bitmap: Bitmap) {
         val dir = File("build/screenshots").apply { mkdirs() }
         File(dir, "$name.png").outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }

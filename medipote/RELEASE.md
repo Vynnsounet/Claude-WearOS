@@ -66,6 +66,15 @@ L'optimiseur de R8 reste désactivé (`-dontoptimize`) : APK de 3,8 Mo au lieu d
 le dex livré peut être reconverti et exécuté hors appareil pour vérification (voir plus bas),
 ce que l'optimiseur empêche. Il pourra être réactivé après des essais sur téléphone.
 
+### 1.1.0
+
+- Médicaments « si besoin » : saisie des prises (motif, contexte, intensité, effet), limites
+  avec avertissement, rappel « est-ce que ça a fait effet ? » une heure après, statistiques dédiées.
+- Statistiques refaites : période 7/30/90 j, comparaison, écart moyen, analyses, évolution sur
+  12 semaines, calendrier, par moment, par jour de la semaine, bien-être et hydratation.
+- Données : champs ajoutés avec valeurs par défaut, les données des versions précédentes se
+  relisent sans migration.
+
 ### Vérifications faites sur l'APK release
 
 - Signature v2 valide (`apksigner verify`), application non débogable.

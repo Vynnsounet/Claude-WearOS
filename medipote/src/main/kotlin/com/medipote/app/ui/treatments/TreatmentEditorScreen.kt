@@ -42,6 +42,9 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -94,6 +97,7 @@ fun TreatmentEditorScreen(
     existing: Treatment?,
     drug: Drug?,
     customName: String,
+    asNeededDefault: Boolean = false,
     allergies: List<String>,
     today: LocalDate,
     onSave: (Treatment) -> Unit,
@@ -117,12 +121,18 @@ fun TreatmentEditorScreen(
     var stockText by remember { mutableStateOf(existing?.stock?.let { if (it % 1.0 == 0.0) it.toInt().toString() else it.toString().replace('.', ',') }.orEmpty()) }
     var packText by remember { mutableStateOf(existing?.packSize?.toString().orEmpty()) }
     var lowDays by remember { mutableIntStateOf(existing?.lowStockDays ?: 7) }
+    var asNeeded by remember { mutableStateOf(existing?.asNeeded ?: asNeededDefault) }
+    var prnQuantity by remember { mutableStateOf(existing?.prnQuantity ?: 1.0) }
+    var hasMax by remember { mutableStateOf(existing?.maxPerDay != null) }
+    var maxPerDay by remember { mutableIntStateOf(existing?.maxPerDay ?: 3) }
+    var hasInterval by remember { mutableStateOf(existing?.minIntervalHours != null) }
+    var minInterval by remember { mutableIntStateOf(existing?.minIntervalHours ?: 6) }
+    var lowUnits by remember { mutableIntStateOf(existing?.lowStockUnits ?: 4) }
     val stockValue = stockText.replace(',', '.').toDoubleOrNull()
 
     val allergyHits = remember(drug, allergies) { drug?.let { DrugGuide.allergyMatches(it, allergies) }.orEmpty() }
-    val valid = name.isNotBlank() && doses.isNotEmpty() && days.isNotEmpty() &&
-        (longTerm || (endDate != null && !endDate!!.isBefore(startDate))) &&
-        (!trackStock || stockValue != null)
+    val valid = name.isNotBlank() && (!trackStock || stockValue != null) &&
+        (asNeeded || (doses.isNotEmpty() && days.isNotEmpty() && (longTerm || (endDate != null && !endDate!!.isBefore(startDate)))))
 
     Scaffold(
         topBar = {
@@ -146,7 +156,7 @@ fun TreatmentEditorScreen(
                                 name = name.trim(),
                                 strength = strength.trim(),
                                 unit = unit,
-                                doses = doses.sortedBy { it.minuteOfDay }.distinctBy { it.minuteOfDay },
+                                doses = if (asNeeded) emptyList() else doses.sortedBy { it.minuteOfDay }.distinctBy { it.minuteOfDay },
                                 daysOfWeek = days,
                                 startDate = startDate,
                                 endDate = if (longTerm) null else endDate,
@@ -156,7 +166,12 @@ fun TreatmentEditorScreen(
                                 stock = if (trackStock) stockValue else null,
                                 packSize = if (trackStock) packText.toIntOrNull() else null,
                                 lowStockDays = lowDays,
-                                pill = existing?.pill,
+                                pill = if (asNeeded) null else existing?.pill,
+                                asNeeded = asNeeded,
+                                prnQuantity = prnQuantity,
+                                maxPerDay = if (asNeeded && hasMax) maxPerDay else null,
+                                minIntervalHours = if (asNeeded && hasInterval) minInterval else null,
+                                lowStockUnits = lowUnits,
                             ),
                         )
                     },
@@ -203,6 +218,60 @@ fun TreatmentEditorScreen(
                 UnitField(unit, { unit = it }, Modifier.weight(1f))
             }
 
+            if (existing?.pill == null) {
+                SectionTitle("Type de prise")
+                SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
+                    SegmentedButton(
+                        selected = !asNeeded,
+                        onClick = { asNeeded = false },
+                        shape = SegmentedButtonDefaults.itemShape(0, 2),
+                    ) { Text("À heures fixes") }
+                    SegmentedButton(
+                        selected = asNeeded,
+                        onClick = { asNeeded = true },
+                        shape = SegmentedButtonDefaults.itemShape(1, 2),
+                    ) { Text("Si besoin") }
+                }
+                Text(
+                    if (asNeeded) "Pas de rappel ni d'horaire : tu notes chaque prise quand tu en as besoin, avec son motif et son contexte."
+                    else "Des rappels aux heures prévues, et ton compagnon est nourri à chaque prise.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+
+            AnimatedVisibility(asNeeded) {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    SectionTitle("Prise habituelle")
+                    Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)) {
+                        Row(Modifier.padding(start = 16.dp, end = 4.dp, top = 4.dp, bottom = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Text("Quantité par prise", style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
+                            IconButton(onClick = { prnQuantity = nextQuantity(prnQuantity, false) }, enabled = prnQuantity > 0.25) {
+                                Icon(Icons.Rounded.Remove, "Moins")
+                            }
+                            Text(unit.format(prnQuantity), style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
+                            IconButton(onClick = { prnQuantity = nextQuantity(prnQuantity, true) }) { Icon(Icons.Rounded.Add, "Plus") }
+                        }
+                    }
+                    SectionTitle("Limites")
+                    SwitchRow("Nombre maximum de prises", hasMax, supporting = "Sur 24 heures glissantes") { hasMax = it }
+                    AnimatedVisibility(hasMax) {
+                        com.medipote.app.ui.components.NumberStepper("Maximum par 24 h", maxPerDay, { maxPerDay = it }, 1..12)
+                    }
+                    SwitchRow("Délai minimum entre deux prises", hasInterval) { hasInterval = it }
+                    AnimatedVisibility(hasInterval) {
+                        com.medipote.app.ui.components.NumberStepper("Au moins", minInterval, { minInterval = it }, 1..48, suffix = " h")
+                    }
+                    Text(
+                        "Reprends les limites de ton ordonnance ou de la notice. L'appli te prévient si une prise les dépasse, sans jamais t'empêcher de la noter.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+
+            AnimatedVisibility(!asNeeded) {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
             SectionTitle("Posologie")
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 PRESETS.forEach { (label, times) ->
@@ -261,9 +330,11 @@ fun TreatmentEditorScreen(
                     supporting = "Dernier jour de prise inclus",
                 )
             }
+            }
+            }
 
             SectionTitle("Stock")
-            SwitchRow("Suivre mon stock", trackStock, supporting = "Le stock diminue à chaque prise et tu es prévenu·e avant d'en manquer") { trackStock = it }
+            SwitchRow("Suivre mon stock", trackStock, supporting = "Le stock diminue à chaque prise et l'appli te prévient avant d'en manquer") { trackStock = it }
             AnimatedVisibility(trackStock) {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -286,12 +357,16 @@ fun TreatmentEditorScreen(
                             modifier = Modifier.weight(1f),
                         )
                     }
-                    com.medipote.app.ui.components.NumberStepper("Me prévenir à", lowDays, { lowDays = it }, 1..30, suffix = " j")
+                    if (asNeeded) {
+                        com.medipote.app.ui.components.NumberStepper("Me prévenir sous", lowUnits, { lowUnits = it }, 1..50, display = { unit.format(it.toDouble()) })
+                    } else {
+                        com.medipote.app.ui.components.NumberStepper("Me prévenir à", lowDays, { lowDays = it }, 1..30, suffix = " j")
+                    }
                 }
             }
 
             SectionTitle("Conseils")
-            SwitchRow("À prendre pendant le repas", withFood) { withFood = it }
+            if (!asNeeded) SwitchRow("À prendre pendant le repas", withFood) { withFood = it }
             OutlinedTextField(
                 value = notes,
                 onValueChange = { notes = it },

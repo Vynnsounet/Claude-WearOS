@@ -23,6 +23,8 @@ data class AppState(
     val journal: List<DayEntry> = emptyList(),
     val appointments: List<Appointment> = emptyList(),
     val documents: List<HealthDocument> = emptyList(),
+    /** Intakes of "as needed" medications, newest first. */
+    val prnIntakes: List<PrnIntake> = emptyList(),
 ) {
     fun entryFor(date: LocalDate): DayEntry = journal.firstOrNull { it.date == date } ?: DayEntry(date)
 }
@@ -85,11 +87,20 @@ data class Treatment(
     val lowStockDays: Int = 7,
     /** Set for a contraceptive pill: its pack rhythm decides which days are taken. */
     val pill: PillPack? = null,
+    /** Taken "as needed" (si besoin): no schedule, no reminders, no points; each intake is logged. */
+    val asNeeded: Boolean = false,
+    /** Usual quantity of one as-needed intake. */
+    val prnQuantity: Double = 1.0,
+    /** Optional limits for as-needed use, from the prescription or the leaflet. */
+    val maxPerDay: Int? = null,
+    val minIntervalHours: Int? = null,
+    /** As-needed stock warning, in units (days of treatment make no sense without a schedule). */
+    val lowStockUnits: Int = 4,
 ) {
     val displayName: String get() = if (strength.isBlank()) name else "$name $strength"
 
     fun isActiveOn(date: LocalDate): Boolean =
-        !date.isBefore(startDate) && (endDate == null || !date.isAfter(endDate)) &&
+        !asNeeded && !date.isBefore(startDate) && (endDate == null || !date.isAfter(endDate)) &&
             date.dayOfWeek.value in daysOfWeek && (pill == null || pill.mustTake(date))
 
     /** Average units used per day, taking the days of the week and pill breaks into account. */
@@ -108,7 +119,9 @@ data class Treatment(
             return kotlin.math.floor(s / use).toInt()
         }
 
-    val isLowStock: Boolean get() = daysLeft?.let { it <= lowStockDays } ?: false
+    val isLowStock: Boolean
+        get() = if (asNeeded) stock?.let { it <= lowStockUnits } ?: false
+        else daysLeft?.let { it <= lowStockDays } ?: false
 
     companion object {
         val ALL_DAYS: Set<Int> = (1..7).toSet()

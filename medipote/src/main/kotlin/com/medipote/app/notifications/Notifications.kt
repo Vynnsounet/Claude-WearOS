@@ -28,7 +28,7 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
-enum class AlarmKind { DOSE, FOLLOW_UP, APPOINTMENT, WATER, STOCK, TEST }
+enum class AlarmKind { DOSE, FOLLOW_UP, APPOINTMENT, WATER, STOCK, TEST, PRN_CHECK }
 
 /** One planned alarm. [ref] identifies what it is about (an appointment id, for instance). */
 data class AlarmSpec(val kind: AlarmKind, val time: LocalDateTime, val ref: String = "") {
@@ -80,6 +80,13 @@ object ReminderPlanner {
             }
         }
 
+        // "Did it help?" an hour after an as-needed intake, when the user asked for it.
+        for (intake in state.prnIntakes) {
+            if (!intake.askRelief || intake.relief != null) continue
+            val t = intake.takenAt.plusMinutes(com.medipote.app.domain.Prn.RELIEF_CHECK_MINUTES)
+            if (t.isAfter(now)) alarms += AlarmSpec(AlarmKind.PRN_CHECK, t, intake.id)
+        }
+
         // Low stock: a daily reminder at 10:00 until a box is bought.
         if (state.treatments.any { it.isLowStock }) {
             val today = now.toLocalDate().atTime(STOCK_CHECK)
@@ -125,11 +132,16 @@ object Notifications {
 
     fun notificationId(time: LocalDateTime): Int = (time.atZone(ZoneId.systemDefault()).toEpochSecond() / 60).toInt()
 
-    private fun post(context: Context, channel: String, id: Int, title: String, text: String) {
+    /** Extra telling the app which screen to open when the notification is tapped. */
+    const val EXTRA_ROUTE = "route"
+
+    private fun post(context: Context, channel: String, id: Int, title: String, text: String, route: String? = null) {
         if (!canPost(context)) return
+        val intent = Intent(context, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+        if (route != null) intent.putExtra(EXTRA_ROUTE, route)
         val open = PendingIntent.getActivity(
-            context, 0,
-            Intent(context, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP),
+            context, if (route != null) id else 0,
+            intent,
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
         )
         val notification = NotificationCompat.Builder(context, channel)
@@ -183,6 +195,18 @@ object Notifications {
         val glasses = state.entryFor(now.toLocalDate()).waterGlasses
         if (!water.enabled || glasses >= water.goalGlasses) return
         post(context, CHANNEL_WATER, WATER_ID, "Un verre d'eau ? 💧", "${state.game.petName} a soif ! Tu en es à $glasses / ${water.goalGlasses} verres aujourd'hui.")
+    }
+
+    fun showPrnCheck(context: Context, state: AppState, intakeId: String) {
+        val intake = state.prnIntakes.firstOrNull { it.id == intakeId } ?: return
+        if (intake.relief != null) return
+        val name = state.treatments.firstOrNull { it.id == intake.treatmentId }?.name ?: return
+        post(
+            context, CHANNEL_DOSES, intakeId.hashCode(),
+            "Est-ce que $name a fait effet ?",
+            "Note son efficacité en un geste : tes statistiques t'aideront à savoir ce qui marche pour toi.",
+            route = "prn_log/${intake.treatmentId}?intake=${intake.id}",
+        )
     }
 
     fun showStock(context: Context, state: AppState) {
@@ -274,6 +298,7 @@ class ReminderReceiver : BroadcastReceiver() {
                 AlarmKind.WATER -> Notifications.showWater(context, state, repo.now())
                 AlarmKind.STOCK -> Notifications.showStock(context, state)
                 AlarmKind.TEST -> Unit
+                AlarmKind.PRN_CHECK -> Notifications.showPrnCheck(context, state, spec.ref)
             }
         }
         ReminderScheduler.reschedule(context, state, repo.now())

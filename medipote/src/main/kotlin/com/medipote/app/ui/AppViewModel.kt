@@ -210,6 +210,37 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     /** "Already taken": a dose planned later today, taken in advance. */
     fun giveEarly(item: DoseItem) = give(item, early = true)
 
+    // ── As-needed medications ──
+
+    fun savePrnIntake(intake: com.medipote.app.data.PrnIntake) {
+        var low = false
+        repo.update { s ->
+            val before = s.treatments.firstOrNull { it.id == intake.treatmentId }?.isLowStock ?: false
+            val updated = com.medipote.app.domain.Prn.save(s, intake)
+            low = !before && (updated.treatments.firstOrNull { it.id == intake.treatmentId }?.isLowStock ?: false)
+            updated
+        }
+        if (low) Notifications.showStock(getApplication(), state.value)
+        reschedule()
+    }
+
+    fun deletePrnIntake(id: String) {
+        repo.update { com.medipote.app.domain.Prn.delete(it, id) }
+        reschedule()
+    }
+
+    private val _routes = MutableStateFlow<String?>(null)
+    /** A screen to open, requested from outside the UI (a tapped notification). */
+    val routes: StateFlow<String?> = _routes.asStateFlow()
+
+    fun open(route: String) {
+        _routes.value = route
+    }
+
+    fun routeHandled() {
+        _routes.value = null
+    }
+
     fun cuddle() {
         var bonus = 0
         repo.update { s -> Game.cuddle(s, repo.now()).let { (u, b) -> bonus = b; u } }

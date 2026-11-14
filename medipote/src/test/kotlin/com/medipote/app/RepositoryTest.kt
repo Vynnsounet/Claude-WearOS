@@ -42,4 +42,32 @@ class RepositoryTest {
         val file = File(dir, "data.json").apply { writeText("""{"onboarded":true,"someFutureField":42}""") }
         assertTrue(AppRepository(file).state.value.onboarded)
     }
+
+    @Test
+    fun asNeededDataSurvivesAReload() {
+        val file = File(dir, "data.json")
+        val at = java.time.LocalDateTime.of(2026, 11, 12, 21, 5)
+        val t = com.medipote.app.data.Treatment(
+            "ibu", name = "Ibuprofène", doses = emptyList(), startDate = at.toLocalDate(),
+            asNeeded = true, prnQuantity = 2.0, maxPerDay = 3, minIntervalHours = 6, lowStockUnits = 5,
+        )
+        val intake = com.medipote.app.data.PrnIntake(
+            "i", "ibu", at, 2.0, "Mal de tête", 6, listOf("Stress", "Écrans"), 4, askRelief = true, notes = "après le travail",
+        )
+        AppRepository(file).update { AppState(treatments = listOf(t), prnIntakes = listOf(intake), onboarded = true) }
+        Thread.sleep(300)
+        val reloaded = AppRepository(file).state.value
+        assertEquals(listOf(t), reloaded.treatments)
+        assertEquals(listOf(intake), reloaded.prnIntakes)
+    }
+
+    @Test
+    fun dataFromVersion103LoadsWithoutAsNeededFields() {
+        val file = File(dir, "data.json").apply {
+            writeText("""{"onboarded":true,"treatments":[{"id":"a","name":"Doliprane","doses":[{"minuteOfDay":480}],"startDate":"2026-11-01"}]}""")
+        }
+        val state = AppRepository(file).state.value
+        assertEquals(false, state.treatments.single().asNeeded)
+        assertTrue(state.prnIntakes.isEmpty())
+    }
 }

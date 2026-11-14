@@ -13,6 +13,10 @@ l'habiller dans la boutique.
 |---|---|---|---|---|
 | ![](docs/home_sick.png) | ![](docs/agenda.png) | ![](docs/stats.png) | ![](docs/day_entry.png) | ![](docs/settings.png) |
 
+| Si besoin (accueil) | Noter une prise | Stats « si besoin » |
+|---|---|---|
+| ![](docs/home_prn.png) | ![](docs/prn_log.png) | ![](docs/prn_stats.png) |
+
 ## Navigation
 
 | Onglet | Contenu |
@@ -35,6 +39,17 @@ Profil médical et paramètres sont accessibles en haut à droite.
   si une allergie déclarée peut être concernée. Saisie manuelle possible.
 - **Posologie** : 1 à 4 prises par jour ou horaires libres, quantité, forme,
   jours de la semaine, date de fin ou traitement au long cours, prise au repas.
+- **Médicaments « si besoin »** (antidouleur, antiallergique, anxiolytique…) :
+  dans l'éditeur, type de prise « Si besoin » au lieu de « À heures fixes ».
+  Pas d'horaire, pas de rappel, pas de points (pour ne jamais encourager à en
+  prendre plus). Chaque prise se note en deux touches depuis l'accueil ou
+  l'onglet Traitements : heure (maintenant, il y a 30 min…), quantité, motif
+  (mal de tête, règles douloureuses… ou texte libre), intensité de la gêne
+  (0–10), contexte (travail, stress, écrans, fatigue, règles… ou texte libre),
+  notes. Limites facultatives (maximum par 24 h, délai minimum entre deux
+  prises) : un avertissement s'affiche si une prise les dépasse, sans bloquer.
+  Une notification une heure après demande si ça a fait effet (5 niveaux).
+  Le stock baisse à chaque prise, avec un seuil d'alerte en unités.
 - **Stock** : quantité restante et taille de boîte par traitement. Le stock
   baisse à chaque prise ; MédiPote estime les jours restants, prévient quand
   il en reste moins que le seuil choisi (7 jours par défaut), puis rappelle
@@ -97,9 +112,21 @@ Profil médical et paramètres sont accessibles en haut à droite.
 
 - **Boutique** : 59 objets en 7 catégories (couleurs, chapeaux, lunettes, cou,
   objets, effets animés, décors), essayage avant achat, tous dessinés en Canvas.
-- **Statistiques** : observance sur 7 et 30 jours, ponctualité, série,
-  histogramme des 14 derniers jours, répartition, observance par traitement,
-  historique des points.
+- **Statistiques** (période 7, 30 ou 90 jours) : observance comparée à la
+  période précédente, ponctualité, écart moyen avec l'heure prévue, série ;
+  phrases d'analyse (moment ou jour le plus souvent oublié, traitement le plus
+  oublié, tendance, forme les jours où tout est pris…) ; 14 derniers jours,
+  évolution sur 12 semaines, calendrier de 12 semaines, répartition, observance
+  par moment de la journée, par jour de la semaine et par traitement ;
+  hydratation et bien-être moyens ; historique des points.
+- **Statistiques « si besoin »** (30 j, 90 j, 1 an ou tout) : nombre de prises,
+  jours concernés, prises par semaine, écart moyen entre deux prises,
+  efficacité ressentie ; heure habituelle (moyenne circulaire : 23 h 30 et
+  0 h 30 donnent minuit), histogramme par heure et par moment, par jour de la
+  semaine, motifs et contextes classés, intensité moyenne, part des prises
+  pendant les règles, 12 dernières semaines, historique modifiable. Une alerte
+  conseille d'en parler à un professionnel au-delà de 10 jours d'usage sur 30
+  ou si le maximum quotidien a été dépassé.
 - **Apparence** : thème clair, sombre ou système, 6 couleurs d'accent
   (Menthe, Océan, Lavande, Corail, Ambre, Rose) ou couleurs du fond d'écran
   (Android 12+).
@@ -122,7 +149,7 @@ le stockage privé de l'app, exclu de la sauvegarde cloud.
 | Dossier | Contenu |
 |---|---|
 | `data/` | Modèles sérialisables (`Models.kt`, `Health.kt`), stockage JSON atomique (`AppRepository`), fichiers du carnet de santé (`DocumentStore`), guide des médicaments (`DrugGuide`) |
-| `domain/` | Règles pures et testées : planning des prises (`Schedule`), points, série et santé du compagnon (`Game`), boutique, statistiques, cycle |
+| `domain/` | Règles pures et testées : planning des prises (`Schedule`), points, série et santé du compagnon (`Game`), boutique, statistiques et analyses (`Stats`, `Reports`), prises « si besoin » (`Prn`), cycle |
 | `notifications/` | `ReminderPlanner` (calcul pur et testé des alarmes : prises, relances, rendez-vous, eau, stock), `ReminderScheduler` (AlarmManager) et récepteurs |
 | `widget/` | Widgets Jetpack Glance (compagnon, prises du jour, hydratation) et leurs actions |
 | `ui/` | Jetpack Compose + Material 3 : un écran par dossier, `PetView` (compagnon dessiné en Canvas), navigation dans `MediPoteApp` |

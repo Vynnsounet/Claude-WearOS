@@ -85,6 +85,8 @@ import com.medipote.app.ui.onboarding.ProfileScreen
 import com.medipote.app.ui.onboarding.ProfileSetupScreen
 import com.medipote.app.ui.onboarding.WelcomeScreen
 import com.medipote.app.ui.pill.PillScreen
+import com.medipote.app.ui.prn.PrnLogScreen
+import com.medipote.app.ui.prn.PrnStatsScreen
 import com.medipote.app.ui.pill.PillSetupScreen
 import com.medipote.app.ui.settings.SettingsScreen
 import com.medipote.app.ui.shop.ShopScreen
@@ -246,6 +248,18 @@ fun MediPoteApp(vm: AppViewModel) {
             }
         }
 
+        val lastIntakes = remember(state.prnIntakes, now) {
+            state.prnIntakes.filter { !it.takenAt.isAfter(now) }.groupBy { it.treatmentId }.mapValues { (_, l) -> l.maxOf { it.takenAt } }
+        }
+        // Screens asked from outside the UI (a tapped notification), once the app is set up.
+        val requestedRoute by vm.routes.collectAsStateWithLifecycle()
+        LaunchedEffect(requestedRoute, state.onboarded) {
+            val r = requestedRoute ?: return@LaunchedEffect
+            if (!state.onboarded) return@LaunchedEffect
+            nav.navigate(r) { launchSingleTop = true }
+            vm.routeHandled()
+        }
+
         val backStack by nav.currentBackStackEntryAsState()
         val route = backStack?.destination?.route?.substringBefore('?')
         val showBar = TABS.any { it.route == route }
@@ -307,6 +321,10 @@ fun MediPoteApp(vm: AppViewModel) {
                             nav.navigate("home") { popUpTo(0) { inclusive = true } }
                         },
                         onRefill = { vm.refill(it.id) },
+                        lastIntakes = lastIntakes,
+                        now = now,
+                        onLogPrn = { nav.navigate("prn_log/${it.id}") },
+                        onPrnStats = { nav.navigate("prn_stats/${it.id}") },
                     )
                 }
 
@@ -327,6 +345,8 @@ fun MediPoteApp(vm: AppViewModel) {
                         onFixNotifications = ::fixNotifications,
                         onCuddle = vm::cuddle,
                         onGiveEarly = vm::giveEarly,
+                        onLogPrn = { nav.navigate("prn_log/${it.id}") },
+                        onOpenPrnIntake = { nav.navigate("prn_log/${it.treatmentId}?intake=${it.id}") },
                     )
                 }
                 composable("treatments") {
@@ -339,6 +359,10 @@ fun MediPoteApp(vm: AppViewModel) {
                                 onEdit = { nav.navigate(if (it.pill != null) "pill_setup" else "editor?treatment=${it.id}") },
                                 embedded = true,
                                 onRefill = { vm.refill(it.id) },
+                                lastIntakes = lastIntakes,
+                                now = now,
+                                onLogPrn = { nav.navigate("prn_log/${it.id}") },
+                                onPrnStats = { nav.navigate("prn_stats/${it.id}") },
                             )
                             else -> PillScreen(
                                 state, now,
@@ -359,7 +383,7 @@ fun MediPoteApp(vm: AppViewModel) {
                                 state.profile?.cycle, state.journal, today, vm::logPeriod, vm::updateCycle,
                                 onOpenDay = { nav.navigate("day/$it") }, embedded = true,
                             )
-                            else -> StatsScreen(state, now, embedded = true)
+                            else -> StatsScreen(state, now, embedded = true, onOpenPrn = { nav.navigate("prn_stats/$it") })
                         }
                     }
                 }
@@ -422,6 +446,48 @@ fun MediPoteApp(vm: AppViewModel) {
                         },
                         onBack = { nav.popBackStack() },
                     )
+                }
+                composable(
+                    "prn_log/{treatment}?intake={intake}",
+                    arguments = listOf(
+                        navArgument("treatment") { type = NavType.StringType },
+                        navArgument("intake") { type = NavType.StringType; nullable = true },
+                    ),
+                ) { entry ->
+                    val t = state.treatments.firstOrNull { it.id == entry.arguments?.getString("treatment") }
+                    val intakeId = entry.arguments?.getString("intake")
+                    val intake = intakeId?.let { id -> state.prnIntakes.firstOrNull { it.id == id } }
+                    if (t == null || (intakeId != null && intake == null)) {
+                        LaunchedEffect(Unit) { nav.popBackStack() }
+                    } else {
+                        PrnLogScreen(
+                            state, t, intake, now,
+                            onSave = {
+                                vm.savePrnIntake(it)
+                                vm.message(if (intake == null) "Prise de ${t.name} notée" else "Prise mise à jour")
+                                nav.popBackStack()
+                            },
+                            onDelete = {
+                                intake?.let { vm.deletePrnIntake(it.id) }
+                                nav.popBackStack()
+                            },
+                            onBack = { nav.popBackStack() },
+                        )
+                    }
+                }
+                composable("prn_stats/{treatment}") { entry ->
+                    val t = state.treatments.firstOrNull { it.id == entry.arguments?.getString("treatment") }
+                    if (t == null) {
+                        LaunchedEffect(Unit) { nav.popBackStack() }
+                    } else {
+                        PrnStatsScreen(
+                            state, t, now,
+                            onBack = { nav.popBackStack() },
+                            onLog = { nav.navigate("prn_log/${t.id}") },
+                            onEditIntake = { nav.navigate("prn_log/${t.id}?intake=${it.id}") },
+                            onEditTreatment = { nav.navigate("editor?treatment=${t.id}") },
+                        )
+                    }
                 }
                 composable("pill_setup") {
                     val existing = state.treatments.firstOrNull { it.pill != null }

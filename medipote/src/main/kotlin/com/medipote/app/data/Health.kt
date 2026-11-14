@@ -142,3 +142,25 @@ data class HealthDocument(
 ) {
     val isPdf: Boolean get() = mimeType == "application/pdf"
 }
+
+// ─────────────────────────── As-needed intakes ───────────────────────────
+
+/** One intake of an "as needed" medication, with the context the user chose to note. */
+@Serializable
+data class PrnIntake(
+    val id: String,
+    val treatmentId: String,
+    @Serializable(with = LocalDateTimeSerializer::class) val takenAt: LocalDateTime,
+    val quantity: Double = 1.0,
+    /** Why it was taken, e.g. "Mal de tête". */
+    val reason: String = "",
+    /** How bad it was before taking it, 1 (light) to 10 (unbearable). */
+    val intensity: Int? = null,
+    /** Where / in what situation, e.g. "Au travail", "Stress". */
+    val contexts: List<String> = emptyList(),
+    /** Did it help: 1 (no effect) to 5 (very well). */
+    val relief: Int? = null,
+    /** Ask an hour later whether it helped. */
+    val askRelief: Boolean = false,
+    val notes: String = "",
+)

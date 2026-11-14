@@ -70,7 +70,7 @@ object Stats {
     fun perTreatment(state: AppState, now: LocalDateTime, days: Int = 30): List<TreatmentStats> {
         val logs = state.doseLogs.associateBy { it.key }
         val today = now.toLocalDate()
-        return state.treatments.map { t ->
+        return state.treatments.filterNot { it.asNeeded }.map { t ->
             var taken = 0
             var planned = 0
             for (offset in 0 until days) {
