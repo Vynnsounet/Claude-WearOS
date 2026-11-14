@@ -30,6 +30,7 @@ import androidx.compose.material.icons.rounded.NotificationsActive
 import androidx.compose.material.icons.rounded.Science
 import androidx.compose.material.icons.rounded.SearchOff
 import androidx.compose.material.icons.rounded.Shield
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -48,6 +49,10 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -79,6 +84,8 @@ fun ResultsScreen(
     onRetry: () -> Unit,
     onUseDemo: () -> Unit,
     onOpenUrl: (String) -> Unit,
+    /** Turns automatic reading on for these restricted sites and searches again. */
+    onReadInApp: (List<String>) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val criteria = state.criteria
@@ -127,7 +134,7 @@ fun ResultsScreen(
             item(key = "sources") { SourceStatusRow(state.statuses, onOpenUrl) }
             if (state.running) item(key = "progress") { LinearProgressIndicator(Modifier.fillMaxWidth().clip(CircleShape)) }
             if (state.demo) item(key = "demo") { DemoBanner() }
-            if (links.isNotEmpty()) item(key = "links") { LinkSources(links, onOpenUrl) }
+            if (links.isNotEmpty()) item(key = "links") { LinkSources(links, onOpenUrl, onReadInApp) }
 
             val blocked = state.statuses.filter { it.state == SourceState.BLOCKED || it.state == SourceState.ERROR }
             if (blocked.isNotEmpty() && okCount > 0) {
@@ -229,7 +236,25 @@ private fun SourceStatusRow(statuses: List<SourceStatus>, onOpenUrl: (String) ->
 
 /** Sites that are not read automatically: their own search, already filtered, one tap away. */
 @Composable
-private fun LinkSources(links: List<SourceStatus>, onOpenUrl: (String) -> Unit) {
+private fun LinkSources(links: List<SourceStatus>, onOpenUrl: (String) -> Unit, onReadInApp: (List<String>) -> Unit) {
+    var confirm by remember { mutableStateOf(false) }
+    val names = links.joinToString(" et ") { it.name }
+    if (confirm) {
+        AlertDialog(
+            onDismissRequest = { confirm = false },
+            title = { Text("Afficher $names dans l'application ?") },
+            text = {
+                Text(
+                    "Les règles de ${if (links.size > 1) "ces sites" else "ce site"} (robots.txt et conditions d'utilisation) interdisent " +
+                        "la lecture automatique de leurs annonces. Radar Occaz les lira comme la v1, pour votre usage personnel et à vos risques : " +
+                        "le site peut répondre par une vérification anti-robot, que l'application ne contourne pas. " +
+                        "Vous pourrez revenir au lien direct dans les réglages.",
+                )
+            },
+            confirmButton = { TextButton(onClick = { confirm = false; onReadInApp(links.map { it.sourceId }) }) { Text("Afficher les annonces") } },
+            dismissButton = { TextButton(onClick = { confirm = false }) { Text("Annuler") } },
+        )
+    }
     Surface(color = MaterialTheme.colorScheme.surfaceContainerLow, shape = MaterialTheme.shapes.medium) {
         Column(Modifier.fillMaxWidth().padding(start = 12.dp, end = 4.dp, top = 10.dp, bottom = 4.dp)) {
             Text("Aussi à consulter", style = MaterialTheme.typography.titleSmall)
@@ -247,6 +272,10 @@ private fun LinkSources(links: List<SourceStatus>, onOpenUrl: (String) -> Unit) 
                     }
                 }
             }
+            FilledTonalButton(
+                onClick = { confirm = true },
+                modifier = Modifier.padding(end = 8.dp, bottom = 8.dp).testTag("read_in_app"),
+            ) { Text("Afficher leurs annonces ici") }
         }
     }
 }

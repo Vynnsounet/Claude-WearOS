@@ -134,8 +134,8 @@ débarrassées des données personnelles des vendeurs
 
 - **Leboncoin et La Centrale** : leurs règles interdisent la lecture
   automatique, donc l'application ouvre la recherche (déjà filtrée) chez eux.
-  Les réglages permettent d'activer leur lecture pour un usage strictement
-  personnel, à vos risques : ils protègent leurs pages (DataDome) et
+  Le bouton « Afficher leurs annonces ici » des résultats (ou les réglages)
+  active leur lecture, comme en v1, pour un usage strictement personnel et à vos risques : ils protègent leurs pages (DataDome) et
   l'application ne contourne pas ces protections.
 - **Structure des pages** : les sites changent leur code sans prévenir. Une
   source peut alors renvoyer « page illisible » jusqu'à une mise à jour de son

@@ -158,6 +158,21 @@ class ScreensTest {
     }
 
     @Test
+    fun restrictedSitesCanBeReadInApp() {
+        var enabled: List<String>? = null
+        render {
+            ResultsScreen(
+                state = ResultsState(criteria, statuses, results), favorites = emptySet(), hasAlert = false,
+                onBack = {}, onSort = {}, onOpen = {}, onToggleFavorite = {}, onCreateAlert = {},
+                onRetry = {}, onUseDemo = {}, onOpenUrl = {}, onReadInApp = { enabled = it },
+            )
+        }
+        compose.onNodeWithTag("read_in_app").performClick()
+        compose.onNodeWithText("Afficher les annonces").performClick()
+        assertTrue(enabled == listOf("leboncoin"))
+    }
+
+    @Test
     fun resultsDark() {
         render(ThemeMode.DARK) { resultsScreen(ResultsState(criteria, statuses, results, newIds = setOf("largus:6"))) }
         compose.onNodeWithText("Nouveau").assertIsDisplayed()

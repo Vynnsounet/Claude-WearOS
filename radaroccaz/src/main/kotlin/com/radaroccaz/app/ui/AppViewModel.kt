@@ -103,6 +103,12 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
 
     fun setSort(order: SortOrder) = _results.update { it.copy(sort = order) }
 
+    /** The user chose to have these sites read in the app despite their rules. */
+    fun readRestrictedAndRetry(ids: List<String>) {
+        updateSettings { it.copy(autoReadRestricted = it.autoReadRestricted + ids) }
+        retry()
+    }
+
     fun useDemoAndRetry() {
         updateSettings { it.copy(demoMode = true) }
         retry()

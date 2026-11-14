@@ -165,6 +165,7 @@ fun RadarApp(vm: AppViewModel) {
                         onCreateAlert = { showCreateAlert = true },
                         onRetry = vm::retry,
                         onUseDemo = vm::useDemoAndRetry,
+                        onReadInApp = vm::readRestrictedAndRetry,
                         onOpenUrl = { openUrl(context, it) },
                     )
                     if (showCreateAlert && results.criteria != null) {
