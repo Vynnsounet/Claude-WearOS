@@ -201,6 +201,10 @@ data class SleepNight(
     val awakenings: List<Awakening> = emptyList(),
     /** 1 (very bad) to 5 (excellent). */
     val quality: Int? = null,
+    /** How rested on waking up, 1 (not at all) to 5 (very). */
+    val rested: Int? = null,
+    /** How pleasant the night felt (dreams, comfort), 1 to 5. */
+    val pleasant: Int? = null,
     val tags: List<String> = emptyList(),
     val notes: String = "",
 ) {

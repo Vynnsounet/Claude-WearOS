@@ -66,6 +66,11 @@ L'optimiseur de R8 reste désactivé (`-dontoptimize`) : APK de 3,8 Mo au lieu d
 le dex livré peut être reconverti et exécuté hors appareil pour vérification (voir plus bas),
 ce que l'optimiseur empêche. Il pourra être réactivé après des essais sur téléphone.
 
+### 1.3.1
+
+- Sommeil : la nuit se note aussi « reposante » et « agréable » (en plus de « bonne »), d'un
+  visage sur 5 ; moyennes, analyses et rapport PDF.
+
 ### 1.3.0
 
 - Mesures de santé (tension, pouls, glycémie, poids, température, saturation), chaque type

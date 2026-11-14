@@ -31,7 +31,7 @@ class SleepTest {
         val w = date.atTime(wake / 60, wake % 60)
         return SleepNight(
             date, Sleep.bedtimeFor(date, bed), latency, w,
-            awakenings.map { (at, minutes) -> Awakening(Sleep.inNight(w, at), minutes, reason) }, quality, tags,
+            awakenings.map { (at, minutes) -> Awakening(Sleep.inNight(w, at), minutes, reason) }, quality, tags = tags,
         )
     }
 
@@ -157,5 +157,25 @@ class SleepTest {
         val logged = state.copy(sleep = listOf(night(day)))
         assertEquals(listOf(day.plusDays(1).atTime(9, 0)), ReminderPlanner.plan(logged, day.atTime(7, 0)).filter { it.kind == AlarmKind.SLEEP }.map { it.time })
         assertFalse(ReminderPlanner.plan(state.copy(settings = Settings()), day.atTime(7, 0)).any { it.kind == AlarmKind.SLEEP })
+    }
+
+    @Test
+    fun restfulAndPleasantNights() {
+        // Calm nights feel restful, nights with awakenings don't.
+        val nights = (0 until 8).map { i ->
+            val woken = i % 2 == 1
+            night(day.minusDays(i.toLong()), awakenings = if (woken) listOf(3 * 60 to 30) else emptyList())
+                .copy(quality = if (woken) 2 else 4, rested = if (woken) 2 else 5, pleasant = 3)
+        }
+        val r = Sleep.report(AppState(sleep = nights), day, 8)
+        assertEquals(3.5f, r.averageRested!!, 0.001f)
+        assertEquals(3f, r.averagePleasant!!, 0.001f)
+        assertEquals(3f, r.averageQuality!!, 0.001f)
+        assertTrue(r.insights.toString(), r.insights.any { it.text == "Les nuits sans réveil sont plus reposantes : 5,0/5 contre 2,0/5." })
+        // Mostly unrestful nights: a gentle warning.
+        val tired = nights.map { it.copy(rested = 2) }
+        assertTrue(Sleep.report(AppState(sleep = tired), day, 8).insights.any { it.tone == Tone.WARN && it.text.startsWith("Tes nuits sont peu reposantes") })
+        assertEquals(5, Sleep.RESTED_LABELS.size)
+        assertEquals(5, Sleep.PLEASANT_LABELS.size)
     }
 }

@@ -97,7 +97,10 @@ Profil médical et paramètres sont accessibles en haut à droite.
 - **Sommeil** (Suivi › Sommeil) : chaque matin, heure du coucher, temps
   d'endormissement, heure du réveil et **réveils dans la nuit** (heure, durée,
   cause : toilettes, bruit, chaleur, douleur, cauchemar, anxiété, enfant…),
-  qualité de la nuit (5 niveaux), ce qui a pu jouer (écrans, caféine, alcool,
+  ressenti de la nuit en trois questions notées d'un visage (bonne ?
+  reposante ? agréable ?), avec moyennes et analyses (nuits sans réveil plus
+  reposantes, durée qui rend les nuits reposantes, alerte si elles le sont
+  rarement), ce qui a pu jouer (écrans, caféine, alcool,
   sport, repas tardif, stress…) et notes. La saisie est pré-remplie avec tes
   horaires habituels et affiche la nuit en direct sur une frise (sommeil /
   éveil) avec durée de sommeil, temps au lit, efficacité et plus long sommeil

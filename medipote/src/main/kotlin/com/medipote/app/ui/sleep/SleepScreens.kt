@@ -61,6 +61,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -164,6 +165,13 @@ private fun TimelineLegend() {
     }
 }
 
+/** "🙂 bonne · 😄 très reposante · 😐 ni agréable ni désagréable" */
+private fun feelings(n: SleepNight): String? = listOfNotNull(
+    n.quality?.let { "${Sleep.FACES[it - 1]} ${Sleep.QUALITY_LABELS[it - 1].lowercase()}" },
+    n.rested?.let { "${Sleep.FACES[it - 1]} ${Sleep.RESTED_LABELS[it - 1].lowercase()}" },
+    n.pleasant?.let { "${Sleep.FACES[it - 1]} ${if (it == 3) "ni agréable ni désagréable" else Sleep.PLEASANT_LABELS[it - 1].lowercase()}" },
+).joinToString(" · ").ifEmpty { null }
+
 private fun nightSummary(n: SleepNight): String = buildString {
     append("Coucher ${n.bedtime.format(hourMinute)} · réveil ${n.wakeTime.format(hourMinute)}")
     append(
@@ -216,12 +224,13 @@ fun SleepScreen(state: AppState, now: LocalDateTime, onLog: () -> Unit, onOpen: 
                         Text(Sleep.format(lastNight.asleepMinutes), style = MaterialTheme.typography.headlineMedium)
                         Spacer(Modifier.width(8.dp))
                         Text(
-                            "de sommeil" + (lastNight.quality?.let { " · nuit ${Sleep.QUALITY_LABELS[it - 1].lowercase()}" } ?: ""),
+                            "de sommeil",
                             style = MaterialTheme.typography.bodyMedium,
                             modifier = Modifier.padding(bottom = 4.dp),
                         )
                     }
                     Text(nightSummary(lastNight), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    feelings(lastNight)?.let { Text(it, style = MaterialTheme.typography.bodyMedium) }
                     NightTimeline(lastNight)
                     TimelineLegend()
                 }
@@ -301,11 +310,65 @@ private fun SleepTiles(r: SleepReport) {
             Modifier.weight(1f),
         )
         StatTile(
-            "Qualité",
-            r.averageQuality?.let { "${decimal(it)}/5" } ?: "—",
-            r.averageLatency?.let { "endormissement : ${Sleep.format(it)}" },
+            "Endormissement",
+            r.averageLatency?.let(Sleep::format) ?: "—",
+            "en moyenne",
             Modifier.weight(1f),
         )
+    }
+    if (r.averageQuality != null || r.averageRested != null || r.averagePleasant != null) {
+        StatCard("Ressenti des nuits", subtitle = "Moyennes sur 5 · un visage par niveau") {
+            FeelingRow("Bonnes", r.averageQuality)
+            FeelingRow("Reposantes", r.averageRested)
+            FeelingRow("Agréables", r.averagePleasant)
+        }
+    }
+}
+
+@Composable
+private fun FeelingRow(label: String, value: Float?) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Text(label, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.width(96.dp))
+        androidx.compose.foundation.layout.Box(Modifier.weight(1f)) {
+            com.medipote.app.ui.stats.Meter(((value ?: 0f) - 1f) / 4f, MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.surfaceContainerHighest)
+        }
+        Text(
+            value?.let { "${Sleep.FACES[(it.roundToInt() - 1).coerceIn(0, 4)]} ${decimal(it)}" } ?: "—",
+            style = MaterialTheme.typography.labelLarge,
+            modifier = Modifier.width(72.dp).padding(start = 8.dp),
+        )
+    }
+}
+
+/** One question of the night, answered with a face from 1 to 5 (tap again to clear). */
+@Composable
+private fun RatingRow(question: String, value: Int?, labels: List<String>, onChange: (Int?) -> Unit) {
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(question, style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
+            Text(
+                value?.let { labels[it - 1] } ?: "non noté",
+                style = MaterialTheme.typography.labelLarge,
+                color = if (value == null) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.primary,
+            )
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            Sleep.FACES.forEachIndexed { i, face ->
+                val v = i + 1
+                val selected = value == v
+                androidx.compose.material3.Surface(
+                    onClick = { onChange(if (selected) null else v) },
+                    shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp),
+                    color = if (selected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainerHighest,
+                    border = if (selected) androidx.compose.foundation.BorderStroke(2.dp, MaterialTheme.colorScheme.primary) else null,
+                    modifier = Modifier.weight(1f).height(44.dp).semantics { contentDescription = "$question ${labels[i]}" },
+                ) {
+                    androidx.compose.foundation.layout.Box(contentAlignment = Alignment.Center) {
+                        Text(face, style = MaterialTheme.typography.titleLarge, modifier = Modifier.alpha(if (value == null || selected) 1f else 0.45f))
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -408,7 +471,7 @@ private fun NightRow(n: SleepNight, goal: Int, onClick: () -> Unit) {
         }
         NightTimeline(n, height = 8, labels = false)
         Text(
-            nightSummary(n) + (n.quality?.let { " · ${Sleep.QUALITY_LABELS[it - 1].lowercase()}" } ?: ""),
+            nightSummary(n) + (feelings(n)?.let { " · $it" } ?: ""),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             maxLines = 2,
@@ -446,6 +509,8 @@ fun SleepEditorScreen(
         mutableStateListOf<AwakeningDraft>().apply { addAll(initial.awakenings.map { AwakeningDraft(Sleep.minuteOf(it.at), it.minutes, it.reason) }) }
     }
     var quality by rememberSaveable { mutableStateOf(initial.quality) }
+    var rested by rememberSaveable { mutableStateOf(initial.rested) }
+    var pleasant by rememberSaveable { mutableStateOf(initial.pleasant) }
     val tags = remember { mutableStateListOf<String>().apply { addAll(initial.tags) } }
     var notes by rememberSaveable { mutableStateOf(initial.notes) }
     var picking by remember { mutableStateOf<Pair<String, Int>?>(null) } // "bed" / "wake" / "a<index>"
@@ -460,6 +525,8 @@ fun SleepEditorScreen(
         wakeTime = wake,
         awakenings = awakenings.map { Awakening(Sleep.inNight(wake, it.minuteOfDay), it.minutes, it.reason) },
         quality = quality,
+        rested = rested,
+        pleasant = pleasant,
         tags = tags.toList(),
         notes = notes.trim(),
     )
@@ -569,11 +636,12 @@ fun SleepEditorScreen(
                 Text("Ajouter un réveil")
             }
 
-            SectionTitle("Qualité de la nuit")
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Sleep.QUALITY_LABELS.forEachIndexed { i, label ->
-                    val v = i + 1
-                    FilterChip(selected = quality == v, onClick = { quality = if (quality == v) null else v }, label = { Text(label) })
+            SectionTitle("Comment était ta nuit ?")
+            Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)) {
+                Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                    RatingRow("Bonne ?", quality, Sleep.QUALITY_LABELS) { quality = it }
+                    RatingRow("Reposante ?", rested, Sleep.RESTED_LABELS) { rested = it }
+                    RatingRow("Agréable ?", pleasant, Sleep.PLEASANT_LABELS) { pleasant = it }
                 }
             }
 

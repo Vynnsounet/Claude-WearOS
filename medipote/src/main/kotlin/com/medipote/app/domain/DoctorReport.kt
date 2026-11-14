@@ -240,6 +240,8 @@ object DoctorReports {
             r.reasons.takeIf { it.isNotEmpty() }?.let { "Causes des réveils" to it.take(4).joinToString(", ") { (k, n) -> "${k.lowercase()} ($n)" } },
             r.averageEfficiency?.let { "Efficacité du sommeil" to pct(it) },
             r.averageQuality?.let { "Qualité ressentie" to "${dec(it)}/5" },
+            r.averageRested?.let { "Nuits reposantes" to "${dec(it)}/5" },
+            r.averagePleasant?.let { "Nuits agréables" to "${dec(it)}/5" },
         )
         return ReportSection(ReportPart.SLEEP.label, listOf(ReportBlock.Facts(facts)))
     }

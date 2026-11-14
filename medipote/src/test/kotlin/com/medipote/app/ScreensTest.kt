@@ -561,7 +561,9 @@ class ScreensTest {
             }
             com.medipote.app.data.SleepNight(
                 d, bed, listOf(10, 20, 30)[i % 3], wake, if (weekend) emptyList() else awakenings,
-                quality = 2 + (i * 5 % 4), tags = listOfNotNull("Écrans avant de dormir".takeIf { i % 3 == 0 }, "Caféine".takeIf { i % 5 == 1 }),
+                quality = 2 + (i * 5 % 4),
+                rested = if (weekend) 4 + i % 2 else 2 + (i * 7 % 3), pleasant = 3 + i % 3,
+                tags = listOfNotNull("Écrans avant de dormir".takeIf { i % 3 == 0 }, "Caféine".takeIf { i % 5 == 1 }),
             )
         }
         return sampleState().copy(sleep = nights)

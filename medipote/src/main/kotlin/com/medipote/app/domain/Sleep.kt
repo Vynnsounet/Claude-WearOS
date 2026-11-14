@@ -35,6 +35,8 @@ data class SleepReport(
     val goalNights: Int,
     val calmNights: Int,
     val averageQuality: Float?,
+    val averageRested: Float?,
+    val averagePleasant: Float?,
     /** Night awakenings per hour of the day. */
     val awakeningHours: IntArray,
     val typicalAwakening: Int?,
@@ -60,6 +62,9 @@ object Sleep {
         "Ronflements", "Sieste", "Médicament pour dormir", "Pas chez moi",
     )
     val QUALITY_LABELS = listOf("Très mauvaise", "Mauvaise", "Moyenne", "Bonne", "Excellente")
+    val RESTED_LABELS = listOf("Pas du tout reposante", "Peu reposante", "Moyennement reposante", "Reposante", "Très reposante")
+    val PLEASANT_LABELS = listOf("Très désagréable", "Désagréable", "Ni l'un ni l'autre", "Agréable", "Très agréable")
+    val FACES = listOf("😫", "🙁", "😐", "🙂", "😄")
     val LATENCY_OPTIONS = listOf(0, 5, 10, 15, 20, 30, 45, 60, 90, 120)
     val DURATION_OPTIONS = listOf(5, 10, 15, 20, 30, 45, 60, 90, 120, 180)
 
@@ -181,6 +186,8 @@ object Sleep {
             goalNights = nights.count { it.asleepMinutes >= goal },
             calmNights = nights.count { it.awakenings.isEmpty() },
             averageQuality = nights.mapNotNull { it.quality }.takeIf { it.isNotEmpty() }?.average()?.toFloat(),
+            averageRested = nights.mapNotNull { it.rested }.takeIf { it.isNotEmpty() }?.average()?.toFloat(),
+            averagePleasant = nights.mapNotNull { it.pleasant }.takeIf { it.isNotEmpty() }?.average()?.toFloat(),
             awakeningHours = hours,
             typicalAwakening = if (awakenings.size >= 3) Reports.circularMean(awakenings.map { minuteOf(it.at) }, 0.6) else null,
             reasons = ranked(awakenings.map { it.reason }),
@@ -258,6 +265,27 @@ object Sleep {
         }.minByOrNull { it.second }?.let { (tag, diff) ->
             if (diff <= -30) out += Insight("Les nuits marquées « ${tag.lowercase()} », tu dors ${format(-diff)} de moins que les autres.", Tone.INFO)
         }
+        // What makes the nights restful.
+        val rated = r.nights.filter { it.rested != null }
+        if (rated.size >= 5) {
+            val avgRested = rated.map { it.rested!! }.average()
+            if (avgRested <= 2.5) {
+                out += Insight("Tes nuits sont peu reposantes (${dec(avgRested.toFloat())}/5 en moyenne) : si ça dure, parles-en à ton médecin.", Tone.WARN)
+            }
+            fun compare(a: List<SleepNight>, b: List<SleepNight>) =
+                if (a.size >= 2 && b.size >= 2) a.map { it.rested!! }.average() to b.map { it.rested!! }.average() else null
+            compare(rated.filter { it.awakenings.isEmpty() }, rated.filter { it.awakenings.isNotEmpty() })?.let { (calm, woken) ->
+                if (calm - woken >= 0.7) {
+                    out += Insight("Les nuits sans réveil sont plus reposantes : ${dec(calm.toFloat())}/5 contre ${dec(woken.toFloat())}/5.", Tone.INFO)
+                }
+            }
+            compare(rated.filter { it.asleepMinutes >= goal - 60 }, rated.filter { it.asleepMinutes < goal - 60 })?.let { (long, short) ->
+                if (long - short >= 0.7) {
+                    out += Insight("Au-delà de ${format(goal - 60)} de sommeil, tes nuits sont plus reposantes (${dec(long.toFloat())}/5 contre ${dec(short.toFloat())}/5).", Tone.INFO)
+                }
+            }
+        }
+
         // How the day felt after a good night or a short one (journal of the same morning).
         val good = mutableListOf<Double>()
         val short = mutableListOf<Double>()
