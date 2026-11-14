@@ -66,6 +66,16 @@ L'optimiseur de R8 reste désactivé (`-dontoptimize`) : APK de 3,8 Mo au lieu d
 le dex livré peut être reconverti et exécuté hors appareil pour vérification (voir plus bas),
 ce que l'optimiseur empêche. Il pourra être réactivé après des essais sur téléphone.
 
+### 1.9.0
+
+- Eau : chaque verre rapporte des points même après l'objectif, jusqu'au double de l'objectif.
+- Question du jour retirée (accueil, journal, rituel du soir) ; le badge « Belles pensées » et
+  le défi correspondant comptent désormais les notes du journal.
+- Phrase du jour : une petite phrase douce ou motivante, différente chaque jour, en haut de
+  l'accueil (bloc masquable dans Mon accueil). Remplace la phrase personnelle des paramètres.
+- Le fond du compagnon suit l'heure : aube (6–8 h), jour (8–16 h), coucher de soleil
+  (16–19 h), nuit (19–6 h) avec lune, étoiles et lucioles. Les autres fonds sont teintés.
+
 ### 1.8.0 — une appli plus aérée
 
 - Bouton « + Noter » sur l'accueil : humeur, médicament si besoin, nuit, verre d'eau,

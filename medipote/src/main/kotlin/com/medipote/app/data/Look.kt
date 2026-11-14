@@ -6,9 +6,10 @@ import kotlinx.serialization.Serializable
 @Serializable
 enum class HomeSection(val label: String, val emoji: String, val hint: String = "") {
     STATUS("Série, points et défis", "🔥"),
+    PHRASE("Phrase du jour", "🌼", "Une petite phrase douce, différente chaque jour"),
     NEXT_DOSE("Prochaine prise, en grand", "⏰"),
     COMPANION("Compagnon", "🐾"),
-    MOOD("Humeur et question du jour", "😊", "Se replie en une ligne une fois remplie"),
+    MOOD("Humeur du jour", "😊", "Se replie en une ligne une fois notée"),
     RITUAL("Rituel du matin / du soir", "✨", "Le matin et le soir seulement"),
     PERIOD("Protection pendant les règles", "🩸", "Pendant les règles ou quand un minuteur tourne"),
     DOSES("Prises du jour", "💊"),
@@ -45,7 +46,7 @@ data class Look(
     val pureBlack: Boolean = false,
     /** Shown next to the greeting. */
     val avatar: String = "👋",
-    /** A sentence of one's own, shown on the home screen. */
+    /** No longer shown (replaced by the phrase of the day); kept so old saves still load. */
     val motto: String = "",
     val homeOrder: List<HomeSection> = HomeSection.entries,
     val hiddenSections: Set<HomeSection> = emptySet(),

@@ -400,11 +400,6 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         saveEntry(state.value.entryFor(today).copy(mental = value))
     }
 
-    /** Home: the answer to the question of the day. */
-    fun answerQuestion(text: String) {
-        val today = repo.now().toLocalDate()
-        saveEntry(state.value.entryFor(today).copy(reflection = text))
-    }
 
     // ── Period products and medication during periods ──
 

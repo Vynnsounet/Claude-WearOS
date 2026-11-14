@@ -400,7 +400,6 @@ fun MediPoteApp(vm: AppViewModel) {
                         onOpenDocument = { nav.navigate("document/${it.id}") },
                         onOpenHistory = { nav.navigate("history/$it") },
                         onMood = vm::setMood,
-                        onAnswer = vm::answerQuestion,
                         onRitual = { nav.navigate("ritual/${it.name}") },
                         onOpenBadges = { nav.navigate("badges") },
                         onOpenRecap = { nav.navigate("recap/$it") },

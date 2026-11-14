@@ -59,7 +59,6 @@ import com.medipote.app.data.AppState
 import com.medipote.app.data.Awakening
 import com.medipote.app.data.DayEntry
 import com.medipote.app.data.SleepNight
-import com.medipote.app.domain.DailyQuestions
 import com.medipote.app.domain.DoseItem
 import com.medipote.app.domain.DoseState
 import com.medipote.app.domain.Game
@@ -157,6 +156,7 @@ fun RitualScreen(state: AppState, kind: RitualKind, now: LocalDateTime, actions:
                         if (step == Step.DONE) PetMood.HAPPY else PetMood.CONTENT,
                         state.game.equipped, Modifier.fillMaxSize(), animate = animate,
                         stage = com.medipote.app.domain.Evolution.growth(state).stage,
+                        time = com.medipote.app.domain.TimeOfDay.of(now),
                     )
                 }
                 Spacer(Modifier.width(12.dp))
@@ -296,16 +296,13 @@ private fun MoodStep(entry: DayEntry, onSave: (DayEntry) -> Unit) {
 @Composable
 private fun JournalStep(entry: DayEntry, onSave: (DayEntry) -> Unit) {
     var mental by rememberSaveable { mutableStateOf(entry.mental) }
-    var answer by rememberSaveable { mutableStateOf(entry.reflection) }
     var notes by rememberSaveable { mutableStateOf(entry.notes) }
     Text("Ton humeur ce soir", style = MaterialTheme.typography.titleSmall)
     FacePicker(mental, "Humeur", { mental = it })
-    Text("💭 ${DailyQuestions.of(entry.date)}", style = MaterialTheme.typography.titleMedium.copy(fontStyle = FontStyle.Italic))
-    OutlinedTextField(value = answer, onValueChange = { answer = it.take(280) }, placeholder = { Text("Quelques mots…") }, minLines = 2, modifier = Modifier.fillMaxWidth())
-    OutlinedTextField(value = notes, onValueChange = { notes = it }, label = { Text("Autre chose à noter ? (facultatif)") }, minLines = 2, modifier = Modifier.fillMaxWidth())
+    OutlinedTextField(value = notes, onValueChange = { notes = it }, label = { Text("Un mot sur ta journée ? (facultatif)") }, minLines = 2, modifier = Modifier.fillMaxWidth())
     Button(
-        onClick = { onSave(entry.copy(mental = mental, reflection = answer.trim(), notes = notes.trim())) },
-        enabled = mental != null || answer.isNotBlank() || notes.isNotBlank(),
+        onClick = { onSave(entry.copy(mental = mental, notes = notes.trim())) },
+        enabled = mental != null || notes.isNotBlank(),
         modifier = Modifier.fillMaxWidth().height(52.dp),
     ) { Text("Suivant") }
 }

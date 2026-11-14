@@ -61,6 +61,11 @@ Profil médical et paramètres sont accessibles en haut à droite.
 |---|---|
 | ![](docs/home_v18.png) | ![](docs/quick_add.png) |
 
+Chaque jour, une petite phrase douce s'affiche en haut de l'accueil, et le fond du
+compagnon suit l'heure (aube, jour, coucher de soleil, nuit).
+
+![](docs/pet_sky.png)
+
 Pour garder l'appli aérée : les explications sont repliées derrière « ⓘ À savoir »
 ou un petit ⓘ, et les formulaires (traitement, nuit, journal, rendez-vous, mesure)
 montrent l'essentiel, le reste sous « Plus d'options ».

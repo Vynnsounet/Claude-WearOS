@@ -290,14 +290,6 @@ fun DayEntryScreen(
                     TagPicker(MENTAL_SYMPTOMS, mentalSymptoms, { mentalSymptoms = it }, "Autre ressenti")
                 }
             }
-            SectionCard("Question du jour") {
-                Text("💭 ${com.medipote.app.domain.DailyQuestions.of(entry.date)}", style = MaterialTheme.typography.bodyLarge)
-                OutlinedTextField(
-                    value = reflection, onValueChange = { reflection = it.take(280) }, placeholder = { Text("Quelques mots…") },
-                    minLines = 2, modifier = Modifier.fillMaxWidth(),
-                    keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
-                )
-            }
             SectionCard("Notes") {
                 OutlinedTextField(
                     value = notes, onValueChange = { notes = it }, placeholder = { Text("Ce que tu veux retenir de ta journée…") },

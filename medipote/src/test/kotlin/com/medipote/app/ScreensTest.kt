@@ -273,9 +273,9 @@ class ScreensTest {
         }
         compose.onNodeWithText("Sombre").assertExists()
         // The scoring rules are folded: one tap shows them.
-        compose.onNodeWithText("Verre d'eau (jusqu'à l'objectif du jour)").assertDoesNotExist()
+        compose.onNodeWithText("Verre d'eau (même après l'objectif, jusqu'au double)").assertDoesNotExist()
         compose.onNodeWithText("Points, série et compagnon : le barème").performScrollTo().performClick()
-        compose.onNodeWithText("Verre d'eau (jusqu'à l'objectif du jour)").assertExists()
+        compose.onNodeWithText("Verre d'eau (même après l'objectif, jusqu'au double)").assertExists()
     }
 
 
@@ -753,6 +753,40 @@ class ScreensTest {
         save("pet_stages", bitmap)
     }
 
+    @Test
+    @Config(qualifiers = "w400dp-h1400dp-xhdpi")
+    fun homeAtNight() {
+        render("home_night") { HomeScreen(motivationState(), today.atTime(21, 30), 0, 0, {}, {}, {}, {}, animate = false) }
+        compose.onNodeWithText(com.medipote.app.domain.DailyPhrases.of(today), substring = true).assertExists()
+    }
+
+    @Test
+    fun petSkyFollowsTheClock() {
+        val size = 300
+        val times = com.medipote.app.domain.TimeOfDay.entries
+        val bitmap = Bitmap.createBitmap(size * times.size, size * 2, Bitmap.Config.ARGB_8888)
+        times.forEachIndexed { i, time ->
+            listOf("bg_meadow", "bg_beach").forEachIndexed { row, bg ->
+                val image = androidx.compose.ui.graphics.ImageBitmap(size, size)
+                androidx.compose.ui.graphics.drawscope.CanvasDrawScope().draw(
+                    androidx.compose.ui.unit.Density(1f), androidx.compose.ui.unit.LayoutDirection.Ltr,
+                    androidx.compose.ui.graphics.Canvas(image), androidx.compose.ui.geometry.Size(size.toFloat(), size.toFloat()),
+                ) {
+                    with(com.medipote.app.ui.pet.PetDrawing) { background(bg, time) }
+                    com.medipote.app.ui.pet.drawPetForTest(this)
+                }
+                android.graphics.Canvas(bitmap).drawBitmap(image.asAndroidBitmap(), (i * size).toFloat(), (row * size).toFloat(), null)
+            }
+        }
+        save("pet_sky", bitmap)
+        org.junit.Assert.assertEquals(com.medipote.app.domain.TimeOfDay.DAWN, com.medipote.app.domain.TimeOfDay.of(6))
+        org.junit.Assert.assertEquals(com.medipote.app.domain.TimeOfDay.DAY, com.medipote.app.domain.TimeOfDay.of(8))
+        org.junit.Assert.assertEquals(com.medipote.app.domain.TimeOfDay.DAY, com.medipote.app.domain.TimeOfDay.of(15))
+        org.junit.Assert.assertEquals(com.medipote.app.domain.TimeOfDay.DUSK, com.medipote.app.domain.TimeOfDay.of(16))
+        org.junit.Assert.assertEquals(com.medipote.app.domain.TimeOfDay.NIGHT, com.medipote.app.domain.TimeOfDay.of(19))
+        org.junit.Assert.assertEquals(com.medipote.app.domain.TimeOfDay.NIGHT, com.medipote.app.domain.TimeOfDay.of(2))
+    }
+
     // ── Version 1.4 ──
 
     @Test
@@ -790,7 +824,9 @@ class ScreensTest {
         compose.waitForIdle()
         save("home_custom", compose.onRoot().captureToImage().asAndroidBitmap())
         compose.onNodeWithText("Bonjour Alex 🌸").assertExists()
-        compose.onNodeWithText("« Un jour après l'autre, en douceur »").assertExists()
+        // The old personal motto is replaced by the phrase of the day.
+        compose.onNodeWithText("Un jour après l'autre, en douceur", substring = true).assertDoesNotExist()
+        compose.onNodeWithText(com.medipote.app.domain.DailyPhrases.of(today), substring = true).assertExists()
         compose.onNodeWithText("Hier : ", substring = true).assertExists()
     }
 
@@ -881,8 +917,9 @@ class ScreensTest {
     fun homeV15() {
         render("home_v15") { HomeScreen(motivationState(), today.atTime(8, 0), 0, 0, {}, {}, {}, {}, animate = false, quickAdd = com.medipote.app.ui.home.QuickAddActions()) }
         compose.onNodeWithText("Noter", useUnmergedTree = true).assertExists()
-        // Mood and question answered: folded into one line.
-        compose.onNodeWithText("question du jour répondue", substring = true).assertExists()
+        // Mood noted: folded into one line; the phrase of the day instead of a question.
+        compose.onNodeWithText("Humeur du jour :", substring = true).assertExists()
+        compose.onNodeWithText(com.medipote.app.domain.DailyPhrases.of(today), substring = true).assertExists()
         compose.onNodeWithText("Rituel du matin").assertExists()
         // Challenges and garden live in the companion space; home keeps a chip.
         compose.onNodeWithText("🎯 ", substring = true).assertExists()
@@ -931,7 +968,7 @@ class ScreensTest {
     fun ritualEvening() {
         val state = motivationState().let { s -> s.copy(treatments = emptyList()) }
         render("ritual_evening") { com.medipote.app.ui.motivation.RitualScreen(state, com.medipote.app.domain.RitualKind.EVENING, today.atTime(21, 30), noRitualActions, animate = false) }
-        compose.onNodeWithText(com.medipote.app.domain.DailyQuestions.of(today), substring = true).assertExists()
+        compose.onNodeWithText("Un mot sur ta journée ? (facultatif)").assertExists()
     }
 
     @Test

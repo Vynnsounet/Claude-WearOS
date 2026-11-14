@@ -35,7 +35,6 @@ import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.medipote.app.data.AppState
-import com.medipote.app.domain.DailyQuestions
 import com.medipote.app.domain.DoseState
 import com.medipote.app.domain.Schedule
 import com.medipote.app.domain.Sleep
@@ -107,8 +106,7 @@ fun MyDayScreen(
                         entry.physical?.let { Text("Forme ${FACES[it - 1]}", style = MaterialTheme.typography.bodyLarge) }
                     }
                     if (entry.reflection.isNotBlank()) {
-                        Text("💭 ${DailyQuestions.of(date)}", style = MaterialTheme.typography.bodyMedium.copy(fontStyle = FontStyle.Italic), color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        Text(entry.reflection, style = MaterialTheme.typography.bodyLarge)
+                        Text("💭 ${entry.reflection}", style = MaterialTheme.typography.bodyLarge.copy(fontStyle = FontStyle.Italic))
                     }
                     val tags = entry.physicalSymptoms + entry.mentalSymptoms + listOfNotNull(entry.illness.ifBlank { null })
                     if (tags.isNotEmpty()) {

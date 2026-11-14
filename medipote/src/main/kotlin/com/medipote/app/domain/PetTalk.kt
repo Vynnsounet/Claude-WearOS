@@ -97,9 +97,7 @@ object PetTalk {
                 }
             if (!state.entryFor(now.toLocalDate()).hasJournal) add("Tu me racontes ta journée dans le journal ?")
             reactionTo(state, now)?.let { add(it) }
-            if (now.hour >= 18 && state.entryFor(now.toLocalDate()).reflection.isBlank()) {
-                add("Question du jour : ${DailyQuestions.of(now.toLocalDate()).replaceFirstChar { it.lowercase() }}")
-            }
+            add(DailyPhrases.of(now.toLocalDate()))
             val night = state.sleep.firstOrNull { it.date == now.toLocalDate() }
             if (night == null && now.hour in 5..13) add("Bien dormi ? Raconte-moi ta nuit dans Suivi › Sommeil 🌙")
             if (night != null && night.asleepMinutes < state.settings.sleep.goalMinutes - 60 && now.hour in 12..17) {

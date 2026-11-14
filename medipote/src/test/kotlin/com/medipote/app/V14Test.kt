@@ -114,7 +114,7 @@ class V14Test {
         // Sections missing from the saved order (added by an update) go after the one they follow by default.
         assertEquals(
             listOf(
-                HomeSection.STATUS, HomeSection.NEXT_DOSE, HomeSection.WATER, HomeSection.PROMPTS,
+                HomeSection.STATUS, HomeSection.PHRASE, HomeSection.NEXT_DOSE, HomeSection.WATER, HomeSection.PROMPTS,
                 HomeSection.CHALLENGES, HomeSection.GARDEN, HomeSection.DOSES, HomeSection.AS_NEEDED, HomeSection.MEASURES,
                 HomeSection.COMPANION, HomeSection.MOOD, HomeSection.RITUAL, HomeSection.PERIOD,
             ),

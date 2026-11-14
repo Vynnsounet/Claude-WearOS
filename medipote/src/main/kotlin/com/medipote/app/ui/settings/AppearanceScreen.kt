@@ -241,14 +241,6 @@ fun AppearanceScreen(
                         ) { Box(contentAlignment = Alignment.Center) { Text(e, style = MaterialTheme.typography.titleLarge) } }
                     }
                 }
-                OutlinedTextField(
-                    value = look.motto,
-                    onValueChange = { v -> updateLook { it.copy(motto = v.take(90)) } },
-                    label = { Text("Ma phrase du jour") },
-                    placeholder = { Text("Une phrase qui te fait du bien…") },
-                    supportingText = { Text("Affichée en haut de l'accueil. Laisse vide pour ne rien afficher.") },
-                    modifier = Modifier.fillMaxWidth(),
-                )
                 SwitchRow(
                     "Animations de célébration",
                     look.celebrations,
@@ -263,7 +255,7 @@ fun AppearanceScreen(
             }
 
             FilledTonalButton(
-                onClick = { onChange { it.copy(accent = Accent.MINT, dynamicColor = false, look = Look(avatar = it.look.avatar, motto = it.look.motto)) } },
+                onClick = { onChange { it.copy(accent = Accent.MINT, dynamicColor = false, look = Look(avatar = it.look.avatar)) } },
                 modifier = Modifier.fillMaxWidth(),
             ) { Text("Revenir à l'apparence d'origine") }
             Spacer(Modifier.height(16.dp))
@@ -328,9 +320,6 @@ private fun Preview(look: Look, userName: String) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Text("Aperçu", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Text("Bonjour ${userName.ifBlank { "toi" }} ${look.avatar}", style = MaterialTheme.typography.headlineSmall)
-            if (look.motto.isNotBlank()) {
-                Text("« ${look.motto} »", style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.primary)
-            }
             Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow), modifier = Modifier.fillMaxWidth()) {
                 Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
                     Column(Modifier.weight(1f)) {

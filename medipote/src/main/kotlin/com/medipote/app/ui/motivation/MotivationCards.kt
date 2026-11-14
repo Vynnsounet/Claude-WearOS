@@ -45,7 +45,6 @@ import androidx.compose.ui.unit.dp
 import com.medipote.app.data.DayEntry
 import com.medipote.app.domain.Bloom
 import com.medipote.app.domain.ChallengeStatus
-import com.medipote.app.domain.DailyQuestions
 import com.medipote.app.domain.RitualKind
 import com.medipote.app.ui.components.SectionTitle
 import java.time.LocalDate
@@ -80,12 +79,10 @@ fun FacePicker(value: Int?, label: String, onPick: (Int?) -> Unit, modifier: Mod
 
 /** Home: today's mood in one tap, and the question of the day. */
 @Composable
-fun MoodCard(entry: DayEntry, onMood: (Int?) -> Unit, onAnswer: (String) -> Unit, foldWhenDone: Boolean = false) {
-    var answering by remember { mutableStateOf(false) }
+fun MoodCard(entry: DayEntry, onMood: (Int?) -> Unit, foldWhenDone: Boolean = false) {
     var unfolded by remember { mutableStateOf(false) }
-    val question = DailyQuestions.of(entry.date)
-    if (foldWhenDone && !unfolded && entry.mental != null && entry.reflection.isNotBlank()) {
-        // Everything answered: one quiet line, tap to change.
+    if (foldWhenDone && !unfolded && entry.mental != null) {
+        // Mood noted: one quiet line, tap to change.
         Surface(
             onClick = { unfolded = true },
             color = MaterialTheme.colorScheme.surfaceContainerLow,
@@ -96,7 +93,7 @@ fun MoodCard(entry: DayEntry, onMood: (Int?) -> Unit, onAnswer: (String) -> Unit
                 Text(FACES[entry.mental - 1], style = MaterialTheme.typography.titleLarge)
                 Spacer(Modifier.width(12.dp))
                 Text(
-                    "Humeur : ${MOOD_LABELS[entry.mental - 1].lowercase()} · question du jour répondue",
+                    "Humeur du jour : ${MOOD_LABELS[entry.mental - 1].lowercase()}",
                     style = MaterialTheme.typography.bodyMedium,
                     modifier = Modifier.weight(1f),
                 )
@@ -111,38 +108,8 @@ fun MoodCard(entry: DayEntry, onMood: (Int?) -> Unit, onAnswer: (String) -> Unit
                 Text("Comment ça va ?", style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
                 entry.mental?.let { Text(MOOD_LABELS[it - 1], style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary) }
             }
-            FacePicker(entry.mental, "Humeur", onMood)
-            Surface(
-                onClick = { answering = true },
-                color = MaterialTheme.colorScheme.secondaryContainer,
-                shape = MaterialTheme.shapes.medium,
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text("💭 $question", style = MaterialTheme.typography.bodyMedium.copy(fontStyle = FontStyle.Italic), color = MaterialTheme.colorScheme.onSecondaryContainer)
-                    Text(
-                        entry.reflection.ifBlank { "Touche pour répondre en une ligne" },
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = if (entry.reflection.isBlank()) MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f) else MaterialTheme.colorScheme.onSecondaryContainer,
-                    )
-                }
-            }
+            FacePicker(entry.mental, "Humeur", { v -> unfolded = false; onMood(v) })
         }
-    }
-    if (answering) {
-        var text by remember { mutableStateOf(entry.reflection) }
-        AlertDialog(
-            onDismissRequest = { answering = false },
-            title = { Text("Question du jour") },
-            text = {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text(question, style = MaterialTheme.typography.bodyLarge)
-                    OutlinedTextField(value = text, onValueChange = { text = it.take(280) }, placeholder = { Text("Quelques mots…") }, minLines = 2, modifier = Modifier.fillMaxWidth())
-                }
-            },
-            confirmButton = { TextButton(onClick = { answering = false; onAnswer(text.trim()) }) { Text("Enregistrer") } },
-            dismissButton = { TextButton(onClick = { answering = false }) { Text("Annuler") } },
-        )
     }
 }
 

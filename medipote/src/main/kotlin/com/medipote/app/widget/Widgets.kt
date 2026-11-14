@@ -109,7 +109,7 @@ fun renderPet(mood: PetMood, equipped: Map<String, String>, widthPx: Int, height
     CanvasDrawScope().draw(Density(1f), LayoutDirection.Ltr, Canvas(image), size) {
         val clip = Path().apply { addRoundRect(RoundRect(0f, 0f, size.width, size.height, CornerRadius(size.minDimension * 0.12f))) }
         clipPath(clip) {
-            drawBackground(equipped["BACKGROUND"])
+            drawBackground(equipped["BACKGROUND"], com.medipote.app.domain.TimeOfDay.of(java.time.LocalTime.now().hour))
             drawPet(mood, equipped, 0.5f, 0f, 0.3f, 1f, stage = stage)
         }
     }

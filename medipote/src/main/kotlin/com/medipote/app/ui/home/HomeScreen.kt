@@ -136,7 +136,6 @@ fun HomeScreen(
     onOpenDocument: (com.medipote.app.data.HealthDocument) -> Unit = {},
     onOpenHistory: (java.time.LocalDate) -> Unit = {},
     onMood: (Int?) -> Unit = {},
-    onAnswer: (String) -> Unit = {},
     onRitual: (com.medipote.app.domain.RitualKind) -> Unit = {},
     onOpenBadges: () -> Unit = {},
     onOpenRecap: (java.time.LocalDate) -> Unit = {},
@@ -167,6 +166,7 @@ fun HomeScreen(
     // Each block decides here whether it has something useful to say; null = not shown.
     fun block(section: HomeSection): (@Composable () -> Unit)? = when (section) {
         HomeSection.STATUS -> { { StatusRow(state, now, onOpenBadges) } }
+        HomeSection.PHRASE -> { { DailyPhrase(com.medipote.app.domain.DailyPhrases.of(date)) } }
         HomeSection.NEXT_DOSE -> when {
             hero != null -> { { HeroDose(hero, now, state.game.petName, onGive, onGiveEarly) } }
             todayOnly.isNotEmpty() && todayOnly.all { it.state == DoseState.TAKEN } -> { { AllDone(todayOnly.size, state.game.petName) } }
@@ -197,6 +197,7 @@ fun HomeScreen(
                         greeting = remember(state.profile?.name) { PetTalk.greeting(state, now) },
                         onCuddle = onCuddle,
                         stage = growth.stage,
+                        time = com.medipote.app.domain.TimeOfDay.of(now),
                         modifier = Modifier.fillMaxSize(),
                     )
                     HealthTag(state.game.petName, condition, growth, Modifier.align(Alignment.TopStart).padding(12.dp))
@@ -208,7 +209,7 @@ fun HomeScreen(
                 PillTray(items = giveable, petBounds = petBounds, onHover = { dragHover = it }, onDrop = onGive)
             }
         } }
-        HomeSection.MOOD -> { { com.medipote.app.ui.motivation.MoodCard(state.entryFor(date), onMood, onAnswer, foldWhenDone = true) } }
+        HomeSection.MOOD -> { { com.medipote.app.ui.motivation.MoodCard(state.entryFor(date), onMood, foldWhenDone = true) } }
         HomeSection.RITUAL -> com.medipote.app.domain.Rituals.current(now)
             ?.takeIf { !com.medipote.app.domain.Rituals.done(state.game, now, it) }
             ?.let { kind -> { com.medipote.app.ui.motivation.RitualCard(kind) { onRitual(kind) } } }
@@ -323,9 +324,9 @@ fun HomeScreen(
 
     val blocks = buildList<@Composable () -> Unit> {
         val rest = sections.toMutableList()
-        if (rest.firstOrNull() == HomeSection.STATUS) block(rest.removeAt(0))?.let(::add)
+        // The status line and the phrase of the day stay on top, above the alerts.
+        while (rest.firstOrNull() in setOf(HomeSection.STATUS, HomeSection.PHRASE)) block(rest.removeAt(0))?.let(::add)
         alerts?.let(::add)
-        if (look.motto.isNotBlank()) add { MottoCard(look.motto) }
         rest.forEach { section -> block(section)?.let(::add) }
     }
 
@@ -372,21 +373,16 @@ fun HomeScreen(
     }
 }
 
+/** The phrase of the day: quiet, centred, no card. */
 @Composable
-private fun MottoCard(motto: String) {
-    Surface(
-        color = MaterialTheme.colorScheme.primaryContainer,
-        shape = MaterialTheme.shapes.large,
-        modifier = Modifier.fillMaxWidth(),
-    ) {
-        Text(
-            "« $motto »",
-            style = MaterialTheme.typography.titleMedium.copy(fontStyle = androidx.compose.ui.text.font.FontStyle.Italic),
-            color = MaterialTheme.colorScheme.onPrimaryContainer,
-            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
-        )
-    }
+private fun DailyPhrase(text: String) {
+    Text(
+        "🌼  $text",
+        style = MaterialTheme.typography.titleMedium.copy(fontStyle = androidx.compose.ui.text.font.FontStyle.Italic),
+        color = MaterialTheme.colorScheme.primary,
+        textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
+    )
 }
 
 @Composable
@@ -776,7 +772,11 @@ private fun WaterCard(glasses: Int, goal: Int, glassMl: Int, onAdd: (Int) -> Uni
                     Text("Hydratation", style = MaterialTheme.typography.titleMedium)
                     Text(
                         "$glasses / $goal verres · ${"%.2f".format(java.util.Locale.FRANCE, glasses * glassMl / 1000.0).trimEnd('0').trimEnd(',')} L" +
-                            if (glasses >= goal) " · objectif atteint 🎉" else " · +${com.medipote.app.domain.Rules.WATER_GLASS_POINTS} pts par verre",
+                            when {
+                                glasses >= com.medipote.app.domain.Rules.waterRewardedGlasses(goal) -> " · bravo, belle hydratation 🎉"
+                                glasses >= goal -> " · objectif atteint 🎉 · +${com.medipote.app.domain.Rules.WATER_GLASS_POINTS} pts par verre en plus"
+                                else -> " · +${com.medipote.app.domain.Rules.WATER_GLASS_POINTS} pts par verre"
+                            },
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )

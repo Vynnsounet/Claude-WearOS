@@ -77,6 +77,7 @@ fun PetView(
     reactionSignal: Int = 0,
     look: Offset = Offset.Zero,
     stage: Stage = Stage.BUD,
+    time: com.medipote.app.domain.TimeOfDay = com.medipote.app.domain.TimeOfDay.DAY,
 ) {
     val transition = rememberInfiniteTransition(label = "pet")
     val breathe by if (animate) transition.animateFloat(
@@ -115,7 +116,7 @@ fun PetView(
     }
 
     Canvas(modifier.semantics { if (description.isNotEmpty()) contentDescription = description }) {
-        if (showBackground) drawBackground(equipped["BACKGROUND"])
+        if (showBackground) drawBackground(equipped["BACKGROUND"], time)
         drawPet(mood, equipped, breathe, blink, loop, feed.value, reaction, react.value, look, stage)
     }
 }
@@ -124,20 +125,105 @@ private fun mutableFloat(v: Float) = androidx.compose.runtime.mutableFloatStateO
 
 // ─────────────────────────────── Backgrounds ───────────────────────────────
 
-internal fun DrawScope.drawBackground(id: String?) {
+/** A background, lit for the time of day: the meadow has its own dawn, sunset and night; other scenes get tinted. */
+internal fun DrawScope.drawBackground(id: String?, time: com.medipote.app.domain.TimeOfDay = com.medipote.app.domain.TimeOfDay.DAY) {
+    if (id == "bg_meadow") {
+        drawMeadow(time)
+        return
+    }
+    drawScene(id)
+    // Scenes that are already night, space or underwater keep their own light.
+    if (id in setOf("bg_night", "bg_space", "bg_city", "bg_ocean")) return
+    val w = size.width
+    val h = size.height
+    val outdoor = id in setOf("bg_beach", "bg_autumn", "bg_snow", "bg_rainbow", "bg_dawn")
+    when (time) {
+        com.medipote.app.domain.TimeOfDay.DAY -> Unit
+        com.medipote.app.domain.TimeOfDay.DAWN ->
+            drawRect(Brush.verticalGradient(listOf(Color(0x33B39DDB), Color(0x29FFAB91), Color(0x00FFAB91))))
+        com.medipote.app.domain.TimeOfDay.DUSK ->
+            drawRect(Brush.verticalGradient(listOf(Color(0x40673AB7), Color(0x38FF7043), Color(0x1AFF7043))))
+        com.medipote.app.domain.TimeOfDay.NIGHT -> {
+            drawRect(Brush.verticalGradient(listOf(Color(0x990D1440), Color(0x730D1440))))
+            if (outdoor) {
+                STARS.forEach { (x, y) -> drawStar(Offset(w * x, h * y * 0.6f), w * 0.011f, Color(0xFFFFF3B0), 4, 0.35f) }
+                // The moon takes the sun's place.
+                val moon = Offset(w * 0.8f, h * 0.17f)
+                drawCircle(Color(0xFF2A3264), w * 0.1f, moon)
+                drawCircle(Color(0xFFFFF1C1), w * 0.075f, moon)
+                drawCircle(Color(0xFF2A3264), w * 0.065f, moon + Offset(-w * 0.035f, -w * 0.02f))
+            }
+        }
+    }
+}
+
+private val STARS = listOf(0.08f to 0.1f, 0.22f to 0.28f, 0.35f to 0.08f, 0.5f to 0.22f, 0.62f to 0.06f, 0.7f to 0.3f, 0.9f to 0.12f, 0.15f to 0.45f, 0.95f to 0.4f)
+
+/** The default meadow, with a real sky for each moment of the day. */
+private fun DrawScope.drawMeadow(time: com.medipote.app.domain.TimeOfDay) {
+    val w = size.width
+    val h = size.height
+    data class Sky(val sky: List<Color>, val hillBack: Color, val hillFront: Color, val flowers: Float)
+    val sky = when (time) {
+        com.medipote.app.domain.TimeOfDay.DAWN -> Sky(listOf(Color(0xFF8F86D6), Color(0xFFF6B3C4), Color(0xFFFFDDA6)), Color(0xFF94C47E), Color(0xFF76B061), 0.9f)
+        com.medipote.app.domain.TimeOfDay.DAY -> Sky(listOf(Color(0xFF9ED8F5), Color(0xFFDDF3FC)), Color(0xFF9CD67C), Color(0xFF7CC45E), 1f)
+        com.medipote.app.domain.TimeOfDay.DUSK -> Sky(listOf(Color(0xFF5D4E9E), Color(0xFFEE8A6E), Color(0xFFFFC77D)), Color(0xFF86A866), Color(0xFF678F4F), 0.85f)
+        com.medipote.app.domain.TimeOfDay.NIGHT -> Sky(listOf(Color(0xFF0F1A40), Color(0xFF2C3B74)), Color(0xFF345F4B), Color(0xFF284D3D), 0.45f)
+    }
+    drawRect(Brush.verticalGradient(sky.sky))
+    when (time) {
+        com.medipote.app.domain.TimeOfDay.DAY -> {
+            drawCircle(Color(0xFFFFE07A), w * 0.08f, Offset(w * 0.82f, h * 0.17f))
+            drawCloud(Offset(w * 0.22f, h * 0.18f), w * 0.07f)
+        }
+        com.medipote.app.domain.TimeOfDay.DAWN -> {
+            // The sun rises behind the hills, on the left.
+            val sun = Offset(w * 0.17f, h * 0.6f)
+            drawCircle(Brush.radialGradient(listOf(Color(0x99FFF3B0), Color(0x00FFF3B0)), sun, w * 0.38f), w * 0.38f, sun)
+            drawCircle(Color(0xFFFFD36E), w * 0.1f, sun)
+            listOf(0.6f to 0.08f, 0.85f to 0.16f, 0.72f to 0.04f).forEach { (x, y) -> drawCircle(Color.White.copy(alpha = 0.6f), w * 0.005f, Offset(w * x, h * y)) }
+            drawCloud(Offset(w * 0.72f, h * 0.25f), w * 0.06f)
+        }
+        com.medipote.app.domain.TimeOfDay.DUSK -> {
+            // The sun sets on the right, big and orange.
+            val sun = Offset(w * 0.83f, h * 0.6f)
+            drawCircle(Brush.radialGradient(listOf(Color(0x99FFB74D), Color(0x00FFB74D)), sun, w * 0.42f), w * 0.42f, sun)
+            drawCircle(Color(0xFFFF9E57), w * 0.11f, sun)
+            drawCircle(Color.White.copy(alpha = 0.55f), w * 0.005f, Offset(w * 0.12f, h * 0.08f))
+            drawCircle(Color.White.copy(alpha = 0.45f), w * 0.004f, Offset(w * 0.3f, h * 0.14f))
+        }
+        com.medipote.app.domain.TimeOfDay.NIGHT -> {
+            STARS.forEach { (x, y) -> drawStar(Offset(w * x, h * y), w * 0.012f, Color(0xFFFFF3B0), 4, 0.35f) }
+            val moon = Offset(w * 0.82f, h * 0.17f)
+            drawCircle(Brush.radialGradient(listOf(Color(0x40FFF1C1), Color(0x00FFF1C1)), moon, w * 0.2f), w * 0.2f, moon)
+            drawCircle(Color(0xFFFFF1C1), w * 0.075f, moon)
+            drawCircle(sky.sky.first(), w * 0.065f, moon + Offset(-w * 0.035f, -w * 0.02f))
+        }
+    }
+    drawOval(sky.hillBack, Offset(-w * 0.3f, h * 0.62f), Size(w * 1.0f, h * 0.6f))
+    drawOval(sky.hillFront, Offset(w * 0.35f, h * 0.66f), Size(w * 1.0f, h * 0.6f))
+    listOf(0.12f to 0.86f, 0.25f to 0.93f, 0.8f to 0.88f, 0.9f to 0.95f, 0.68f to 0.94f).forEach { (x, y) ->
+        drawFlower(Offset(w * x, h * y), w * 0.018f)
+    }
+    if (sky.flowers < 1f) {
+        // Dim the flowers with the light, following the hills' shape.
+        val shade = Color(0xFF0D1440).copy(alpha = (1f - sky.flowers) * 0.35f)
+        drawOval(shade, Offset(-w * 0.3f, h * 0.62f), Size(w * 1.0f, h * 0.6f))
+        drawOval(shade, Offset(w * 0.35f, h * 0.66f), Size(w * 1.0f, h * 0.6f))
+    }
+    if (time == com.medipote.app.domain.TimeOfDay.NIGHT) {
+        // Fireflies.
+        listOf(0.18f to 0.72f, 0.4f to 0.8f, 0.86f to 0.74f).forEach { (x, y) ->
+            drawCircle(Color(0x66FFF59D), w * 0.018f, Offset(w * x, h * y))
+            drawCircle(Color(0xFFFFF59D), w * 0.007f, Offset(w * x, h * y))
+        }
+    }
+}
+
+private fun DrawScope.drawScene(id: String?) {
     val w = size.width
     val h = size.height
     when (id) {
-        "bg_meadow" -> {
-            drawRect(Brush.verticalGradient(listOf(Color(0xFF9ED8F5), Color(0xFFDDF3FC))))
-            drawCircle(Color(0xFFFFE07A), w * 0.08f, Offset(w * 0.82f, h * 0.17f))
-            drawCloud(Offset(w * 0.22f, h * 0.18f), w * 0.07f)
-            drawOval(Color(0xFF9CD67C), Offset(-w * 0.3f, h * 0.62f), Size(w * 1.0f, h * 0.6f))
-            drawOval(Color(0xFF7CC45E), Offset(w * 0.35f, h * 0.66f), Size(w * 1.0f, h * 0.6f))
-            listOf(0.12f to 0.86f, 0.25f to 0.93f, 0.8f to 0.88f, 0.9f to 0.95f, 0.68f to 0.94f).forEach { (x, y) ->
-                drawFlower(Offset(w * x, h * y), w * 0.018f)
-            }
-        }
         "bg_beach" -> {
             drawRect(Brush.verticalGradient(listOf(Color(0xFF7FD3F7), Color(0xFFCFF1FF))))
             drawCircle(Color(0xFFFFD54F), w * 0.09f, Offset(w * 0.8f, h * 0.18f))
@@ -1296,3 +1382,10 @@ fun ItemPreview(itemId: String, slot: String, modifier: Modifier = Modifier) {
         }
     }
 }
+
+/** Test hooks: draw a background or the pet onto any canvas. */
+internal object PetDrawing {
+    fun DrawScope.background(id: String?, time: com.medipote.app.domain.TimeOfDay) = drawBackground(id, time)
+}
+
+internal fun drawPetForTest(scope: DrawScope) = with(scope) { drawPet(PetMood.HAPPY, mapOf("COLOR" to "color_mint"), 0.5f, 0f, 0.3f, 1f) }

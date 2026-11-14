@@ -51,7 +51,7 @@ object Badges {
         Badge("streak_100", "👑", "Cent jours", "Une série de 100 jours", 100) { it.game.bestStreak },
         Badge("journal_1", "📖", "Cher journal", "Écrire dans ton journal", 1, ::journalDays),
         Badge("journal_30", "✍️", "Plume fidèle", "30 jours de journal", 30, ::journalDays),
-        Badge("reflection_10", "💭", "Belles pensées", "Répondre à 10 questions du jour", 10) { s -> s.journal.count { it.reflection.isNotBlank() } },
+        Badge("reflection_10", "💭", "Belles pensées", "Écrire une note dans ton journal 10 jours", 10) { s -> s.journal.count { it.notes.isNotBlank() || it.reflection.isNotBlank() } },
         Badge("sleep_1", "🌙", "Bonne nuit", "Noter ta première nuit", 1) { it.sleep.size },
         Badge("sleep_7", "✨", "Marchand de sable", "7 nuits notées d'affilée", 7, ::sleepRun),
         Badge("sleep_30", "🛌", "Gardien des rêves", "30 nuits notées", 30) { it.sleep.size },
@@ -95,7 +95,7 @@ object Challenges {
         Challenge("complete4", "💊", "4 journées où tout est pris", 4, 40),
         Challenge("mood5", "😊", "Noter ton humeur 5 jours", 5, 25),
         Challenge("cuddle4", "🤗", "Câliner ton compagnon 4 jours", 4, 20),
-        Challenge("question3", "💭", "Répondre à 3 questions du jour", 3, 25),
+        Challenge("notes3", "💭", "Écrire une note dans ton journal 3 jours", 3, 25),
         Challenge("ritual4", "✨", "Faire 4 rituels", 4, 30),
     )
 
@@ -130,7 +130,7 @@ object Challenges {
             }
             "mood5" -> entries.count { it.mental != null }
             "cuddle4" -> state.game.cuddleDays.count(::inWeek)
-            "question3" -> entries.count { it.reflection.isNotBlank() }
+            "notes3" -> entries.count { it.notes.isNotBlank() || it.reflection.isNotBlank() }
             "ritual4" -> state.game.ritualsDone.count { key -> LocalDate.parse(key.substringBefore(':')).let(::inWeek) }
             else -> 0
         }
@@ -155,38 +155,79 @@ object Challenges {
     }
 }
 
-// ─────────────────────────── Question of the day ───────────────────────────
+// ─────────────────────────── Phrase of the day ───────────────────────────
 
-object DailyQuestions {
+/** A small motivating, cosy or pleasant sentence, a different one each day. */
+object DailyPhrases {
     val all = listOf(
-        "Qu'est-ce qui t'a fait du bien aujourd'hui ?",
-        "Un petit moment agréable de ta journée ?",
-        "Une petite victoire de ta journée ?",
-        "Qu'est-ce qui t'a fait sourire ?",
-        "Comment ton corps s'est-il senti aujourd'hui ?",
-        "Qu'aimerais-tu garder de cette journée ?",
-        "Une chose pour laquelle tu dis merci aujourd'hui ?",
-        "Qu'est-ce qui t'a demandé de l'énergie aujourd'hui ?",
-        "Qu'est-ce qui t'a apporté du calme aujourd'hui ?",
-        "Un mot pour résumer ta journée ?",
-        "Qu'as-tu fait pour prendre soin de toi ?",
-        "Avec qui as-tu passé un bon moment ?",
-        "Qu'est-ce que tu as appris aujourd'hui ?",
-        "Qu'est-ce qui pourrait rendre demain un peu plus doux ?",
-        "Une chose que tu as bien faite aujourd'hui ?",
-        "Qu'as-tu mangé de bon aujourd'hui ?",
-        "Une surprise de ta journée ?",
-        "Un endroit où tu as été bien aujourd'hui ?",
-        "Qu'est-ce qui t'a fait rire ?",
-        "Si ta journée était une météo, ce serait laquelle ?",
-        "Une musique, une odeur ou une image qui t'est restée en tête ?",
-        "Qu'est-ce que tu te dirais pour t'encourager ?",
-        "Qu'est-ce qui a été plus facile que prévu ?",
-        "Un petit plaisir que tu t'offrirais demain ?",
-        "Comment as-tu dormi, et comment ça a joué sur ta journée ?",
-        "Qu'est-ce qui t'a donné de l'énergie ?",
-        "Une personne à qui tu penses ce soir ?",
-        "Qu'est-ce qui a compté le plus aujourd'hui ?",
+        "Un pas après l'autre, c'est déjà avancer.",
+        "Prendre soin de soi, c'est un beau métier à plein temps.",
+        "Aujourd'hui mérite un thé chaud et un peu de douceur.",
+        "Tu fais de ton mieux, et c'est largement suffisant.",
+        "Une petite victoire reste une victoire.",
+        "Respire. Tout n'a pas besoin d'être fait aujourd'hui.",
+        "Le soleil revient toujours, même après les jours gris.",
+        "Offre-toi la même douceur qu'à quelqu'un que tu aimes.",
+        "Ton rythme est le bon rythme.",
+        "Un verre d'eau, une grande inspiration, et c'est reparti.",
+        "Les petits gestes d'aujourd'hui font les beaux jours de demain.",
+        "Tu as le droit de te reposer sans culpabiliser.",
+        "Une couverture, une bonne musique : le confort, ça soigne aussi.",
+        "Chaque jour est une nouvelle page, écris-la tranquillement.",
+        "Prendre son traitement, c'est se faire un cadeau.",
+        "Même les fleurs ont besoin de temps pour pousser.",
+        "Aujourd'hui, accorde-toi une pause qui fait du bien.",
+        "Tu as plus de force que tu ne le crois.",
+        "Un sourire, même petit, illumine la journée.",
+        "Le calme aussi, c'est avancer.",
+        "Ce que tu fais pour ta santé compte vraiment.",
+        "Une journée à la fois, c'est la bonne mesure.",
+        "Il y a toujours une petite chose pour laquelle dire merci.",
+        "Ralentir n'est pas reculer.",
+        "Ton corps fait un travail incroyable chaque jour.",
+        "Une sieste, un plaid, un chat : la recette du bonheur simple.",
+        "La régularité, c'est déjà une superbe habitude.",
+        "La douceur est une force.",
+        "Aujourd'hui, choisis une chose qui te fait plaisir.",
+        "Tu n'as rien à prouver, juste à prendre soin de toi.",
+        "Les bonnes habitudes se construisent un jour après l'autre.",
+        "Ouvre la fenêtre et laisse entrer un peu d'air frais.",
+        "Tu avances, même quand ça ne se voit pas.",
+        "Un moment pour soi, c'est jamais du temps perdu.",
+        "La patience est une belle amie.",
+        "Écouter son corps, c'est déjà le soigner.",
+        "Un bon livre et une boisson chaude : le soir parfait.",
+        "Bravo pour tous ces petits efforts.",
+        "Il fait toujours beau quelque part.",
+        "Prends le temps de savourer les petites choses.",
+        "Ton bien-être passe avant le reste.",
+        "Les jours difficiles finissent aussi par passer.",
+        "Une marche, même courte, fait du bien au cœur.",
+        "Tu es en train de devenir la meilleure version de toi.",
+        "Le repos fait partie du chemin.",
+        "Laisse-toi porter par la douceur du moment.",
+        "Une chose à la fois, et tout ira bien.",
+        "Chaque prise, c'est un petit « je tiens à moi ».",
+        "Aujourd'hui, sois ton propre soutien.",
+        "Même un petit progrès mérite d'être fêté.",
+        "Un bain chaud, une bougie : tu le mérites bien.",
+        "Rien ne presse, tu as le temps.",
+        "Ta santé est un jardin : tu l'arroses chaque jour.",
+        "Le bonheur se cache dans les détails.",
+        "Tu es exactement là où tu dois être.",
+        "Un câlin, un appel, un message : le lien fait du bien.",
+        "Doucement mais sûrement, comme une tortue sereine.",
+        "Ce soir, couche-toi avec une pensée gentille pour toi.",
+        "Les nuages passent, toi tu restes.",
+        "Un petit plaisir par jour éloigne les soucis.",
+        "Tu prends soin de toi, et ça se voit.",
+        "Le meilleur moment pour souffler, c'est maintenant.",
+        "Chaque matin est une nouvelle chance.",
+        "Aujourd'hui, un peu d'indulgence envers toi-même.",
+        "Un chocolat chaud règle beaucoup de choses.",
+        "Ta constance est ta super-force.",
+        "Profite de la lumière du jour, elle te veut du bien.",
+        "Tout petit pas compte, vraiment tout.",
     )
 
     fun of(date: LocalDate): String = all[Math.floorMod(date.toEpochDay(), all.size.toLong()).toInt()]

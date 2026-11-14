@@ -193,15 +193,15 @@ object Game {
     }
 
     /**
-     * Adds (or removes, with a negative delta) a glass of water today. Each new glass up to the
-     * goal earns points, and reaching the goal earns a bonus, each only once a day.
+     * Adds (or removes, with a negative delta) a glass of water today. Each new glass earns points,
+     * past the goal too (up to twice the goal), and reaching the goal earns a bonus, each only once a day.
      */
     fun addWater(state: AppState, delta: Int, now: LocalDateTime): Pair<AppState, WaterReward> {
         val today = now.toLocalDate()
         val goal = state.settings.water.goalGlasses
         val entry = state.entryFor(today)
         val glasses = (entry.waterGlasses + delta).coerceIn(0, 40)
-        val newlyRewarded = (minOf(glasses, goal) - entry.waterRewarded).coerceAtLeast(0)
+        val newlyRewarded = (minOf(glasses, Rules.waterRewardedGlasses(goal)) - entry.waterRewarded).coerceAtLeast(0)
         val glassPoints = newlyRewarded * Rules.WATER_GLASS_POINTS
         val updatedEntry = entry.copy(waterGlasses = glasses, waterRewarded = entry.waterRewarded + newlyRewarded)
         // Water alone doesn't count as a journal entry, so this never earns the journal bonus.

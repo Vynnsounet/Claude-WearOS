@@ -67,6 +67,9 @@ object Rules {
     const val PERFECT_DAY_BONUS = 20
     const val JOURNAL_BONUS = 5
     const val WATER_GLASS_POINTS = 2
+
+    /** Glasses past the goal still earn points, up to twice the goal (more water isn't always better). */
+    fun waterRewardedGlasses(goal: Int): Int = (goal * 2).coerceAtMost(20).coerceAtLeast(goal)
     const val CUDDLE_BONUS = 3
 
     /** Logging the night, once a day (never tied to how long or how well one slept). */
