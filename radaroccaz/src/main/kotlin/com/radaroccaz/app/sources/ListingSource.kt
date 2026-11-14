@@ -3,6 +3,8 @@ package com.radaroccaz.app.sources
 import com.radaroccaz.app.data.Listing
 import com.radaroccaz.app.data.SearchCriteria
 import com.radaroccaz.app.domain.Ranking
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.delay
 
 /** Listings found on one site, and the page they came from (to open it in the browser). */
 data class SourcePage(val listings: List<Listing>, val url: String)
@@ -42,9 +44,19 @@ class SourceBlockedException(message: String) : Exception(message)
 /** Downloads the site's search page (trying several URL spellings) and parses it. */
 abstract class HtmlListingSource(protected val fetcher: HttpFetcher) : ListingSource {
     companion object {
-        /** At most this many pages are fetched for one search on one site. */
+        /** At most this many spellings are tried for one search on one site. */
         const val MAX_TRIES = 6
+        /** Pause between two result pages of the same site, to stay gentle with it. */
+        const val PAGE_DELAY_MS = 700L
+        /** Enough listings matching the criteria: stop turning pages. */
+        const val ENOUGH_MATCHES = 150
     }
+
+    /** Result pages read at most per search (1 = no pagination). */
+    open val maxPages: Int = 1
+
+    /** URL of page [page] (2, 3...) of the results whose first page is [firstUrl]; null when the site has no pagination. */
+    open fun pageUrl(firstUrl: String, page: Int): String? = null
 
 
     /** URLs to try in order; the first one that exists is read. */
@@ -69,13 +81,38 @@ abstract class HtmlListingSource(protected val fetcher: HttpFetcher) : ListingSo
                 continue
             }
             val page = SourcePage(parse(html), url)
-            if (page.listings.any { Ranking.isRelevant(it, criteria) }) return page
+            if (page.listings.any { Ranking.isRelevant(it, criteria) }) return SourcePage(morePages(page, criteria), url)
             if (fallback == null) fallback = page
         }
         return fallback ?: throw SourceUnavailableException("Ce modèle est introuvable sur ce site (${urls.size} adresses essayées).", missing)
     }
 
     abstract fun parse(html: String): List<Listing>
+
+    /**
+     * Reads the following result pages until [maxPages], an empty or repeated page, an error
+     * (what was read is kept) or [ENOUGH_MATCHES] listings matching the criteria.
+     */
+    private suspend fun morePages(first: SourcePage, criteria: SearchCriteria): List<Listing> {
+        val all = LinkedHashMap<String, Listing>()
+        first.listings.forEach { all[it.id] = it }
+        for (p in 2..maxPages) {
+            if (all.values.count { Ranking.matches(it, criteria) } >= ENOUGH_MATCHES) break
+            val url = pageUrl(first.url, p) ?: break
+            delay(PAGE_DELAY_MS)
+            val listings = try {
+                parse(fetcher.get(url))
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                break
+            }
+            val fresh = listings.filter { it.id !in all }
+            if (fresh.isEmpty()) break
+            fresh.forEach { all[it.id] = it }
+        }
+        return all.values.toList()
+    }
 
     override suspend fun details(listing: Listing): Listing = enrich(listing, fetcher.get(listing.url))
 

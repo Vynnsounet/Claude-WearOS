@@ -25,6 +25,10 @@ class AutoScout24Source(fetcher: HttpFetcher) : HtmlListingSource(fetcher) {
     override val name = "AutoScout24"
     override val description = "Professionnels et particuliers, France"
 
+    // 20 listings per page, filtered by the site.
+    override val maxPages = 8
+    override fun pageUrl(firstUrl: String, page: Int) = "$firstUrl&page=$page"
+
     override fun searchUrls(criteria: SearchCriteria): List<String> {
         val query = query(criteria)
         val makes = SiteNames.makeSlugs(criteria.make)

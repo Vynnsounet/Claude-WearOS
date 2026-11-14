@@ -23,6 +23,10 @@ class AramisAutoSource(fetcher: HttpFetcher) : HtmlListingSource(fetcher) {
     override val name = "Aramis Auto"
     override val description = "Professionnel : véhicules récents révisés et garantis"
 
+    // 24 vehicles per page; robots.txt allows ?page= but not the filter parameters.
+    override val maxPages = 4
+    override fun pageUrl(firstUrl: String, page: Int) = "$firstUrl?page=$page"
+
     override fun searchUrls(criteria: SearchCriteria): List<String> =
         SiteNames.candidates(criteria, makePrefer = MAKES) { mk, model ->
             if (model == null) "$BASE/voitures/$mk/offres/" else "$BASE/voitures/$mk/$model/offres/"

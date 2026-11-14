@@ -21,6 +21,9 @@ class LeboncoinSource(fetcher: HttpFetcher) : HtmlListingSource(fetcher) {
     override val name = "Leboncoin"
     override val description = "Particuliers et professionnels"
 
+    override val maxPages = 3
+    override fun pageUrl(firstUrl: String, page: Int) = "$firstUrl&page=$page"
+
     /** robots.txt: "It's forbidden to use search robots or other automatic methods to access Leboncoin.fr" and Disallow: /recherche. */
     override val restricted = true
 

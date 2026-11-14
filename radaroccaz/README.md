@@ -140,10 +140,15 @@ débarrassées des données personnelles des vendeurs
 - **Structure des pages** : les sites changent leur code sans prévenir. Une
   source peut alors renvoyer « page illisible » jusqu'à une mise à jour de son
   analyseur. `LiveSitesTest` permet de le vérifier en une commande (voir plus bas).
-- **Filtres côté site** : seul AutoScout24 accepte les filtres dans l'adresse.
-  Les autres renvoient leurs ~25 annonces les plus récentes du modèle, filtrées
-  ensuite par l'application : un budget serré peut donc donner peu de résultats
-  chez eux.
+- **Volume et filtres côté site** : chaque site est lu sur plusieurs pages
+  (jusqu'à 8 chez AutoScout24, 7 chez L'Argus, 6 chez ParuVendu, 4 chez Aramis Auto),
+  avec une pause entre deux pages, et la lecture s'arrête à 150 annonces
+  correspondant aux critères. AutoScout24, L'Argus (prix en centimes,
+  kilométrage, année, une énergie) et Autohero (prix, kilométrage, année)
+  filtrent eux-mêmes. Aramis Auto et ParuVendu interdisent ces paramètres dans
+  leur robots.txt : leurs pages sont filtrées par l'application. Mesuré en
+  novembre 2026 : 350 à 400 annonces retenues pour une Peugeot 308, une Clio ou
+  une Golf avec budget (`LiveBudgetTest`), en une dizaine de secondes.
 - **Motorisations** : elles sont reconnues dans le titre (famille, puissance,
   cylindrée), sinon par la puissance. Une annonce sans indication reste
   affichée.
@@ -170,6 +175,7 @@ JDK 17+ et le SDK Android (plateforme 37).
 ./gradlew :radaroccaz:testDebugUnitTest   # analyseurs, catalogue, classement, moteur, alertes, écrans (captures dans radaroccaz/build/screenshots)
 ./gradlew :radaroccaz:testDebugUnitTest --tests '*LiveSitesTest*' -Dradar.live=true --rerun-tasks
                                           # interroge les vrais sites pour 14 modèles et affiche ce que chacun renvoie
+                                          # (*LiveBudgetTest* : nombre d'annonces retenues pour 3 recherches avec budget)
 adb install -r radaroccaz/build/outputs/apk/debug/radaroccaz-debug.apk
 ```
 

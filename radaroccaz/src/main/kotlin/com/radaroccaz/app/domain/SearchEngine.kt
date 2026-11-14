@@ -44,7 +44,8 @@ data class SearchProgress(
 /** Queries every source in parallel and re-ranks the combined results each time one answers. */
 class SearchEngine(
     private val sources: List<ListingSource>,
-    private val timeoutMs: Long = 30_000,
+    /** Several result pages per site are read, one after the other. */
+    private val timeoutMs: Long = 60_000,
 ) {
     fun source(id: String): ListingSource? = sources.firstOrNull { it.id == id }
 

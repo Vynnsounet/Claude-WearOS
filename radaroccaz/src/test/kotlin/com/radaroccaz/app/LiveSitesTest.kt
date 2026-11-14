@@ -50,3 +50,35 @@ class LiveSitesTest {
         failures.forEach { println("[live]   $it") }
     }
 }
+
+/** How many listings each site brings for realistic searches (budget, mileage, year). Run with `-Dradar.live=true`. */
+class LiveBudgetTest {
+    @Test
+    fun listingsMatchingRealisticSearches() = runBlocking {
+        assumeTrue(System.getProperty("radar.live") == "true")
+        TestCatalog.ensureLoaded()
+        val fetcher = HttpFetcher()
+        val sources = listOf(AutoScout24Source(fetcher), AramisAutoSource(fetcher), AutoheroSource(fetcher), LargusSource(fetcher), ParuVenduSource(fetcher))
+        val searches = listOf(
+            SearchCriteria(make = "Peugeot", model = "308", budgetMax = 15_000, mileageMax = 120_000, yearMin = 2017),
+            SearchCriteria(make = "Renault", model = "Clio", budgetMax = 12_000, mileageMax = 100_000),
+            SearchCriteria(make = "Volkswagen", model = "Golf", budgetMax = 18_000, yearMin = 2018),
+        )
+        for (c in searches) {
+            var total = 0
+            for (s in sources) {
+                val start = System.currentTimeMillis()
+                val line = try {
+                    val page = s.search(c)
+                    val ok = page.listings.map { com.radaroccaz.app.domain.Ranking.annotate(it, c) }.count { com.radaroccaz.app.domain.Ranking.matches(it, c) }
+                    total += ok
+                    "${page.listings.size} lues, $ok correspondent (${(System.currentTimeMillis() - start) / 1000} s)"
+                } catch (e: Exception) {
+                    "ERR ${e::class.simpleName}: ${e.message}"
+                }
+                println("[budget] ${c.title} ${c.summary} | ${s.name.padEnd(12)} $line")
+            }
+            println("[budget] ${c.title} : $total annonces retenues au total (avant dédoublonnage)")
+        }
+    }
+}

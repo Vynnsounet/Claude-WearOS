@@ -34,9 +34,17 @@ class AutoheroSource(fetcher: HttpFetcher) : HtmlListingSource(fetcher) {
     override fun searchUrls(criteria: SearchCriteria): List<String> {
         val make = SiteNames.makeSlugs(criteria.make).first()
         val models = SiteNames.modelSlugs(criteria.model)
+        // The site shows 24 cars per page without pagination in the URL: its own filters keep them relevant.
+        val filters = buildList {
+            criteria.budgetMin?.let { add("priceMin=$it") }
+            criteria.budgetMax?.let { add("priceMax=$it") }
+            criteria.mileageMax?.let { add("mileageMax=$it") }
+            criteria.yearMin?.let { add("yearMin=$it") }
+        }.joinToString("&")
+        fun withFilters(url: String) = if (filters.isEmpty()) url else url + (if ('?' in url) "&" else "?") + filters
         return (models.map { "$BASE/fr/auto/$make-$it/" } +
             listOfNotNull(criteria.model.takeIf { it.isNotBlank() }?.let { "$BASE/fr/search/?brand0=$make&models0=${enc(it.trim().lowercase())}" }) +
-            "$BASE/fr/auto/$make/").distinct()
+            "$BASE/fr/auto/$make/").distinct().map(::withFilters)
     }
 
     override fun parse(html: String): List<Listing> {

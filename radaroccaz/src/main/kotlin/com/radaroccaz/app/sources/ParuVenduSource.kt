@@ -21,6 +21,10 @@ class ParuVenduSource(fetcher: HttpFetcher) : HtmlListingSource(fetcher) {
     override val name = "ParuVendu"
     override val description = "Particuliers et professionnels"
 
+    // 25 listings per page, newest first, not filtered by the site.
+    override val maxPages = 6
+    override fun pageUrl(firstUrl: String, page: Int) = "$firstUrl?p=$page"
+
     override fun searchUrls(criteria: SearchCriteria): List<String> =
         SiteNames.candidates(criteria, makePrefer = MAKES) { mk, model ->
             if (model == null) "$BASE/a/voiture-occasion/$mk/" else "$BASE/a/voiture-occasion/$mk/$model/"

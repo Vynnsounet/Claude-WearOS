@@ -18,8 +18,32 @@ class LargusSource(fetcher: HttpFetcher) : HtmlListingSource(fetcher) {
     override val name = "L'Argus"
     override val description = "Particuliers et professionnels, annonces L'Argus"
 
-    override fun searchUrls(criteria: SearchCriteria): List<String> =
-        SiteNames.candidates(criteria) { mk, model -> if (model == null) "$BASE/auto/$mk/" else "$BASE/auto/$mk/$model/" }
+    // 24 listings per page; prices, mileage, year and a single energy are filtered by the site.
+    override val maxPages = 7
+    override fun pageUrl(firstUrl: String, page: Int) = firstUrl + (if ('?' in firstUrl) "&" else "?") + "currentpage=$page"
+
+    override fun searchUrls(criteria: SearchCriteria): List<String> {
+        val query = query(criteria)
+        return SiteNames.candidates(criteria) { mk, model ->
+            (if (model == null) "$BASE/auto/$mk/" else "$BASE/auto/$mk/$model/") + if (query.isEmpty()) "" else "?$query"
+        }
+    }
+
+    /** Prices are in cents on this site; energy accepts one value only. */
+    private fun query(c: SearchCriteria): String = buildList {
+        c.budgetMin?.let { add("price_min=${it * 100L}") }
+        c.budgetMax?.let { add("price_max=${it * 100L}") }
+        c.mileageMax?.let { add("mileage_max=$it") }
+        c.yearMin?.let { add("year_min=$it") }
+        c.fuels.singleOrNull()?.let { f ->
+            when (f) {
+                Fuel.ESSENCE -> "essence"
+                Fuel.DIESEL -> "diesel"
+                Fuel.ELECTRIQUE -> "electrique"
+                else -> null
+            }?.let { add("energy=$it") }
+        }
+    }.joinToString("&")
 
     override fun parse(html: String): List<Listing> {
         val doc = JsonTools.document(html)
