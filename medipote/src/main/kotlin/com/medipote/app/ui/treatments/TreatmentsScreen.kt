@@ -118,6 +118,7 @@ fun TreatmentsScreen(
             contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 96.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
+            item { Spacer(Modifier.height(4.dp)) }
             if (onboarding) {
                 item {
                     Text(
@@ -172,16 +173,19 @@ fun TreatmentsScreen(
     }
 }
 
+/** One treatment: the essentials, the rest when the card is touched. */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun TreatmentCard(t: Treatment, today: LocalDate, onClick: () -> Unit, onRefill: () -> Unit, finished: Boolean = false) {
     val drug = t.drugId?.let(DrugGuide::byId)
+    var open by rememberSaveable(t.id) { mutableStateOf(false) }
+    val times = t.doses.sortedBy { it.minuteOfDay }
     Card(
-        onClick = onClick,
+        onClick = { open = !open },
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
         modifier = Modifier.fillMaxWidth(),
     ) {
-        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Column(Modifier.padding(start = 16.dp, top = 12.dp, bottom = 12.dp, end = 4.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Surface(
                     shape = CircleShape,
@@ -195,45 +199,63 @@ private fun TreatmentCard(t: Treatment, today: LocalDate, onClick: () -> Unit, o
                 Spacer(Modifier.width(12.dp))
                 Column(Modifier.weight(1f)) {
                     Text(t.displayName, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            if (t.pill != null) "Pilule · ${times.firstOrNull()?.timeLabel.orEmpty()}" else times.joinToString(" · ") { it.timeLabel },
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                        if (t.withFood) {
+                            Spacer(Modifier.width(6.dp))
+                            Icon(Icons.Outlined.Restaurant, "Pendant le repas", Modifier.size(14.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                    }
+                }
+                IconButton(onClick = onClick) { Icon(Icons.Outlined.Edit, "Modifier ${t.displayName}", tint = MaterialTheme.colorScheme.onSurfaceVariant) }
+            }
+            // A low stock always shows: it asks for something.
+            if (!open && t.isLowStock) t.stock?.let { stock -> StockLine(t, stock, onRefill) }
+            androidx.compose.animation.AnimatedVisibility(open) {
+                Column(Modifier.padding(end = 12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(
                         drug?.let { "${it.dci} · ${it.drugClass}" } ?: "Saisie manuelle",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
                     )
+                    FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        times.forEach {
+                            Pill(
+                                "${it.timeLabel} · ${t.unit.format(t.quantityOn(today, it))}",
+                                container = MaterialTheme.colorScheme.secondaryContainer,
+                                content = MaterialTheme.colorScheme.onSecondaryContainer,
+                            )
+                        }
+                    }
+                    val period = buildString {
+                        append(t.pill?.let { com.medipote.app.data.PillRegimen.of(it).label } ?: if (t.everyDays > 1) "Tous les ${t.everyDays} jours" else daysSummary(t.daysOfWeek))
+                        append(" · ")
+                        append(t.endDate?.let { "jusqu'au ${it.format(shortDate)}" } ?: "au long cours")
+                        if (t.withFood) append(" · pendant le repas")
+                    }
+                    Text(period, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    t.steps.filter { it.from.isAfter(today) }.minByOrNull { it.from }?.let { next ->
+                        Text(
+                            "Paliers : ${t.unit.format(next.quantity)} par prise à partir du ${next.from.format(shortDate)}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    if (t.notes.isNotBlank()) Text("📝 ${t.notes}", style = MaterialTheme.typography.bodySmall)
+                    t.stock?.let { stock -> StockLine(t, stock, onRefill) }
+                    androidx.compose.material3.TextButton(onClick = onClick, contentPadding = PaddingValues(horizontal = 0.dp)) {
+                        Icon(Icons.Outlined.Edit, null, Modifier.size(18.dp))
+                        Spacer(Modifier.width(6.dp))
+                        Text("Modifier")
+                    }
                 }
-                Icon(Icons.Outlined.Edit, "Modifier", tint = MaterialTheme.colorScheme.onSurfaceVariant)
             }
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                t.doses.sortedBy { it.minuteOfDay }.forEach {
-                    Pill(
-                        "${it.timeLabel} · ${t.unit.format(t.quantityOn(today, it))}",
-                        container = MaterialTheme.colorScheme.secondaryContainer,
-                        content = MaterialTheme.colorScheme.onSecondaryContainer,
-                    )
-                }
-            }
-            val period = buildString {
-                append(t.pill?.let { com.medipote.app.data.PillRegimen.of(it).label } ?: if (t.everyDays > 1) "Tous les ${t.everyDays} jours" else daysSummary(t.daysOfWeek))
-                append(" · ")
-                append(t.endDate?.let { "jusqu'au ${it.format(shortDate)}" } ?: "au long cours")
-            }
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(period, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                if (t.withFood) {
-                    Spacer(Modifier.width(8.dp))
-                    Icon(Icons.Outlined.Restaurant, "Pendant le repas", Modifier.size(14.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-            }
-            t.steps.filter { it.from.isAfter(today) }.minByOrNull { it.from }?.let { next ->
-                Text(
-                    "Paliers : ${t.unit.format(next.quantity)} par prise à partir du ${next.from.format(shortDate)}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-            t.stock?.let { stock -> StockLine(t, stock, onRefill) }
         }
     }
 }
@@ -255,6 +277,7 @@ fun limitsLabel(t: Treatment): String? = listOfNotNull(
     t.minIntervalHours?.let { "$it h entre deux prises" },
 ).joinToString(" · ").ifEmpty { null }
 
+/** An as-needed medication: last intake and "Noter" in sight, the rest when touched. */
 @Composable
 private fun PrnCard(
     t: Treatment,
@@ -266,12 +289,13 @@ private fun PrnCard(
     onStats: () -> Unit,
 ) {
     val drug = t.drugId?.let(DrugGuide::byId)
+    var open by rememberSaveable(t.id) { mutableStateOf(false) }
     Card(
-        onClick = onClick,
+        onClick = { open = !open },
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
         modifier = Modifier.fillMaxWidth(),
     ) {
-        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Column(Modifier.padding(start = 16.dp, top = 12.dp, bottom = 12.dp, end = 4.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Surface(shape = CircleShape, color = MaterialTheme.colorScheme.tertiaryContainer, modifier = Modifier.size(40.dp)) {
                     Box(contentAlignment = Alignment.Center) {
@@ -282,38 +306,47 @@ private fun PrnCard(
                 Column(Modifier.weight(1f)) {
                     Text(t.displayName, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     Text(
-                        drug?.let { "${it.dci} · ${it.drugClass}" } ?: "Saisie manuelle",
-                        style = MaterialTheme.typography.bodySmall,
+                        last?.let { "Dernière prise ${sinceLabel(it, now).substringBefore(" · ")}" } ?: "Aucune prise notée",
+                        style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
                 }
-                Icon(Icons.Outlined.Edit, "Modifier", tint = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
-            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                Pill("Si besoin", container = MaterialTheme.colorScheme.tertiaryContainer, content = MaterialTheme.colorScheme.onTertiaryContainer)
-                Pill(
-                    "${t.unit.format(t.prnQuantity)} par prise",
-                    container = MaterialTheme.colorScheme.secondaryContainer,
-                    content = MaterialTheme.colorScheme.onSecondaryContainer,
-                )
-            }
-            limitsLabel(t)?.let {
-                Text(it.replaceFirstChar { c -> c.uppercase() }, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
-            Text(
-                last?.let { "Dernière prise : ${sinceLabel(it, now)}" } ?: "Aucune prise notée pour l'instant",
-                style = MaterialTheme.typography.bodyMedium,
-            )
-            t.stock?.let { stock -> StockLine(t, stock, onRefill) }
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                androidx.compose.material3.FilledTonalButton(onClick = onLog) {
+                androidx.compose.material3.FilledTonalButton(onClick = onLog, contentPadding = PaddingValues(horizontal = 14.dp)) {
                     Icon(Icons.Rounded.Add, null, Modifier.size(18.dp))
-                    Spacer(Modifier.width(6.dp))
-                    Text("Noter une prise")
+                    Spacer(Modifier.width(4.dp))
+                    Text("Noter")
                 }
-                androidx.compose.material3.TextButton(onClick = onStats) { Text("Statistiques") }
+                IconButton(onClick = onClick) { Icon(Icons.Outlined.Edit, "Modifier ${t.displayName}", tint = MaterialTheme.colorScheme.onSurfaceVariant) }
+            }
+            if (!open && t.isLowStock) t.stock?.let { stock -> StockLine(t, stock, onRefill) }
+            androidx.compose.animation.AnimatedVisibility(open) {
+                Column(Modifier.padding(end = 12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        drug?.let { "${it.dci} · ${it.drugClass}" } ?: "Saisie manuelle",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Pill("Si besoin", container = MaterialTheme.colorScheme.tertiaryContainer, content = MaterialTheme.colorScheme.onTertiaryContainer)
+                        Pill(
+                            "${t.unit.format(t.prnQuantity)} par prise",
+                            container = MaterialTheme.colorScheme.secondaryContainer,
+                            content = MaterialTheme.colorScheme.onSecondaryContainer,
+                        )
+                    }
+                    limitsLabel(t)?.let {
+                        Text(it.replaceFirstChar { c -> c.uppercase() }, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                    last?.let { Text("Dernière prise : ${sinceLabel(it, now)}", style = MaterialTheme.typography.bodySmall) }
+                    if (t.notes.isNotBlank()) Text("📝 ${t.notes}", style = MaterialTheme.typography.bodySmall)
+                    t.stock?.let { stock -> StockLine(t, stock, onRefill) }
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        androidx.compose.material3.TextButton(onClick = onStats, contentPadding = PaddingValues(horizontal = 0.dp)) { Text("Statistiques") }
+                        androidx.compose.material3.TextButton(onClick = onClick) { Text("Modifier") }
+                    }
+                }
             }
         }
     }

@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
@@ -106,22 +107,22 @@ fun JournalScreen(
     val todayEntry = journal.firstOrNull { it.date == today }
     LazyColumn(
         Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 24.dp),
+        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 24.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         item {
-            Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer), modifier = Modifier.fillMaxWidth()) {
+            Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow), modifier = Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("Comment te sens-tu aujourd'hui ?", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onPrimaryContainer)
+                    Text("Comment te sens-tu aujourd'hui ?", style = MaterialTheme.typography.titleMedium)
                     if (todayEntry?.hasJournal == true) {
                         Text(
                             "Physique ${faceFor(todayEntry.physical)} · Moral ${faceFor(todayEntry.mental)}",
-                            style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onPrimaryContainer,
+                            style = MaterialTheme.typography.bodyLarge,
                         )
                     } else {
                         Text(
                             "Note ton état physique et psychologique, tes symptômes ou une maladie. +5 pts par jour.",
-                            style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onPrimaryContainer,
+                            style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
                     Button(onClick = { onOpenDay(today) }) {
@@ -133,7 +134,7 @@ fun JournalScreen(
             }
         }
         item { MoodHeatmap(journal.associateBy { it.date }, today, onOpenMyDay) }
-        if (entries.isNotEmpty()) item { SectionTitle("Historique") }
+        if (entries.isNotEmpty()) item { SectionTitle("Historique", Modifier.padding(top = 12.dp)) }
         items(entries, key = { it.date.toString() }) { EntryCard(it) { onOpenMyDay(it.date) } }
         item {
             Disclaimer("Ce journal t'aide à suivre ton état et à en parler avec ton médecin. En cas de symptôme inquiétant, consulte un professionnel ou appelle le 15.")
@@ -185,32 +186,58 @@ private fun MoodHeatmap(entries: Map<LocalDate, DayEntry>, today: LocalDate, onO
     }
 }
 
+/** One past day: date and faces on one line; symptoms and notes when touched. */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun EntryCard(e: DayEntry, onClick: () -> Unit) {
-    Card(onClick = onClick, colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)) {
-        Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+private fun EntryCard(e: DayEntry, onOpen: () -> Unit) {
+    var open by rememberSaveable(e.date.toString()) { mutableStateOf(false) }
+    val tags = (e.physicalSymptoms + e.mentalSymptoms + e.cycleSymptoms).distinct()
+    val details = tags.size + listOf(e.illness, e.notes, e.reflection).count { it.isNotBlank() } + listOfNotNull(e.flow, e.intercourse).size
+    Card(onClick = { open = !open }, colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)) {
+        Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(e.date.format(fullDay).capitalized(), style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
-                if (e.physical != null) Text("Physique ${faceFor(e.physical)}  ", style = MaterialTheme.typography.bodyMedium)
-                if (e.mental != null) Text("Moral ${faceFor(e.mental)}", style = MaterialTheme.typography.bodyMedium)
-            }
-            if (e.illness.isNotBlank()) {
-                Text("Maladie : ${e.illness}", style = MaterialTheme.typography.bodyMedium, color = com.medipote.app.ui.theme.AppTheme.status.critical)
-            }
-            if (e.reflection.isNotBlank()) {
-                Text("💭 ${e.reflection}", style = MaterialTheme.typography.bodyMedium.copy(fontStyle = androidx.compose.ui.text.font.FontStyle.Italic), maxLines = 3)
-            }
-            val tags = e.physicalSymptoms + e.mentalSymptoms + e.cycleSymptoms
-            if (tags.isNotEmpty() || e.flow != null || e.intercourse != null) {
-                FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    e.flow?.let { Tag("Flux ${it.label.lowercase()}", com.medipote.app.ui.theme.AppTheme.status.period.copy(alpha = 0.18f)) }
-                    e.intercourse?.let { Tag("♥ ${it.label}", com.medipote.app.ui.theme.AppTheme.status.period.copy(alpha = 0.18f)) }
-                    tags.distinct().forEach { Tag(it, MaterialTheme.colorScheme.secondaryContainer) }
+                Column(Modifier.weight(1f)) {
+                    Text(e.date.format(fullDay).capitalized(), style = MaterialTheme.typography.titleSmall)
+                    if (!open && details > 0) {
+                        Text(
+                            listOfNotNull(
+                                e.illness.takeIf { it.isNotBlank() },
+                                e.flow?.let { "flux ${it.label.lowercase()}" },
+                                tags.size.takeIf { it > 0 }?.let { "$it symptôme${if (it > 1) "s" else ""}" },
+                                "notes".takeIf { e.notes.isNotBlank() || e.reflection.isNotBlank() },
+                            ).joinToString(" · ").replaceFirstChar { it.uppercase() },
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                        )
+                    }
                 }
+                if (e.physical != null) Text(faceFor(e.physical), style = MaterialTheme.typography.titleLarge, modifier = Modifier.semantics { contentDescription = "Physique : ${FACE_LABELS[e.physical - 1]}" })
+                Spacer(Modifier.width(6.dp))
+                if (e.mental != null) Text(faceFor(e.mental), style = MaterialTheme.typography.titleLarge, modifier = Modifier.semantics { contentDescription = "Moral : ${FACE_LABELS[e.mental - 1]}" })
             }
-            if (e.notes.isNotBlank()) {
-                Text(e.notes, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 3)
+            androidx.compose.animation.AnimatedVisibility(open) {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        listOfNotNull(e.physical?.let { "Physique ${faceFor(it)} ${FACE_LABELS[it - 1].lowercase()}" }, e.mental?.let { "Moral ${faceFor(it)} ${FACE_LABELS[it - 1].lowercase()}" }).joinToString(" · "),
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                    if (e.illness.isNotBlank()) {
+                        Text("Maladie : ${e.illness}", style = MaterialTheme.typography.bodyMedium, color = com.medipote.app.ui.theme.AppTheme.status.critical)
+                    }
+                    if (tags.isNotEmpty() || e.flow != null || e.intercourse != null) {
+                        FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                            e.flow?.let { Tag("Flux ${it.label.lowercase()}", com.medipote.app.ui.theme.AppTheme.status.period.copy(alpha = 0.18f)) }
+                            e.intercourse?.let { Tag("♥ ${it.label}", com.medipote.app.ui.theme.AppTheme.status.period.copy(alpha = 0.18f)) }
+                            tags.forEach { Tag(it, MaterialTheme.colorScheme.secondaryContainer) }
+                        }
+                    }
+                    if (e.reflection.isNotBlank()) {
+                        Text("💭 ${e.reflection}", style = MaterialTheme.typography.bodyMedium.copy(fontStyle = androidx.compose.ui.text.font.FontStyle.Italic))
+                    }
+                    if (e.notes.isNotBlank()) Text(e.notes, style = MaterialTheme.typography.bodyMedium)
+                    androidx.compose.material3.TextButton(onClick = onOpen, contentPadding = PaddingValues(horizontal = 0.dp)) { Text("Voir toute la journée ›") }
+                }
             }
         }
     }

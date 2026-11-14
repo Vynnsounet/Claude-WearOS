@@ -285,7 +285,7 @@ class ScreensTest {
         render("journal") {
             Hub(
                 "Suivi",
-                listOf(HubTab("📖", "Journal"), HubTab("🌙", "Sommeil"), HubTab("🩺", "Mesures"), HubTab("🌸", "Cycle")),
+                listOf(HubTab("📖", "Journal"), HubTab("🌙", "Sommeil"), HubTab("🩺", "Mesures"), HubTab("🩸", "Cycle")),
                 0, {}, {},
             ) { JournalScreen(sampleState().journal, today, onOpenDay = {}) }
         }
@@ -305,7 +305,7 @@ class ScreensTest {
     @Test
     fun agenda() {
         render("agenda") {
-            Hub("Soins", listOf(HubTab("💊", "Traitements"), HubTab("📅", "Agenda"), HubTab("📂", "Carnet de santé")), 1, {}, {}) { AgendaScreen(sampleState().appointments, now, {}, {}) }
+            Hub("Soins", listOf(HubTab("💊", "Traitements"), HubTab("📅", "Agenda"), HubTab("📂", "Carnet de santé", "Carnet")), 1, {}, {}) { AgendaScreen(sampleState().appointments, now, {}, {}) }
         }
         compose.onNodeWithText("Dentiste").assertExists()
     }
@@ -318,7 +318,7 @@ class ScreensTest {
 
     @Test
     fun documentsEmpty() {
-        render("documents") { Hub("Soins", listOf(HubTab("💊", "Traitements"), HubTab("📅", "Agenda"), HubTab("📂", "Carnet de santé")), 2, {}, {}) { DocumentsScreen(emptyList(), {}, {}, {}) } }
+        render("documents") { Hub("Soins", listOf(HubTab("💊", "Traitements"), HubTab("📅", "Agenda"), HubTab("📂", "Carnet de santé", "Carnet")), 2, {}, {}) { DocumentsScreen(emptyList(), {}, {}, {}) } }
         compose.onNodeWithText("Ton carnet de santé numérique").assertExists()
     }
 
@@ -340,7 +340,7 @@ class ScreensTest {
     fun pillTab() {
         val state = withPill(pill)
         render("pill") {
-            Hub("Soins", listOf(HubTab("💊", "Traitements"), HubTab("🌼", "Pilule"), HubTab("📅", "Agenda"), HubTab("📂", "Carnet de santé")), 1, {}, {}) { PillScreen(state, now, {}, {}, {}, animate = false) }
+            Hub("Soins", listOf(HubTab("💊", "Traitements"), HubTab("🔁", "Pilule"), HubTab("📅", "Agenda"), HubTab("📂", "Carnet de santé", "Carnet")), 1, {}, {}) { PillScreen(state, now, {}, {}, {}, animate = false) }
         }
         compose.onNodeWithText("Comprimé 11 sur 21").assertExists()
     }
@@ -350,7 +350,7 @@ class ScreensTest {
         val onBreak = pill.copy(pill = pill.pill!!.copy(packStart = today.minusDays(23)))
         val state = withPill(onBreak)
         render("pill_break", ThemeMode.DARK) {
-            Hub("Soins", listOf(HubTab("💊", "Traitements"), HubTab("🌼", "Pilule"), HubTab("📅", "Agenda"), HubTab("📂", "Carnet de santé")), 1, {}, {}) { PillScreen(state, now, {}, {}, {}, animate = false) }
+            Hub("Soins", listOf(HubTab("💊", "Traitements"), HubTab("🔁", "Pilule"), HubTab("📅", "Agenda"), HubTab("📂", "Carnet de santé", "Carnet")), 1, {}, {}) { PillScreen(state, now, {}, {}, {}, animate = false) }
         }
         compose.onNodeWithText("Semaine de pause 🌙").assertExists()
     }
@@ -516,8 +516,11 @@ class ScreensTest {
         render("treatments_prn") {
             TreatmentsScreen(state.treatments, today, {}, {}, lastIntakes = mapOf("ibu" to today.atTime(9, 40)), now = now)
         }
-        compose.onAllNodes(androidx.compose.ui.test.hasText("Si besoin"), useUnmergedTree = true).onFirst().assertExists()
+        // Cards are compact: the limits show once the card is touched.
+        compose.onNodeWithText("Max 3 / 24 h · 6 h entre deux prises").assertDoesNotExist()
+        compose.onNodeWithText("Ibuprofène 400 mg").performClick()
         compose.onNodeWithText("Max 3 / 24 h · 6 h entre deux prises").assertExists()
+        compose.onAllNodes(androidx.compose.ui.test.hasText("Si besoin"), useUnmergedTree = true).onFirst().assertExists()
     }
 
     @Test
@@ -598,6 +601,9 @@ class ScreensTest {
         val state = sleepState()
         render("sleep") { com.medipote.app.ui.sleep.SleepScreen(state, now, {}, {}) }
         compose.onNodeWithText("Nuit du 11 au 12 novembre").assertExists()
+        // Detailed figures and past nights are folded.
+        compose.onNodeWithText("Voir mes nuits précédentes").assertExists()
+        compose.onNodeWithText("Plus de détails").performScrollTo().performClick()
         compose.onNodeWithText("Réveils dans la nuit").assertExists()
     }
 
@@ -1020,11 +1026,14 @@ class ScreensTest {
     fun companionSpace() {
         val state = motivationState()
         render("hub_companion") {
-            Hub("Pilou", listOf(HubTab("🛍️", "Boutique"), HubTab("🏅", "Badges et défis"), HubTab("🌷", "Jardin")), 2, {}, {}) {
-                com.medipote.app.ui.motivation.GardenScreen(state, today)
+            Hub("Pilou", listOf(HubTab("🛍️", "Boutique"), HubTab("🏅", "Badges et défis", "Badges")), 1, {}, {}) {
+                com.medipote.app.ui.motivation.BadgesScreen(state, today, onBack = {}, embedded = true)
             }
         }
-        compose.onNodeWithText("fleurs en 8 semaines", substring = true).assertExists()
+        // Tabs: an emoji with a short word under it; earned badges first, the rest folded.
+        compose.onNodeWithText("Badges").assertExists()
+        compose.onNodeWithText("Ma collection").assertExists()
+        compose.onNodeWithText("à débloquer", substring = true).assertExists()
     }
 
     @Test
@@ -1032,11 +1041,11 @@ class ScreensTest {
     fun bilanSpace() {
         val state = motivationState()
         render("hub_bilan") {
-            Hub("Bilan", listOf(HubTab("📊", "Statistiques"), HubTab("🗓️", "Jour par jour"), HubTab("🎨", "Mon année")), 1, {}, {}) {
+            Hub("Bilan", listOf(HubTab("📊", "Statistiques"), HubTab("📋", "Jour par jour", "Par jour"), HubTab("📆", "Mon année", "Année")), 1, {}, {}) {
                 com.medipote.app.ui.motivation.MyDayScreen(state, today.minusDays(1), now, {}, {}, {}, {}, {}, embedded = true)
             }
         }
-        compose.onNodeWithText("Jour par jour").assertExists()
+        compose.onNodeWithText("Par jour").assertExists()
     }
 
     @Test

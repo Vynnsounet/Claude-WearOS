@@ -66,6 +66,19 @@ L'optimiseur de R8 reste désactivé (`-dontoptimize`) : APK de 3,8 Mo au lieu d
 le dex livré peut être reconverti et exécuté hors appareil pour vérification (voir plus bas),
 ce que l'optimiseur empêche. Il pourra être réactivé après des essais sur téléphone.
 
+### 1.10.0
+
+- Sous-onglets : un emoji avec un petit mot dessous ; nouveaux emojis 🔁 Pilule, 🩸 Cycle,
+  📋 Par jour, 📆 Année. Le jardin et les fleurs sont retirés.
+- Traitements : cartes compactes (nom, horaires, stock seulement s'il est bas), détail au toucher,
+  crayon pour modifier ; « Noter » toujours visible pour les médicaments si besoin.
+- Journal : historique en lignes (date et visages), détail au toucher.
+- Sommeil : dernière nuit, moyennes, ressenti et graphique d'abord ; « Plus de détails » et
+  « Voir mes nuits précédentes » repliés.
+- Cycle : cartes protection et médicaments en haut pendant les règles, en bas sinon.
+- Badges : collection gagnée d'abord, les badges à débloquer repliés (les plus proches d'abord).
+- Couleur vive réservée aux boutons d'action, plus d'espace entre les blocs.
+
 ### 1.9.0
 
 - Eau : chaque verre rapporte des points même après l'objectif, jusqu'au double de l'objectif.

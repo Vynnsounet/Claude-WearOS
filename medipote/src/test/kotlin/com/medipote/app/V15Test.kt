@@ -9,11 +9,9 @@ import com.medipote.app.data.Settings
 import com.medipote.app.data.SleepNight
 import com.medipote.app.data.Treatment
 import com.medipote.app.domain.Badges
-import com.medipote.app.domain.Bloom
 import com.medipote.app.domain.Challenges
 import com.medipote.app.domain.DailyPhrases
 import com.medipote.app.domain.Game
-import com.medipote.app.domain.Garden
 import com.medipote.app.domain.Recaps
 import com.medipote.app.domain.RitualKind
 import com.medipote.app.domain.Rituals
@@ -170,12 +168,6 @@ class V15Test {
             sleep = listOf(night(day), night(day.minusDays(1))),
             journal = listOf(DayEntry(day, mental = 4), DayEntry(day.minusDays(3), reflection = "Merci")),
         )
-        val garden = Garden.of(state, day)
-        assertEquals(28, garden.size)
-        assertEquals(Bloom.BOTH, garden.last().second)
-        assertEquals(Bloom.SLEEP, garden[26].second)
-        assertEquals(Bloom.JOURNAL, garden[24].second)
-        assertEquals(3, Garden.flowers(state, day))
         assertEquals(DailyPhrases.of(day), DailyPhrases.of(day))
         assertTrue(DailyPhrases.of(day) != DailyPhrases.of(day.plusDays(1)))
         // Gender-neutral wording, no inclusive dots needed.

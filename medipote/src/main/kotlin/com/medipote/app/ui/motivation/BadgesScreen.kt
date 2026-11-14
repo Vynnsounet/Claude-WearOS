@@ -62,20 +62,20 @@ fun BadgesScreen(state: AppState, today: LocalDate, onBack: () -> Unit, embedded
         },
     ) { padding ->
         Column(
-            Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+            Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer), modifier = Modifier.fillMaxWidth()) {
+            Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow), modifier = Modifier.fillMaxWidth()) {
                 Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
                     Text("🏅", style = MaterialTheme.typography.displaySmall)
                     Spacer(Modifier.width(12.dp))
                     Column(Modifier.weight(1f)) {
-                        Text("${earned.size} / ${Badges.all.size} badges", style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onPrimaryContainer)
+                        Text("${earned.size} / ${Badges.all.size} badges", style = MaterialTheme.typography.titleLarge)
                         Text(
                             if (Game.jokerAvailable(state.game, today)) "🛡️ Joker de série disponible cette semaine : un jour oublié ne cassera pas ta série."
                             else "🛡️ Joker utilisé cette semaine, il revient lundi.",
                             style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer,
+                            
                         )
                     }
                 }
@@ -93,15 +93,39 @@ fun BadgesScreen(state: AppState, today: LocalDate, onBack: () -> Unit, embedded
                 }
             }
 
-            SectionTitle("Collection")
-            val sorted = Badges.all.sortedWith(compareBy({ it.id !in earned }, { Badges.all.indexOf(it) }))
-            sorted.chunked(2).forEach { pair ->
-                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    pair.forEach { b -> BadgeTile(b, state, earned[b.id], Modifier.weight(1f)) }
-                    if (pair.size == 1) Spacer(Modifier.weight(1f))
+            // Earned badges in sight; the ones still to win folded, closest first.
+            val (won, locked) = Badges.all.partition { it.id in earned }
+            SectionTitle("Ma collection")
+            if (won.isEmpty()) {
+                Text(
+                    "Ton premier badge t'attend : regarde ci-dessous lesquels sont les plus proches.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            BadgeGrid(won.sortedByDescending { earned[it.id] }, state, earned)
+            if (locked.isNotEmpty()) {
+                com.medipote.app.ui.components.MoreOptions(
+                    "Les plus proches d'abord",
+                    initiallyOpen = won.isEmpty(),
+                    label = "${locked.size} badge${if (locked.size > 1) "s" else ""} à débloquer",
+                ) {
+                    BadgeGrid(locked.sortedByDescending { it.progress(state).coerceAtMost(it.target).toFloat() / it.target }, state, earned)
                 }
             }
             Spacer(Modifier.height(12.dp))
+        }
+    }
+}
+
+@Composable
+private fun BadgeGrid(badges: List<Badge>, state: AppState, earned: Map<String, LocalDate>) {
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        badges.chunked(2).forEach { pair ->
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                pair.forEach { b -> BadgeTile(b, state, earned[b.id], Modifier.weight(1f)) }
+                if (pair.size == 1) Spacer(Modifier.weight(1f))
+            }
         }
     }
 }

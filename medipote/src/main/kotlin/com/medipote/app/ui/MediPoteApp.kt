@@ -20,6 +20,7 @@ import androidx.compose.material.icons.outlined.Insights
 import androidx.compose.material.icons.outlined.Medication
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.Alignment
 import androidx.compose.foundation.layout.height
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.semantics.semantics
@@ -125,7 +126,8 @@ private val TABS = listOf(
 )
 
 /** A sub-tab of a hub: an emoji in the tab row, its name under the hub's title. */
-data class HubTab(val emoji: String, val label: String)
+/** A sub-tab: an emoji with a short word under it; [label] is its full name (title, screen readers). */
+data class HubTab(val emoji: String, val label: String, val short: String = label)
 
 /**
  * A top-level space split into sub-tabs shown as emojis (always fit, even five of them), the
@@ -147,16 +149,7 @@ fun Hub(
             Column {
                 TopAppBar(
                     title = {
-                        Column {
-                            Text(title)
-                            if (tabs.size > 1) {
-                                Text(
-                                    tabs[selected].label,
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.primary,
-                                )
-                            }
-                        }
+                        Text(title)
                     },
                     actions = {
                         IconButton(onClick = onOpenProfile) { Icon(Icons.Outlined.AccountCircle, "Profil médical") }
@@ -170,13 +163,20 @@ fun Hub(
                             Tab(
                                 selected = selected == i,
                                 onClick = { selected = i },
-                                modifier = Modifier.height(52.dp).semantics { contentDescription = tab.label },
+                                modifier = Modifier.height(64.dp).semantics(mergeDescendants = true) { contentDescription = tab.label },
                             ) {
-                                Text(
-                                    tab.emoji,
-                                    fontSize = 24.sp,
-                                    modifier = Modifier.alpha(if (selected == i) 1f else 0.55f),
-                                )
+                                Column(
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    modifier = Modifier.alpha(if (selected == i) 1f else 0.6f),
+                                ) {
+                                    Text(tab.emoji, fontSize = 22.sp)
+                                    Text(
+                                        tab.short,
+                                        style = MaterialTheme.typography.labelMedium,
+                                        color = if (selected == i) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                                        maxLines = 1,
+                                    )
+                                }
                             }
                         }
                     }
@@ -425,9 +425,9 @@ fun MediPoteApp(vm: AppViewModel) {
                     // Soins: everything about care, medication first.
                     val tabs = listOfNotNull(
                         HubTab("💊", "Traitements"),
-                        HubTab("🌼", "Pilule").takeIf { menstruating || hasPill },
+                        HubTab("🔁", "Pilule").takeIf { menstruating || hasPill },
                         HubTab("📅", "Agenda"),
-                        HubTab("📂", "Carnet de santé"),
+                        HubTab("📂", "Carnet de santé", "Carnet"),
                     )
                     Hub("Soins", tabs, 0, openProfile, openSettings) { i ->
                         when (tabs[i].label) {
@@ -473,7 +473,7 @@ fun MediPoteApp(vm: AppViewModel) {
                         HubTab("📖", "Journal"),
                         HubTab("🌙", "Sommeil"),
                         HubTab("🩺", "Mesures").takeIf { state.settings.measures.isNotEmpty() },
-                        HubTab("🌸", "Cycle").takeIf { menstruating },
+                        HubTab("🩸", "Cycle").takeIf { menstruating },
                     )
                     Hub("Suivi", tabs, 0, openProfile, openSettings) { i ->
                         when (tabs[i].label) {
@@ -493,24 +493,31 @@ fun MediPoteApp(vm: AppViewModel) {
                                 onLog = { nav.navigate(if (state.sleep.any { it.date == today }) "sleep_log?new=true" else "sleep_log") },
                                 onOpen = { nav.navigate("sleep_log?date=${it.date}") },
                             )
-                            else -> CycleScreen(
-                                state.profile?.cycle, state.journal, today, vm::logPeriod, vm::updateCycle,
-                                onOpenDay = { nav.navigate("day/$it") }, embedded = true,
-                            ) {
-                                com.medipote.app.ui.cycle.PeriodCareCard(
-                                    state, now,
-                                    onStart = vm::startProduct, onChanged = vm::productChanged, onRemoved = vm::productRemoved,
-                                    onSetReminder = vm::setProductReminder,
-                                )
-                                val periodLog = { id: String ->
-                                    nav.navigate("prn_log/$id?reason=${Uri.encode(com.medipote.app.domain.PeriodCare.REASON)}&context=${Uri.encode(com.medipote.app.domain.PeriodCare.CONTEXT)}")
+                            else -> {
+                                // During the period, protection and medication come first; the rest of the month, after the cycle.
+                                val periodCards: @Composable () -> Unit = {
+                                    com.medipote.app.ui.cycle.PeriodCareCard(
+                                        state, now,
+                                        onStart = vm::startProduct, onChanged = vm::productChanged, onRemoved = vm::productRemoved,
+                                        onSetReminder = vm::setProductReminder,
+                                    )
+                                    val periodLog = { id: String ->
+                                        nav.navigate("prn_log/$id?reason=${Uri.encode(com.medipote.app.domain.PeriodCare.REASON)}&context=${Uri.encode(com.medipote.app.domain.PeriodCare.CONTEXT)}")
+                                    }
+                                    com.medipote.app.ui.cycle.PeriodMedsCard(
+                                        state, now,
+                                        onLog = periodLog,
+                                        onAddCommon = { drugId -> vm.addPeriodMedication(drugId)?.let(periodLog) },
+                                        onAddCustom = { name, strength, drugId -> vm.addCustomPeriodMedication(name, strength, drugId) },
+                                        onSetListed = vm::setPeriodMed,
+                                    )
                                 }
-                                com.medipote.app.ui.cycle.PeriodMedsCard(
-                                    state, now,
-                                    onLog = periodLog,
-                                    onAddCommon = { drugId -> vm.addPeriodMedication(drugId)?.let(periodLog) },
-                                    onAddCustom = { name, strength, drugId -> vm.addCustomPeriodMedication(name, strength, drugId) },
-                                    onSetListed = vm::setPeriodMed,
+                                val inPeriod = com.medipote.app.domain.PeriodCare.inPeriod(state, today)
+                                CycleScreen(
+                                    state.profile?.cycle, state.journal, today, vm::logPeriod, vm::updateCycle,
+                                    onOpenDay = { nav.navigate("day/$it") }, embedded = true,
+                                    header = { if (inPeriod) periodCards() },
+                                    footer = { if (!inPeriod) periodCards() },
                                 )
                             }
                         }
@@ -518,7 +525,7 @@ fun MediPoteApp(vm: AppViewModel) {
                 }
                 composable("bilan") {
                     // Bilan: looking back.
-                    val tabs = listOf(HubTab("📊", "Statistiques"), HubTab("🗓️", "Jour par jour"), HubTab("🎨", "Mon année"))
+                    val tabs = listOf(HubTab("📊", "Statistiques", "Stats"), HubTab("📋", "Jour par jour", "Par jour"), HubTab("📆", "Mon année", "Année"))
                     var day by rememberSaveable { mutableStateOf(today) }
                     Hub("Bilan", tabs, 0, openProfile, openSettings) { i ->
                         when (i) {
@@ -538,12 +545,11 @@ fun MediPoteApp(vm: AppViewModel) {
                 }
                 composable("compagnon") {
                     // Compagnon: the game side.
-                    val tabs = listOf(HubTab("🛍️", "Boutique"), HubTab("🏅", "Badges et défis"), HubTab("🌷", "Jardin"))
+                    val tabs = listOf(HubTab("🛍️", "Boutique"), HubTab("🏅", "Badges et défis", "Badges"))
                     Hub(state.game.petName, tabs, 0, openProfile, openSettings) { i ->
                         when (i) {
                             0 -> ShopScreen(state.game, vm::buy, vm::equip, embedded = true)
-                            1 -> com.medipote.app.ui.motivation.BadgesScreen(state, today, onBack = {}, embedded = true)
-                            else -> com.medipote.app.ui.motivation.GardenScreen(state, today)
+                            else -> com.medipote.app.ui.motivation.BadgesScreen(state, today, onBack = {}, embedded = true)
                         }
                     }
                 }

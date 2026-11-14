@@ -193,17 +193,17 @@ fun SleepScreen(state: AppState, now: LocalDateTime, onLog: () -> Unit, onOpen: 
     val lastNight = state.sleep.firstOrNull { it.date == today }
 
     Column(
-        Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 12.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
+        Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         if (lastNight == null) {
-            Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer), modifier = Modifier.fillMaxWidth()) {
+            Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow), modifier = Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("Comment as-tu dormi cette nuit ?", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onPrimaryContainer)
+                    Text("Comment as-tu dormi cette nuit ?", style = MaterialTheme.typography.titleMedium)
                     Text(
                         "Heure du coucher, réveils dans la nuit, heure du réveil : ça prend 20 secondes. +${Rules.SLEEP_BONUS} pts",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     Button(onClick = onLog) {
                         Icon(Icons.Outlined.Bedtime, null, Modifier.size(18.dp))
@@ -248,19 +248,30 @@ fun SleepScreen(state: AppState, now: LocalDateTime, onLog: () -> Unit, onOpen: 
                 )
             }
         } else {
-            SleepTiles(report)
+            // The essentials first; the detailed figures and past nights one tap away.
+            SleepTiles(report, more = false)
             InsightsCard(report.insights)
             DurationChart(report, today)
-            AwakeningsCard(report)
-            if (report.tags.isNotEmpty()) {
-                StatCard("Ce qui a accompagné tes nuits") { RankedBars(report.tags, report.count) }
+            com.medipote.app.ui.components.MoreOptions(
+                "Horaires, efficacité, réveils, causes",
+                label = "Plus de détails",
+            ) {
+                SleepTiles(report, more = true)
+                AwakeningsCard(report)
+                if (report.tags.isNotEmpty()) {
+                    StatCard("Ce qui a accompagné tes nuits") { RankedBars(report.tags, report.count) }
+                }
             }
-            SectionTitle("Historique")
-            Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)) {
-                Column {
-                    report.nights.reversed().forEachIndexed { i, n ->
-                        if (i > 0) HorizontalDivider(Modifier.padding(horizontal = 16.dp))
-                        NightRow(n, report.goalMinutes) { onOpen(n) }
+            com.medipote.app.ui.components.MoreOptions(
+                "${report.count} nuit${if (report.count > 1) "s" else ""} sur la période",
+                label = "Voir mes nuits précédentes",
+            ) {
+                Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)) {
+                    Column {
+                        report.nights.reversed().forEachIndexed { i, n ->
+                            if (i > 0) HorizontalDivider(Modifier.padding(horizontal = 16.dp))
+                            NightRow(n, report.goalMinutes) { onOpen(n) }
+                        }
                     }
                 }
             }
@@ -273,8 +284,8 @@ fun SleepScreen(state: AppState, now: LocalDateTime, onLog: () -> Unit, onOpen: 
 }
 
 @Composable
-private fun SleepTiles(r: SleepReport) {
-    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+private fun SleepTiles(r: SleepReport, more: Boolean) {
+    if (!more) Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
         StatTile(
             "Sommeil moyen",
             r.averageAsleep?.let(Sleep::format) ?: "—",
@@ -287,6 +298,17 @@ private fun SleepTiles(r: SleepReport) {
             "${r.calmNights} nuit${if (r.calmNights > 1) "s" else ""} sans réveil",
             Modifier.weight(1f),
         )
+    }
+    if (!more) {
+        // How the nights felt stays in sight.
+        if (r.averageQuality != null || r.averageRested != null || r.averagePleasant != null) {
+            StatCard("Ressenti des nuits", subtitle = "Moyennes sur 5 · un visage par niveau") {
+                FeelingRow("Bonnes", r.averageQuality)
+                FeelingRow("Reposantes", r.averageRested)
+                FeelingRow("Agréables", r.averagePleasant)
+            }
+        }
+        return
     }
     Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
         StatTile(
@@ -315,13 +337,6 @@ private fun SleepTiles(r: SleepReport) {
             "en moyenne",
             Modifier.weight(1f),
         )
-    }
-    if (r.averageQuality != null || r.averageRested != null || r.averagePleasant != null) {
-        StatCard("Ressenti des nuits", subtitle = "Moyennes sur 5 · un visage par niveau") {
-            FeelingRow("Bonnes", r.averageQuality)
-            FeelingRow("Reposantes", r.averageRested)
-            FeelingRow("Agréables", r.averagePleasant)
-        }
     }
 }
 

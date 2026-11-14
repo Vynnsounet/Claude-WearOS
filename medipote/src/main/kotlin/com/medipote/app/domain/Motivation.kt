@@ -352,24 +352,3 @@ object Recaps {
     }
 }
 
-// ─────────────────────────── Garden ───────────────────────────
-
-enum class Bloom { NONE, SLEEP, JOURNAL, BOTH }
-
-object Garden {
-    /** One spot per day for the last [days] days, oldest first: a flower when the journal or the night was noted. */
-    fun of(state: AppState, today: LocalDate, days: Int = 28): List<Pair<LocalDate, Bloom>> {
-        val journal = state.journal.filter { it.hasJournal }.map { it.date }.toSet()
-        val sleep = state.sleep.map { it.date }.toSet()
-        return (days - 1 downTo 0).map { today.minusDays(it.toLong()) }.map { d ->
-            d to when {
-                d in journal && d in sleep -> Bloom.BOTH
-                d in journal -> Bloom.JOURNAL
-                d in sleep -> Bloom.SLEEP
-                else -> Bloom.NONE
-            }
-        }
-    }
-
-    fun flowers(state: AppState, today: LocalDate, days: Int = 28) = of(state, today, days).count { it.second != Bloom.NONE }
-}

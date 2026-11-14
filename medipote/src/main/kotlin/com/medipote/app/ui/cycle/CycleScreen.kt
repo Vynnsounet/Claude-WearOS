@@ -88,6 +88,7 @@ fun CycleScreen(
     onOpenDay: (LocalDate) -> Unit,
     embedded: Boolean = false,
     header: @Composable () -> Unit = {},
+    footer: @Composable () -> Unit = {},
 ) {
     var picking by remember { mutableStateOf(false) }
     val status = remember(info, today) { info?.let { Cycle.status(it, today) } }
@@ -104,9 +105,9 @@ fun CycleScreen(
     ) { padding ->
         Column(
             Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            if (embedded) Spacer(Modifier.height(4.dp))
+            if (embedded) Spacer(Modifier.height(0.dp))
             header()
             if (info == null || status == null) {
                 Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)) {
@@ -176,6 +177,7 @@ fun CycleScreen(
                     }
                 }
             }
+            footer()
             Disclaimer(
                 "Estimations basées sur la méthode du calendrier, à titre indicatif. " +
                     "Ce suivi n'est pas une méthode de contraception ni un outil de diagnostic.",

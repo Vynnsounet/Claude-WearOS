@@ -39,17 +39,21 @@ Le compagnon grandit avec la régularité (graine, pousse, bouton, fleur, florai
 
 ## Navigation
 
-Cinq espaces en bas de l'écran ; dans chacun, des sous-onglets en emojis (le nom
-de celui qui est ouvert s'affiche sous le titre, et chaque emoji est nommé pour
-les lecteurs d'écran).
+Cinq espaces en bas de l'écran ; dans chacun, des sous-onglets : un emoji avec
+un petit mot en dessous (et le nom complet pour les lecteurs d'écran).
 
 | Espace | Sous-onglets |
 |---|---|
 | **Accueil** | Prochaine prise en grand, compagnon, humeur, rituel, protection, prises du jour, si besoin, mesures, eau, rendez-vous : chaque bloc seulement quand il sert, ordre et affichage au choix (Paramètres › Mon accueil). Bouton « + Noter » pour tout noter en deux gestes. |
-| **Soins** | 💊 Traitements · 🌼 Pilule (si concernée) · 📅 Agenda · 📂 Carnet de santé |
-| **Suivi** | 📖 Journal · 🌙 Sommeil · 🩺 Mesures (si activées) · 🌸 Cycle (si activé) |
-| **Bilan** | 📊 Statistiques · 🗓️ Jour par jour · 🎨 Mon année |
-| **Compagnon** | 🛍️ Boutique · 🏅 Badges et défis · 🌷 Jardin |
+| **Soins** | 💊 Traitements · 🔁 Pilule (si concernée) · 📅 Agenda · 📂 Carnet (de santé) |
+| **Suivi** | 📖 Journal · 🌙 Sommeil · 🩺 Mesures (si activées) · 🩸 Cycle (si activé) |
+| **Bilan** | 📊 Stats · 📋 Par jour · 📆 Année |
+| **Compagnon** | 🛍️ Boutique · 🏅 Badges (et défis) |
+
+Les écrans restent aérés : cartes de traitements et jours du journal compacts
+(le détail s'ouvre au toucher), sommeil avec l'essentiel d'abord (« Plus de
+détails », « Voir mes nuits précédentes »), cartes protection et médicaments en
+haut du cycle pendant les règles, badges gagnés d'abord et les autres repliés.
 
 | Suivi | Bilan | Compagnon |
 |---|---|---|
@@ -214,11 +218,10 @@ montrent l'essentiel, le reste sous « Plus d'options ».
 - **Rituels du matin et du soir** : un seul enchaînement de 30 secondes avec
   le compagnon. Le matin : la nuit (heures, nombre de réveils, bonne ?
   reposante ?), les prises du matin, l'humeur et la forme. Le soir : les prises
-  restantes, le journal (humeur, question du jour, note), l'eau. +5 points par
+  restantes, le journal (humeur, un mot sur la journée), l'eau. +5 points par
   rituel et par jour ; carte sur l'accueil au bon moment, rappels facultatifs.
-- **Humeur en un geste et question du jour** : 5 visages sur l'accueil, et une
-  question douce qui change chaque jour (« Qu'est-ce qui t'a fait du bien
-  aujourd'hui ? »), à laquelle on répond en une ligne.
+- **Humeur en un geste et phrase du jour** : 5 visages sur l'accueil, et une
+  petite phrase douce ou motivante qui change chaque jour.
 - **Ma journée** : tout ce qui a été noté un jour (humeur, réponse, symptômes,
   prises, si besoin, nuit, eau, cycle, mesures, rendez-vous) sur une page,
   jour après jour.
@@ -233,7 +236,6 @@ montrent l'essentiel, le reste sous « Plus d'options ».
 - **Joker de série** : un jour oublié par semaine ne casse pas la série.
 - **Récap de la semaine** : le dimanche soir, quelques cartes à faire défiler
   (prises, nuits, humeur, meilleur jour, réussites) et un mot du compagnon.
-- **Jardin** : une fleur par jour où le journal ou la nuit a été noté.
 - **Compagnon plus vivant** : il réagit à ta nuit (« Nuit difficile… on y va
   doucement ») et à ton journal.
 - **Série quotidienne** : à la première ouverture du jour, une animation
