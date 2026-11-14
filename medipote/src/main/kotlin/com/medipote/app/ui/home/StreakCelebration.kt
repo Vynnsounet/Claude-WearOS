@@ -66,6 +66,7 @@ import kotlin.random.Random
 
 /** The words that go with the streak: always encouraging, never guilt-inducing. */
 fun streakMessage(r: CheckInReward, pet: String): Pair<String, String> = when {
+    r.jokerUsed -> "Série sauvée 🛡️" to "Hier est passé sans toi, mais ton joker de la semaine a gardé ta série. Il revient lundi."
     r.milestoneBonus > 0 -> "Palier atteint ! 🏆" to "${r.streak} jours d'affilée : +${r.milestoneBonus} points bonus. $pet est aux anges !"
     r.streak == 1 && r.previousStreak > 1 -> "Nouveau départ 💪" to "Ta série précédente a duré ${r.previousStreak} jours (record : ${r.best}). On repart ensemble, un jour à la fois."
     r.streak == 1 -> "C'est parti !" to "Premier jour de ta série. Reviens demain pour la faire grandir avec $pet."

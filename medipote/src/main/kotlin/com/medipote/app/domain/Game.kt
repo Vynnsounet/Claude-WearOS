@@ -21,7 +21,15 @@ data class PetCondition(
 )
 
 /** [previousStreak]: the streak that just ended (to cheer a new start), 0 when it continues. */
-data class CheckInReward(val streak: Int, val points: Int, val milestoneBonus: Int, val previousStreak: Int = 0, val best: Int = streak) {
+data class CheckInReward(
+    val streak: Int,
+    val points: Int,
+    val milestoneBonus: Int,
+    val previousStreak: Int = 0,
+    val best: Int = streak,
+    /** The weekly joker kept the streak going over a missed day. */
+    val jokerUsed: Boolean = false,
+) {
     val total: Int get() = points + milestoneBonus
 }
 
@@ -46,14 +54,23 @@ object Game {
      * Daily login streak. The first opening of each day gives +5 points per consecutive
      * day (capped at +50), plus a bonus on milestone days. Returns null if already counted today.
      */
+    /** The joker can be used once per calendar week (Monday to Sunday). */
+    fun jokerAvailable(game: GameState, today: LocalDate): Boolean {
+        val used = game.jokerUsedOn ?: return true
+        return Challenges.weekStart(used) != Challenges.weekStart(today)
+    }
+
     fun checkIn(game: GameState, now: LocalDateTime): Pair<GameState, CheckInReward>? {
         val today = now.toLocalDate()
         if (game.lastCheckIn == today) return null
-        val streak = if (game.lastCheckIn == today.minusDays(1)) game.streak + 1 else 1
+        val continues = game.lastCheckIn == today.minusDays(1)
+        // One missed day a week is forgiven: the joker keeps the streak.
+        val joker = !continues && game.lastCheckIn == today.minusDays(2) && game.streak > 0 && jokerAvailable(game, today)
+        val streak = if (continues || joker) game.streak + 1 else 1
         val broken = if (streak == 1 && game.streak > 1) game.streak else 0
         val best = maxOf(game.bestStreak, streak)
-        val reward = CheckInReward(streak, Rules.streakReward(streak), Rules.STREAK_MILESTONES[streak] ?: 0, broken, best)
-        var updated = game.copy(streak = streak, bestStreak = best, lastCheckIn = today)
+        val reward = CheckInReward(streak, Rules.streakReward(streak), Rules.STREAK_MILESTONES[streak] ?: 0, broken, best, joker)
+        var updated = game.copy(streak = streak, bestStreak = best, lastCheckIn = today, jokerUsedOn = if (joker) today else game.jokerUsedOn)
         updated = addPoints(updated, reward.points, "Connexion quotidienne (série de $streak j)", now)
         if (reward.milestoneBonus > 0) {
             updated = addPoints(updated, reward.milestoneBonus, "Palier de série : $streak jours", now)

@@ -42,7 +42,23 @@ object PetTalk {
             in 18..22 -> "Bonsoir$user !"
             else -> "Tu ne dors pas$user ? 🌙"
         }
-        return dueLine(state, now)?.let { "$hello $it" } ?: hello
+        return dueLine(state, now)?.let { "$hello $it" } ?: reactionTo(state, now)?.let { "$hello $it" } ?: hello
+    }
+
+    /** What the companion says about the night or the journal just noted. */
+    fun reactionTo(state: AppState, now: LocalDateTime): String? {
+        val today = now.toLocalDate()
+        val night = state.sleep.firstOrNull { it.date == today }
+        val entry = state.entryFor(today)
+        return when {
+            now.hour in 5..13 && night != null && ((night.rested ?: 3) <= 2 || night.asleepMinutes < state.settings.sleep.goalMinutes - 90) ->
+                "Nuit difficile… on y va doucement aujourd'hui 💛"
+            now.hour in 5..13 && night != null && ((night.rested ?: 0) >= 4 || (night.quality ?: 0) >= 4) ->
+                "Tu as bien dormi, ça se voit ! Je déborde d'énergie ✨"
+            now.hour >= 17 && entry.reflection.isNotBlank() -> "Merci de m'avoir raconté ta journée 📖"
+            now.hour >= 17 && (entry.mental ?: 3) <= 2 -> "Journée pas facile ? Je reste là, tout près 🤗"
+            else -> null
+        }
     }
 
     fun line(reaction: PetReaction, state: AppState, now: LocalDateTime, random: Random = Random.Default): String = when (reaction) {
@@ -80,6 +96,10 @@ object PetTalk {
                     add("N'oublie pas : ${it.title} $day !")
                 }
             if (!state.entryFor(now.toLocalDate()).hasJournal) add("Tu me racontes ta journée dans le journal ?")
+            reactionTo(state, now)?.let { add(it) }
+            if (now.hour >= 18 && state.entryFor(now.toLocalDate()).reflection.isBlank()) {
+                add("Question du jour : ${DailyQuestions.of(now.toLocalDate()).replaceFirstChar { it.lowercase() }}")
+            }
             val night = state.sleep.firstOrNull { it.date == now.toLocalDate() }
             if (night == null && now.hour in 5..13) add("Bien dormi ? Raconte-moi ta nuit dans Suivi › Sommeil 🌙")
             if (night != null && night.asleepMinutes < state.settings.sleep.goalMinutes - 60 && now.hour in 12..17) {

@@ -66,6 +66,15 @@ L'optimiseur de R8 reste désactivé (`-dontoptimize`) : APK de 3,8 Mo au lieu d
 le dex livré peut être reconverti et exécuté hors appareil pour vérification (voir plus bas),
 ce que l'optimiseur empêche. Il pourra être réactivé après des essais sur téléphone.
 
+### 1.5.0
+
+- Badges (21, dont 6 avec un objet exclusif dessiné), défis de la semaine, joker de série.
+- Rituels du matin et du soir (avec rappels facultatifs), humeur en un geste, question du jour.
+- Ma journée, année en pixels, récap de la semaine (notification le dimanche à 19 h), jardin.
+- Le compagnon réagit à la nuit et au journal.
+- Correctif : avec 5 onglets dans Suivi, les libellés étaient coupés (« Somme », « Mesure ») :
+  la barre d'onglets défile désormais.
+
 ### 1.4.0
 
 - Prises oubliées : historique des 14 derniers jours, « Je l'ai pris » avec l'heure réelle,

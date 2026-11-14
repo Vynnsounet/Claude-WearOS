@@ -138,10 +138,21 @@ fun Hub(
                     },
                     colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background),
                 )
-                if (tabs.size > 1) {
+                if (tabs.size > 4) {
+                    // Many tabs (Journal, Sommeil, Mesures, Cycle, Stats): scroll rather than cut the labels.
+                    androidx.compose.material3.PrimaryScrollableTabRow(
+                        selectedTabIndex = selected,
+                        containerColor = MaterialTheme.colorScheme.background,
+                        edgePadding = 8.dp,
+                    ) {
+                        tabs.forEachIndexed { i, label ->
+                            Tab(selected = selected == i, onClick = { selected = i }, text = { Text(label, maxLines = 1, softWrap = false) })
+                        }
+                    }
+                } else if (tabs.size > 1) {
                     PrimaryTabRow(selectedTabIndex = selected, containerColor = MaterialTheme.colorScheme.background) {
                         tabs.forEachIndexed { i, label ->
-                            Tab(selected = selected == i, onClick = { selected = i }, text = { Text(label, maxLines = 1) })
+                            Tab(selected = selected == i, onClick = { selected = i }, text = { Text(label, maxLines = 1, softWrap = false) })
                         }
                     }
                 }
@@ -166,6 +177,7 @@ fun MediPoteApp(vm: AppViewModel) {
         var askedThisSession by rememberSaveable { mutableStateOf(false) }
         var batteryRestricted by remember { mutableStateOf(isBatteryRestricted(context)) }
         var checkIn by remember { mutableStateOf<UiEvent.CheckedIn?>(null) }
+        val badgeQueue = remember { androidx.compose.runtime.mutableStateListOf<com.medipote.app.domain.Badge>() }
         var notificationsAllowed by remember { mutableStateOf(Notifications.canPost(context)) }
         var quietChannels by remember { mutableStateOf(Notifications.quietChannels(context)) }
         var exactAllowed by remember { mutableStateOf(ReminderScheduler.canScheduleExact(context)) }
@@ -243,6 +255,7 @@ fun MediPoteApp(vm: AppViewModel) {
                         snackbar.showSnackbar(base + bonus)
                     }
                     is UiEvent.CheckedIn -> checkIn = e
+                    is UiEvent.BadgeEarned -> badgeQueue.add(e.badge)
                     is UiEvent.Bought -> {
                         snackbar.currentSnackbarData?.dismiss()
                         snackbar.showSnackbar("${e.item.name} acheté et équipé !")
@@ -361,6 +374,11 @@ fun MediPoteApp(vm: AppViewModel) {
                         onOpenMeasure = { nav.navigate("measure/${it.name}") },
                         onOpenDocument = { nav.navigate("document/${it.id}") },
                         onOpenHistory = { nav.navigate("history/$it") },
+                        onMood = vm::setMood,
+                        onAnswer = vm::answerQuestion,
+                        onRitual = { nav.navigate("ritual/${it.name}") },
+                        onOpenBadges = { nav.navigate("badges") },
+                        onOpenRecap = { nav.navigate("recap/$it") },
                     )
                 }
                 composable("treatments") {
@@ -396,7 +414,12 @@ fun MediPoteApp(vm: AppViewModel) {
                     )
                     Hub("Suivi", tabs, 0, openProfile, openSettings) { i ->
                         when (tabs[i]) {
-                            "Journal" -> JournalScreen(state.journal, today) { nav.navigate("day/$it") }
+                            "Journal" -> JournalScreen(
+                                state.journal, today,
+                                onOpenDay = { nav.navigate("day/$it") },
+                                onOpenMyDay = { nav.navigate("myday/$it") },
+                                onOpenYear = { nav.navigate("year") },
+                            )
                             "Mesures" -> com.medipote.app.ui.measures.MeasuresScreen(
                                 state, now,
                                 onAdd = { nav.navigate("measure_log/${it.name}") },
@@ -570,6 +593,43 @@ fun MediPoteApp(vm: AppViewModel) {
                             onBack = { nav.popBackStack() },
                         )
                     }
+                }
+                composable("badges") { com.medipote.app.ui.motivation.BadgesScreen(state, today) { nav.popBackStack() } }
+                composable("ritual/{kind}") { entry ->
+                    val kind = entry.arguments?.getString("kind")?.let { runCatching { com.medipote.app.domain.RitualKind.valueOf(it) }.getOrNull() }
+                        ?: com.medipote.app.domain.Rituals.current(now) ?: com.medipote.app.domain.RitualKind.EVENING
+                    com.medipote.app.ui.motivation.RitualScreen(
+                        state, kind, now,
+                        com.medipote.app.ui.motivation.RitualActions(
+                            give = { vm.give(it) },
+                            giveEarly = vm::giveEarly,
+                            catchUp = vm::catchUp,
+                            saveEntry = vm::saveEntry,
+                            addWater = vm::addWater,
+                            saveSleep = vm::saveSleep,
+                            complete = vm::completeRitual,
+                            openSleepEditor = { nav.navigate("sleep_log") },
+                            close = { nav.popBackStack() },
+                        ),
+                    )
+                }
+                composable("myday/{date}") { entry ->
+                    var date by rememberSaveable { mutableStateOf(entry.arguments?.getString("date")?.let(LocalDate::parse) ?: today) }
+                    com.medipote.app.ui.motivation.MyDayScreen(
+                        state, date, now,
+                        onDate = { date = it },
+                        onEditJournal = { nav.navigate("day/$date") },
+                        onEditSleep = { nav.navigate("sleep_log?date=$date") },
+                        onOpenDoses = { nav.navigate("history/$date") },
+                        onBack = { nav.popBackStack() },
+                    )
+                }
+                composable("year") {
+                    com.medipote.app.ui.motivation.YearScreen(state, now, onOpenDay = { nav.navigate("myday/$it") }, onBack = { nav.popBackStack() })
+                }
+                composable("recap/{week}") { entry ->
+                    val week = entry.arguments?.getString("week")?.let(LocalDate::parse) ?: com.medipote.app.domain.Recaps.weekToShow(now)
+                    com.medipote.app.ui.motivation.RecapScreen(state, week, now, onSeen = { vm.markRecapSeen(week) }, onClose = { nav.popBackStack() })
                 }
                 composable("history/{date}") { entry ->
                     var date by rememberSaveable { mutableStateOf(entry.arguments?.getString("date")?.let(LocalDate::parse) ?: today.minusDays(1)) }
@@ -752,6 +812,18 @@ fun MediPoteApp(vm: AppViewModel) {
             } else {
                 CheckInDialog(event, pet) { checkIn = null }
             }
+        }
+
+        badgeQueue.firstOrNull()?.let { badge ->
+            com.medipote.app.ui.motivation.BadgeEarnedDialog(
+                badge,
+                onDismiss = { badgeQueue.removeAt(0) },
+                onOpenShop = {
+                    com.medipote.app.domain.Badges.reward(badge.id)?.let(vm::equip)
+                    badgeQueue.removeAt(0)
+                    nav.navigate("shop") { launchSingleTop = true }
+                },
+            )
         }
 
         val locked by vm.locked.collectAsStateWithLifecycle()

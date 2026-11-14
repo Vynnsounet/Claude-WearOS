@@ -225,6 +225,16 @@ data class GameState(
     val cuddleDays: Set<@Serializable(with = LocalDateSerializer::class) LocalDate> = emptySet(),
     /** Doses given on time since the beginning: makes the companion grow (never decreases). */
     val growth: Int = 0,
+    /** Badges earned: id → day. */
+    val badges: Map<String, @Serializable(with = LocalDateSerializer::class) LocalDate> = emptyMap(),
+    /** Weekly challenges already rewarded, "2026-11-09:sleep5". */
+    val challengesDone: Set<String> = emptySet(),
+    /** Rituals done (and rewarded), "2026-11-12:MORNING". */
+    val ritualsDone: Set<String> = emptySet(),
+    /** Day the weekly streak joker was last used. */
+    @Serializable(with = LocalDateSerializer::class) val jokerUsedOn: LocalDate? = null,
+    /** Monday of the last weekly recap opened. */
+    @Serializable(with = LocalDateSerializer::class) val recapSeen: LocalDate? = null,
     /** Days the "night logged" bonus was already given. */
     val sleepRewardDays: Set<@Serializable(with = LocalDateSerializer::class) LocalDate> = emptySet(),
     val history: List<PointEvent> = emptyList(),
@@ -274,6 +284,7 @@ data class Settings(
     val measures: Set<MeasureType> = emptySet(),
     val backup: BackupSettings = BackupSettings(),
     val look: Look = Look(),
+    val rituals: RitualSettings = RitualSettings(),
     /** Ask for the phone's fingerprint, face or PIN to open the app. */
     val lockEnabled: Boolean = false,
     val notificationsEnabled: Boolean = true,

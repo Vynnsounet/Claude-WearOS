@@ -28,7 +28,7 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
-enum class AlarmKind { DOSE, FOLLOW_UP, APPOINTMENT, WATER, STOCK, TEST, PRN_CHECK, SLEEP, SNOOZE, RENEWAL }
+enum class AlarmKind { DOSE, FOLLOW_UP, APPOINTMENT, WATER, STOCK, TEST, PRN_CHECK, SLEEP, SNOOZE, RENEWAL, RITUAL, RECAP }
 
 /** One planned alarm. [ref] identifies what it is about (an appointment id, for instance). */
 data class AlarmSpec(val kind: AlarmKind, val time: LocalDateTime, val ref: String = "") {
@@ -105,6 +105,28 @@ object ReminderPlanner {
             }
         }
 
+        // Morning and evening rituals, while not done that day.
+        val rituals = state.settings.rituals
+        for (d in 0..1) {
+            val date = now.toLocalDate().plusDays(d.toLong())
+            listOf(
+                Triple(com.medipote.app.domain.RitualKind.MORNING, rituals.morningReminder, rituals.morningMinute),
+                Triple(com.medipote.app.domain.RitualKind.EVENING, rituals.eveningReminder, rituals.eveningMinute),
+            ).forEach { (kind, on, minute) ->
+                val t = date.atTime(minute / 60, minute % 60)
+                if (on && t.isAfter(now) && com.medipote.app.domain.Rituals.key(date, kind) !in state.game.ritualsDone) {
+                    alarms += AlarmSpec(AlarmKind.RITUAL, t, kind.name)
+                }
+            }
+        }
+
+        // The weekly recap, on Sunday at 19:00.
+        if (rituals.weeklyRecap) {
+            var sunday = now.toLocalDate().with(java.time.temporal.TemporalAdjusters.nextOrSame(java.time.DayOfWeek.SUNDAY)).atTime(19, 0)
+            if (!sunday.isAfter(now)) sunday = sunday.plusWeeks(1)
+            alarms += AlarmSpec(AlarmKind.RECAP, sunday)
+        }
+
         // Prescriptions to renew: at 10:00 on the reminder day.
         for (doc in state.documents) {
             val day = com.medipote.app.domain.Renewals.reminderDate(doc) ?: continue
@@ -129,8 +151,9 @@ object Notifications {
     const val CHANNEL_WATER = "water_v2"
     const val CHANNEL_STOCK = "stock_v2"
     const val CHANNEL_SLEEP = "sleep_v2"
+    const val CHANNEL_RITUALS = "rituals_v2"
     private val OLD_CHANNELS = listOf("dose_reminders", "appointments", "water", "stock", "sleep")
-    val ALL_CHANNELS = listOf(CHANNEL_DOSES, CHANNEL_APPOINTMENTS, CHANNEL_WATER, CHANNEL_STOCK, CHANNEL_SLEEP)
+    val ALL_CHANNELS = listOf(CHANNEL_DOSES, CHANNEL_APPOINTMENTS, CHANNEL_WATER, CHANNEL_STOCK, CHANNEL_SLEEP, CHANNEL_RITUALS)
     private const val SLEEP_ID = 2004
     private const val WATER_ID = 2001
     private const val STOCK_ID = 2002
@@ -159,6 +182,7 @@ object Notifications {
             channel(CHANNEL_WATER, "Hydratation", "Rappels pour boire de l'eau"),
             channel(CHANNEL_STOCK, "Stock de médicaments", "Médicaments à racheter"),
             channel(CHANNEL_SLEEP, "Sommeil", "Rappel du matin pour noter sa nuit"),
+            channel(CHANNEL_RITUALS, "Rituels et récap", "Rituels du matin et du soir, récap de la semaine"),
         ).forEach(manager::createNotificationChannel)
     }
 
@@ -335,6 +359,28 @@ object Notifications {
         )
     }
 
+    fun showRitual(context: Context, state: AppState, kindName: String, now: LocalDateTime) {
+        val kind = runCatching { com.medipote.app.domain.RitualKind.valueOf(kindName) }.getOrNull() ?: return
+        if (com.medipote.app.domain.Rituals.done(state.game, now, kind)) return
+        val pet = state.game.petName
+        post(
+            context, CHANNEL_RITUALS, 2005 + kind.ordinal,
+            "${kind.emoji} ${kind.label}",
+            if (kind == com.medipote.app.domain.RitualKind.MORNING) "30 secondes avec $pet : ta nuit, tes prises du matin, ton humeur."
+            else "30 secondes avec $pet : tes prises du soir, ton journal, ton eau.",
+            route = "ritual/${kind.name}",
+        )
+    }
+
+    fun showRecap(context: Context, state: AppState, now: LocalDateTime) {
+        val week = com.medipote.app.domain.Recaps.pending(state, now) ?: return
+        post(
+            context, CHANNEL_RITUALS, 2007, "🎁 Ton récap de la semaine est prêt",
+            "Tes prises, tes nuits, ton humeur… et un petit mot de ${state.game.petName}.",
+            route = "recap/$week",
+        )
+    }
+
     fun showSleep(context: Context, state: AppState, now: LocalDateTime) {
         if (!state.settings.sleep.reminder || state.sleep.any { it.date == now.toLocalDate() }) return
         post(
@@ -447,6 +493,8 @@ class ReminderReceiver : BroadcastReceiver() {
                 AlarmKind.PRN_CHECK -> Notifications.showPrnCheck(context, state, spec.ref)
                 AlarmKind.SLEEP -> Notifications.showSleep(context, state, repo.now())
                 AlarmKind.RENEWAL -> Notifications.showRenewal(context, state, spec.ref, repo.now())
+                AlarmKind.RITUAL -> Notifications.showRitual(context, state, spec.ref, repo.now())
+                AlarmKind.RECAP -> Notifications.showRecap(context, state, repo.now())
                 AlarmKind.SNOOZE -> {
                     val time = LocalDateTime.parse(spec.ref)
                     repo.update { s -> s.copy(snoozes = s.snoozes.filterNot { it.doseTime == time && !it.until.isAfter(spec.time) }) }

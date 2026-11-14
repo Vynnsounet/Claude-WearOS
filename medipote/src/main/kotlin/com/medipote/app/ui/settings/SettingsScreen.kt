@@ -235,6 +235,21 @@ fun SettingsScreen(
                 }
             }
 
+            SectionTitle("Rituels et récap")
+            SettingsCard {
+                val r = settings.rituals
+                fun update(f: (com.medipote.app.data.RitualSettings) -> com.medipote.app.data.RitualSettings) = onChange { it.copy(rituals = f(it.rituals)) }
+                SwitchRow("Rappel du rituel du matin", r.morningReminder, supporting = "Ta nuit, tes prises du matin et ton humeur, en un seul moment") { v -> update { it.copy(morningReminder = v) } }
+                if (r.morningReminder) {
+                    com.medipote.app.ui.components.NumberStepper("À", r.morningMinute / 30, { v -> update { it.copy(morningMinute = v * 30) } }, 10..23, display = { "%d h %02d".format(it / 2, it % 2 * 30) })
+                }
+                SwitchRow("Rappel du rituel du soir", r.eveningReminder, supporting = "Tes prises du soir, ton journal et ton eau") { v -> update { it.copy(eveningReminder = v) } }
+                if (r.eveningReminder) {
+                    com.medipote.app.ui.components.NumberStepper("À", r.eveningMinute / 30, { v -> update { it.copy(eveningMinute = v * 30) } }, 34..47, display = { "%d h %02d".format(it / 2, it % 2 * 30) })
+                }
+                SwitchRow("Récap de la semaine", r.weeklyRecap, supporting = "Une notification le dimanche à 19 h") { v -> update { it.copy(weeklyRecap = v) } }
+            }
+
             SectionTitle("Mesures de santé")
             SettingsCard {
                 Text(
@@ -302,6 +317,9 @@ fun SettingsScreen(
                 Rule("Objectif d'hydratation atteint", "+${Rules.WATER_BONUS} pts")
                 Rule("Journal du jour rempli", "+${Rules.JOURNAL_BONUS} pts")
                 Rule("Nuit notée le matin même", "+${Rules.SLEEP_BONUS} pts")
+                Rule("Rituel du matin ou du soir (une fois par jour chacun)", "+${com.medipote.app.domain.Rituals.BONUS} pts")
+                Rule("Défi de la semaine réussi", "+20 à +40 pts")
+                Rule("Joker de série", "1 jour oublié par semaine ne casse pas la série")
                 Rule("Premier câlin du jour (caresse ou appui long sur ton compagnon)", "+${Rules.CUDDLE_BONUS} pts")
                 Rule("Connexion quotidienne", "+${Rules.STREAK_POINTS_PER_DAY} pts × jours de série, jusqu'à +${Rules.STREAK_POINTS_CAP}")
                 Rule("Paliers de série", Rules.STREAK_MILESTONES.entries.joinToString(" · ") { "${it.key} j : +${it.value}" })

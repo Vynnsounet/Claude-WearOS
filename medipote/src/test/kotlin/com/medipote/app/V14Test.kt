@@ -113,7 +113,10 @@ class V14Test {
         )
         // Sections missing from the saved order (added by an update) come at the end.
         assertEquals(
-            listOf(HomeSection.WATER, HomeSection.DOSES, HomeSection.COMPANION, HomeSection.AS_NEEDED, HomeSection.MEASURES, HomeSection.PROMPTS),
+            listOf(
+                HomeSection.WATER, HomeSection.DOSES, HomeSection.COMPANION, HomeSection.MOOD, HomeSection.RITUAL,
+                HomeSection.AS_NEEDED, HomeSection.MEASURES, HomeSection.PROMPTS, HomeSection.CHALLENGES, HomeSection.GARDEN,
+            ),
             look.visibleSections,
         )
     }

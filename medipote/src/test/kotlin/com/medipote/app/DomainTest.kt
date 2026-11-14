@@ -133,8 +133,8 @@ class DomainTest {
         assertEquals(rewards.sum() + 30, game.points)
         // Same day: nothing more
         assertNull(Game.checkIn(game, at(18, 0, day.plusDays(11))))
-        // Skipping a day resets the streak
-        val (reset, r) = Game.checkIn(game, at(9, 0, day.plusDays(13)))!!
+        // Skipping two days resets the streak (a single day would be saved by the weekly joker)
+        val (reset, r) = Game.checkIn(game, at(9, 0, day.plusDays(14)))!!
         assertEquals(1, reset.streak)
         assertEquals(5, r.points)
         assertEquals(12, reset.bestStreak)

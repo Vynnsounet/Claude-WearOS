@@ -134,6 +134,11 @@ fun HomeScreen(
     onOpenMeasure: (com.medipote.app.data.MeasureType) -> Unit = {},
     onOpenDocument: (com.medipote.app.data.HealthDocument) -> Unit = {},
     onOpenHistory: (java.time.LocalDate) -> Unit = {},
+    onMood: (Int?) -> Unit = {},
+    onAnswer: (String) -> Unit = {},
+    onRitual: (com.medipote.app.domain.RitualKind) -> Unit = {},
+    onOpenBadges: () -> Unit = {},
+    onOpenRecap: (java.time.LocalDate) -> Unit = {},
 ) {
     val logs = remember(state.doseLogs) { state.doseLogs.associateBy { it.key } }
     val today = remember(state.treatments, logs, now) {
@@ -174,10 +179,23 @@ fun HomeScreen(
                 .padding(horizontal = 16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                 StreakBadge(state.game.streak)
                 PointsBadge(state.game.points)
+                Surface(
+                    onClick = onOpenBadges,
+                    color = MaterialTheme.colorScheme.tertiaryContainer,
+                    shape = CircleShape,
+                ) {
+                    Text(
+                        "🏅 ${state.game.badges.size}",
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.onTertiaryContainer,
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                    )
+                }
             }
+            com.medipote.app.domain.Recaps.pending(state, now)?.let { week -> com.medipote.app.ui.motivation.RecapReadyCard { onOpenRecap(week) } }
             if (notificationsBlocked && state.settings.notificationsEnabled) NotificationsBanner(onFixNotifications)
             else if (remindersQuiet && state.settings.notificationsEnabled) NotificationsBanner(
                 onFixQuietReminders,
@@ -284,9 +302,25 @@ fun HomeScreen(
                     WaterCard(state.entryFor(now.toLocalDate()).waterGlasses, water.goalGlasses, water.glassMl, onAddWater)
                 }
                 HomeSection.PROMPTS -> {
-                    if (now.hour in 5..13 && state.sleep.none { it.date == now.toLocalDate() }) SleepPrompt(onOpenSleep)
-                    if (!state.entryFor(now.toLocalDate()).hasJournal) JournalPrompt(state.game.petName, onOpenJournal)
+                    // Not twice the same invitation: the ritual and mood cards already ask when they are shown.
+                    val ritualShown = HomeSection.RITUAL in look.visibleSections &&
+                        com.medipote.app.domain.Rituals.current(now) == com.medipote.app.domain.RitualKind.MORNING &&
+                        !com.medipote.app.domain.Rituals.done(state.game, now, com.medipote.app.domain.RitualKind.MORNING)
+                    if (!ritualShown && now.hour in 5..13 && state.sleep.none { it.date == now.toLocalDate() }) SleepPrompt(onOpenSleep)
+                    if (HomeSection.MOOD !in look.visibleSections && !state.entryFor(now.toLocalDate()).hasJournal) JournalPrompt(state.game.petName, onOpenJournal)
                 }
+                HomeSection.MOOD -> com.medipote.app.ui.motivation.MoodCard(state.entryFor(now.toLocalDate()), onMood, onAnswer)
+                HomeSection.RITUAL -> com.medipote.app.domain.Rituals.current(now)?.let { kind ->
+                    if (!com.medipote.app.domain.Rituals.done(state.game, now, kind)) com.medipote.app.ui.motivation.RitualCard(kind) { onRitual(kind) }
+                }
+                HomeSection.CHALLENGES -> com.medipote.app.ui.motivation.ChallengesCard(
+                    remember(state, now.toLocalDate()) { com.medipote.app.domain.Challenges.status(state, now.toLocalDate()) },
+                    onOpenBadges,
+                )
+                HomeSection.GARDEN -> com.medipote.app.ui.motivation.GardenCard(
+                    remember(state.journal, state.sleep, now.toLocalDate()) { com.medipote.app.domain.Garden.of(state, now.toLocalDate()) },
+                    state.game.petName,
+                )
                 HomeSection.APPOINTMENT -> state.appointments
                     .filter { !it.dateTime.isBefore(now.minusHours(1)) && it.dateTime.isBefore(now.plusDays(8)) }
                     .minByOrNull { it.dateTime }

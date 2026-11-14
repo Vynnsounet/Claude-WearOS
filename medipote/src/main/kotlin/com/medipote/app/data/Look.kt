@@ -6,12 +6,16 @@ import kotlinx.serialization.Serializable
 @Serializable
 enum class HomeSection(val label: String, val emoji: String) {
     COMPANION("Compagnon", "🐾"),
+    MOOD("Humeur et question du jour", "😊"),
+    RITUAL("Rituel du matin / du soir", "✨"),
     DOSES("Prises du jour", "💊"),
     AS_NEEDED("Si besoin", "🩹"),
     MEASURES("Mes mesures", "🩺"),
     WATER("Hydratation", "💧"),
     PROMPTS("Invitations du jour (nuit, journal)", "🌙"),
     APPOINTMENT("Prochain rendez-vous", "📅"),
+    CHALLENGES("Défis de la semaine", "🎯"),
+    GARDEN("Mon jardin", "🌷"),
 }
 
 /** Font of titles and big numbers (body text keeps the readable system font). */

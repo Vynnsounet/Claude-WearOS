@@ -93,7 +93,13 @@ fun faceFor(score: Int?): String = score?.let { FACES[(it - 1).coerceIn(0, 4)] }
 // ─────────────────────────── List ───────────────────────────
 
 @Composable
-fun JournalScreen(journal: List<DayEntry>, today: LocalDate, onOpenDay: (LocalDate) -> Unit) {
+fun JournalScreen(
+    journal: List<DayEntry>,
+    today: LocalDate,
+    onOpenDay: (LocalDate) -> Unit,
+    onOpenMyDay: (LocalDate) -> Unit = onOpenDay,
+    onOpenYear: () -> Unit = {},
+) {
     val entries = journal.filter { it.hasJournal || it.hasCycleData }.sortedByDescending { it.date }
     val todayEntry = journal.firstOrNull { it.date == today }
     LazyColumn(
@@ -124,9 +130,15 @@ fun JournalScreen(journal: List<DayEntry>, today: LocalDate, onOpenDay: (LocalDa
                 }
             }
         }
-        item { MoodHeatmap(journal.associateBy { it.date }, today, onOpenDay) }
+        item {
+            androidx.compose.foundation.layout.Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                androidx.compose.material3.FilledTonalButton(onClick = { onOpenMyDay(today) }, modifier = Modifier.weight(1f)) { Text("📅  Ma journée") }
+                androidx.compose.material3.FilledTonalButton(onClick = onOpenYear, modifier = Modifier.weight(1f)) { Text("🎨  Mon année") }
+            }
+        }
+        item { MoodHeatmap(journal.associateBy { it.date }, today, onOpenMyDay) }
         if (entries.isNotEmpty()) item { SectionTitle("Historique") }
-        items(entries, key = { it.date.toString() }) { EntryCard(it) { onOpenDay(it.date) } }
+        items(entries, key = { it.date.toString() }) { EntryCard(it) { onOpenMyDay(it.date) } }
         item {
             Disclaimer("Ce journal t'aide à suivre ton état et à en parler avec ton médecin. En cas de symptôme inquiétant, consulte un professionnel ou appelle le 15.")
         }
@@ -190,6 +202,9 @@ private fun EntryCard(e: DayEntry, onClick: () -> Unit) {
             if (e.illness.isNotBlank()) {
                 Text("Maladie : ${e.illness}", style = MaterialTheme.typography.bodyMedium, color = com.medipote.app.ui.theme.AppTheme.status.critical)
             }
+            if (e.reflection.isNotBlank()) {
+                Text("💭 ${e.reflection}", style = MaterialTheme.typography.bodyMedium.copy(fontStyle = androidx.compose.ui.text.font.FontStyle.Italic), maxLines = 3)
+            }
             val tags = e.physicalSymptoms + e.mentalSymptoms + e.cycleSymptoms
             if (tags.isNotEmpty() || e.flow != null || e.intercourse != null) {
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -228,6 +243,7 @@ fun DayEntryScreen(
     var mentalSymptoms by remember { mutableStateOf(entry.mentalSymptoms) }
     var illness by remember { mutableStateOf(entry.illness) }
     var notes by remember { mutableStateOf(entry.notes) }
+    var reflection by remember { mutableStateOf(entry.reflection) }
     var flow by remember { mutableStateOf(entry.flow) }
     var cycleSymptoms by remember { mutableStateOf(entry.cycleSymptoms) }
     var intercourse by remember { mutableStateOf(entry.intercourse) }
@@ -252,7 +268,7 @@ fun DayEntryScreen(
                         onSave(
                             entry.copy(
                                 physical = physical, mental = mental, physicalSymptoms = physicalSymptoms,
-                                mentalSymptoms = mentalSymptoms, illness = illness.trim(), notes = notes.trim(),
+                                mentalSymptoms = mentalSymptoms, illness = illness.trim(), notes = notes.trim(), reflection = reflection.trim(),
                                 flow = flow, cycleSymptoms = cycleSymptoms, intercourse = intercourse,
                             ),
                         )
@@ -304,6 +320,14 @@ fun DayEntryScreen(
                         Intercourse.entries.forEach { i -> FilterChip(selected = intercourse == i, onClick = { intercourse = i }, label = { Text(i.label) }) }
                     }
                 }
+            }
+            SectionCard("Question du jour") {
+                Text("💭 ${com.medipote.app.domain.DailyQuestions.of(entry.date)}", style = MaterialTheme.typography.bodyLarge)
+                OutlinedTextField(
+                    value = reflection, onValueChange = { reflection = it.take(280) }, placeholder = { Text("Quelques mots…") },
+                    minLines = 2, modifier = Modifier.fillMaxWidth(),
+                    keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
+                )
             }
             SectionCard("Notes") {
                 OutlinedTextField(

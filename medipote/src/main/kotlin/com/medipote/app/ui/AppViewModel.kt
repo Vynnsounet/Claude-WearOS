@@ -42,6 +42,8 @@ sealed interface UiEvent {
 
     /** Points won outside a dose (water…), shown floating above the pet. */
     data class Points(val amount: Int) : UiEvent
+
+    data class BadgeEarned(val badge: com.medipote.app.domain.Badge) : UiEvent
 }
 
 class AppViewModel(app: Application) : AndroidViewModel(app) {
@@ -77,6 +79,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         }
         reward?.let { _events.tryEmit(UiEvent.CheckedIn(it)) }
         reschedule()
+        checkAchievements()
     }
 
     fun give(item: DoseItem, early: Boolean = false) {
@@ -109,6 +112,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         if (stageAfter.ordinal > stageBefore.ordinal) {
             _events.tryEmit(UiEvent.Message("✨ ${state.value.game.petName} a grandi : ${stageAfter.label.lowercase()} ! (${stageAfter.description})"))
         }
+        if (fed != null) checkAchievements()
     }
 
     fun saveProfile(profile: Profile) {
@@ -144,6 +148,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             s.copy(game = game)
         }
         if (bought) _events.tryEmit(UiEvent.Bought(item))
+        checkAchievements()
     }
 
     fun equip(item: ShopItem) {
@@ -193,6 +198,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             updated
         }
         _events.tryEmit(UiEvent.Message(if (bonus > 0) "Journal enregistré : +$bonus pts" else "Journal enregistré"))
+        checkAchievements()
     }
 
     fun addWater(delta: Int) {
@@ -208,6 +214,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             Notifications.cancelWater(getApplication())
             _events.tryEmit(UiEvent.Message("Objectif d'hydratation atteint : +${r.goalBonus} pts bonus 💧"))
         }
+        checkAchievements()
     }
 
     /** Petting or hugging the companion: a little bonus the first time each day. */
@@ -248,6 +255,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         _now.value = repo.now()
         _events.tryEmit(UiEvent.Message("Prise notée : +$points pts · ${state.value.game.petName} va mieux 💚"))
         reschedule()
+        checkAchievements()
     }
 
     fun undoDose(key: String) {
@@ -282,6 +290,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     fun saveMeasurement(m: com.medipote.app.data.Measurement) {
         repo.update { com.medipote.app.domain.Measures.save(it, m) }
         _events.tryEmit(UiEvent.Message("Mesure enregistrée"))
+        checkAchievements()
     }
 
     fun deleteMeasurement(id: String) {
@@ -297,6 +306,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         _events.tryEmit(UiEvent.Message(if (bonus > 0) "Nuit enregistrée : +$bonus pts" else "Nuit enregistrée"))
         if (bonus > 0) _events.tryEmit(UiEvent.Points(bonus))
         reschedule()
+        checkAchievements()
     }
 
     fun deleteSleep(date: LocalDate) {
@@ -320,6 +330,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         var bonus = 0
         repo.update { s -> Game.cuddle(s, repo.now()).let { (u, b) -> bonus = b; u } }
         if (bonus > 0) _events.tryEmit(UiEvent.Points(bonus))
+        if (bonus > 0) checkAchievements()
     }
 
     // ── Appointments ──
@@ -338,6 +349,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     fun saveDocument(doc: HealthDocument) {
         repo.update { s -> s.copy(documents = (s.documents.filterNot { it.id == doc.id } + doc).sortedByDescending { it.date }) }
+        checkAchievements()
     }
 
     fun deleteDocument(doc: HealthDocument) {
@@ -365,6 +377,46 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             })
         }
         reschedule()
+    }
+
+    /** Badges newly earned and weekly challenges just completed, after any change. */
+    fun checkAchievements() {
+        var badges = emptyList<com.medipote.app.domain.Badge>()
+        var challenges = emptyList<com.medipote.app.domain.Challenge>()
+        repo.update { s ->
+            val (afterChallenges, won) = com.medipote.app.domain.Challenges.reward(s, repo.now())
+            challenges = won
+            val (afterBadges, earned) = com.medipote.app.domain.Badges.award(afterChallenges, repo.now().toLocalDate())
+            badges = earned
+            afterBadges
+        }
+        challenges.forEach { _events.tryEmit(UiEvent.Message("🎯 Défi réussi : ${it.title.lowercase()} · +${it.points} pts")) }
+        badges.forEach { _events.tryEmit(UiEvent.BadgeEarned(it)) }
+    }
+
+    /** Home: today's mood in one tap. */
+    fun setMood(value: Int?) {
+        val today = repo.now().toLocalDate()
+        saveEntry(state.value.entryFor(today).copy(mental = value))
+    }
+
+    /** Home: the answer to the question of the day. */
+    fun answerQuestion(text: String) {
+        val today = repo.now().toLocalDate()
+        saveEntry(state.value.entryFor(today).copy(reflection = text))
+    }
+
+    // ── Rituals ──
+
+    fun completeRitual(kind: com.medipote.app.domain.RitualKind) {
+        var bonus = 0
+        repo.update { s -> com.medipote.app.domain.Rituals.complete(s, kind, repo.now()).let { (u, b) -> bonus = b; u } }
+        if (bonus > 0) _events.tryEmit(UiEvent.Points(bonus))
+        checkAchievements()
+    }
+
+    fun markRecapSeen(week: LocalDate) {
+        repo.update { s -> s.copy(game = s.game.copy(recapSeen = week)) }
     }
 
     fun message(text: String) {

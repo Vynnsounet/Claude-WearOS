@@ -244,6 +244,16 @@ internal fun DrawScope.drawBackground(id: String?) {
             drawOval(Color(0xFFFF8A65), fish - Offset(w * 0.04f, w * 0.022f), Size(w * 0.08f, w * 0.044f))
             drawPath(Path().apply { moveTo(fish.x + w * 0.035f, fish.y); lineTo(fish.x + w * 0.07f, fish.y - w * 0.025f); lineTo(fish.x + w * 0.07f, fish.y + w * 0.025f); close() }, Color(0xFFFF7043))
         }
+        "bg_dawn" -> {
+            drawRect(Brush.verticalGradient(listOf(Color(0xFF6A5ACD), Color(0xFFF48FB1), Color(0xFFFFCC80))))
+            drawCircle(Brush.radialGradient(listOf(Color(0xFFFFF59D), Color(0x00FFF59D)), Offset(w * 0.5f, h * 0.68f), w * 0.45f), w * 0.45f, Offset(w * 0.5f, h * 0.68f))
+            drawCircle(Color(0xFFFFE082), w * 0.12f, Offset(w * 0.5f, h * 0.7f))
+            listOf(0.12f to 0.12f, 0.3f to 0.07f, 0.72f to 0.1f, 0.88f to 0.2f).forEach { (x, y) ->
+                drawCircle(Color.White.copy(alpha = 0.7f), w * 0.005f, Offset(w * x, h * y))
+            }
+            drawOval(Color(0xFF8E6BBF), Offset(-w * 0.3f, h * 0.72f), Size(w * 1.0f, h * 0.5f))
+            drawOval(Color(0xFF7B5BA8), Offset(w * 0.3f, h * 0.76f), Size(w * 1.0f, h * 0.5f))
+        }
         "bg_space" -> {
             drawRect(Brush.radialGradient(listOf(Color(0xFF3A1D6E), Color(0xFF0D0726)), Offset(w * 0.5f, h * 0.4f), w))
             for (i in 0 until 26) {
@@ -829,6 +839,15 @@ private fun DrawScope.drawGlasses(id: String, cx: Float, cy: Float, bw: Float, b
             }
             drawLine(Color(0xFFD81B60), Offset(cx - dx + r * 0.8f, eyeY - r * 0.3f), Offset(cx + dx - r * 0.8f, eyeY - r * 0.3f), s * 0.012f)
         }
+        "glasses_gold" -> {
+            val gold = Color(0xFFD4A017)
+            for (side in listOf(-1f, 1f)) {
+                drawCircle(Color(0xFFFFF8E1).copy(alpha = 0.25f), r * 1.05f, Offset(cx + side * dx, eyeY))
+                drawCircle(gold, r * 1.05f, Offset(cx + side * dx, eyeY), style = Stroke(s * 0.016f))
+                drawStar(Offset(cx + side * dx + r * 0.75f, eyeY - r * 0.75f), r * 0.28f, Color(0xFFFFF59D), 4, 0.35f)
+            }
+            drawArc(gold, 200f, 140f, false, Offset(cx - dx + r, eyeY - r * 0.4f), Size(2 * (dx - r), r * 0.6f), style = Stroke(s * 0.012f))
+        }
         "glasses_star" -> {
             for (side in listOf(-1f, 1f)) {
                 drawStar(Offset(cx + side * dx, eyeY), r * 1.25f, Color(0xFFFFC107).copy(alpha = 0.85f), 5, 0.5f)
@@ -935,6 +954,12 @@ private fun DrawScope.drawNeck(id: String, cx: Float, cy: Float, bw: Float, bh: 
         "neck_cape" -> {
             drawCircle(Color(0xFFFFC107), s * 0.022f, Offset(cx - bw * 0.3f, y - bh * 0.1f))
             drawCircle(Color(0xFFFFC107), s * 0.022f, Offset(cx + bw * 0.3f, y - bh * 0.1f))
+        }
+        "neck_star" -> {
+            val c = Offset(cx, y + bh * 0.13f)
+            drawPath(Path().apply { moveTo(cx - bw * 0.14f, y - bh * 0.12f); lineTo(c.x, c.y - s * 0.02f); lineTo(cx + bw * 0.14f, y - bh * 0.12f) }, Color(0xFF7E57C2), style = Stroke(s * 0.014f))
+            drawStar(c, s * 0.055f, Color(0xFFFFC107), 5, 0.45f)
+            drawStar(c, s * 0.03f, Color(0xFFFFF59D), 5, 0.45f)
         }
         "neck_medal" -> {
             val c = Offset(cx, y + bh * 0.12f)
@@ -1054,6 +1079,20 @@ private fun DrawScope.drawHat(id: String, cx: Float, top: Float, bw: Float, s: F
             drawOval(Color(0xFFFFE082).copy(alpha = 0.5f), Offset(cx - bw * 0.3f, top - s * 0.12f), Size(bw * 0.6f, s * 0.07f), style = Stroke(s * 0.03f))
             drawOval(Color(0xFFFFC107), Offset(cx - bw * 0.3f, top - s * 0.12f), Size(bw * 0.6f, s * 0.07f), style = Stroke(s * 0.014f))
         }
+        "hat_flowercrown" -> {
+            val colors = listOf(Color(0xFFF06292), Color(0xFFFFD54F), Color(0xFFBA68C8), Color(0xFF4FC3F7), Color(0xFFFF8A65))
+            drawArc(Color(0xFF66BB6A), 195f, 150f, false, Offset(cx - bw * 0.36f, top - s * 0.02f), Size(bw * 0.72f, s * 0.14f), style = Stroke(s * 0.012f))
+            for (i in 0 until 7) {
+                val a = Math.toRadians(195.0 + i * 25.0)
+                val c = Offset(cx + (cos(a) * bw * 0.36f).toFloat(), top + s * 0.05f + (sin(a) * s * 0.07f).toFloat())
+                val r = s * 0.02f
+                for (k in 0 until 5) {
+                    val pa = k * 2 * PI / 5
+                    drawCircle(colors[i % colors.size], r * 0.75f, c + Offset((cos(pa) * r).toFloat(), (sin(pa) * r).toFloat()))
+                }
+                drawCircle(Color(0xFFFFF59D), r * 0.55f, c)
+            }
+        }
         "hat_crown" -> {
             val w = s * 0.24f
             val base = top + s * 0.035f
@@ -1139,6 +1178,25 @@ private fun DrawScope.drawToy(id: String, cx: Float, cy: Float, bw: Float, bh: F
             val c = Offset(cx + (cos(a) * bw * 0.65f).toFloat(), cy - bh * 0.55f + (sin(a * 2) * bh * 0.12f).toFloat())
             scale(1.8f, c) { drawButterfly(c, s, a) }
         }
+        "toy_trophy" -> {
+            val x = cx + bw * 0.78f
+            val gold = Color(0xFFFFC107)
+            val dark = Color(0xFFFFA000)
+            drawRect(Color(0xFF8D6E63), Offset(x - s * 0.06f, ground - s * 0.035f), Size(s * 0.12f, s * 0.035f))
+            drawRect(dark, Offset(x - s * 0.012f, ground - s * 0.09f), Size(s * 0.024f, s * 0.06f))
+            drawPath(Path().apply {
+                moveTo(x - s * 0.07f, ground - s * 0.22f)
+                lineTo(x + s * 0.07f, ground - s * 0.22f)
+                quadraticTo(x + s * 0.07f, ground - s * 0.09f, x, ground - s * 0.085f)
+                quadraticTo(x - s * 0.07f, ground - s * 0.09f, x - s * 0.07f, ground - s * 0.22f)
+                close()
+            }, gold)
+            drawArc(dark, 270f, 180f, false, Offset(x + s * 0.045f, ground - s * 0.21f), Size(s * 0.06f, s * 0.07f), style = Stroke(s * 0.01f))
+            drawArc(dark, 90f, 180f, false, Offset(x - s * 0.105f, ground - s * 0.21f), Size(s * 0.06f, s * 0.07f), style = Stroke(s * 0.01f))
+            drawStar(Offset(x, ground - s * 0.16f), s * 0.025f, Color(0xFFFFF8E1), 5, 0.45f)
+            val shine = (sin(loop * 2 * PI).toFloat() + 1) / 2
+            drawStar(Offset(x + s * 0.06f, ground - s * 0.25f), s * 0.012f * (0.5f + shine), Color.White.copy(alpha = shine), 4, 0.35f)
+        }
         "toy_fishbowl" -> scale(1.4f, Offset(cx + bw * 0.78f, ground)) {
             val c = Offset(cx + bw * 0.78f, ground - s * 0.09f)
             val r = s * 0.1f
@@ -1188,6 +1246,16 @@ private fun DrawScope.drawEffect(id: String, cx: Float, cy: Float, bw: Float, bh
                 val r = s * (0.015f + (i % 3) * 0.008f)
                 drawCircle(Color(0xFFB3E5FC).copy(alpha = 0.25f * sin(t * PI).toFloat()), r, c)
                 drawCircle(Color.White.copy(alpha = 0.8f * sin(t * PI).toFloat()), r, c, style = Stroke(s * 0.004f))
+            }
+        }
+        "fx_fireflies" -> {
+            for (i in 0 until 9) {
+                val t = (loop + i / 9f) % 1f
+                val x = cx + bw * (-0.85f + i * 0.21f) + sin((t * 2 + i * 0.3f) * PI).toFloat() * s * 0.04f
+                val y = cy - bh * (0.2f + (i % 3) * 0.3f) + cos((t * 2 + i) * PI).toFloat() * s * 0.03f
+                val glow = 0.35f + 0.65f * sin(t * PI).toFloat()
+                drawCircle(Color(0xFFFFF176).copy(alpha = 0.25f * glow), s * 0.03f, Offset(x, y))
+                drawCircle(Color(0xFFFFF59D).copy(alpha = glow), s * 0.009f, Offset(x, y))
             }
         }
         "fx_confetti" -> {

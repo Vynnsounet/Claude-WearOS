@@ -271,8 +271,13 @@ class ScreensTest {
 
     @Test
     fun journal() {
-        render("journal") { Hub("Suivi", listOf("Journal", "Cycle", "Stats"), 0, {}, {}) { JournalScreen(sampleState().journal, today) {} } }
+        // Five tabs, as with sleep, measurements and cycle on: the labels must not be cut.
+        render("journal") {
+            Hub("Suivi", listOf("Journal", "Sommeil", "Mesures", "Cycle", "Stats"), 0, {}, {}) { JournalScreen(sampleState().journal, today, onOpenDay = {}) }
+        }
         compose.onNodeWithText("Mes 14 derniers jours").assertExists()
+        compose.onNodeWithText("Sommeil").assertExists()
+        compose.onNodeWithText("Mesures").assertExists()
     }
 
     @Test
@@ -606,7 +611,9 @@ class ScreensTest {
     @Test
     fun homeAsksAboutTheNight() {
         render("home_sleep_prompt") { HomeScreen(sampleState(), today.atTime(8, 0), 0, 0, {}, {}, {}, {}, animate = false) }
-        compose.onNodeWithText("Bien dormi ?").performScrollTo().assertExists()
+        // In the morning, the ritual asks about the night (no separate "Bien dormi ?" card then).
+        compose.onNodeWithText("Rituel du matin").performScrollTo().assertExists()
+        compose.onNodeWithText("Bien dormi ?").assertDoesNotExist()
     }
 
     // ── Version 1.3 ──
@@ -825,6 +832,113 @@ class ScreensTest {
             org.junit.Assert.assertTrue("${seed.toString(16)} light $onLight", onLight >= 4.5)
             org.junit.Assert.assertTrue("${seed.toString(16)} dark $onDark", onDark >= 4.5)
         }
+    }
+
+    // ── Version 1.5 ──
+
+    /** A month of use: nights, journal with answers, a few badges, rituals and challenges. */
+    private fun motivationState(): AppState {
+        val base = sleepState()
+        val journal = (0 until 40).filter { it % 3 != 2 }.map { i ->
+            val d = today.minusDays(i.toLong())
+            DayEntry(
+                d, physical = 2 + (i * 3 % 4), mental = 1 + (i * 7 % 5),
+                reflection = listOf("Une balade au soleil", "Un bon repas avec Sam", "", "Un appel de ma sœur")[i % 4],
+            )
+        }
+        var state = base.copy(
+            journal = journal,
+            game = base.game.copy(
+                growth = 120,
+                waterRewardDays = (1..4).map { today.minusDays(it.toLong()) }.toSet(),
+                cuddleDays = (0..3).map { today.minusDays(it.toLong()) }.toSet(),
+                ritualsDone = (1..3).map { com.medipote.app.domain.Rituals.key(today.minusDays(it.toLong()), com.medipote.app.domain.RitualKind.MORNING) }.toSet(),
+                bestStreak = 12,
+            ),
+        )
+        state = com.medipote.app.domain.Badges.award(state, today).first
+        return state
+    }
+
+    @Test
+    @Config(qualifiers = "w400dp-h3000dp-xhdpi")
+    fun homeV15() {
+        render("home_v15") { HomeScreen(motivationState(), today.atTime(8, 0), 0, 0, {}, {}, {}, {}, animate = false) }
+        compose.onNodeWithText("Comment ça va ?").assertExists()
+        compose.onNodeWithText("Rituel du matin").assertExists()
+        compose.onNodeWithText("Défis de la semaine").assertExists()
+        compose.onNodeWithText("Mon jardin").assertExists()
+    }
+
+    @Test
+    @Config(qualifiers = "w400dp-h3600dp-xhdpi")
+    fun badgesScreen() {
+        val state = motivationState()
+        render("badges") { com.medipote.app.ui.motivation.BadgesScreen(state, today) {} }
+        compose.onNodeWithText("Marchand de sable").assertExists()
+        compose.onNodeWithText("/ ${com.medipote.app.domain.Badges.all.size} badges", substring = true).assertExists()
+    }
+
+    private val noRitualActions = com.medipote.app.ui.motivation.RitualActions({}, {}, { _, _ -> }, {}, {}, {}, {}, {}, {})
+
+    @Test
+    @Config(qualifiers = "w400dp-h1400dp-xhdpi")
+    fun ritualMorning() {
+        val state = motivationState().let { s -> s.copy(sleep = s.sleep.filterNot { it.date == today }) }
+        render("ritual_morning") { com.medipote.app.ui.motivation.RitualScreen(state, com.medipote.app.domain.RitualKind.MORNING, today.atTime(7, 40), noRitualActions, animate = false) }
+        compose.onNodeWithText("Enregistrer ma nuit").assertExists()
+    }
+
+    @Test
+    @Config(qualifiers = "w400dp-h1400dp-xhdpi")
+    fun ritualEvening() {
+        val state = motivationState().let { s -> s.copy(treatments = emptyList()) }
+        render("ritual_evening") { com.medipote.app.ui.motivation.RitualScreen(state, com.medipote.app.domain.RitualKind.EVENING, today.atTime(21, 30), noRitualActions, animate = false) }
+        compose.onNodeWithText(com.medipote.app.domain.DailyQuestions.of(today), substring = true).assertExists()
+    }
+
+    @Test
+    @Config(qualifiers = "w400dp-h2400dp-xhdpi")
+    fun myDay() {
+        val state = motivationState()
+        render("my_day") { com.medipote.app.ui.motivation.MyDayScreen(state, today.minusDays(1), now, {}, {}, {}, {}, {}) }
+        compose.onNodeWithText("Ma journée").assertExists()
+        compose.onNodeWithText("Hier").assertExists()
+    }
+
+    @Test
+    @Config(qualifiers = "w400dp-h1500dp-xhdpi")
+    fun yearInPixels() {
+        render("year") { com.medipote.app.ui.motivation.YearScreen(motivationState(), now, {}, {}) }
+        compose.onNodeWithText("2026").assertExists()
+    }
+
+    @Test
+    fun weeklyRecapCard() {
+        val state = motivationState()
+        render("recap") {
+            com.medipote.app.ui.motivation.RecapScreen(state, com.medipote.app.domain.Challenges.weekStart(today).minusWeeks(1), now, {}, {}, animate = false)
+        }
+        compose.onNodeWithText("Ta semaine".uppercase()).assertExists()
+    }
+
+    @Test
+    fun badgeEarnedDialog() {
+        render("badge_dialog") { com.medipote.app.ui.motivation.BadgeEarnedDialog(com.medipote.app.domain.Badges.byId("sleep_7")!!, {}, {}) }
+        compose.onNodeWithText("Objet exclusif débloqué : Lucioles").assertExists()
+    }
+
+    @Test
+    fun exclusiveItems() {
+        val size = 240
+        val ids = listOf("hat_flowercrown" to "HAT", "glasses_gold" to "GLASSES", "neck_star" to "NECK", "toy_trophy" to "TOY", "fx_fireflies" to "EFFECT", "bg_dawn" to "BACKGROUND")
+        val bitmap = Bitmap.createBitmap(size * ids.size, size, Bitmap.Config.ARGB_8888)
+        ids.forEachIndexed { i, (id, slot) ->
+            val equipped = mapOf("COLOR" to "color_mint", "BACKGROUND" to if (slot == "BACKGROUND") id else "bg_meadow") + (if (slot != "BACKGROUND") mapOf(slot to id) else emptyMap())
+            val one = com.medipote.app.widget.renderPet(com.medipote.app.domain.PetMood.HAPPY, equipped, size, size)
+            android.graphics.Canvas(bitmap).drawBitmap(one, (i * size).toFloat(), 0f, null)
+        }
+        save("exclusive_items", bitmap)
     }
 
     private fun save(name: String, bitmap: Bitmap) {

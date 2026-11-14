@@ -12,7 +12,8 @@ enum class Slot(val label: String) {
     BACKGROUND("Décors"),
 }
 
-data class ShopItem(val id: String, val name: String, val slot: Slot, val price: Int)
+/** [badge]: exclusive item, won with that badge instead of being bought. */
+data class ShopItem(val id: String, val name: String, val slot: Slot, val price: Int, val badge: String? = null)
 
 object Shop {
     val items: List<ShopItem> = listOf(
@@ -81,12 +82,20 @@ object Shop {
         ShopItem("bg_city", "Ville la nuit", Slot.BACKGROUND, 250),
         ShopItem("bg_ocean", "Fonds marins", Slot.BACKGROUND, 280),
         ShopItem("bg_space", "Espace", Slot.BACKGROUND, 300),
+
+        // Exclusive: won with badges.
+        ShopItem("glasses_gold", "Lunettes dorées", Slot.GLASSES, 0, badge = "ontime_100"),
+        ShopItem("neck_star", "Médaille étoile", Slot.NECK, 0, badge = "perfect_7"),
+        ShopItem("hat_flowercrown", "Couronne de fleurs", Slot.HAT, 0, badge = "streak_30"),
+        ShopItem("fx_fireflies", "Lucioles", Slot.EFFECT, 0, badge = "sleep_7"),
+        ShopItem("toy_trophy", "Trophée", Slot.TOY, 0, badge = "challenges_4"),
+        ShopItem("bg_dawn", "Aurore", Slot.BACKGROUND, 0, badge = "journal_30"),
     )
 
     fun item(id: String): ShopItem? = items.firstOrNull { it.id == id }
 
     fun buy(game: GameState, item: ShopItem): GameState? {
-        if (item.id in game.owned || game.points < item.price) return null
+        if (item.badge != null || item.id in game.owned || game.points < item.price) return null
         return game.copy(points = game.points - item.price, owned = game.owned + item.id)
             .let { equip(it, item) }
     }

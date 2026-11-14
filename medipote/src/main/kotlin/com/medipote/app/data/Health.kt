@@ -92,10 +92,12 @@ data class DayEntry(
     val waterGlasses: Int = 0,
     /** Glasses already rewarded today, so removing and re-adding a glass doesn't pay twice. */
     val waterRewarded: Int = 0,
+    /** Answer to the question of the day. */
+    val reflection: String = "",
 ) {
     val hasJournal: Boolean
         get() = physical != null || mental != null || physicalSymptoms.isNotEmpty() || mentalSymptoms.isNotEmpty() ||
-            illness.isNotBlank() || notes.isNotBlank()
+            illness.isNotBlank() || notes.isNotBlank() || reflection.isNotBlank()
 
     val hasCycleData: Boolean get() = flow != null || cycleSymptoms.isNotEmpty() || intercourse != null
 
@@ -230,4 +232,17 @@ data class BackupSettings(
     @Serializable(with = LocalDateTimeSerializer::class) val lastAuto: LocalDateTime? = null,
     @Serializable(with = LocalDateTimeSerializer::class) val lastManual: LocalDateTime? = null,
     val lastError: String? = null,
+)
+
+// ─────────────────────────── Rituals ───────────────────────────
+
+/** Morning and evening routines: everything to note, in one short flow. */
+@Serializable
+data class RitualSettings(
+    val morningReminder: Boolean = false,
+    val morningMinute: Int = 8 * 60,
+    val eveningReminder: Boolean = false,
+    val eveningMinute: Int = 21 * 60 + 30,
+    /** A notification on Sunday evening when the week's recap is ready. */
+    val weeklyRecap: Boolean = true,
 )

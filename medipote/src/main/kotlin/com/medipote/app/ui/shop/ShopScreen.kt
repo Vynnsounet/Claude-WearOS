@@ -118,7 +118,8 @@ fun ShopScreen(game: GameState, onBuy: (ShopItem) -> Unit, onEquip: (ShopItem) -
                     }
                 }
             }
-            items(Shop.items.filter { it.slot == slot }.sortedBy { it.price }, key = { it.id }) { item ->
+            // Exclusive items (won with badges) come last.
+            items(Shop.items.filter { it.slot == slot }.sortedWith(compareBy({ it.badge != null }, { it.price })), key = { it.id }) { item ->
                 ItemCell(
                     item = item,
                     owned = item.id in game.owned,
@@ -146,7 +147,8 @@ private fun SelectionBar(game: GameState, selected: ShopItem?, onBuy: (ShopItem)
         Column(Modifier.weight(1f)) {
             Text(selected.name, style = MaterialTheme.typography.titleMedium)
             Text(
-                if (selected.price == 0) "Gratuit" else "${selected.price} points",
+                selected.badge?.let { b -> "Exclusif · badge « ${com.medipote.app.domain.Badges.byId(b)?.title} »" }
+                    ?: if (selected.price == 0) "Gratuit" else "${selected.price} points",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -158,6 +160,7 @@ private fun SelectionBar(game: GameState, selected: ShopItem?, onBuy: (ShopItem)
             owned && equipped && removable -> OutlinedButton(onClick = { onEquip(selected) }) { Text("Retirer") }
             owned && equipped -> FilledTonalButton(onClick = {}, enabled = false) { Text("Équipé") }
             owned -> FilledTonalButton(onClick = { onEquip(selected) }) { Text("Équiper") }
+            selected.badge != null -> FilledTonalButton(onClick = {}, enabled = false) { Text("À gagner") }
             game.points >= selected.price -> Button(onClick = { onBuy(selected) }) { Text("Acheter") }
             else -> FilledTonalButton(onClick = {}, enabled = false) {
                 Text("Encore ${selected.price - game.points} pts")
@@ -194,6 +197,11 @@ private fun ItemCell(item: ShopItem, owned: Boolean, equipped: Boolean, selected
                         if (equipped) "Équipé" else "Possédé",
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.primary,
+                    )
+                    item.badge != null -> Text(
+                        "🏅 ${com.medipote.app.domain.Badges.byId(item.badge)?.emoji ?: ""} badge",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     else -> {
                         Icon(

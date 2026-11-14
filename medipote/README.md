@@ -25,6 +25,14 @@ l'habiller dans la boutique.
 |---|---|---|---|---|
 | ![](docs/home_custom.png) | ![](docs/home_black.png) | ![](docs/appearance.png) | ![](docs/streak.png) | ![](docs/dose_history.png) |
 
+| Accueil 1.5 | Badges et défis | Rituel du matin | Ma journée | Année en pixels |
+|---|---|---|---|---|
+| ![](docs/home_v15.png) | ![](docs/badges.png) | ![](docs/ritual.png) | ![](docs/my_day.png) | ![](docs/year.png) |
+
+Objets exclusifs gagnés avec les badges :
+
+![](docs/exclusive_items.png)
+
 Le compagnon grandit avec la régularité (graine, pousse, bouton, fleur, floraison) :
 
 ![](docs/pet_stages.png)
@@ -176,6 +184,31 @@ Profil médical et paramètres sont accessibles en haut à droite.
   du « Bonjour », ta phrase du jour en haut de l'accueil, **ordre et affichage
   des blocs de l'accueil** (compagnon, prises, si besoin, mesures, eau,
   invitations, rendez-vous), animations de célébration. Aperçu en direct.
+- **Rituels du matin et du soir** : un seul enchaînement de 30 secondes avec
+  le compagnon. Le matin : la nuit (heures, nombre de réveils, bonne ?
+  reposante ?), les prises du matin, l'humeur et la forme. Le soir : les prises
+  restantes, le journal (humeur, question du jour, note), l'eau. +5 points par
+  rituel et par jour ; carte sur l'accueil au bon moment, rappels facultatifs.
+- **Humeur en un geste et question du jour** : 5 visages sur l'accueil, et une
+  question douce qui change chaque jour (« Qu'est-ce qui t'a fait du bien
+  aujourd'hui ? »), à laquelle on répond en une ligne.
+- **Ma journée** : tout ce qui a été noté un jour (humeur, réponse, symptômes,
+  prises, si besoin, nuit, eau, cycle, mesures, rendez-vous) sur une page,
+  jour après jour.
+- **Mon année en pixels** : une case par jour, colorée selon l'humeur, la forme,
+  le sommeil ou les prises ; touche un jour pour l'ouvrir.
+- **Badges** : 21 badges (prises à l'heure, séries, journal, nuits, eau, rituels,
+  défis, mesures…), dont 6 qui débloquent un objet exclusif pour le compagnon
+  (couronne de fleurs, lunettes dorées, médaille étoile, trophée, lucioles,
+  décor Aurore).
+- **Défis de la semaine** : 3 défis doux et facultatifs chaque lundi (« Noter
+  5 nuits »…), des points en plus s'ils sont réussis, rien sinon.
+- **Joker de série** : un jour oublié par semaine ne casse pas la série.
+- **Récap de la semaine** : le dimanche soir, quelques cartes à faire défiler
+  (prises, nuits, humeur, meilleur jour, réussites) et un mot du compagnon.
+- **Jardin** : une fleur par jour où le journal ou la nuit a été noté.
+- **Compagnon plus vivant** : il réagit à ta nuit (« Nuit difficile… on y va
+  doucement ») et à ton journal.
 - **Série quotidienne** : à la première ouverture du jour, une animation
   (flamme qui grandit, compteur de jours, les 7 derniers jours, confettis,
   points gagnés, prochain palier). Après une interruption : « Nouveau départ »,
