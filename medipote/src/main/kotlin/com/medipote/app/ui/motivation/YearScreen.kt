@@ -103,7 +103,7 @@ private fun legend(mode: PixelMode) = when (mode) {
 /** The year in pixels: one square per day, coloured by the day's mood, form, sleep or doses. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun YearScreen(state: AppState, now: LocalDateTime, onOpenDay: (LocalDate) -> Unit, onBack: () -> Unit) {
+fun YearScreen(state: AppState, now: LocalDateTime, onOpenDay: (LocalDate) -> Unit, onBack: () -> Unit, embedded: Boolean = false) {
     val today = now.toLocalDate()
     var year by rememberSaveable { mutableIntStateOf(today.year) }
     var mode by rememberSaveable { mutableStateOf(PixelMode.MOOD) }
@@ -123,8 +123,9 @@ fun YearScreen(state: AppState, now: LocalDateTime, onOpenDay: (LocalDate) -> Un
     val ring = MaterialTheme.colorScheme.onSurface
 
     Scaffold(
+        contentWindowInsets = if (embedded) androidx.compose.foundation.layout.WindowInsets(0) else androidx.compose.material3.ScaffoldDefaults.contentWindowInsets,
         topBar = {
-            TopAppBar(
+            if (!embedded) TopAppBar(
                 title = { Text("Mon année en pixels") },
                 navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, "Retour") } },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background),

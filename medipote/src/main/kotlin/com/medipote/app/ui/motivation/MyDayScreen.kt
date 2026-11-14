@@ -62,6 +62,7 @@ fun MyDayScreen(
     onEditSleep: () -> Unit,
     onOpenDoses: () -> Unit,
     onBack: () -> Unit,
+    embedded: Boolean = false,
 ) {
     val today = now.toLocalDate()
     val entry = state.entryFor(date)
@@ -73,8 +74,9 @@ fun MyDayScreen(
     val status = AppTheme.status
 
     Scaffold(
+        contentWindowInsets = if (embedded) androidx.compose.foundation.layout.WindowInsets(0) else androidx.compose.material3.ScaffoldDefaults.contentWindowInsets,
         topBar = {
-            TopAppBar(
+            if (!embedded) TopAppBar(
                 title = { Text("Ma journée") },
                 navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, "Retour") } },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background),

@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
@@ -188,21 +189,21 @@ fun ChallengeRow(c: ChallengeStatus) {
 
 /** A little garden: one flower per day where the journal or the night was noted. */
 @Composable
-fun GardenCard(garden: List<Pair<LocalDate, Bloom>>, petName: String) {
+fun GardenCard(garden: List<Pair<LocalDate, Bloom>>, petName: String, title: Boolean = true) {
     val count = garden.count { it.second != Bloom.NONE }
     val primary = MaterialTheme.colorScheme.primary
     val soil = MaterialTheme.colorScheme.surfaceContainerHighest
-    SectionTitle("Mon jardin") {
-        Text("$count fleur${if (count > 1) "s" else ""} en 4 semaines", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    if (title) SectionTitle("Mon jardin") {
+        Text("$count fleur${if (count > 1) "s" else ""} en ${garden.size / 7} semaines", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
     Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow), modifier = Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Canvas(
-                Modifier.fillMaxWidth().height(96.dp).semantics { contentDescription = "Jardin : $count fleurs sur les 28 derniers jours" },
+                Modifier.fillMaxWidth().height(48.dp * ((garden.size + 13) / 14)).semantics { contentDescription = "Jardin : $count fleurs sur les ${garden.size} derniers jours" },
             ) {
                 val cols = 14
                 val cw = size.width / cols
-                val rowH = size.height / 2
+                val rowH = size.height / ((garden.size + cols - 1) / cols)
                 garden.forEachIndexed { i, (_, bloom) ->
                     val col = i % cols
                     val row = i / cols
@@ -264,6 +265,31 @@ fun RecapReadyCard(onOpen: () -> Unit) {
             Column(Modifier.weight(1f)) {
                 Text("Ton récap de la semaine est prêt", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onTertiaryContainer)
                 Text("Tes prises, tes nuits, ton humeur, en quelques cartes.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onTertiaryContainer)
+            }
+        }
+    }
+}
+
+/** The garden tab: eight weeks of flowers, and what they mean. */
+@Composable
+fun GardenScreen(state: com.medipote.app.data.AppState, today: LocalDate) {
+    val garden = remember(state.journal, state.sleep, today) { com.medipote.app.domain.Garden.of(state, today, 56) }
+    val month = garden.takeLast(28)
+    Column(
+        Modifier.fillMaxWidth().verticalScroll(androidx.compose.foundation.rememberScrollState()).padding(horizontal = 16.dp, vertical = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+    ) {
+        Text(
+            "${garden.count { it.second != Bloom.NONE }} fleurs en 8 semaines",
+            style = MaterialTheme.typography.headlineSmall,
+        )
+        GardenCard(garden, state.game.petName, title = false)
+        Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow), modifier = Modifier.fillMaxWidth()) {
+            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text("Ces 4 dernières semaines", style = MaterialTheme.typography.titleMedium)
+                Text("📖 ${month.count { it.second == Bloom.JOURNAL || it.second == Bloom.BOTH }} jours de journal", style = MaterialTheme.typography.bodyLarge)
+                Text("🌙 ${month.count { it.second == Bloom.SLEEP || it.second == Bloom.BOTH }} nuits notées", style = MaterialTheme.typography.bodyLarge)
+                Text("🌷 ${month.count { it.second == Bloom.BOTH }} jours avec les deux", style = MaterialTheme.typography.bodyLarge)
             }
         }
     }

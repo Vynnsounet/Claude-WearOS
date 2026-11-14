@@ -130,12 +130,6 @@ fun JournalScreen(
                 }
             }
         }
-        item {
-            androidx.compose.foundation.layout.Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                androidx.compose.material3.FilledTonalButton(onClick = { onOpenMyDay(today) }, modifier = Modifier.weight(1f)) { Text("📅  Ma journée") }
-                androidx.compose.material3.FilledTonalButton(onClick = onOpenYear, modifier = Modifier.weight(1f)) { Text("🎨  Mon année") }
-            }
-        }
         item { MoodHeatmap(journal.associateBy { it.date }, today, onOpenMyDay) }
         if (entries.isNotEmpty()) item { SectionTitle("Historique") }
         items(entries, key = { it.date.toString() }) { EntryCard(it) { onOpenMyDay(it.date) } }

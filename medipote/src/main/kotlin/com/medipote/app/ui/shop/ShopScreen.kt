@@ -61,7 +61,7 @@ import com.medipote.app.ui.theme.AppTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ShopScreen(game: GameState, onBuy: (ShopItem) -> Unit, onEquip: (ShopItem) -> Unit, animate: Boolean = true) {
+fun ShopScreen(game: GameState, onBuy: (ShopItem) -> Unit, onEquip: (ShopItem) -> Unit, animate: Boolean = true, embedded: Boolean = false) {
     var slot by rememberSaveable { mutableStateOf(Slot.HAT) }
     var selectedId by rememberSaveable { mutableStateOf<String?>(null) }
     val selected = selectedId?.let(Shop::item)
@@ -71,8 +71,9 @@ fun ShopScreen(game: GameState, onBuy: (ShopItem) -> Unit, onEquip: (ShopItem) -
     }
 
     Scaffold(
+        contentWindowInsets = if (embedded) androidx.compose.foundation.layout.WindowInsets(0) else androidx.compose.material3.ScaffoldDefaults.contentWindowInsets,
         topBar = {
-            TopAppBar(
+            if (!embedded) TopAppBar(
                 title = { Text("Boutique") },
                 actions = { PointsBadge(game.points, Modifier.padding(end = 16.dp)) },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background),
@@ -86,6 +87,11 @@ fun ShopScreen(game: GameState, onBuy: (ShopItem) -> Unit, onEquip: (ShopItem) -
             horizontalArrangement = Arrangement.spacedBy(10.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
+            if (embedded) {
+                item(span = { GridItemSpan(maxLineSpan) }) {
+                    androidx.compose.foundation.layout.Row(Modifier.padding(top = 12.dp)) { PointsBadge(game.points) }
+                }
+            }
             item(span = { GridItemSpan(maxLineSpan) }) {
                 Card(
                     shape = MaterialTheme.shapes.extraLarge,

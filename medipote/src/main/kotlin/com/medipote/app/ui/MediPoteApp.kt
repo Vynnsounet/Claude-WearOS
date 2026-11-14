@@ -20,6 +20,15 @@ import androidx.compose.material.icons.outlined.Insights
 import androidx.compose.material.icons.outlined.Medication
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.layout.height
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.draw.alpha
+import androidx.compose.material.icons.rounded.Pets
+import androidx.compose.material.icons.outlined.Pets
+import androidx.compose.material.icons.automirrored.rounded.MenuBook
+import androidx.compose.material.icons.automirrored.outlined.MenuBook
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material.icons.outlined.Storefront
@@ -109,18 +118,24 @@ private data class Tab(val route: String, val label: String, val icon: ImageVect
 
 private val TABS = listOf(
     Tab("home", "Accueil", Icons.Outlined.Home, Icons.Rounded.Home),
-    Tab("treatments", "Traitements", Icons.Outlined.Medication, Icons.Rounded.Medication),
-    Tab("suivi", "Suivi", Icons.Outlined.Insights, Icons.Rounded.Insights),
-    Tab("sante", "Santé", Icons.Outlined.FavoriteBorder, Icons.Rounded.Favorite),
-    Tab("shop", "Boutique", Icons.Outlined.Storefront, Icons.Rounded.Storefront),
+    Tab("treatments", "Soins", Icons.Outlined.Medication, Icons.Rounded.Medication),
+    Tab("suivi", "Suivi", Icons.AutoMirrored.Outlined.MenuBook, Icons.AutoMirrored.Rounded.MenuBook),
+    Tab("bilan", "Bilan", Icons.Outlined.Insights, Icons.Rounded.Insights),
+    Tab("compagnon", "Compagnon", Icons.Outlined.Pets, Icons.Rounded.Pets),
 )
 
-/** A top-level tab split into sub-tabs ("Journal | Cycle | Stats"). */
+/** A sub-tab of a hub: an emoji in the tab row, its name under the hub's title. */
+data class HubTab(val emoji: String, val label: String)
+
+/**
+ * A top-level space split into sub-tabs shown as emojis (always fit, even five of them), the
+ * name of the open one written under the title.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun Hub(
     title: String,
-    tabs: List<String>,
+    tabs: List<HubTab>,
     initial: Int,
     onOpenProfile: () -> Unit,
     onOpenSettings: () -> Unit,
@@ -131,28 +146,38 @@ fun Hub(
         topBar = {
             Column {
                 TopAppBar(
-                    title = { Text(title) },
+                    title = {
+                        Column {
+                            Text(title)
+                            if (tabs.size > 1) {
+                                Text(
+                                    tabs[selected].label,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.primary,
+                                )
+                            }
+                        }
+                    },
                     actions = {
                         IconButton(onClick = onOpenProfile) { Icon(Icons.Outlined.AccountCircle, "Profil médical") }
                         IconButton(onClick = onOpenSettings) { Icon(Icons.Outlined.Settings, "Paramètres") }
                     },
                     colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background),
                 )
-                if (tabs.size > 4) {
-                    // Many tabs (Journal, Sommeil, Mesures, Cycle, Stats): scroll rather than cut the labels.
-                    androidx.compose.material3.PrimaryScrollableTabRow(
-                        selectedTabIndex = selected,
-                        containerColor = MaterialTheme.colorScheme.background,
-                        edgePadding = 8.dp,
-                    ) {
-                        tabs.forEachIndexed { i, label ->
-                            Tab(selected = selected == i, onClick = { selected = i }, text = { Text(label, maxLines = 1, softWrap = false) })
-                        }
-                    }
-                } else if (tabs.size > 1) {
+                if (tabs.size > 1) {
                     PrimaryTabRow(selectedTabIndex = selected, containerColor = MaterialTheme.colorScheme.background) {
-                        tabs.forEachIndexed { i, label ->
-                            Tab(selected = selected == i, onClick = { selected = i }, text = { Text(label, maxLines = 1, softWrap = false) })
+                        tabs.forEachIndexed { i, tab ->
+                            Tab(
+                                selected = selected == i,
+                                onClick = { selected = i },
+                                modifier = Modifier.height(52.dp).semantics { contentDescription = tab.label },
+                            ) {
+                                Text(
+                                    tab.emoji,
+                                    fontSize = 24.sp,
+                                    modifier = Modifier.alpha(if (selected == i) 1f else 0.55f),
+                                )
+                            }
                         }
                     }
                 }
@@ -382,10 +407,16 @@ fun MediPoteApp(vm: AppViewModel) {
                     )
                 }
                 composable("treatments") {
-                    val tabs = if (menstruating || hasPill) listOf("Médicaments", "Pilule") else listOf("Médicaments")
-                    Hub("Traitements", tabs, 0, openProfile, openSettings) { i ->
-                        when (i) {
-                            0 -> TreatmentsScreen(
+                    // Soins: everything about care, medication first.
+                    val tabs = listOfNotNull(
+                        HubTab("💊", "Traitements"),
+                        HubTab("🌼", "Pilule").takeIf { menstruating || hasPill },
+                        HubTab("📅", "Agenda"),
+                        HubTab("📂", "Carnet de santé"),
+                    )
+                    Hub("Soins", tabs, 0, openProfile, openSettings) { i ->
+                        when (tabs[i].label) {
+                            "Traitements" -> TreatmentsScreen(
                                 state.treatments, today,
                                 onAdd = { nav.navigate("search") },
                                 onEdit = { nav.navigate(if (it.pill != null) "pill_setup" else "editor?treatment=${it.id}") },
@@ -396,59 +427,19 @@ fun MediPoteApp(vm: AppViewModel) {
                                 onLogPrn = { nav.navigate("prn_log/${it.id}") },
                                 onPrnStats = { nav.navigate("prn_stats/${it.id}") },
                             )
-                            else -> PillScreen(
+                            "Pilule" -> PillScreen(
                                 state, now,
                                 onSetup = { nav.navigate("pill_setup") },
                                 onTake = vm::give,
                                 onNewPack = { date -> state.treatments.firstOrNull { it.pill != null }?.let { vm.startNewPillPack(it.id, date) } },
                                 onTakeEarly = vm::giveEarly,
                             )
-                        }
-                    }
-                }
-                composable("suivi") {
-                    val tabs = listOfNotNull(
-                        "Journal", "Sommeil",
-                        "Mesures".takeIf { state.settings.measures.isNotEmpty() },
-                        "Cycle".takeIf { menstruating }, "Stats",
-                    )
-                    Hub("Suivi", tabs, 0, openProfile, openSettings) { i ->
-                        when (tabs[i]) {
-                            "Journal" -> JournalScreen(
-                                state.journal, today,
-                                onOpenDay = { nav.navigate("day/$it") },
-                                onOpenMyDay = { nav.navigate("myday/$it") },
-                                onOpenYear = { nav.navigate("year") },
-                            )
-                            "Mesures" -> com.medipote.app.ui.measures.MeasuresScreen(
-                                state, now,
-                                onAdd = { nav.navigate("measure_log/${it.name}") },
-                                onOpen = { nav.navigate("measure/${it.name}") },
-                                onSettings = openSettings,
-                            )
-                            "Sommeil" -> SleepScreen(
-                                state, now,
-                                onLog = { nav.navigate(if (state.sleep.any { it.date == today }) "sleep_log?new=true" else "sleep_log") },
-                                onOpen = { nav.navigate("sleep_log?date=${it.date}") },
-                            )
-                            "Cycle" -> CycleScreen(
-                                state.profile?.cycle, state.journal, today, vm::logPeriod, vm::updateCycle,
-                                onOpenDay = { nav.navigate("day/$it") }, embedded = true,
-                            )
-                            else -> StatsScreen(state, now, embedded = true, onOpenPrn = { nav.navigate("prn_stats/$it") }, onReport = { nav.navigate("report") })
-                        }
-                    }
-                }
-                composable("sante") {
-                    Hub("Santé", listOf("Agenda", "Documents"), 0, openProfile, openSettings) { i ->
-                        if (i == 0) {
-                            AgendaScreen(
+                            "Agenda" -> AgendaScreen(
                                 state.appointments, now,
                                 onNew = { date -> nav.navigate("appointment?date=${date ?: today}") },
                                 onOpen = { nav.navigate("appointment?id=${it.id}") },
                             )
-                        } else {
-                            DocumentsScreen(
+                            else -> DocumentsScreen(
                                 state.documents,
                                 onTakePhoto = {
                                     val file = DocumentStore.newPhotoFile(context)
@@ -461,7 +452,70 @@ fun MediPoteApp(vm: AppViewModel) {
                         }
                     }
                 }
-                composable("shop") { ShopScreen(state.game, vm::buy, vm::equip) }
+                composable("suivi") {
+                    // Suivi: what's noted day after day.
+                    val tabs = listOfNotNull(
+                        HubTab("📖", "Journal"),
+                        HubTab("🌙", "Sommeil"),
+                        HubTab("🩺", "Mesures").takeIf { state.settings.measures.isNotEmpty() },
+                        HubTab("🌸", "Cycle").takeIf { menstruating },
+                    )
+                    Hub("Suivi", tabs, 0, openProfile, openSettings) { i ->
+                        when (tabs[i].label) {
+                            "Journal" -> JournalScreen(
+                                state.journal, today,
+                                onOpenDay = { nav.navigate("day/$it") },
+                                onOpenMyDay = { nav.navigate("myday/$it") },
+                            )
+                            "Mesures" -> com.medipote.app.ui.measures.MeasuresScreen(
+                                state, now,
+                                onAdd = { nav.navigate("measure_log/${it.name}") },
+                                onOpen = { nav.navigate("measure/${it.name}") },
+                                onSettings = openSettings,
+                            )
+                            "Sommeil" -> SleepScreen(
+                                state, now,
+                                onLog = { nav.navigate(if (state.sleep.any { it.date == today }) "sleep_log?new=true" else "sleep_log") },
+                                onOpen = { nav.navigate("sleep_log?date=${it.date}") },
+                            )
+                            else -> CycleScreen(
+                                state.profile?.cycle, state.journal, today, vm::logPeriod, vm::updateCycle,
+                                onOpenDay = { nav.navigate("day/$it") }, embedded = true,
+                            )
+                        }
+                    }
+                }
+                composable("bilan") {
+                    // Bilan: looking back.
+                    val tabs = listOf(HubTab("📊", "Statistiques"), HubTab("🗓️", "Jour par jour"), HubTab("🎨", "Mon année"))
+                    var day by rememberSaveable { mutableStateOf(today) }
+                    Hub("Bilan", tabs, 0, openProfile, openSettings) { i ->
+                        when (i) {
+                            0 -> StatsScreen(state, now, embedded = true, onOpenPrn = { nav.navigate("prn_stats/$it") }, onReport = { nav.navigate("report") })
+                            1 -> com.medipote.app.ui.motivation.MyDayScreen(
+                                state, day, now,
+                                onDate = { day = it },
+                                onEditJournal = { nav.navigate("day/$day") },
+                                onEditSleep = { nav.navigate("sleep_log?date=$day") },
+                                onOpenDoses = { nav.navigate("history/$day") },
+                                onBack = {},
+                                embedded = true,
+                            )
+                            else -> com.medipote.app.ui.motivation.YearScreen(state, now, onOpenDay = { nav.navigate("myday/$it") }, onBack = {}, embedded = true)
+                        }
+                    }
+                }
+                composable("compagnon") {
+                    // Compagnon: the game side.
+                    val tabs = listOf(HubTab("🛍️", "Boutique"), HubTab("🏅", "Badges et défis"), HubTab("🌷", "Jardin"))
+                    Hub(state.game.petName, tabs, 0, openProfile, openSettings) { i ->
+                        when (i) {
+                            0 -> ShopScreen(state.game, vm::buy, vm::equip, embedded = true)
+                            1 -> com.medipote.app.ui.motivation.BadgesScreen(state, today, onBack = {}, embedded = true)
+                            else -> com.medipote.app.ui.motivation.GardenScreen(state, today)
+                        }
+                    }
+                }
 
                 // ── Treatments flow ──
                 composable("search") {
@@ -594,7 +648,7 @@ fun MediPoteApp(vm: AppViewModel) {
                         )
                     }
                 }
-                composable("badges") { com.medipote.app.ui.motivation.BadgesScreen(state, today) { nav.popBackStack() } }
+                composable("badges") { com.medipote.app.ui.motivation.BadgesScreen(state, today, onBack = { nav.popBackStack() }) }
                 composable("ritual/{kind}") { entry ->
                     val kind = entry.arguments?.getString("kind")?.let { runCatching { com.medipote.app.domain.RitualKind.valueOf(it) }.getOrNull() }
                         ?: com.medipote.app.domain.Rituals.current(now) ?: com.medipote.app.domain.RitualKind.EVENING
@@ -821,7 +875,7 @@ fun MediPoteApp(vm: AppViewModel) {
                 onOpenShop = {
                     com.medipote.app.domain.Badges.reward(badge.id)?.let(vm::equip)
                     badgeQueue.removeAt(0)
-                    nav.navigate("shop") { launchSingleTop = true }
+                    nav.navigate("compagnon") { launchSingleTop = true }
                 },
             )
         }

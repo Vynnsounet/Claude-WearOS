@@ -49,11 +49,12 @@ import java.time.LocalDate
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun BadgesScreen(state: AppState, today: LocalDate, onBack: () -> Unit) {
+fun BadgesScreen(state: AppState, today: LocalDate, onBack: () -> Unit, embedded: Boolean = false) {
     val earned = state.game.badges
     Scaffold(
+        contentWindowInsets = if (embedded) androidx.compose.foundation.layout.WindowInsets(0) else androidx.compose.material3.ScaffoldDefaults.contentWindowInsets,
         topBar = {
-            TopAppBar(
+            if (!embedded) TopAppBar(
                 title = { Text("Badges et défis") },
                 navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, "Retour") } },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background),

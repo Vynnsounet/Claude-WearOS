@@ -264,7 +264,9 @@ fun AppearanceScreen(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                 )
+                // Challenges and garden have their own place in the companion space.
                 val order = (look.homeOrder + HomeSection.entries.filter { it !in look.homeOrder }).distinct()
+                    .filter { it != HomeSection.CHALLENGES && it != HomeSection.GARDEN }
                 order.forEachIndexed { i, section ->
                     Row(Modifier.fillMaxWidth().padding(start = 8.dp), verticalAlignment = Alignment.CenterVertically) {
                         Text(section.emoji, style = MaterialTheme.typography.titleMedium)

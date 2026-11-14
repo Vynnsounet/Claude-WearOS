@@ -39,13 +39,21 @@ Le compagnon grandit avec la régularité (graine, pousse, bouton, fleur, florai
 
 ## Navigation
 
-| Onglet | Contenu |
+Cinq espaces en bas de l'écran ; dans chacun, des sous-onglets en emojis (le nom
+de celui qui est ouvert s'affiche sous le titre, et chaque emoji est nommé pour
+les lecteurs d'écran).
+
+| Espace | Sous-onglets |
 |---|---|
-| **Accueil** | Compagnon, prises du jour, hydratation, journal du jour, prochain rendez-vous, alerte de stock |
-| **Traitements** | *Médicaments* (liste, stock, rachat) · *Pilule* (plaquette, semaine de pause) |
-| **Suivi** | *Journal* · *Sommeil* · *Cycle* (si activé dans le profil) · *Stats* |
-| **Santé** | *Agenda* des rendez-vous · *Documents* (carnet de santé) |
-| **Boutique** | Accessoires du compagnon |
+| **Accueil** | Compagnon, humeur et question du jour, rituel, prises du jour, si besoin, mesures, eau, rendez-vous (ordre et affichage au choix) |
+| **Soins** | 💊 Traitements · 🌼 Pilule (si concernée) · 📅 Agenda · 📂 Carnet de santé |
+| **Suivi** | 📖 Journal · 🌙 Sommeil · 🩺 Mesures (si activées) · 🌸 Cycle (si activé) |
+| **Bilan** | 📊 Statistiques · 🗓️ Jour par jour · 🎨 Mon année |
+| **Compagnon** | 🛍️ Boutique · 🏅 Badges et défis · 🌷 Jardin |
+
+| Suivi | Bilan | Compagnon |
+|---|---|---|
+| ![](docs/hub_suivi.png) | ![](docs/hub_bilan.png) | ![](docs/hub_companion.png) |
 
 Profil médical et paramètres sont accessibles en haut à droite.
 

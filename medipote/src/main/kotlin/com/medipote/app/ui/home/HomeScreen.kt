@@ -177,7 +177,7 @@ fun HomeScreen(
                 .padding(padding)
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                 StreakBadge(state.game.streak)
@@ -194,6 +194,16 @@ fun HomeScreen(
                         modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
                     )
                 }
+            }
+            run {
+                val challenges = remember(state, now.toLocalDate()) { com.medipote.app.domain.Challenges.status(state, now.toLocalDate()) }
+                val flowers = remember(state.journal, state.sleep, now.toLocalDate()) { com.medipote.app.domain.Garden.flowers(state, now.toLocalDate()) }
+                Text(
+                    "🎯 Défis ${challenges.count { it.complete }}/${challenges.size}   ·   🌷 $flowers fleurs   ·   ${state.game.petName} ›",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.clip(MaterialTheme.shapes.small).clickable(onClick = onOpenBadges).padding(vertical = 2.dp),
+                )
             }
             com.medipote.app.domain.Recaps.pending(state, now)?.let { week -> com.medipote.app.ui.motivation.RecapReadyCard { onOpenRecap(week) } }
             if (notificationsBlocked && state.settings.notificationsEnabled) NotificationsBanner(onFixNotifications)
@@ -313,14 +323,8 @@ fun HomeScreen(
                 HomeSection.RITUAL -> com.medipote.app.domain.Rituals.current(now)?.let { kind ->
                     if (!com.medipote.app.domain.Rituals.done(state.game, now, kind)) com.medipote.app.ui.motivation.RitualCard(kind) { onRitual(kind) }
                 }
-                HomeSection.CHALLENGES -> com.medipote.app.ui.motivation.ChallengesCard(
-                    remember(state, now.toLocalDate()) { com.medipote.app.domain.Challenges.status(state, now.toLocalDate()) },
-                    onOpenBadges,
-                )
-                HomeSection.GARDEN -> com.medipote.app.ui.motivation.GardenCard(
-                    remember(state.journal, state.sleep, now.toLocalDate()) { com.medipote.app.domain.Garden.of(state, now.toLocalDate()) },
-                    state.game.petName,
-                )
+                // Shown in the companion space; on home, only a line under the streak.
+                HomeSection.CHALLENGES, HomeSection.GARDEN -> Unit
                 HomeSection.APPOINTMENT -> state.appointments
                     .filter { !it.dateTime.isBefore(now.minusHours(1)) && it.dateTime.isBefore(now.plusDays(8)) }
                     .minByOrNull { it.dateTime }

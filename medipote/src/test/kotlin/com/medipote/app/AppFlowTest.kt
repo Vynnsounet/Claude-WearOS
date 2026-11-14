@@ -82,12 +82,15 @@ class AppFlowTest {
         }
 
         // Tabs are reachable
-        compose.onNodeWithText("Suivi").performClick()
-        compose.onNodeWithText("Stats").performClick()
+        compose.onNodeWithText("Bilan").performClick()
         compose.onNodeWithText("14 derniers jours").assertExists()
-        compose.onNodeWithText("Santé").performClick()
+        compose.onNodeWithText("Soins").performClick()
+        compose.onNodeWithContentDescription("Agenda").performClick() // sub-tabs are emojis, named for accessibility
         compose.onNodeWithText("À venir").assertExists()
-        compose.onNodeWithText("Boutique").performClick()
+        compose.onNodeWithText("Suivi").performClick()
+        compose.onNodeWithContentDescription("Sommeil").performClick()
+        compose.onNodeWithText("Comment as-tu dormi cette nuit ?").assertExists()
+        compose.onNodeWithText("Compagnon").performClick()
         compose.onNodeWithText("Touche un objet", substring = true).assertExists()
         compose.onNodeWithText("Accueil").performClick()
         compose.onNodeWithContentDescription("Paramètres").performClick()

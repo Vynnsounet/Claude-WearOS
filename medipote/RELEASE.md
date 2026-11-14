@@ -66,6 +66,14 @@ L'optimiseur de R8 reste désactivé (`-dontoptimize`) : APK de 3,8 Mo au lieu d
 le dex livré peut être reconverti et exécuté hors appareil pour vérification (voir plus bas),
 ce que l'optimiseur empêche. Il pourra être réactivé après des essais sur téléphone.
 
+### 1.6.0
+
+- Navigation réorganisée en cinq espaces : Accueil, Soins (traitements, pilule, agenda,
+  carnet), Suivi (journal, sommeil, mesures, cycle), Bilan (stats, jour par jour, année),
+  Compagnon (boutique, badges et défis, jardin).
+- Sous-onglets en emojis (plus jamais de mots coupés), nom de l'onglet ouvert sous le titre.
+- Accueil plus aéré : plus d'espace entre les blocs, défis et jardin résumés en une ligne.
+
 ### 1.5.0
 
 - Badges (21, dont 6 avec un objet exclusif dessiné), défis de la semaine, joker de série.
