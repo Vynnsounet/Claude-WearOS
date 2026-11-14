@@ -92,6 +92,7 @@ fun AppearanceScreen(
     dynamicColorAvailable: Boolean,
     onChange: ((Settings) -> Settings) -> Unit,
     onBack: () -> Unit,
+    onOpenHomeLayout: () -> Unit = {},
 ) {
     val look = settings.look
     fun updateLook(f: (Look) -> Look) = onChange { it.copy(look = f(it.look)) }
@@ -255,39 +256,10 @@ fun AppearanceScreen(
                 ) { v -> updateLook { it.copy(celebrations = v) } }
             }
 
-            // ── Home screen ──
+            // ── Home screen: its own page ──
             SectionTitle("Accueil")
-            Panel(padding = 8) {
-                Text(
-                    "Choisis ce qui s'affiche et dans quel ordre.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                )
-                // Challenges and garden have their own place in the companion space.
-                val order = (look.homeOrder + HomeSection.entries.filter { it !in look.homeOrder }).distinct()
-                    .filter { it != HomeSection.CHALLENGES && it != HomeSection.GARDEN }
-                order.forEachIndexed { i, section ->
-                    Row(Modifier.fillMaxWidth().padding(start = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Text(section.emoji, style = MaterialTheme.typography.titleMedium)
-                        Spacer(Modifier.width(10.dp))
-                        Text(section.label, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f), maxLines = 2, overflow = TextOverflow.Ellipsis)
-                        IconButton(onClick = { updateLook { it.copy(homeOrder = order.move(i, i - 1)) } }, enabled = i > 0) {
-                            Icon(Icons.Rounded.KeyboardArrowUp, "Monter ${section.label}")
-                        }
-                        IconButton(onClick = { updateLook { it.copy(homeOrder = order.move(i, i + 1)) } }, enabled = i < order.lastIndex) {
-                            Icon(Icons.Rounded.KeyboardArrowDown, "Descendre ${section.label}")
-                        }
-                        Switch(
-                            checked = section !in look.hiddenSections,
-                            onCheckedChange = { on -> updateLook { it.copy(hiddenSections = if (on) it.hiddenSections - section else it.hiddenSections + section) } },
-                            modifier = Modifier.semantics { contentDescription = "Afficher ${section.label}" },
-                        )
-                    }
-                }
-                TextButton(onClick = { updateLook { it.copy(homeOrder = HomeSection.entries, hiddenSections = emptySet()) } }) {
-                    Text("Ordre par défaut")
-                }
+            FilledTonalButton(onClick = onOpenHomeLayout, modifier = Modifier.fillMaxWidth()) {
+                Text("🏠  Choisir ce qui s'affiche sur l'accueil")
             }
 
             FilledTonalButton(
@@ -299,7 +271,7 @@ fun AppearanceScreen(
     }
 }
 
-private fun <T> List<T>.move(from: Int, to: Int): List<T> {
+internal fun <T> List<T>.move(from: Int, to: Int): List<T> {
     if (to !in indices) return this
     return toMutableList().apply { add(to, removeAt(from)) }
 }

@@ -114,7 +114,7 @@ fun TreatmentEditorScreen(
     var withFood by remember { mutableStateOf(existing?.withFood ?: false) }
     var notes by remember { mutableStateOf(existing?.notes.orEmpty()) }
     var editingTime by remember { mutableStateOf<Int?>(null) }
-    var showInfo by remember { mutableStateOf(existing == null && drug != null) }
+    var showInfo by remember { mutableStateOf(false) }
     var confirmDelete by remember { mutableStateOf(false) }
     var trackStock by remember { mutableStateOf(existing?.stock != null) }
     var stockText by remember { mutableStateOf(existing?.stock?.let { if (it % 1.0 == 0.0) it.toInt().toString() else it.toString().replace('.', ',') }.orEmpty()) }
@@ -153,6 +153,24 @@ fun TreatmentEditorScreen(
         2 -> startDate.plusDays(durationDays - 1L)
         else -> endDate
     }
+    // Shown folded under "Plus d'options", with a summary of what's set.
+    val hasOptions = remember {
+        existing != null && (existing.steps.isNotEmpty() || existing.everyDays > 1 || existing.daysOfWeek.size < 7 || existing.endDate != null ||
+            existing.stock != null || existing.withFood || existing.notes.isNotBlank() || existing.maxPerDay != null || existing.minIntervalHours != null)
+    }
+    val optionsSummary = if (asNeeded) {
+        listOf(
+            if (hasMax || hasInterval) "limites notées" else "sans limite",
+            if (trackStock) "stock suivi" else "stock non suivi",
+        ).joinToString(" · ")
+    } else {
+        listOfNotNull(
+            when (rhythm) { 1 -> "certains jours"; 2 -> "tous les $everyDays jours"; else -> "tous les jours" },
+            when (durationMode) { 0 -> "au long cours"; else -> "durée limitée" },
+            if (trackStock) "stock suivi" else "stock non suivi",
+            "pendant le repas".takeIf { withFood },
+        ).joinToString(" · ")
+    } + " · notes"
     val valid = name.isNotBlank() && (!trackStock || stockValue != null) &&
         (asNeeded || (doses.isNotEmpty() && (rhythm != 1 || days.isNotEmpty()) && (durationMode == 0 || (effectiveEnd != null && !effectiveEnd.isBefore(startDate)))))
 
@@ -277,20 +295,6 @@ fun TreatmentEditorScreen(
                             IconButton(onClick = { prnQuantity = nextQuantity(prnQuantity, true) }) { Icon(Icons.Rounded.Add, "Plus") }
                         }
                     }
-                    SectionTitle("Limites")
-                    SwitchRow("Nombre maximum de prises", hasMax, supporting = "Sur 24 heures glissantes") { hasMax = it }
-                    AnimatedVisibility(hasMax) {
-                        com.medipote.app.ui.components.NumberStepper("Maximum par 24 h", maxPerDay, { maxPerDay = it }, 1..12)
-                    }
-                    SwitchRow("Délai minimum entre deux prises", hasInterval) { hasInterval = it }
-                    AnimatedVisibility(hasInterval) {
-                        com.medipote.app.ui.components.NumberStepper("Au moins", minInterval, { minInterval = it }, 1..48, suffix = " h")
-                    }
-                    Text(
-                        "Reprends les limites de ton ordonnance ou de la notice. L'appli te prévient si une prise les dépasse, sans jamais t'empêcher de la noter.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
                 }
             }
 
@@ -327,171 +331,196 @@ fun TreatmentEditorScreen(
                 Spacer(Modifier.width(6.dp))
                 Text("Ajouter une prise")
             }
-
-            // Dose steps: the quantity changes on given dates (e.g. tapering).
-            SwitchRow(
-                "La dose change avec le temps",
-                useSteps,
-                supporting = "Paliers : par exemple 1 comprimé la 1re semaine, puis ½ la 2e…",
-            ) {
-                useSteps = it
-                if (it && steps.isEmpty()) {
-                    val q = doses.firstOrNull()?.quantity ?: 1.0
-                    steps.add(com.medipote.app.data.DoseStep(startDate.plusDays(7), nextQuantity(q, false)))
-                }
             }
-            AnimatedVisibility(useSteps) {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text(
-                        "Jusqu'au premier palier : la quantité indiquée pour chaque prise ci-dessus.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    steps.forEachIndexed { i, step ->
-                        Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)) {
-                            Column(Modifier.padding(start = 12.dp, end = 4.dp, top = 8.dp, bottom = 4.dp)) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    DateField("À partir du", step.from, { steps[i] = step.copy(from = it) }, Modifier.weight(1f), minDate = startDate.plusDays(1))
-                                    IconButton(onClick = { steps.removeAt(i) }) { Icon(Icons.Rounded.Close, "Retirer ce palier") }
-                                }
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Text("Par prise", style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
-                                    IconButton(onClick = { steps[i] = step.copy(quantity = nextQuantity(step.quantity, false)) }, enabled = step.quantity > 0.25) {
-                                        Icon(Icons.Rounded.Remove, "Moins")
+            }
+
+            // Everything else is folded: most treatments only need the above.
+            com.medipote.app.ui.components.MoreOptions(optionsSummary, initiallyOpen = hasOptions) {
+                AnimatedVisibility(asNeeded) {
+                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        SectionTitle("Limites")
+                        SwitchRow("Nombre maximum de prises", hasMax, supporting = "Sur 24 heures glissantes") { hasMax = it }
+                        AnimatedVisibility(hasMax) {
+                            com.medipote.app.ui.components.NumberStepper("Maximum par 24 h", maxPerDay, { maxPerDay = it }, 1..12)
+                        }
+                        SwitchRow("Délai minimum entre deux prises", hasInterval) { hasInterval = it }
+                        AnimatedVisibility(hasInterval) {
+                            com.medipote.app.ui.components.NumberStepper("Au moins", minInterval, { minInterval = it }, 1..48, suffix = " h")
+                        }
+                        Text(
+                            "Reprends les limites de ton ordonnance ou de la notice. L'appli te prévient si une prise les dépasse, sans jamais t'empêcher de la noter.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+                AnimatedVisibility(!asNeeded) {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                // Dose steps: the quantity changes on given dates (e.g. tapering).
+                SwitchRow(
+                    "La dose change avec le temps",
+                    useSteps,
+                    supporting = "Paliers : par exemple 1 comprimé la 1re semaine, puis ½ la 2e…",
+                ) {
+                    useSteps = it
+                    if (it && steps.isEmpty()) {
+                        val q = doses.firstOrNull()?.quantity ?: 1.0
+                        steps.add(com.medipote.app.data.DoseStep(startDate.plusDays(7), nextQuantity(q, false)))
+                    }
+                }
+                AnimatedVisibility(useSteps) {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text(
+                            "Jusqu'au premier palier : la quantité indiquée pour chaque prise ci-dessus.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        steps.forEachIndexed { i, step ->
+                            Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)) {
+                                Column(Modifier.padding(start = 12.dp, end = 4.dp, top = 8.dp, bottom = 4.dp)) {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        DateField("À partir du", step.from, { steps[i] = step.copy(from = it) }, Modifier.weight(1f), minDate = startDate.plusDays(1))
+                                        IconButton(onClick = { steps.removeAt(i) }) { Icon(Icons.Rounded.Close, "Retirer ce palier") }
                                     }
-                                    Text(unit.format(step.quantity), style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
-                                    IconButton(onClick = { steps[i] = step.copy(quantity = nextQuantity(step.quantity, true)) }) { Icon(Icons.Rounded.Add, "Plus") }
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Text("Par prise", style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
+                                        IconButton(onClick = { steps[i] = step.copy(quantity = nextQuantity(step.quantity, false)) }, enabled = step.quantity > 0.25) {
+                                            Icon(Icons.Rounded.Remove, "Moins")
+                                        }
+                                        Text(unit.format(step.quantity), style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
+                                        IconButton(onClick = { steps[i] = step.copy(quantity = nextQuantity(step.quantity, true)) }) { Icon(Icons.Rounded.Add, "Plus") }
+                                    }
                                 }
                             }
                         }
-                    }
-                    TextButton(onClick = {
-                        val last = steps.maxByOrNull { it.from }
-                        steps.add(
-                            com.medipote.app.data.DoseStep(
-                                (last?.from ?: startDate).plusDays(7),
-                                nextQuantity(last?.quantity ?: doses.firstOrNull()?.quantity ?: 1.0, false),
-                            ),
-                        )
-                    }) {
-                        Icon(Icons.Rounded.Add, null)
-                        Spacer(Modifier.width(6.dp))
-                        Text("Ajouter un palier")
+                        TextButton(onClick = {
+                            val last = steps.maxByOrNull { it.from }
+                            steps.add(
+                                com.medipote.app.data.DoseStep(
+                                    (last?.from ?: startDate).plusDays(7),
+                                    nextQuantity(last?.quantity ?: doses.firstOrNull()?.quantity ?: 1.0, false),
+                                ),
+                            )
+                        }) {
+                            Icon(Icons.Rounded.Add, null)
+                            Spacer(Modifier.width(6.dp))
+                            Text("Ajouter un palier")
+                        }
                     }
                 }
-            }
 
-            SectionTitle("Jours de prise")
-            SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
-                listOf("Tous les jours", "Certains jours", "Tous les X jours").forEachIndexed { i, label ->
-                    SegmentedButton(
-                        selected = rhythm == i,
-                        onClick = {
-                            rhythm = i
-                            if (i == 1 && days.size == 7) days = setOf(1, 2, 3, 4, 5)
-                        },
-                        shape = SegmentedButtonDefaults.itemShape(i, 3),
-                        icon = {},
-                    ) { Text(label, maxLines = 1, style = MaterialTheme.typography.labelMedium) }
+                SectionTitle("Jours de prise")
+                SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
+                    listOf("Tous les jours", "Certains jours", "Tous les X jours").forEachIndexed { i, label ->
+                        SegmentedButton(
+                            selected = rhythm == i,
+                            onClick = {
+                                rhythm = i
+                                if (i == 1 && days.size == 7) days = setOf(1, 2, 3, 4, 5)
+                            },
+                            shape = SegmentedButtonDefaults.itemShape(i, 3),
+                            icon = {},
+                        ) { Text(label, maxLines = 1, style = MaterialTheme.typography.labelMedium) }
+                    }
                 }
-            }
-            AnimatedVisibility(rhythm == 2) {
-                Column {
-                    com.medipote.app.ui.components.NumberStepper("Tous les", everyDays, { everyDays = it }, 2..60, suffix = " jours")
-                    Text(
-                        "À partir du début du traitement (${startDate.format(com.medipote.app.ui.components.dayMonth)}).",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                AnimatedVisibility(rhythm == 2) {
+                    Column {
+                        com.medipote.app.ui.components.NumberStepper("Tous les", everyDays, { everyDays = it }, 2..60, suffix = " jours")
+                        Text(
+                            "À partir du début du traitement (${startDate.format(com.medipote.app.ui.components.dayMonth)}).",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+                AnimatedVisibility(rhythm == 1) {
+                    FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        (1..7).forEach { d ->
+                            FilterChip(
+                                selected = d in days,
+                                onClick = { days = if (d in days) days - d else days + d },
+                                label = { Text(DayOfWeek.of(d).getDisplayName(TextStyle.SHORT, Locale.FRANCE).trimEnd('.')) },
+                            )
+                        }
+                    }
+                }
+
+                SectionTitle("Durée")
+                DateField("Début du traitement", startDate, { startDate = it })
+                SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
+                    listOf("Au long cours", "Jusqu'au…", "Pendant…").forEachIndexed { i, label ->
+                        SegmentedButton(
+                            selected = durationMode == i,
+                            onClick = { durationMode = i },
+                            shape = SegmentedButtonDefaults.itemShape(i, 3),
+                            icon = {},
+                        ) { Text(label, maxLines = 1, style = MaterialTheme.typography.labelMedium) }
+                    }
+                }
+                AnimatedVisibility(durationMode == 1) {
+                    DateField(
+                        "Fin du traitement",
+                        endDate,
+                        { endDate = it },
+                        minDate = startDate,
+                        supporting = "Dernier jour de prise inclus",
                     )
                 }
-            }
-            AnimatedVisibility(rhythm == 1) {
-                FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    (1..7).forEach { d ->
-                        FilterChip(
-                            selected = d in days,
-                            onClick = { days = if (d in days) days - d else days + d },
-                            label = { Text(DayOfWeek.of(d).getDisplayName(TextStyle.SHORT, Locale.FRANCE).trimEnd('.')) },
+                AnimatedVisibility(durationMode == 2) {
+                    Column {
+                        com.medipote.app.ui.components.NumberStepper("Pendant", durationDays, { durationDays = it }, 1..365, suffix = " jours")
+                        Text(
+                            "Dernier jour : ${startDate.plusDays(durationDays - 1L).format(com.medipote.app.ui.components.dayMonthYear)}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
                 }
-            }
-
-            SectionTitle("Durée")
-            DateField("Début du traitement", startDate, { startDate = it })
-            SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
-                listOf("Au long cours", "Jusqu'au…", "Pendant…").forEachIndexed { i, label ->
-                    SegmentedButton(
-                        selected = durationMode == i,
-                        onClick = { durationMode = i },
-                        shape = SegmentedButtonDefaults.itemShape(i, 3),
-                        icon = {},
-                    ) { Text(label, maxLines = 1, style = MaterialTheme.typography.labelMedium) }
                 }
-            }
-            AnimatedVisibility(durationMode == 1) {
-                DateField(
-                    "Fin du traitement",
-                    endDate,
-                    { endDate = it },
-                    minDate = startDate,
-                    supporting = "Dernier jour de prise inclus",
+                }
+
+                SectionTitle("Stock")
+                SwitchRow("Suivre mon stock", trackStock, supporting = "Le stock diminue à chaque prise et l'appli te prévient avant d'en manquer") { trackStock = it }
+                AnimatedVisibility(trackStock) {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                            OutlinedTextField(
+                                value = stockText,
+                                onValueChange = { v -> stockText = v.filter { it.isDigit() || it == ',' || it == '.' }.take(6) },
+                                label = { Text("Quantité restante") },
+                                suffix = { Text(unit.plural) },
+                                isError = stockText.isNotEmpty() && stockValue == null,
+                                singleLine = true,
+                                keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Decimal),
+                                modifier = Modifier.weight(1f),
+                            )
+                            OutlinedTextField(
+                                value = packText,
+                                onValueChange = { v -> packText = v.filter { it.isDigit() }.take(4) },
+                                label = { Text("Par boîte") },
+                                singleLine = true,
+                                keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Number),
+                                modifier = Modifier.weight(1f),
+                            )
+                        }
+                        if (asNeeded) {
+                            com.medipote.app.ui.components.NumberStepper("Me prévenir sous", lowUnits, { lowUnits = it }, 1..50, display = { unit.format(it.toDouble()) })
+                        } else {
+                            com.medipote.app.ui.components.NumberStepper("Me prévenir à", lowDays, { lowDays = it }, 1..30, suffix = " j")
+                        }
+                    }
+                }
+
+                SectionTitle("Conseils")
+                if (!asNeeded) SwitchRow("À prendre pendant le repas", withFood) { withFood = it }
+                OutlinedTextField(
+                    value = notes,
+                    onValueChange = { notes = it },
+                    label = { Text("Notes (facultatif)") },
+                    modifier = Modifier.fillMaxWidth(),
+                    minLines = 2,
                 )
             }
-            AnimatedVisibility(durationMode == 2) {
-                Column {
-                    com.medipote.app.ui.components.NumberStepper("Pendant", durationDays, { durationDays = it }, 1..365, suffix = " jours")
-                    Text(
-                        "Dernier jour : ${startDate.plusDays(durationDays - 1L).format(com.medipote.app.ui.components.dayMonthYear)}",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-            }
-            }
-            }
-
-            SectionTitle("Stock")
-            SwitchRow("Suivre mon stock", trackStock, supporting = "Le stock diminue à chaque prise et l'appli te prévient avant d'en manquer") { trackStock = it }
-            AnimatedVisibility(trackStock) {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        OutlinedTextField(
-                            value = stockText,
-                            onValueChange = { v -> stockText = v.filter { it.isDigit() || it == ',' || it == '.' }.take(6) },
-                            label = { Text("Quantité restante") },
-                            suffix = { Text(unit.plural) },
-                            isError = stockText.isNotEmpty() && stockValue == null,
-                            singleLine = true,
-                            keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Decimal),
-                            modifier = Modifier.weight(1f),
-                        )
-                        OutlinedTextField(
-                            value = packText,
-                            onValueChange = { v -> packText = v.filter { it.isDigit() }.take(4) },
-                            label = { Text("Par boîte") },
-                            singleLine = true,
-                            keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Number),
-                            modifier = Modifier.weight(1f),
-                        )
-                    }
-                    if (asNeeded) {
-                        com.medipote.app.ui.components.NumberStepper("Me prévenir sous", lowUnits, { lowUnits = it }, 1..50, display = { unit.format(it.toDouble()) })
-                    } else {
-                        com.medipote.app.ui.components.NumberStepper("Me prévenir à", lowDays, { lowDays = it }, 1..30, suffix = " j")
-                    }
-                }
-            }
-
-            SectionTitle("Conseils")
-            if (!asNeeded) SwitchRow("À prendre pendant le repas", withFood) { withFood = it }
-            OutlinedTextField(
-                value = notes,
-                onValueChange = { notes = it },
-                label = { Text("Notes (facultatif)") },
-                modifier = Modifier.fillMaxWidth(),
-                minLines = 2,
-            )
             Disclaimer("Respecte toujours l'ordonnance de ton médecin. En cas de doute, demande conseil à ton pharmacien.")
         }
     }

@@ -80,9 +80,31 @@ fun FacePicker(value: Int?, label: String, onPick: (Int?) -> Unit, modifier: Mod
 
 /** Home: today's mood in one tap, and the question of the day. */
 @Composable
-fun MoodCard(entry: DayEntry, onMood: (Int?) -> Unit, onAnswer: (String) -> Unit) {
+fun MoodCard(entry: DayEntry, onMood: (Int?) -> Unit, onAnswer: (String) -> Unit, foldWhenDone: Boolean = false) {
     var answering by remember { mutableStateOf(false) }
+    var unfolded by remember { mutableStateOf(false) }
     val question = DailyQuestions.of(entry.date)
+    if (foldWhenDone && !unfolded && entry.mental != null && entry.reflection.isNotBlank()) {
+        // Everything answered: one quiet line, tap to change.
+        Surface(
+            onClick = { unfolded = true },
+            color = MaterialTheme.colorScheme.surfaceContainerLow,
+            shape = MaterialTheme.shapes.medium,
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Row(Modifier.padding(horizontal = 16.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+                Text(FACES[entry.mental - 1], style = MaterialTheme.typography.titleLarge)
+                Spacer(Modifier.width(12.dp))
+                Text(
+                    "Humeur : ${MOOD_LABELS[entry.mental - 1].lowercase()} · question du jour répondue",
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.weight(1f),
+                )
+                Text("Modifier", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
+            }
+        }
+        return
+    }
     Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow), modifier = Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -128,19 +150,19 @@ fun MoodCard(entry: DayEntry, onMood: (Int?) -> Unit, onAnswer: (String) -> Unit
 fun RitualCard(kind: RitualKind, onStart: () -> Unit) {
     Card(
         onClick = onStart,
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
         modifier = Modifier.fillMaxWidth(),
     ) {
         Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
             Text(kind.emoji, style = MaterialTheme.typography.headlineMedium)
             Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f)) {
-                Text(kind.label, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onPrimaryContainer)
+                Text(kind.label, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurface)
                 Text(
                     if (kind == RitualKind.MORNING) "Ta nuit, tes prises du matin et ton humeur, en 30 secondes."
                     else "Tes prises du soir, ton journal et ton eau, en 30 secondes.",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
             FilledTonalButton(onClick = onStart) { Text("C'est parti") }
@@ -152,16 +174,12 @@ fun RitualCard(kind: RitualKind, onStart: () -> Unit) {
 fun ChallengesCard(challenges: List<ChallengeStatus>, onOpen: () -> Unit) {
     if (challenges.isEmpty()) return
     SectionTitle("Défis de la semaine") {
+        com.medipote.app.ui.components.InfoButton("Défis de la semaine", "Facultatifs : des points en plus si tu les réussis, rien si tu ne les fais pas. Nouveaux défis chaque lundi.")
         TextButton(onClick = onOpen) { Text("Badges") }
     }
     Card(onClick = onOpen, colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow), modifier = Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             challenges.forEach { ChallengeRow(it) }
-            Text(
-                "Facultatifs : des points en plus si tu les réussis, rien si tu ne les fais pas.",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
         }
     }
 }
@@ -217,16 +235,16 @@ fun GardenCard(garden: List<Pair<LocalDate, Bloom>>, petName: String, title: Boo
                     }
                 }
             }
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
                 Legend(Color(0xFFF48FB1), "journal")
                 Legend(Color(0xFF7986CB), "nuit")
                 Legend(primary, "les deux")
+                Spacer(Modifier.weight(1f))
+                com.medipote.app.ui.components.InfoButton(
+                    "Le jardin",
+                    "Chaque jour où tu notes ton journal ou ta nuit, une fleur pousse dans le jardin de $petName.",
+                )
             }
-            Text(
-                "Chaque jour où tu notes ton journal ou ta nuit, une fleur pousse dans le jardin de $petName.",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
         }
     }
 }

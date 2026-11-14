@@ -4,16 +4,19 @@ import kotlinx.serialization.Serializable
 
 /** Blocks of the home screen, which the user can reorder or hide. */
 @Serializable
-enum class HomeSection(val label: String, val emoji: String) {
+enum class HomeSection(val label: String, val emoji: String, val hint: String = "") {
+    STATUS("Série, points et défis", "🔥"),
+    NEXT_DOSE("Prochaine prise, en grand", "⏰"),
     COMPANION("Compagnon", "🐾"),
-    MOOD("Humeur et question du jour", "😊"),
-    RITUAL("Rituel du matin / du soir", "✨"),
+    MOOD("Humeur et question du jour", "😊", "Se replie en une ligne une fois remplie"),
+    RITUAL("Rituel du matin / du soir", "✨", "Le matin et le soir seulement"),
+    PERIOD("Protection pendant les règles", "🩸", "Pendant les règles ou quand un minuteur tourne"),
     DOSES("Prises du jour", "💊"),
-    AS_NEEDED("Si besoin", "🩹"),
+    AS_NEEDED("Si besoin", "🩹", "Après une prise des dernières 24 h"),
     MEASURES("Mes mesures", "🩺"),
-    WATER("Hydratation", "💧"),
-    PROMPTS("Invitations du jour (nuit, journal)", "🌙"),
-    APPOINTMENT("Prochain rendez-vous", "📅"),
+    WATER("Hydratation", "💧", "Si les rappels d'eau sont activés ou un verre noté"),
+    PROMPTS("Invitations du jour (nuit, journal)", "🌙", "Nuit le matin, journal le soir"),
+    APPOINTMENT("Prochain rendez-vous", "📅", "Dans les 3 jours"),
     CHALLENGES("Défis de la semaine", "🎯"),
     GARDEN("Mon jardin", "🌷"),
 }
@@ -49,9 +52,20 @@ data class Look(
     /** Celebration animations (daily streak…). */
     val celebrations: Boolean = true,
 ) {
-    /** Sections in the user's order, new ones (added by an update) at the end. */
+    /** Every section in the user's order; one added by an update goes where it is by default. */
+    val fullOrder: List<HomeSection>
+        get() {
+            val order = homeOrder.distinct().toMutableList()
+            HomeSection.entries.forEachIndexed { i, section ->
+                if (section in order) return@forEachIndexed
+                val before = HomeSection.entries.take(i).lastOrNull { it in order }
+                order.add(before?.let { order.indexOf(it) + 1 } ?: 0, section)
+            }
+            return order
+        }
+
     val visibleSections: List<HomeSection>
-        get() = (homeOrder + HomeSection.entries.filter { it !in homeOrder }).distinct().filter { it !in hiddenSections }
+        get() = fullOrder.filter { it !in hiddenSections }
 
     companion object {
         val AVATARS = listOf(

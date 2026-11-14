@@ -242,7 +242,7 @@ fun BackupScreen(
                     }
                 }
             }
-            Disclaimer("Avec un mot de passe, la sauvegarde est chiffrée (AES-256). Personne, pas même MédiPote, ne peut la lire ni la restaurer sans lui : note-le bien.")
+            Disclaimer("Avec un mot de passe, la sauvegarde est chiffrée (AES-256). Personne, pas même MédiPote, ne peut la lire ni la restaurer sans lui : note-le bien.", important = true)
         }
     }
 

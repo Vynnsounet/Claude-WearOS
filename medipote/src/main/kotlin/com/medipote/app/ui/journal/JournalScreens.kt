@@ -29,6 +29,8 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.KeyboardArrowDown
+import androidx.compose.material.icons.rounded.KeyboardArrowUp
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Check
@@ -278,41 +280,14 @@ fun DayEntryScreen(
         ) {
             SectionCard("État physique") {
                 FaceSelector(physical) { physical = it }
-                TagPicker(PHYSICAL_SYMPTOMS, physicalSymptoms, { physicalSymptoms = it }, "Autre symptôme")
+                Fold("Symptômes", physicalSymptoms.size) {
+                    TagPicker(PHYSICAL_SYMPTOMS, physicalSymptoms, { physicalSymptoms = it }, "Autre symptôme")
+                }
             }
             SectionCard("État psychologique") {
                 FaceSelector(mental) { mental = it }
-                TagPicker(MENTAL_SYMPTOMS, mentalSymptoms, { mentalSymptoms = it }, "Autre ressenti")
-            }
-            SectionCard("Maladie du jour") {
-                @OptIn(ExperimentalLayoutApi::class)
-                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    ILLNESSES.forEach { name ->
-                        FilterChip(selected = illness.equals(name, true), onClick = { illness = if (illness.equals(name, true)) "" else name }, label = { Text(name) })
-                    }
-                }
-                OutlinedTextField(
-                    value = illness, onValueChange = { illness = it.take(60) },
-                    label = { Text("Maladie (facultatif)") }, singleLine = true, modifier = Modifier.fillMaxWidth(),
-                    keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
-                )
-            }
-            if (showCycle) {
-                SectionCard("Cycle") {
-                    Text("Flux", style = MaterialTheme.typography.labelLarge)
-                    @OptIn(ExperimentalLayoutApi::class)
-                    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        FilterChip(selected = flow == null, onClick = { flow = null }, label = { Text("Aucun") })
-                        Flow.entries.forEach { f -> FilterChip(selected = flow == f, onClick = { flow = f }, label = { Text(f.label) }) }
-                    }
-                    Text("Symptômes liés au cycle", style = MaterialTheme.typography.labelLarge)
-                    TagPicker(CYCLE_SYMPTOMS, cycleSymptoms, { cycleSymptoms = it }, "Autre symptôme")
-                    Text("Rapport sexuel", style = MaterialTheme.typography.labelLarge)
-                    @OptIn(ExperimentalLayoutApi::class)
-                    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        FilterChip(selected = intercourse == null, onClick = { intercourse = null }, label = { Text("Aucun") })
-                        Intercourse.entries.forEach { i -> FilterChip(selected = intercourse == i, onClick = { intercourse = i }, label = { Text(i.label) }) }
-                    }
+                Fold("Ressentis", mentalSymptoms.size) {
+                    TagPicker(MENTAL_SYMPTOMS, mentalSymptoms, { mentalSymptoms = it }, "Autre ressenti")
                 }
             }
             SectionCard("Question du jour") {
@@ -330,8 +305,59 @@ fun DayEntryScreen(
                     keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
                 )
             }
+            com.medipote.app.ui.components.MoreOptions(
+                listOfNotNull(
+                    illness.ifBlank { null }?.let { "maladie : ${it.lowercase()}" } ?: "maladie du jour",
+                    if (!showCycle) null else flow?.let { "flux ${it.label.lowercase()}" } ?: "cycle",
+                ).joinToString(" · "),
+                initiallyOpen = entry.illness.isNotBlank() || entry.hasCycleData,
+                label = if (showCycle) "Maladie du jour, cycle" else "Maladie du jour",
+            ) {
+                SectionCard("Maladie du jour") {
+                    @OptIn(ExperimentalLayoutApi::class)
+                    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        ILLNESSES.forEach { name ->
+                            FilterChip(selected = illness.equals(name, true), onClick = { illness = if (illness.equals(name, true)) "" else name }, label = { Text(name) })
+                        }
+                    }
+                    OutlinedTextField(
+                        value = illness, onValueChange = { illness = it.take(60) },
+                        label = { Text("Maladie (facultatif)") }, singleLine = true, modifier = Modifier.fillMaxWidth(),
+                        keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
+                    )
+                }
+                if (showCycle) {
+                    SectionCard("Cycle") {
+                        Text("Flux", style = MaterialTheme.typography.labelLarge)
+                        @OptIn(ExperimentalLayoutApi::class)
+                        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            FilterChip(selected = flow == null, onClick = { flow = null }, label = { Text("Aucun") })
+                            Flow.entries.forEach { f -> FilterChip(selected = flow == f, onClick = { flow = f }, label = { Text(f.label) }) }
+                        }
+                        Text("Symptômes liés au cycle", style = MaterialTheme.typography.labelLarge)
+                        TagPicker(CYCLE_SYMPTOMS, cycleSymptoms, { cycleSymptoms = it }, "Autre symptôme")
+                        Text("Rapport sexuel", style = MaterialTheme.typography.labelLarge)
+                        @OptIn(ExperimentalLayoutApi::class)
+                        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            FilterChip(selected = intercourse == null, onClick = { intercourse = null }, label = { Text("Aucun") })
+                            Intercourse.entries.forEach { i -> FilterChip(selected = intercourse == i, onClick = { intercourse = i }, label = { Text(i.label) }) }
+                        }
+                    }
+                }
+            }
         }
     }
+}
+
+/** Details inside a card, folded until needed (open when something is already chosen). */
+@Composable
+private fun Fold(label: String, count: Int, content: @Composable () -> Unit) {
+    var open by remember { mutableStateOf(count > 0) }
+    androidx.compose.material3.TextButton(onClick = { open = !open }, contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 4.dp)) {
+        Text(if (count > 0) "$label ($count)" else label)
+        Icon(if (open) Icons.Rounded.KeyboardArrowUp else Icons.Rounded.KeyboardArrowDown, null, Modifier.size(18.dp))
+    }
+    if (open) content()
 }
 
 @Composable

@@ -66,6 +66,16 @@ object PeriodCare {
         state.productLog.count { it.start.toLocalDate() == date } + (if (state.productSession?.since?.toLocalDate() == date) 1 else 0)
 
     /** Intakes of as-needed medications on a given day, linked to periods or not. */
+    /** During one's period: flow noted today or yesterday, a period day (logged or expected), or a product in use. */
+    fun inPeriod(state: AppState, date: LocalDate): Boolean {
+        val profile = state.profile ?: return false
+        if (!profile.menstruating) return false
+        if (state.productSession != null || usesOn(state, date) > 0) return true
+        if (state.entryFor(date).flow != null || state.entryFor(date.minusDays(1)).flow != null) return true
+        val cycle = profile.cycle ?: return false
+        return Cycle.dayType(cycle, date, date) in setOf(CycleDayType.PERIOD, CycleDayType.PREDICTED_PERIOD)
+    }
+
     /** Whether an as-needed medication belongs in the period list (painkillers by default, or chosen). */
     fun isPeriodMed(t: com.medipote.app.data.Treatment): Boolean = t.asNeeded && (t.forPeriod ?: (t.drugId in COMMON_MEDS))
 

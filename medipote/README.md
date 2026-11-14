@@ -45,7 +45,7 @@ les lecteurs d'écran).
 
 | Espace | Sous-onglets |
 |---|---|
-| **Accueil** | Compagnon, humeur et question du jour, rituel, prises du jour, si besoin, mesures, eau, rendez-vous (ordre et affichage au choix) |
+| **Accueil** | Prochaine prise en grand, compagnon, humeur, rituel, protection, prises du jour, si besoin, mesures, eau, rendez-vous : chaque bloc seulement quand il sert, ordre et affichage au choix (Paramètres › Mon accueil). Bouton « + Noter » pour tout noter en deux gestes. |
 | **Soins** | 💊 Traitements · 🌼 Pilule (si concernée) · 📅 Agenda · 📂 Carnet de santé |
 | **Suivi** | 📖 Journal · 🌙 Sommeil · 🩺 Mesures (si activées) · 🌸 Cycle (si activé) |
 | **Bilan** | 📊 Statistiques · 🗓️ Jour par jour · 🎨 Mon année |
@@ -56,6 +56,14 @@ les lecteurs d'écran).
 | ![](docs/hub_suivi.png) | ![](docs/hub_bilan.png) | ![](docs/hub_companion.png) |
 
 Profil médical et paramètres sont accessibles en haut à droite.
+
+| Accueil 1.8 | Bouton « + Noter » |
+|---|---|
+| ![](docs/home_v18.png) | ![](docs/quick_add.png) |
+
+Pour garder l'appli aérée : les explications sont repliées derrière « ⓘ À savoir »
+ou un petit ⓘ, et les formulaires (traitement, nuit, journal, rendez-vous, mesure)
+montrent l'essentiel, le reste sous « Plus d'options ».
 
 ## Fonctionnalités
 

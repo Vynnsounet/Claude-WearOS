@@ -302,16 +302,6 @@ fun AppointmentEditorScreen(
                 value = title, onValueChange = { title = it.take(60) }, label = { Text("Motif ou spécialité *") }, singleLine = true,
                 keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences), modifier = Modifier.fillMaxWidth(),
             )
-            OutlinedTextField(
-                value = doctor, onValueChange = { doctor = it.take(60) }, label = { Text("Praticien") }, singleLine = true,
-                leadingIcon = { Icon(Icons.Outlined.Person, null) },
-                keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Words), modifier = Modifier.fillMaxWidth(),
-            )
-            OutlinedTextField(
-                value = location, onValueChange = { location = it.take(100) }, label = { Text("Lieu") }, singleLine = true,
-                leadingIcon = { Icon(Icons.Outlined.LocationOn, null) },
-                keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences), modifier = Modifier.fillMaxWidth(),
-            )
             SectionTitle("Date et heure")
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
                 DateField("Date", date, { date = it }, Modifier.weight(1f))
@@ -321,22 +311,39 @@ fun AppointmentEditorScreen(
                     Text("%02d:%02d".format(minute / 60, minute % 60))
                 }
             }
-            SectionTitle("Rappels")
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Outlined.NotificationsActive, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                Spacer(Modifier.width(8.dp))
-                Text("Choisis quand être prévenu·e", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                REMINDER_CHOICES.forEach { (m, label) ->
-                    FilterChip(selected = m in reminders, onClick = { reminders = if (m in reminders) reminders - m else reminders + m }, label = { Text(label) })
+            com.medipote.app.ui.components.MoreOptions(
+                "Rappels : " + REMINDER_CHOICES.filter { it.first in reminders }.joinToString(", ") { it.second.lowercase() }.ifBlank { "aucun" } +
+                    " · praticien, lieu, notes",
+                initiallyOpen = existing != null && (existing.doctor.isNotBlank() || existing.location.isNotBlank() || existing.notes.isNotBlank()),
+                label = "Rappels, praticien, lieu, notes",
+            ) {
+                OutlinedTextField(
+                    value = doctor, onValueChange = { doctor = it.take(60) }, label = { Text("Praticien") }, singleLine = true,
+                    leadingIcon = { Icon(Icons.Outlined.Person, null) },
+                    keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Words), modifier = Modifier.fillMaxWidth(),
+                )
+                OutlinedTextField(
+                    value = location, onValueChange = { location = it.take(100) }, label = { Text("Lieu") }, singleLine = true,
+                    leadingIcon = { Icon(Icons.Outlined.LocationOn, null) },
+                    keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences), modifier = Modifier.fillMaxWidth(),
+                )
+                SectionTitle("Rappels")
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Outlined.NotificationsActive, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Spacer(Modifier.width(8.dp))
+                    Text("Choisis quand être prévenu·e", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    REMINDER_CHOICES.forEach { (m, label) ->
+                        FilterChip(selected = m in reminders, onClick = { reminders = if (m in reminders) reminders - m else reminders + m }, label = { Text(label) })
+                    }
+                }
+                OutlinedTextField(
+                    value = notes, onValueChange = { notes = it }, label = { Text("Notes (questions à poser, documents à apporter…)") },
+                    minLines = 3, modifier = Modifier.fillMaxWidth(),
+                    keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
+                )
             }
-            OutlinedTextField(
-                value = notes, onValueChange = { notes = it }, label = { Text("Notes (questions à poser, documents à apporter…)") },
-                minLines = 3, modifier = Modifier.fillMaxWidth(),
-                keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
-            )
         }
     }
     if (pickTime) {

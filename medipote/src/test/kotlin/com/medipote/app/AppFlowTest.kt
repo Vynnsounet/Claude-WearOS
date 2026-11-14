@@ -67,17 +67,17 @@ class AppFlowTest {
         assertEquals(1, state.game.streak)
 
         // A dose created at 08:00 by default: give it if it's giveable right now, else check it's listed.
-        val giveButtons = compose.onAllNodesWithText("Donner").fetchSemanticsNodes()
+        val giveButtons = compose.onAllNodesWithText("Donner", substring = true).fetchSemanticsNodes()
         if (giveButtons.isNotEmpty()) {
             val before = repo.state.value.game.points
-            compose.onAllNodesWithText("Donner").onFirst().performClick()
+            compose.onAllNodesWithText("Donner", substring = true).onFirst().performClick()
             compose.waitForIdle()
             assertEquals(1, repo.state.value.doseLogs.size)
             assertTrue(repo.state.value.game.points > before)
         } else {
-            // Before 07:00 the dose is listed as upcoming; after 08:30 it was added too late to be owed today.
+            // Before 07:00 the dose is shown as the next one; after 08:30 it was added too late to be owed today.
             val listed = compose.onAllNodesWithText("08:00").fetchSemanticsNodes().isNotEmpty()
-            val none = compose.onAllNodesWithText("Aucune prise prévue aujourd'hui", substring = true).fetchSemanticsNodes().isNotEmpty()
+            val none = compose.onAllNodesWithText("Aujourd'hui").fetchSemanticsNodes().isEmpty()
             assertTrue(listed || none)
         }
 

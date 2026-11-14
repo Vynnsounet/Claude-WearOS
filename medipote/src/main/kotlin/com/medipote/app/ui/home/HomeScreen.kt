@@ -29,6 +29,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material.icons.outlined.AccountCircle
 import androidx.compose.material.icons.outlined.Inventory2
 import androidx.compose.material.icons.outlined.Restaurant
@@ -141,6 +142,9 @@ fun HomeScreen(
     onOpenRecap: (java.time.LocalDate) -> Unit = {},
     onProductChanged: () -> Unit = {},
     onProductRemoved: () -> Unit = {},
+    onProductStart: (com.medipote.app.data.PeriodProduct) -> Unit = {},
+    onOpenHomeLayout: () -> Unit = {},
+    quickAdd: QuickAddActions? = null,
 ) {
     val logs = remember(state.doseLogs) { state.doseLogs.associateBy { it.key } }
     val today = remember(state.treatments, logs, now) {
@@ -152,12 +156,185 @@ fun HomeScreen(
     var petBounds by remember { mutableStateOf<Rect?>(null) }
     var dragHover by remember { mutableStateOf(false) }
 
+    val look = state.settings.look
+    val date = now.toLocalDate()
+    val yesterday = date.minusDays(1)
+    val forgotten = remember(state.doseLogs, state.treatments, yesterday) { forgottenDoses(state, yesterday, now) }
+    val sections = look.visibleSections
+    val hero = if (HomeSection.NEXT_DOSE in sections) com.medipote.app.domain.HomeRules.nextDose(today, now) else null
+    val todayOnly = today.filter { it.occurrence.date == date }
+
+    // Each block decides here whether it has something useful to say; null = not shown.
+    fun block(section: HomeSection): (@Composable () -> Unit)? = when (section) {
+        HomeSection.STATUS -> { { StatusRow(state, now, onOpenBadges) } }
+        HomeSection.NEXT_DOSE -> when {
+            hero != null -> { { HeroDose(hero, now, state.game.petName, onGive, onGiveEarly) } }
+            todayOnly.isNotEmpty() && todayOnly.all { it.state == DoseState.TAKEN } -> { { AllDone(todayOnly.size, state.game.petName) } }
+            else -> null
+        }
+        HomeSection.COMPANION -> { {
+            Card(
+                shape = MaterialTheme.shapes.extraLarge,
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+                border = if (dragHover) BorderStroke(3.dp, MaterialTheme.colorScheme.primary) else null,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Box(
+                    Modifier
+                        .fillMaxWidth()
+                        .aspectRatio(1.25f)
+                        .clip(MaterialTheme.shapes.extraLarge)
+                        .onGloballyPositioned { petBounds = it.boundsInRoot() },
+                ) {
+                    InteractivePet(
+                        mood = condition.mood,
+                        equipped = state.game.equipped,
+                        talk = { r -> PetTalk.line(r, state, now) },
+                        petName = state.game.petName,
+                        feedSignal = feedSignal,
+                        animate = animate,
+                        description = "${state.game.petName} : ${condition.message}",
+                        greeting = remember(state.profile?.name) { PetTalk.greeting(state, now) },
+                        onCuddle = onCuddle,
+                        stage = growth.stage,
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                    HealthTag(state.game.petName, condition, growth, Modifier.align(Alignment.TopStart).padding(12.dp))
+                    FloatingPoints(pointsSignal, lastPoints, Modifier.align(Alignment.TopCenter).padding(top = 32.dp))
+                }
+                MoodMessage(condition)
+            }
+            if (giveable.isNotEmpty()) {
+                PillTray(items = giveable, petBounds = petBounds, onHover = { dragHover = it }, onDrop = onGive)
+            }
+        } }
+        HomeSection.MOOD -> { { com.medipote.app.ui.motivation.MoodCard(state.entryFor(date), onMood, onAnswer, foldWhenDone = true) } }
+        HomeSection.RITUAL -> com.medipote.app.domain.Rituals.current(now)
+            ?.takeIf { !com.medipote.app.domain.Rituals.done(state.game, now, it) }
+            ?.let { kind -> { com.medipote.app.ui.motivation.RitualCard(kind) { onRitual(kind) } } }
+        HomeSection.PERIOD -> when {
+            state.productSession != null -> { {
+                com.medipote.app.ui.cycle.PeriodCareCard(
+                    state, now, onStart = {}, onChanged = onProductChanged, onRemoved = onProductRemoved,
+                    onSetReminder = { _, _ -> }, compact = true,
+                )
+            } }
+            com.medipote.app.domain.PeriodCare.inPeriod(state, date) -> { {
+                com.medipote.app.ui.cycle.PeriodCareCard(state, now, onStart = onProductStart, onChanged = {}, onRemoved = {}, onSetReminder = { _, _ -> }, compact = true)
+            } }
+            else -> null
+        }
+        HomeSection.DOSES -> when {
+            state.treatments.isEmpty() -> { { EmptyTreatments(state.game.petName, onAddTreatment) } }
+            state.treatments.none { !it.asNeeded } || today.isEmpty() -> null
+            else -> { {
+                val done = todayOnly.count { it.state == DoseState.TAKEN }
+                SectionTitle("Aujourd'hui") {
+                    Text("$done / ${todayOnly.size} prises", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                if (todayOnly.isNotEmpty()) {
+                    LinearProgressIndicator(
+                        progress = { done.toFloat() / todayOnly.size },
+                        modifier = Modifier.fillMaxWidth().height(8.dp).clip(CircleShape),
+                        drawStopIndicator = {},
+                    )
+                }
+                // Taken doses fold into one line; the one shown in big above isn't repeated.
+                val taken = today.filter { it.state == DoseState.TAKEN }
+                val rest = today.filter { it.state != DoseState.TAKEN && it.occurrence.key != hero?.occurrence?.key }
+                rest.forEach { item -> DoseCard(item, now, onGive, onGiveEarly) }
+                if (taken.isNotEmpty()) TakenFold(taken, now, onGive, onGiveEarly)
+                if (forgotten.isEmpty()) {
+                    TextButton(onClick = { onOpenHistory(yesterday) }) {
+                        Icon(Icons.Rounded.History, null, Modifier.size(18.dp))
+                        Spacer(Modifier.width(6.dp))
+                        Text("Jours précédents : noter un oubli")
+                    }
+                }
+            } }
+        }
+        HomeSection.AS_NEEDED -> com.medipote.app.domain.HomeRules.recentPrn(state, now).takeIf { it.isNotEmpty() }?.let { prn ->
+            { PrnCard(state, prn, now, onLogPrn, onOpenPrnIntake) }
+        }
+        HomeSection.MEASURES -> if (state.settings.measures.isEmpty()) null else { { com.medipote.app.ui.measures.HomeMeasuresCard(state, now, onAddMeasure, onOpenMeasure) } }
+        HomeSection.WATER -> if (!com.medipote.app.domain.HomeRules.showWater(state, date)) null else { {
+            val water = state.settings.water
+            WaterCard(state.entryFor(date).waterGlasses, water.goalGlasses, water.glassMl, onAddWater)
+        } }
+        HomeSection.PROMPTS -> {
+            // Not twice the same invitation: the ritual and mood cards already ask when they are shown.
+            val ritualShown = HomeSection.RITUAL in sections &&
+                com.medipote.app.domain.Rituals.current(now) == com.medipote.app.domain.RitualKind.MORNING &&
+                !com.medipote.app.domain.Rituals.done(state.game, now, com.medipote.app.domain.RitualKind.MORNING)
+            val sleep = !ritualShown && com.medipote.app.domain.HomeRules.sleepPrompt(state, now)
+            val journal = HomeSection.MOOD !in sections && com.medipote.app.domain.HomeRules.journalPrompt(state, now)
+            if (!sleep && !journal) null else { {
+                if (sleep) SleepPrompt(onOpenSleep)
+                if (journal) JournalPrompt(state.game.petName, onOpenJournal)
+            } }
+        }
+        HomeSection.APPOINTMENT -> com.medipote.app.domain.HomeRules.nextAppointment(state, now)?.let { a ->
+            {
+                SectionTitle("Prochain rendez-vous")
+                com.medipote.app.ui.agenda.AppointmentCard(a, now) { onOpenAppointment(a) }
+            }
+        }
+        // Shown in the companion space; on home, in the status line.
+        HomeSection.CHALLENGES, HomeSection.GARDEN -> null
+    }
+
+    // Important alerts always show, right under the status line.
+    val recap = com.medipote.app.domain.Recaps.pending(state, now)?.takeIf { com.medipote.app.domain.HomeRules.recapTime(now) }
+    val low = state.treatments.filter { it.isLowStock }
+    val renewals = com.medipote.app.domain.Renewals.due(state, date)
+    val blocked = notificationsBlocked && state.settings.notificationsEnabled
+    val quiet = !blocked && remindersQuiet && state.settings.notificationsEnabled
+    val alerts: (@Composable () -> Unit)? =
+        if (recap == null && low.isEmpty() && renewals.isEmpty() && !blocked && !quiet && forgotten.isEmpty()) null
+        else { {
+            if (blocked) Notice(Icons.Rounded.NotificationsOff, AppTheme.status.warning, "Les notifications sont bloquées", "Tu ne recevras pas les rappels. Touche ici pour les autoriser.", onClick = onFixNotifications)
+            if (quiet) Notice(
+                Icons.Rounded.NotificationsOff, AppTheme.status.warning, "Les rappels arrivent sans pop-up",
+                "Ils restent cachés dans le volet. Touche ici et active « Afficher en pop-up » et le son.", onClick = onFixQuietReminders,
+            )
+            if (forgotten.isNotEmpty()) {
+                val n = forgotten.size
+                Notice(
+                    Icons.Rounded.History, AppTheme.status.warning,
+                    "Hier : $n prise${if (n > 1) "s" else ""} non notée${if (n > 1) "s" else ""}",
+                    "Prise${if (n > 1) "s" else ""} mais pas noté${if (n > 1) "es" else "e"} ? Touche pour rattraper.",
+                ) { onOpenHistory(yesterday) }
+            }
+            if (low.isNotEmpty()) Notice(
+                Icons.Outlined.Inventory2, AppTheme.status.critical, "Pense à racheter",
+                low.joinToString(" · ") { t -> "${t.displayName} : " + (t.daysLeft?.let { "$it j" } ?: t.stock?.let { t.unit.format(it) } ?: "") },
+                onClick = onOpenTreatments,
+            )
+            renewals.forEach { doc ->
+                val left = com.medipote.app.domain.Renewals.daysLeft(doc, date) ?: 0
+                Notice(
+                    null, if (left < 0) AppTheme.status.critical else AppTheme.status.warning,
+                    if (left < 0) "Ordonnance expirée" else "Ordonnance à renouveler",
+                    "${doc.title} · ${com.medipote.app.domain.Renewals.label(doc, date)?.lowercase()}", emoji = "📄",
+                ) { onOpenDocument(doc) }
+            }
+            recap?.let { week -> Notice(null, MaterialTheme.colorScheme.primary, "Ton récap de la semaine est prêt", "Tes prises, tes nuits et ton humeur en quelques cartes.", emoji = "🎁") { onOpenRecap(week) } }
+        } }
+
+    val blocks = buildList<@Composable () -> Unit> {
+        val rest = sections.toMutableList()
+        if (rest.firstOrNull() == HomeSection.STATUS) block(rest.removeAt(0))?.let(::add)
+        alerts?.let(::add)
+        if (look.motto.isNotBlank()) add { MottoCard(look.motto) }
+        rest.forEach { section -> block(section)?.let(::add) }
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
                 title = {
                     Column {
-                        Text("Bonjour ${state.profile?.name.orEmpty()} ${state.settings.look.avatar}", maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        Text("Bonjour ${state.profile?.name.orEmpty()} ${look.avatar}", maxLines = 1, overflow = TextOverflow.Ellipsis)
                         Text(
                             now.format(fullDay).capitalized(),
                             style = MaterialTheme.typography.bodyMedium,
@@ -172,6 +349,7 @@ fun HomeScreen(
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background),
             )
         },
+        floatingActionButton = { quickAdd?.let { QuickAddButton(state, now, it) } },
     ) { padding ->
         Column(
             Modifier
@@ -179,171 +357,17 @@ fun HomeScreen(
                 .padding(padding)
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
+            verticalArrangement = Arrangement.spacedBy(24.dp),
         ) {
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                StreakBadge(state.game.streak)
-                PointsBadge(state.game.points)
-                Surface(
-                    onClick = onOpenBadges,
-                    color = MaterialTheme.colorScheme.tertiaryContainer,
-                    shape = CircleShape,
-                ) {
-                    Text(
-                        "🏅 ${state.game.badges.size}",
-                        style = MaterialTheme.typography.labelLarge,
-                        color = MaterialTheme.colorScheme.onTertiaryContainer,
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                    )
-                }
+            Spacer(Modifier.height(0.dp))
+            blocks.forEach { content ->
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) { content() }
             }
-            run {
-                val challenges = remember(state, now.toLocalDate()) { com.medipote.app.domain.Challenges.status(state, now.toLocalDate()) }
-                val flowers = remember(state.journal, state.sleep, now.toLocalDate()) { com.medipote.app.domain.Garden.flowers(state, now.toLocalDate()) }
-                Text(
-                    "🎯 Défis ${challenges.count { it.complete }}/${challenges.size}   ·   🌷 $flowers fleurs   ·   ${state.game.petName} ›",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.clip(MaterialTheme.shapes.small).clickable(onClick = onOpenBadges).padding(vertical = 2.dp),
-                )
+            TextButton(onClick = onOpenHomeLayout, modifier = Modifier.align(Alignment.CenterHorizontally)) {
+                Text("✏️  Personnaliser l'accueil")
             }
-            com.medipote.app.domain.Recaps.pending(state, now)?.let { week -> com.medipote.app.ui.motivation.RecapReadyCard { onOpenRecap(week) } }
-            if (notificationsBlocked && state.settings.notificationsEnabled) NotificationsBanner(onFixNotifications)
-            else if (remindersQuiet && state.settings.notificationsEnabled) NotificationsBanner(
-                onFixQuietReminders,
-                title = "Les rappels arrivent sans pop-up",
-                text = "Ils restent cachés dans le volet. Touche ici et active « Afficher en pop-up » (ou « Notifications contextuelles ») et le son.",
-            )
-
-            val look = state.settings.look
-            if (look.motto.isNotBlank()) MottoCard(look.motto)
-
-            // Doses taken yesterday but not noted: one tap to catch up.
-            val yesterday = now.toLocalDate().minusDays(1)
-            val forgotten = remember(state.doseLogs, state.treatments, yesterday) { forgottenDoses(state, yesterday, now) }
-            if (forgotten.isNotEmpty()) ForgottenBanner(forgotten.size) { onOpenHistory(yesterday) }
-
-            // A period product is being worn: its timer stays in sight.
-            if (state.productSession != null) {
-                com.medipote.app.ui.cycle.PeriodCareCard(
-                    state, now, onStart = {}, onChanged = onProductChanged, onRemoved = onProductRemoved,
-                    onSetReminder = { _, _ -> }, compact = true,
-                )
-            }
-
-            val low = state.treatments.filter { it.isLowStock }
-            if (low.isNotEmpty()) StockBanner(low, onOpenTreatments)
-            com.medipote.app.domain.Renewals.due(state, now.toLocalDate()).forEach { doc -> RenewalBanner(doc, now.toLocalDate()) { onOpenDocument(doc) } }
-
-            for (section in look.visibleSections) when (section) {
-                HomeSection.COMPANION -> {
-                    Card(
-                        shape = MaterialTheme.shapes.extraLarge,
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
-                        border = if (dragHover) BorderStroke(3.dp, MaterialTheme.colorScheme.primary) else null,
-                        modifier = Modifier.fillMaxWidth(),
-                    ) {
-                        Box(
-                            Modifier
-                                .fillMaxWidth()
-                                .aspectRatio(1.25f)
-                                .clip(MaterialTheme.shapes.extraLarge)
-                                .onGloballyPositioned { petBounds = it.boundsInRoot() },
-                        ) {
-                            InteractivePet(
-                                mood = condition.mood,
-                                equipped = state.game.equipped,
-                                talk = { r -> PetTalk.line(r, state, now) },
-                                petName = state.game.petName,
-                                feedSignal = feedSignal,
-                                animate = animate,
-                                description = "${state.game.petName} : ${condition.message}",
-                                greeting = remember(state.profile?.name) { PetTalk.greeting(state, now) },
-                                onCuddle = onCuddle,
-                                stage = growth.stage,
-                                modifier = Modifier.fillMaxSize(),
-                            )
-                            HealthTag(state.game.petName, condition, growth, Modifier.align(Alignment.TopStart).padding(12.dp))
-                            FloatingPoints(pointsSignal, lastPoints, Modifier.align(Alignment.TopCenter).padding(top = 32.dp))
-                        }
-                        MoodMessage(condition)
-                    }
-                    if (giveable.isNotEmpty()) {
-                        PillTray(
-                            items = giveable,
-                            petBounds = petBounds,
-                            onHover = { dragHover = it },
-                            onDrop = onGive,
-                        )
-                    }
-                }
-                HomeSection.DOSES -> {
-                    if (state.treatments.isEmpty()) {
-                        EmptyTreatments(state.game.petName, onAddTreatment)
-                    } else if (state.treatments.any { !it.asNeeded }) {
-                        val todayOnly = today.filter { it.occurrence.date == now.toLocalDate() }
-                        val done = todayOnly.count { it.state == DoseState.TAKEN }
-                        SectionTitle("Aujourd'hui") {
-                            Text(
-                                "$done / ${todayOnly.size} prises",
-                                style = MaterialTheme.typography.labelLarge,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
-                        if (todayOnly.isNotEmpty()) {
-                            LinearProgressIndicator(
-                                progress = { done.toFloat() / todayOnly.size },
-                                modifier = Modifier.fillMaxWidth().height(8.dp).clip(CircleShape),
-                                drawStopIndicator = {},
-                            )
-                        }
-                        if (today.isEmpty()) {
-                            Text(
-                                "Aucune prise prévue aujourd'hui. ${state.game.petName} profite de sa journée !",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
-                        today.forEach { item -> DoseCard(item, now, onGive, onGiveEarly) }
-                        TextButton(onClick = { onOpenHistory(yesterday) }) {
-                            Icon(Icons.Rounded.History, null, Modifier.size(18.dp))
-                            Spacer(Modifier.width(6.dp))
-                            Text("Jours précédents : noter un oubli")
-                        }
-                    }
-                }
-                HomeSection.AS_NEEDED -> {
-                    val prn = state.treatments.filter { it.asNeeded && (it.endDate == null || !it.endDate.isBefore(now.toLocalDate())) }
-                    if (prn.isNotEmpty()) PrnCard(state, prn, now, onLogPrn, onOpenPrnIntake)
-                }
-                HomeSection.MEASURES -> com.medipote.app.ui.measures.HomeMeasuresCard(state, now, onAddMeasure, onOpenMeasure)
-                HomeSection.WATER -> {
-                    val water = state.settings.water
-                    WaterCard(state.entryFor(now.toLocalDate()).waterGlasses, water.goalGlasses, water.glassMl, onAddWater)
-                }
-                HomeSection.PROMPTS -> {
-                    // Not twice the same invitation: the ritual and mood cards already ask when they are shown.
-                    val ritualShown = HomeSection.RITUAL in look.visibleSections &&
-                        com.medipote.app.domain.Rituals.current(now) == com.medipote.app.domain.RitualKind.MORNING &&
-                        !com.medipote.app.domain.Rituals.done(state.game, now, com.medipote.app.domain.RitualKind.MORNING)
-                    if (!ritualShown && now.hour in 5..13 && state.sleep.none { it.date == now.toLocalDate() }) SleepPrompt(onOpenSleep)
-                    if (HomeSection.MOOD !in look.visibleSections && !state.entryFor(now.toLocalDate()).hasJournal) JournalPrompt(state.game.petName, onOpenJournal)
-                }
-                HomeSection.MOOD -> com.medipote.app.ui.motivation.MoodCard(state.entryFor(now.toLocalDate()), onMood, onAnswer)
-                HomeSection.RITUAL -> com.medipote.app.domain.Rituals.current(now)?.let { kind ->
-                    if (!com.medipote.app.domain.Rituals.done(state.game, now, kind)) com.medipote.app.ui.motivation.RitualCard(kind) { onRitual(kind) }
-                }
-                // Shown in the companion space; on home, only a line under the streak.
-                HomeSection.CHALLENGES, HomeSection.GARDEN -> Unit
-                HomeSection.APPOINTMENT -> state.appointments
-                    .filter { !it.dateTime.isBefore(now.minusHours(1)) && it.dateTime.isBefore(now.plusDays(8)) }
-                    .minByOrNull { it.dateTime }
-                    ?.let { a ->
-                        SectionTitle("Prochain rendez-vous")
-                        com.medipote.app.ui.agenda.AppointmentCard(a, now) { onOpenAppointment(a) }
-                    }
-            }
-            Spacer(Modifier.height(8.dp))
+            // Room for the "+" button.
+            Spacer(Modifier.height(if (quickAdd != null) 64.dp else 0.dp))
         }
     }
 }
@@ -362,31 +386,6 @@ private fun MottoCard(motto: String) {
             textAlign = androidx.compose.ui.text.style.TextAlign.Center,
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
         )
-    }
-}
-
-@Composable
-private fun ForgottenBanner(count: Int, onClick: () -> Unit) {
-    Card(
-        onClick = onClick,
-        colors = CardDefaults.cardColors(containerColor = AppTheme.status.warningContainer),
-        modifier = Modifier.fillMaxWidth(),
-    ) {
-        Row(Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
-            Icon(Icons.Rounded.History, null, tint = AppTheme.status.warning)
-            Spacer(Modifier.width(12.dp))
-            Column(Modifier.weight(1f)) {
-                Text(
-                    "Hier : $count prise${if (count > 1) "s" else ""} non notée${if (count > 1) "s" else ""}",
-                    style = MaterialTheme.typography.titleSmall,
-                )
-                Text(
-                    if (count > 1) "Tu les as prises mais oublié de les noter ? Touche ici pour rattraper."
-                    else "Tu l'as prise mais oublié de la noter ? Touche ici pour rattraper.",
-                    style = MaterialTheme.typography.bodyMedium,
-                )
-            }
-        }
     }
 }
 
@@ -692,50 +691,6 @@ private fun EmptyTreatments(petName: String, onAdd: () -> Unit) {
 }
 
 @Composable
-private fun RenewalBanner(doc: com.medipote.app.data.HealthDocument, today: java.time.LocalDate, onClick: () -> Unit) {
-    val left = com.medipote.app.domain.Renewals.daysLeft(doc, today) ?: 0
-    Card(
-        onClick = onClick,
-        colors = CardDefaults.cardColors(containerColor = if (left < 0) AppTheme.status.criticalContainer else AppTheme.status.warningContainer),
-        modifier = Modifier.fillMaxWidth(),
-    ) {
-        Row(Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text("📄", style = MaterialTheme.typography.titleLarge)
-            Spacer(Modifier.width(12.dp))
-            Column(Modifier.weight(1f)) {
-                Text(if (left < 0) "Ordonnance expirée" else "Ordonnance à renouveler", style = MaterialTheme.typography.titleSmall)
-                Text(
-                    "${doc.title} · ${com.medipote.app.domain.Renewals.label(doc, today)?.lowercase()}. Pense à prendre rendez-vous.",
-                    style = MaterialTheme.typography.bodyMedium,
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun StockBanner(low: List<com.medipote.app.data.Treatment>, onClick: () -> Unit) {
-    Card(
-        onClick = onClick,
-        colors = CardDefaults.cardColors(containerColor = AppTheme.status.criticalContainer),
-        modifier = Modifier.fillMaxWidth(),
-    ) {
-        Row(Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
-            Icon(Icons.Outlined.Inventory2, null, tint = AppTheme.status.critical)
-            Spacer(Modifier.width(12.dp))
-            Column(Modifier.weight(1f)) {
-                Text("Pense à racheter", style = MaterialTheme.typography.titleSmall)
-                Text(
-                    low.joinToString(" · ") { t -> "${t.displayName} : " + (t.daysLeft?.let { "$it j" } ?: t.stock?.let { t.unit.format(it) } ?: "") },
-                    style = MaterialTheme.typography.bodyMedium,
-                )
-            }
-        }
-    }
-}
-
-/** As-needed medications: one tap to log an intake, and a nudge to rate the last one. */
-@Composable
 private fun PrnCard(
     state: AppState,
     treatments: List<com.medipote.app.data.Treatment>,
@@ -887,24 +842,144 @@ private fun JournalPrompt(pet: String, onOpen: () -> Unit) {
     }
 }
 
+/** Streak, points, badges and challenges in one line. */
 @Composable
-private fun NotificationsBanner(
-    onFix: () -> Unit,
-    title: String = "Les notifications sont bloquées",
-    text: String = "Tu ne recevras pas les rappels. Touche ici pour les autoriser.",
-) {
+private fun StatusRow(state: AppState, now: LocalDateTime, onOpen: () -> Unit) {
+    val challenges = remember(state, now.toLocalDate()) { com.medipote.app.domain.Challenges.status(state, now.toLocalDate()) }
+    Row(
+        Modifier.fillMaxWidth().clip(CircleShape).clickable(onClick = onOpen),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        StreakBadge(state.game.streak)
+        PointsBadge(state.game.points)
+        StatusChip("🏅 ${state.game.badges.size}")
+        if (challenges.isNotEmpty()) StatusChip("🎯 ${challenges.count { it.complete }}/${challenges.size}")
+    }
+}
+
+@Composable
+private fun StatusChip(text: String) {
+    Surface(color = MaterialTheme.colorScheme.surfaceContainerHigh, shape = CircleShape) {
+        Text(text, style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp))
+    }
+}
+
+/** The next dose, in big: the one thing to do. */
+@Composable
+private fun HeroDose(item: DoseItem, now: LocalDateTime, petName: String, onGive: (DoseItem) -> Unit, onGiveEarly: (DoseItem) -> Unit) {
+    var confirmEarly by remember { mutableStateOf(false) }
+    val t = item.occurrence.treatment
+    val on = MaterialTheme.colorScheme.onPrimaryContainer
+    val whenText = when (item.state) {
+        DoseState.DUE -> "C'est l'heure"
+        DoseState.OVERDUE -> "En retard de ${com.medipote.app.domain.Prn.formatDuration(java.time.Duration.between(item.occurrence.scheduled, now))}"
+        else -> "Dans ${com.medipote.app.domain.Prn.formatDuration(java.time.Duration.between(now, item.occurrence.scheduled))}"
+    }
     Card(
-        onClick = onFix,
-        colors = CardDefaults.cardColors(containerColor = AppTheme.status.warningContainer),
+        shape = MaterialTheme.shapes.extraLarge,
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer, contentColor = on),
         modifier = Modifier.fillMaxWidth(),
     ) {
-        Row(Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
-            Icon(Icons.Rounded.NotificationsOff, null, tint = AppTheme.status.warning)
+        Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+            Text("Prochaine prise · $whenText", style = MaterialTheme.typography.labelLarge, color = on.copy(alpha = 0.8f))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(item.occurrence.dose.timeLabel, style = MaterialTheme.typography.displaySmall, fontWeight = FontWeight.SemiBold)
+                Spacer(Modifier.width(16.dp))
+                Column(Modifier.weight(1f)) {
+                    Text(t.displayName, style = MaterialTheme.typography.titleLarge, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                    Text(
+                        t.unit.format(item.occurrence.quantity) + if (t.withFood) " · pendant le repas" else "",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = on.copy(alpha = 0.8f),
+                    )
+                }
+            }
+            if (item.canGive) {
+                Button(onClick = { onGive(item) }, modifier = Modifier.fillMaxWidth().height(52.dp)) {
+                    Icon(Icons.Rounded.Check, null)
+                    Spacer(Modifier.width(8.dp))
+                    Text("Donner à $petName", style = MaterialTheme.typography.titleMedium)
+                }
+            } else if (item.canMarkEarly(now)) {
+                TextButton(onClick = { confirmEarly = true }) { Text("Déjà pris ?", color = on) }
+            }
+        }
+    }
+    if (confirmEarly) {
+        EarlyDialog(t.displayName, item.occurrence.dose.timeLabel, onConfirm = { confirmEarly = false; onGiveEarly(item) }, onDismiss = { confirmEarly = false })
+    }
+}
+
+@Composable
+private fun AllDone(count: Int, petName: String) {
+    Surface(color = AppTheme.status.goodContainer, shape = MaterialTheme.shapes.large, modifier = Modifier.fillMaxWidth()) {
+        Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+            Text("🎉", style = MaterialTheme.typography.headlineSmall)
+            Spacer(Modifier.width(12.dp))
+            Text(
+                "Bravo, tout est pris pour aujourd'hui ($count prise${if (count > 1) "s" else ""}). $petName te dit merci !",
+                style = MaterialTheme.typography.bodyLarge,
+            )
+        }
+    }
+}
+
+/** Doses already taken today, folded into one line. */
+@Composable
+private fun TakenFold(taken: List<DoseItem>, now: LocalDateTime, onGive: (DoseItem) -> Unit, onGiveEarly: (DoseItem) -> Unit) {
+    var open by remember { mutableStateOf(false) }
+    Surface(
+        onClick = { open = !open },
+        color = MaterialTheme.colorScheme.surfaceContainerLow,
+        shape = MaterialTheme.shapes.medium,
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Row(Modifier.padding(horizontal = 16.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+            Icon(Icons.Rounded.Check, null, tint = AppTheme.status.good, modifier = Modifier.size(20.dp))
+            Spacer(Modifier.width(10.dp))
+            Text(
+                "${taken.size} prise${if (taken.size > 1) "s" else ""} faite${if (taken.size > 1) "s" else ""} : " +
+                    taken.joinToString(", ") { it.occurrence.treatment.name },
+                style = MaterialTheme.typography.bodyMedium,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f),
+            )
+            Text(if (open) "Masquer" else "Voir", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
+        }
+    }
+    if (open) taken.forEach { DoseCard(it, now, onGive, onGiveEarly) }
+}
+
+/** An alert in a calm card: the colour is only on its icon. */
+@Composable
+private fun Notice(
+    icon: androidx.compose.ui.graphics.vector.ImageVector?,
+    tint: Color,
+    title: String,
+    text: String,
+    emoji: String = "",
+    onClick: () -> Unit,
+) {
+    Card(
+        onClick = onClick,
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Row(Modifier.padding(horizontal = 16.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+            Surface(color = tint.copy(alpha = 0.15f), shape = CircleShape, modifier = Modifier.size(40.dp)) {
+                Box(contentAlignment = Alignment.Center) {
+                    if (icon != null) Icon(icon, null, tint = tint, modifier = Modifier.size(22.dp))
+                    else Text(emoji, style = MaterialTheme.typography.titleMedium)
+                }
+            }
             Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f)) {
                 Text(title, style = MaterialTheme.typography.titleSmall)
-                Text(text, style = MaterialTheme.typography.bodyMedium)
+                Text(text, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
+            Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }

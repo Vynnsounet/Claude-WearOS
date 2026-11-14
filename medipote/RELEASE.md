@@ -66,6 +66,21 @@ L'optimiseur de R8 reste désactivé (`-dontoptimize`) : APK de 3,8 Mo au lieu d
 le dex livré peut être reconverti et exécuté hors appareil pour vérification (voir plus bas),
 ce que l'optimiseur empêche. Il pourra être réactivé après des essais sur téléphone.
 
+### 1.8.0 — une appli plus aérée
+
+- Bouton « + Noter » sur l'accueil : humeur, médicament si besoin, nuit, verre d'eau,
+  protection, mesure, journal, rendez-vous, en deux gestes.
+- Accueil : la prochaine prise en grand en haut (« Donner à … »), les prises faites repliées
+  en une ligne, alertes dans des cartes calmes (couleur sur l'icône seulement), série, points,
+  badges et défis sur une ligne.
+- Chaque bloc s'affiche quand il sert : protection pendant les règles, rituel le matin et le
+  soir, récap le dimanche soir et le lundi, humeur repliée une fois remplie, si besoin après
+  une prise des dernières 24 h, eau si suivie, rendez-vous dans les 3 jours.
+- Page « Mon accueil » (Paramètres) : afficher, masquer et ordonner chaque bloc.
+- Explications repliées (« ⓘ À savoir », petits ⓘ, barème des points replié).
+- Formulaires : l'essentiel d'abord, le reste sous « Plus d'options » (traitement, nuit,
+  journal, rendez-vous, mesure) ; fiche du médicament repliée.
+
 ### 1.7.1
 
 - La carte « médicaments pour les règles » ne montre plus tous les médicaments « si besoin »

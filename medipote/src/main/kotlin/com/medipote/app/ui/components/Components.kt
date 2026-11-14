@@ -1,6 +1,10 @@
 package com.medipote.app.ui.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.ui.draw.clip
+import androidx.compose.material.icons.rounded.KeyboardArrowDown
+import androidx.compose.material.icons.rounded.KeyboardArrowUp
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -111,16 +115,78 @@ fun StreakBadge(streak: Int, modifier: Modifier = Modifier) {
 }
 
 @Composable
-fun Disclaimer(text: String, modifier: Modifier = Modifier) {
+fun Disclaimer(text: String, modifier: Modifier = Modifier, important: Boolean = false) {
+    // Folded into a quiet "À savoir" line unless it really matters: tap to read.
+    var open by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(important) }
     Row(
         modifier
             .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.surfaceContainerHigh, MaterialTheme.shapes.medium)
-            .padding(12.dp),
+            .clip(MaterialTheme.shapes.medium)
+            .then(if (open) Modifier.background(MaterialTheme.colorScheme.surfaceContainerHigh) else Modifier)
+            .then(if (important) Modifier else Modifier.clickable(onClickLabel = if (open) "Replier" else "Lire") { open = !open })
+            .padding(horizontal = 12.dp, vertical = if (open) 12.dp else 8.dp),
         horizontalArrangement = Arrangement.spacedBy(10.dp),
+        verticalAlignment = if (open) Alignment.Top else Alignment.CenterVertically,
     ) {
         Icon(Icons.Outlined.Info, null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(18.dp))
-        Text(text, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(
+            if (open) text else "À savoir",
+            style = if (open) MaterialTheme.typography.bodySmall else MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.weight(1f),
+        )
+        if (!important) {
+            Icon(
+                if (open) Icons.Rounded.KeyboardArrowUp else Icons.Rounded.KeyboardArrowDown, null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(18.dp),
+            )
+        }
+    }
+}
+
+/** Secondary fields of a form, folded under one line that says what's set. */
+@Composable
+fun MoreOptions(summary: String, initiallyOpen: Boolean = false, label: String = "Plus d'options", content: @Composable () -> Unit) {
+    var open by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(initiallyOpen) }
+    Surface(
+        onClick = { open = !open },
+        color = MaterialTheme.colorScheme.surfaceContainerLow,
+        shape = MaterialTheme.shapes.medium,
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Row(Modifier.padding(horizontal = 16.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                Text(if (open) "Moins d'options" else label, style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary)
+                if (!open && summary.isNotBlank()) {
+                    Text(summary, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
+            Icon(
+                if (open) Icons.Rounded.KeyboardArrowUp else Icons.Rounded.KeyboardArrowDown,
+                null, tint = MaterialTheme.colorScheme.primary,
+            )
+        }
+    }
+    androidx.compose.animation.AnimatedVisibility(open) {
+        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) { content() }
+    }
+}
+
+/** A small (i): the explanation opens in a bubble instead of taking room on the screen. */
+@Composable
+fun InfoButton(title: String, text: String, modifier: Modifier = Modifier) {
+    var open by remember { mutableStateOf(false) }
+    androidx.compose.material3.IconButton(onClick = { open = true }, modifier = modifier.size(36.dp)) {
+        Icon(Icons.Outlined.Info, "En savoir plus : $title", tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(20.dp))
+    }
+    if (open) {
+        AlertDialog(
+            onDismissRequest = { open = false },
+            icon = { Icon(Icons.Outlined.Info, null) },
+            title = { Text(title) },
+            text = { Text(text) },
+            confirmButton = { TextButton(onClick = { open = false }) { Text("Compris") } },
+        )
     }
 }
 

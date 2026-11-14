@@ -599,17 +599,6 @@ fun SleepEditorScreen(
                 TimeCard("Réveil", wakeMinute, Icons.Outlined.WbSunny, Modifier.weight(1f)) { picking = "wake" to wakeMinute }
             }
 
-            SectionTitle("Temps pour t'endormir")
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Sleep.LATENCY_OPTIONS.forEach { m ->
-                    FilterChip(
-                        selected = latency == m,
-                        onClick = { latency = m },
-                        label = { Text(if (m == 0) "Tout de suite" else Sleep.format(m)) },
-                    )
-                }
-            }
-
             SectionTitle("Réveils dans la nuit") {
                 Text("${awakenings.size}", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
@@ -645,25 +634,45 @@ fun SleepEditorScreen(
                 }
             }
 
-            SectionTitle("Ce qui a pu jouer")
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                (Sleep.TAGS + tags.filter { it !in Sleep.TAGS }).forEach { t ->
-                    val on = t in tags
-                    FilterChip(
-                        selected = on,
-                        onClick = { if (on) tags.remove(t) else tags.add(t) },
-                        label = { Text(t) },
-                        leadingIcon = if (on) ({ Icon(Icons.Rounded.Check, null, Modifier.size(FilterChipDefaults.IconSize)) }) else null,
-                    )
+            com.medipote.app.ui.components.MoreOptions(
+                listOfNotNull(
+                    "endormissement : " + if (latency == 0) "tout de suite" else Sleep.format(latency),
+                    tags.size.takeIf { it > 0 }?.let { "$it facteur${if (it > 1) "s" else ""}" },
+                    "notes".takeIf { notes.isNotBlank() },
+                ).joinToString(" · "),
+                initiallyOpen = tags.isNotEmpty() || notes.isNotBlank(),
+                label = "Endormissement, facteurs, notes",
+            ) {
+                SectionTitle("Temps pour t'endormir")
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Sleep.LATENCY_OPTIONS.forEach { m ->
+                        FilterChip(
+                            selected = latency == m,
+                            onClick = { latency = m },
+                            label = { Text(if (m == 0) "Tout de suite" else Sleep.format(m)) },
+                        )
+                    }
                 }
+                SectionTitle("Ce qui a pu jouer")
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    (Sleep.TAGS + tags.filter { it !in Sleep.TAGS }).forEach { t ->
+                        val on = t in tags
+                        FilterChip(
+                            selected = on,
+                            onClick = { if (on) tags.remove(t) else tags.add(t) },
+                            label = { Text(t) },
+                            leadingIcon = if (on) ({ Icon(Icons.Rounded.Check, null, Modifier.size(FilterChipDefaults.IconSize)) }) else null,
+                        )
+                    }
+                }
+                OutlinedTextField(
+                    value = notes,
+                    onValueChange = { notes = it },
+                    label = { Text("Notes (rêves, sieste…)") },
+                    modifier = Modifier.fillMaxWidth(),
+                    minLines = 2,
+                )
             }
-            OutlinedTextField(
-                value = notes,
-                onValueChange = { notes = it },
-                label = { Text("Notes (rêves, sieste…)") },
-                modifier = Modifier.fillMaxWidth(),
-                minLines = 2,
-            )
         }
     }
 

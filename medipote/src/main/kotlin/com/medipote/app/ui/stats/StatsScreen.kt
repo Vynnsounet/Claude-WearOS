@@ -454,16 +454,12 @@ private fun BreakdownCard(onTime: Int, late: Int, missed: Int, periodLabel: Stri
                     x += w
                 }
             }
-            Row(Modifier.fillMaxWidth()) {
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 Count("À l'heure", onTime, total, status.good, Modifier.weight(1f))
                 Count("Décalées", late, total, status.warning, Modifier.weight(1f))
                 Count("Oubliées", missed, total, status.critical, Modifier.weight(1f))
+                com.medipote.app.ui.components.InfoButton("Décalées", "Prises plus de 30 min avant ou après l'heure prévue.")
             }
-            Text(
-                "Décalées : prises plus de 30 min avant ou après l'heure prévue.",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
         }
     }
 }

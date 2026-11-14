@@ -218,6 +218,7 @@ class ScreensTest {
     }
 
     @Test
+    @Config(qualifiers = "w400dp-h1500dp-xhdpi")
     fun treatmentEditor() {
         render("editor") {
             TreatmentEditorScreen(
@@ -226,6 +227,10 @@ class ScreensTest {
             )
         }
         compose.onNodeWithText("Attention : tu as signalé une allergie", substring = true).assertExists()
+        // Secondary fields are folded for a new treatment.
+        compose.onNodeWithText("Suivre mon stock").assertDoesNotExist()
+        compose.onNodeWithText("Plus d'options").performScrollTo().performClick()
+        compose.onNodeWithText("Suivre mon stock").assertExists()
     }
 
     @Test
@@ -267,6 +272,9 @@ class ScreensTest {
             )
         }
         compose.onNodeWithText("Sombre").assertExists()
+        // The scoring rules are folded: one tap shows them.
+        compose.onNodeWithText("Verre d'eau (jusqu'à l'objectif du jour)").assertDoesNotExist()
+        compose.onNodeWithText("Points, série et compagnon : le barème").performScrollTo().performClick()
         compose.onNodeWithText("Verre d'eau (jusqu'à l'objectif du jour)").assertExists()
     }
 
@@ -807,7 +815,7 @@ class ScreensTest {
         val settings = Settings(look = com.medipote.app.data.Look(customColor = 0xFF7E57C2, motto = "Je prends soin de moi", avatar = "🦋"))
         render("appearance") { com.medipote.app.ui.settings.AppearanceScreen(settings, "Alex", true, {}, {}) }
         compose.onNodeWithText("Police des titres").assertExists()
-        compose.onNodeWithText("Ordre par défaut").assertExists()
+        compose.onNodeWithText("🏠  Choisir ce qui s'affiche sur l'accueil").assertExists()
         compose.onNodeWithText("Teinte").assertExists()
     }
 
@@ -871,12 +879,32 @@ class ScreensTest {
     @Test
     @Config(qualifiers = "w400dp-h3000dp-xhdpi")
     fun homeV15() {
-        render("home_v15") { HomeScreen(motivationState(), today.atTime(8, 0), 0, 0, {}, {}, {}, {}, animate = false) }
-        compose.onNodeWithText("Comment ça va ?").assertExists()
+        render("home_v15") { HomeScreen(motivationState(), today.atTime(8, 0), 0, 0, {}, {}, {}, {}, animate = false, quickAdd = com.medipote.app.ui.home.QuickAddActions()) }
+        compose.onNodeWithText("Noter", useUnmergedTree = true).assertExists()
+        // Mood and question answered: folded into one line.
+        compose.onNodeWithText("question du jour répondue", substring = true).assertExists()
         compose.onNodeWithText("Rituel du matin").assertExists()
-        // Challenges and garden live in the companion space; home keeps one line.
-        compose.onNodeWithText("🎯 Défis", substring = true).assertExists()
+        // Challenges and garden live in the companion space; home keeps a chip.
+        compose.onNodeWithText("🎯 ", substring = true).assertExists()
         compose.onNodeWithText("Mon jardin").assertDoesNotExist()
+    }
+
+    @Test
+    @Config(qualifiers = "w400dp-h1100dp-xhdpi")
+    fun quickAddPanel() {
+        val state = richState().let { it.copy(profile = it.profile?.copy(menstruating = true)) }
+        var water = 0
+        var mood: Int? = null
+        render("quick_add") {
+            com.medipote.app.ui.home.QuickAddContent(state, today.atTime(12, 10), com.medipote.app.ui.home.QuickAddActions(onWater = { water++ }, onMood = { mood = it }), onDone = {})
+        }
+        compose.onNodeWithText("Que veux-tu noter ?").assertExists()
+        compose.onNodeWithText("Une protection").assertExists()
+        compose.onNodeWithText("Un verre d'eau").performClick()
+        org.junit.Assert.assertEquals(1, water)
+        compose.onNodeWithText("Une protection").performClick()
+        compose.onNodeWithText("🩲").assertExists()
+        save("quick_add_product", compose.onRoot().captureToImage().asAndroidBitmap())
     }
 
     @Test

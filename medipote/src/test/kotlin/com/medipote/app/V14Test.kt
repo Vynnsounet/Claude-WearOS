@@ -111,11 +111,12 @@ class V14Test {
             homeOrder = listOf(HomeSection.WATER, HomeSection.DOSES, HomeSection.COMPANION),
             hiddenSections = setOf(HomeSection.APPOINTMENT),
         )
-        // Sections missing from the saved order (added by an update) come at the end.
+        // Sections missing from the saved order (added by an update) go after the one they follow by default.
         assertEquals(
             listOf(
-                HomeSection.WATER, HomeSection.DOSES, HomeSection.COMPANION, HomeSection.MOOD, HomeSection.RITUAL,
-                HomeSection.AS_NEEDED, HomeSection.MEASURES, HomeSection.PROMPTS, HomeSection.CHALLENGES, HomeSection.GARDEN,
+                HomeSection.STATUS, HomeSection.NEXT_DOSE, HomeSection.WATER, HomeSection.PROMPTS,
+                HomeSection.CHALLENGES, HomeSection.GARDEN, HomeSection.DOSES, HomeSection.AS_NEEDED, HomeSection.MEASURES,
+                HomeSection.COMPANION, HomeSection.MOOD, HomeSection.RITUAL, HomeSection.PERIOD,
             ),
             look.visibleSections,
         )

@@ -416,12 +416,14 @@ fun MeasureEditorScreen(
                     }
                 }
             }
-            OutlinedTextField(
-                value = notes, onValueChange = { notes = it },
-                label = { Text("Notes (facultatif)") },
-                placeholder = { Text(if (bp) "Bras gauche, après le café…" else "Contexte, symptômes…") },
-                modifier = Modifier.fillMaxWidth(), minLines = 2,
-            )
+            com.medipote.app.ui.components.MoreOptions("", initiallyOpen = notes.isNotBlank(), label = "Ajouter une note") {
+                OutlinedTextField(
+                    value = notes, onValueChange = { notes = it },
+                    label = { Text("Notes (facultatif)") },
+                    placeholder = { Text(if (bp) "Bras gauche, après le café…" else "Contexte, symptômes…") },
+                    modifier = Modifier.fillMaxWidth(), minLines = 2,
+                )
+            }
             Disclaimer("Les repères affichés sont indicatifs. Seul ton médecin peut interpréter tes mesures.")
         }
     }

@@ -77,8 +77,8 @@ fun PeriodCareCard(
     Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow), modifier = Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             if (session == null) {
-                Text("🩸 Ma protection", style = MaterialTheme.typography.titleMedium)
-                Text(
+                Text(if (compact) "🩸 Tu viens de mettre une protection ?" else "🩸 Ma protection", style = MaterialTheme.typography.titleMedium)
+                if (!compact) Text(
                     "Je viens de mettre :",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -88,7 +88,7 @@ fun PeriodCareCard(
                         AssistChip(onClick = { onStart(p) }, label = { Text("${p.emoji} ${p.label}") })
                     }
                 }
-                Text(
+                if (!compact) Text(
                     "Un minuteur démarre et te rappelle quand la changer." + if (today > 0) " Aujourd'hui : $today protection${if (today > 1) "s" else ""}." else "",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -190,7 +190,14 @@ fun PeriodMedsCard(
     var removing by remember { mutableStateOf<com.medipote.app.data.Treatment?>(null) }
     Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow), modifier = Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            Text("💊 Un médicament pour tes règles ?", style = MaterialTheme.typography.titleMedium)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("💊 Un médicament pour tes règles ?", style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
+                com.medipote.app.ui.components.InfoButton(
+                    "Médicaments pendant les règles",
+                    "Notés avec le motif « ${PeriodCare.REASON} » : tu verras dans les stats s'ils reviennent surtout pendant tes règles. " +
+                        "Respecte la notice et demande conseil à ton pharmacien en cas de doute.",
+                )
+            }
             meds.forEach { t ->
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Column(Modifier.weight(1f)) {
@@ -240,12 +247,6 @@ fun PeriodMedsCard(
                     style = MaterialTheme.typography.bodyMedium,
                 )
             }
-            Text(
-                "Notées avec le motif « ${PeriodCare.REASON} » : tu verras dans les stats si elles reviennent surtout pendant tes règles. " +
-                    "Respecte la notice et demande conseil à ton pharmacien en cas de doute.",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
         }
     }
     if (adding) {

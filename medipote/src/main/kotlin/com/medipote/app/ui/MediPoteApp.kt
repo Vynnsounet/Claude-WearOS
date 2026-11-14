@@ -406,6 +406,20 @@ fun MediPoteApp(vm: AppViewModel) {
                         onOpenRecap = { nav.navigate("recap/$it") },
                         onProductChanged = vm::productChanged,
                         onProductRemoved = vm::productRemoved,
+                        onProductStart = vm::startProduct,
+                        onOpenHomeLayout = { nav.navigate("home_layout") },
+                        quickAdd = com.medipote.app.ui.home.QuickAddActions(
+                            onLogPrn = { nav.navigate("prn_log/${it.id}") },
+                            onAddPrnTreatment = { nav.navigate("search") },
+                            onMood = vm::setMood,
+                            onSleep = { nav.navigate("sleep_log") },
+                            onWater = { vm.addWater(1) },
+                            onProduct = vm::startProduct,
+                            onProductChanged = vm::productChanged,
+                            onMeasure = { nav.navigate("measure_log/${it.name}") },
+                            onJournal = { nav.navigate("day/$today") },
+                            onAppointment = { nav.navigate("appointment?date=$today") },
+                        ),
                     )
                 }
                 composable("treatments") {
@@ -722,7 +736,11 @@ fun MediPoteApp(vm: AppViewModel) {
                         state.settings, state.profile?.name.orEmpty(), Build.VERSION.SDK_INT >= 31,
                         onChange = vm::updateSettings,
                         onBack = { nav.popBackStack() },
+                        onOpenHomeLayout = { nav.navigate("home_layout") },
                     )
+                }
+                composable("home_layout") {
+                    com.medipote.app.ui.settings.HomeLayoutScreen(state.settings, vm::updateSettings, onBack = { nav.popBackStack() })
                 }
                 composable("report") {
                     com.medipote.app.ui.report.ReportScreen(state, now, onMessage = vm::message, onBack = { nav.popBackStack() })
@@ -854,6 +872,7 @@ fun MediPoteApp(vm: AppViewModel) {
                         quietReminders = if (notificationsAllowed) quietChannels.size else 0,
                         onOpenBackup = { nav.navigate("backup") },
                         onOpenAppearance = { nav.navigate("appearance") },
+                        onOpenHomeLayout = { nav.navigate("home_layout") },
                         lockEnabled = state.settings.lockEnabled,
                         onToggleLock = { on ->
                             val activity = context.findActivity()

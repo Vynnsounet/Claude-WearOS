@@ -13,6 +13,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.Row
+import androidx.compose.ui.Alignment
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
@@ -85,6 +87,7 @@ fun SettingsScreen(
     onFixQuietReminders: () -> Unit = {},
     onOpenBackup: () -> Unit = {},
     onOpenAppearance: () -> Unit = {},
+    onOpenHomeLayout: () -> Unit = {},
     lockEnabled: Boolean = false,
     onToggleLock: (Boolean) -> Unit = {},
     lastBackup: java.time.LocalDateTime? = null,
@@ -117,7 +120,10 @@ fun SettingsScreen(
                     }
                 }
                 androidx.compose.material3.FilledTonalButton(onClick = onOpenAppearance, modifier = Modifier.fillMaxWidth()) {
-                    Text("🎨  Personnaliser : couleurs, police, accueil…")
+                    Text("🎨  Personnaliser : couleurs, police…")
+                }
+                androidx.compose.material3.FilledTonalButton(onClick = onOpenHomeLayout, modifier = Modifier.fillMaxWidth()) {
+                    Text("🏠  Mon accueil : ce qui s'affiche")
                 }
             }
 
@@ -308,6 +314,15 @@ fun SettingsScreen(
 
             SectionTitle("Règles du jeu")
             SettingsCard {
+                var rulesOpen by remember { mutableStateOf(false) }
+                Row(
+                    Modifier.fillMaxWidth().clickable { rulesOpen = !rulesOpen },
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text("Points, série et compagnon : le barème", style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
+                    Text(if (rulesOpen) "Masquer" else "Voir", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
+                }
+                if (rulesOpen) {
                 Rule("Prise à l'heure (de ${Rules.EARLY_WINDOW_MINUTES} min avant à ${Rules.ON_TIME_MINUTES} min après)", "+${Rules.POINTS_ON_TIME} pts")
                 Rule("En retard (jusqu'à ${Rules.LATE_MINUTES / 60} h)", "+${Rules.POINTS_LATE} pts (malus −${Rules.POINTS_ON_TIME - Rules.POINTS_LATE})")
                 Rule("Très en retard (plus de ${Rules.LATE_MINUTES / 60} h)", "+${Rules.POINTS_VERY_LATE} pts (malus −${Rules.POINTS_ON_TIME - Rules.POINTS_VERY_LATE})")
@@ -328,6 +343,7 @@ fun SettingsScreen(
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
+                }
             }
 
             SectionTitle("À propos")
