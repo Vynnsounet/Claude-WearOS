@@ -28,7 +28,7 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
-enum class AlarmKind { DOSE, FOLLOW_UP, APPOINTMENT, WATER, STOCK, TEST, PRN_CHECK, SLEEP, SNOOZE, RENEWAL, RITUAL, RECAP }
+enum class AlarmKind { DOSE, FOLLOW_UP, APPOINTMENT, WATER, STOCK, TEST, PRN_CHECK, SLEEP, SNOOZE, RENEWAL, RITUAL, RECAP, PRODUCT }
 
 /** One planned alarm. [ref] identifies what it is about (an appointment id, for instance). */
 data class AlarmSpec(val kind: AlarmKind, val time: LocalDateTime, val ref: String = "") {
@@ -105,6 +105,14 @@ object ReminderPlanner {
             }
         }
 
+        // Period product: time to change it, then the longest time it should be worn.
+        state.productSession?.let { s ->
+            val change = com.medipote.app.domain.PeriodCare.changeAt(s)
+            val max = com.medipote.app.domain.PeriodCare.maxAt(s)
+            if (change.isAfter(now)) alarms += AlarmSpec(AlarmKind.PRODUCT, change, "remind")
+            if (max.isAfter(now) && max.isAfter(change)) alarms += AlarmSpec(AlarmKind.PRODUCT, max, "max")
+        }
+
         // Morning and evening rituals, while not done that day.
         val rituals = state.settings.rituals
         for (d in 0..1) {
@@ -152,8 +160,10 @@ object Notifications {
     const val CHANNEL_STOCK = "stock_v2"
     const val CHANNEL_SLEEP = "sleep_v2"
     const val CHANNEL_RITUALS = "rituals_v2"
+    const val CHANNEL_PERIOD = "period_v2"
+    const val PRODUCT_ID = 2010
     private val OLD_CHANNELS = listOf("dose_reminders", "appointments", "water", "stock", "sleep")
-    val ALL_CHANNELS = listOf(CHANNEL_DOSES, CHANNEL_APPOINTMENTS, CHANNEL_WATER, CHANNEL_STOCK, CHANNEL_SLEEP, CHANNEL_RITUALS)
+    val ALL_CHANNELS = listOf(CHANNEL_DOSES, CHANNEL_APPOINTMENTS, CHANNEL_WATER, CHANNEL_STOCK, CHANNEL_SLEEP, CHANNEL_RITUALS, CHANNEL_PERIOD)
     private const val SLEEP_ID = 2004
     private const val WATER_ID = 2001
     private const val STOCK_ID = 2002
@@ -183,6 +193,7 @@ object Notifications {
             channel(CHANNEL_STOCK, "Stock de médicaments", "Médicaments à racheter"),
             channel(CHANNEL_SLEEP, "Sommeil", "Rappel du matin pour noter sa nuit"),
             channel(CHANNEL_RITUALS, "Rituels et récap", "Rituels du matin et du soir, récap de la semaine"),
+            channel(CHANNEL_PERIOD, "Protections périodiques", "Quand changer sa serviette, son tampon, sa coupe…"),
         ).forEach(manager::createNotificationChannel)
     }
 
@@ -359,6 +370,29 @@ object Notifications {
         )
     }
 
+    fun showProduct(context: Context, state: AppState, ref: String, now: LocalDateTime) {
+        val s = state.productSession ?: return
+        val p = s.product
+        val elapsed = com.medipote.app.domain.PeriodCare.elapsed(s, now)
+        // Changed or removed in the meantime: nothing to say.
+        if (elapsed.toMinutes() < s.remindMinutes - 1) return
+        val worn = com.medipote.app.domain.Prn.formatDuration(elapsed)
+        val (title, text) = if (ref == "max") {
+            "⚠️ Plus de ${p.maxMinutes / 60} h : change ${p.yours}" to
+                if (p.internal) "Au-delà de ${p.maxMinutes / 60} h, le risque de choc toxique augmente. En cas de fièvre, de malaise ou d'éruption, retire ta protection et appelle le 15."
+                else "Depuis $worn : pense à la changer pour rester au sec et éviter les irritations."
+        } else {
+            "${p.emoji} Pense à changer ${p.yours}" to "Depuis $worn (mise en place à ${s.since.toLocalTime().withSecond(0).withNano(0)})."
+        }
+        post(
+            context, CHANNEL_PERIOD, PRODUCT_ID, title, text, route = "suivi",
+            actions = listOf(
+                NotificationActions.action(context, "J'ai changé ✓", NotificationActions.product(context, NotificationActions.ACTION_PRODUCT_CHANGED)),
+                NotificationActions.action(context, "J'ai retiré", NotificationActions.product(context, NotificationActions.ACTION_PRODUCT_REMOVED)),
+            ),
+        )
+    }
+
     fun showRitual(context: Context, state: AppState, kindName: String, now: LocalDateTime) {
         val kind = runCatching { com.medipote.app.domain.RitualKind.valueOf(kindName) }.getOrNull() ?: return
         if (com.medipote.app.domain.Rituals.done(state.game, now, kind)) return
@@ -418,6 +452,7 @@ object Notifications {
 
     fun cancelWater(context: Context) = NotificationManagerCompat.from(context).cancel(WATER_ID)
     fun cancelSleep(context: Context) = NotificationManagerCompat.from(context).cancel(SLEEP_ID)
+    fun cancelProduct(context: Context) = NotificationManagerCompat.from(context).cancel(PRODUCT_ID)
 }
 
 /** Turns the plan into AlarmManager alarms, replacing the previous set. */
@@ -495,6 +530,7 @@ class ReminderReceiver : BroadcastReceiver() {
                 AlarmKind.RENEWAL -> Notifications.showRenewal(context, state, spec.ref, repo.now())
                 AlarmKind.RITUAL -> Notifications.showRitual(context, state, spec.ref, repo.now())
                 AlarmKind.RECAP -> Notifications.showRecap(context, state, repo.now())
+                AlarmKind.PRODUCT -> Notifications.showProduct(context, state, spec.ref, repo.now())
                 AlarmKind.SNOOZE -> {
                     val time = LocalDateTime.parse(spec.ref)
                     repo.update { s -> s.copy(snoozes = s.snoozes.filterNot { it.doseTime == time && !it.until.isAfter(spec.time) }) }

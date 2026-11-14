@@ -168,11 +168,14 @@ fun MyDayScreen(
             }
 
             val water = entry.waterGlasses
-            if (water > 0 || entry.hasCycleData) {
+            if (water > 0 || entry.hasCycleData || com.medipote.app.domain.PeriodCare.usesOn(state, date) > 0) {
                 Section("💧 Eau et cycle") {
                     if (water > 0) Text("$water verre${if (water > 1) "s" else ""} d'eau sur ${state.settings.water.goalGlasses}", style = MaterialTheme.typography.bodyMedium)
                     entry.flow?.let { Text("Règles : flux ${it.label.lowercase()}", style = MaterialTheme.typography.bodyMedium) }
                     if (entry.cycleSymptoms.isNotEmpty()) Text(entry.cycleSymptoms.joinToString(", "), style = MaterialTheme.typography.bodyMedium)
+                    com.medipote.app.domain.PeriodCare.usesOn(state, date).takeIf { it > 0 }?.let {
+                        Text("Protections : $it", style = MaterialTheme.typography.bodyMedium)
+                    }
                 }
             }
 

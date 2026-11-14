@@ -406,6 +406,45 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         saveEntry(state.value.entryFor(today).copy(reflection = text))
     }
 
+    // ── Period products and medication during periods ──
+
+    fun startProduct(product: com.medipote.app.data.PeriodProduct) {
+        repo.update { com.medipote.app.domain.PeriodCare.start(it, product, repo.now()) }
+        Notifications.cancelProduct(getApplication())
+        reschedule()
+    }
+
+    fun productChanged() {
+        repo.update { com.medipote.app.domain.PeriodCare.change(it, repo.now()) }
+        Notifications.cancelProduct(getApplication())
+        _events.tryEmit(UiEvent.Message("Protection changée, minuteur relancé"))
+        reschedule()
+    }
+
+    fun productRemoved() {
+        repo.update { com.medipote.app.domain.PeriodCare.stop(it, repo.now()) }
+        Notifications.cancelProduct(getApplication())
+        reschedule()
+    }
+
+    fun setProductReminder(product: com.medipote.app.data.PeriodProduct, minutes: Int) {
+        repo.update { com.medipote.app.domain.PeriodCare.setReminder(it, product, minutes) }
+        reschedule()
+    }
+
+    /** Adds a common period medication (from the guide) as "as needed"; returns its id. */
+    fun addPeriodMedication(drugId: String): String? {
+        val drug = com.medipote.app.data.DrugGuide.byId(drugId) ?: return null
+        state.value.treatments.firstOrNull { it.drugId == drugId && it.asNeeded }?.let { return it.id }
+        val t = Treatment(
+            id = java.util.UUID.randomUUID().toString(), drugId = drug.id, name = drug.dci,
+            strength = drug.strengths.firstOrNull().orEmpty(), unit = drug.unit, doses = emptyList(),
+            startDate = repo.now().toLocalDate(), asNeeded = true, createdAt = repo.now(),
+        )
+        repo.update { it.copy(treatments = it.treatments + t) }
+        return t.id
+    }
+
     // ── Rituals ──
 
     fun completeRitual(kind: com.medipote.app.domain.RitualKind) {

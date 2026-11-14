@@ -246,3 +246,43 @@ data class RitualSettings(
     /** A notification on Sunday evening when the week's recap is ready. */
     val weeklyRecap: Boolean = true,
 )
+
+// ─────────────────────────── Period products ───────────────────────────
+
+/**
+ * Period products, with a default reminder to change them and the longest time they should be worn
+ * (internal ones: toxic shock syndrome risk; always follow the product's own leaflet).
+ */
+@Serializable
+enum class PeriodProduct(
+    val label: String,
+    val emoji: String,
+    val defaultMinutes: Int,
+    val maxMinutes: Int,
+    val internal: Boolean,
+    /** "ta serviette", "ton tampon"… */
+    val yours: String,
+) {
+    PAD("Serviette", "🌸", 6 * 60, 8 * 60, false, "ta serviette"),
+    WASHABLE_PAD("Serviette lavable", "🌿", 6 * 60, 8 * 60, false, "ta serviette lavable"),
+    TAMPON("Tampon", "🔸", 4 * 60, 8 * 60, true, "ton tampon"),
+    CUP("Coupe menstruelle", "🌷", 8 * 60, 12 * 60, true, "ta coupe"),
+    DISC("Disque menstruel", "⭕", 8 * 60, 12 * 60, true, "ton disque"),
+    UNDERWEAR("Culotte de règles", "🩲", 8 * 60, 12 * 60, false, "ta culotte de règles"),
+}
+
+/** The product worn right now, since when, and when to be reminded. */
+@Serializable
+data class ProductSession(
+    val product: PeriodProduct,
+    @Serializable(with = LocalDateTimeSerializer::class) val since: LocalDateTime,
+    val remindMinutes: Int,
+)
+
+/** A product worn and changed (history). */
+@Serializable
+data class ProductUse(
+    val product: PeriodProduct,
+    @Serializable(with = LocalDateTimeSerializer::class) val start: LocalDateTime,
+    @Serializable(with = LocalDateTimeSerializer::class) val end: LocalDateTime,
+)

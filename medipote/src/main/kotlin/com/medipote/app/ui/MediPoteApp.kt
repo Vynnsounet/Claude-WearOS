@@ -404,6 +404,8 @@ fun MediPoteApp(vm: AppViewModel) {
                         onRitual = { nav.navigate("ritual/${it.name}") },
                         onOpenBadges = { nav.navigate("badges") },
                         onOpenRecap = { nav.navigate("recap/$it") },
+                        onProductChanged = vm::productChanged,
+                        onProductRemoved = vm::productRemoved,
                     )
                 }
                 composable("treatments") {
@@ -481,7 +483,21 @@ fun MediPoteApp(vm: AppViewModel) {
                             else -> CycleScreen(
                                 state.profile?.cycle, state.journal, today, vm::logPeriod, vm::updateCycle,
                                 onOpenDay = { nav.navigate("day/$it") }, embedded = true,
-                            )
+                            ) {
+                                com.medipote.app.ui.cycle.PeriodCareCard(
+                                    state, now,
+                                    onStart = vm::startProduct, onChanged = vm::productChanged, onRemoved = vm::productRemoved,
+                                    onSetReminder = vm::setProductReminder,
+                                )
+                                val periodLog = { id: String ->
+                                    nav.navigate("prn_log/$id?reason=${Uri.encode(com.medipote.app.domain.PeriodCare.REASON)}&context=${Uri.encode(com.medipote.app.domain.PeriodCare.CONTEXT)}")
+                                }
+                                com.medipote.app.ui.cycle.PeriodMedsCard(
+                                    state, now,
+                                    onLog = periodLog,
+                                    onAddCommon = { drugId -> vm.addPeriodMedication(drugId)?.let(periodLog) },
+                                )
+                            }
                         }
                     }
                 }
@@ -554,10 +570,12 @@ fun MediPoteApp(vm: AppViewModel) {
                     )
                 }
                 composable(
-                    "prn_log/{treatment}?intake={intake}",
+                    "prn_log/{treatment}?intake={intake}&reason={reason}&context={context}",
                     arguments = listOf(
                         navArgument("treatment") { type = NavType.StringType },
                         navArgument("intake") { type = NavType.StringType; nullable = true },
+                        navArgument("reason") { type = NavType.StringType; nullable = true },
+                        navArgument("context") { type = NavType.StringType; nullable = true },
                     ),
                 ) { entry ->
                     val t = state.treatments.firstOrNull { it.id == entry.arguments?.getString("treatment") }
@@ -578,6 +596,8 @@ fun MediPoteApp(vm: AppViewModel) {
                                 nav.popBackStack()
                             },
                             onBack = { nav.popBackStack() },
+                            presetReason = entry.arguments?.getString("reason").orEmpty(),
+                            presetContexts = listOfNotNull(entry.arguments?.getString("context")),
                         )
                     }
                 }

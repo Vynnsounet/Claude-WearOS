@@ -142,6 +142,11 @@ Profil médical et paramètres sont accessibles en haut à droite.
   calendrier où l'on touche un jour pour noter flux, symptômes physiques ou
   émotionnels et rapports sexuels (protégés ou non). Noter un flux démarre un
   nouveau cycle si besoin.
+- **Protections périodiques** : « Je viens de mettre » une serviette, un tampon,
+  une coupe, un disque ou une culotte de règles lance un minuteur ; rappel quand
+  la changer (réglable), alerte à la durée maximale (avec le risque de choc
+  toxique pour les protections internes), boutons « J'ai changé » / « J'ai retiré »
+  dans la notification. Médicaments pendant les règles notés en deux gestes.
 - **Agenda** : rendez-vous médicaux (motif, praticien, lieu, notes) dans un
   calendrier mensuel, avec rappels au choix (1 semaine, la veille, 2 h, 1 h,
   30 min avant).

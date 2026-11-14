@@ -143,4 +143,25 @@ class NotificationsTest {
             repo.clock = java.time.Clock.systemDefaultZone()
         }
     }
+
+    @Test
+    fun periodProductReminderAndButtons() {
+        val repo = context.repository
+        val start = now.minusHours(4).minusMinutes(5)
+        repo.update { it.copy(productSession = com.medipote.app.data.ProductSession(com.medipote.app.data.PeriodProduct.TAMPON, start, 4 * 60)) }
+        com.medipote.app.notifications.Notifications.showProduct(context, repo.state.value, "remind", now)
+        val manager = shadowOf(context.getSystemService(NotificationManager::class.java))
+        val n = manager.allNotifications.single()
+        assertEquals("🔸 Pense à changer ton tampon", n.extras.getCharSequence("android.title").toString())
+        assertEquals(listOf("J'ai changé ✓", "J'ai retiré"), n.actions.map { it.title.toString() })
+        // "J'ai changé": the timer starts again.
+        com.medipote.app.notifications.NotificationActionReceiver().onReceive(context, shadowOf(n.actions[0].actionIntent).savedIntent)
+        val session = repo.state.value.productSession!!
+        assertTrue(session.since.isAfter(start))
+        assertEquals(1, repo.state.value.productLog.size)
+        // Already changed: a late alarm says nothing.
+        context.getSystemService(NotificationManager::class.java).cancelAll()
+        com.medipote.app.notifications.Notifications.showProduct(context, repo.state.value, "remind", session.since.plusMinutes(10))
+        assertTrue(manager.allNotifications.isEmpty())
+    }
 }

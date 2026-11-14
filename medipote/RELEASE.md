@@ -66,6 +66,15 @@ L'optimiseur de R8 reste désactivé (`-dontoptimize`) : APK de 3,8 Mo au lieu d
 le dex livré peut être reconverti et exécuté hors appareil pour vérification (voir plus bas),
 ce que l'optimiseur empêche. Il pourra être réactivé après des essais sur téléphone.
 
+### 1.7.0
+
+- Minuteur de protection périodique (serviette, serviette lavable, tampon, coupe, disque,
+  culotte de règles) : rappel réglable par protection, durée maximale, notification avec
+  « J'ai changé ✓ » et « J'ai retiré », rappel du risque de choc toxique pour les protections
+  internes. Carte dans Suivi › Cycle et sur l'accueil tant qu'un minuteur tourne.
+- Médicaments pendant les règles : « Noter » en deux gestes, motif « Règles douloureuses » et
+  contexte « Règles » déjà remplis ; ajout rapide de paracétamol, ibuprofène, phloroglucinol.
+
 ### 1.6.0
 
 - Navigation réorganisée en cinq espaces : Accueil, Soins (traitements, pilule, agenda,

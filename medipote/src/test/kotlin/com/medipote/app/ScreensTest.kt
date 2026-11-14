@@ -973,6 +973,37 @@ class ScreensTest {
         compose.onNodeWithText("Jour par jour").assertExists()
     }
 
+    @Test
+    @Config(qualifiers = "w400dp-h2200dp-xhdpi")
+    fun cycleWithPeriodCare() {
+        val ibuprofen = Treatment(
+            "ibu2", "ibuprofene", "Ibuprofène", "400 mg", DoseUnit.TABLET, emptyList(),
+            startDate = today.minusDays(5), asNeeded = true,
+        )
+        val state = sampleState().let { s ->
+            s.copy(
+                treatments = s.treatments + ibuprofen,
+                productSession = com.medipote.app.data.ProductSession(com.medipote.app.data.PeriodProduct.TAMPON, now.minusHours(3).minusMinutes(5), 4 * 60),
+                prnIntakes = listOf(com.medipote.app.data.PrnIntake("i", "ibu2", now.minusHours(2), reason = "Règles douloureuses")),
+            )
+        }
+        render("cycle_period_care") {
+            CycleScreen(profile.cycle, state.journal, today, {}, {}, {}, embedded = true) {
+                com.medipote.app.ui.cycle.PeriodCareCard(state, now, {}, {}, {}, { _, _ -> })
+                com.medipote.app.ui.cycle.PeriodMedsCard(state, now, {}, {})
+            }
+        }
+        compose.onNodeWithText("Mise en place à 09:05", substring = true).assertExists()
+        compose.onNodeWithText("J'ai changé").assertExists()
+        compose.onNodeWithText("Phloroglucinol (Spasfon)").assertExists()
+    }
+
+    @Test
+    fun periodCareNotStarted() {
+        render("period_care_start") { com.medipote.app.ui.cycle.PeriodCareCard(sampleState(), now, {}, {}, {}, { _, _ -> }) }
+        compose.onNodeWithText("🩲 Culotte de règles").assertExists()
+    }
+
     private fun save(name: String, bitmap: Bitmap) {
         val dir = File("build/screenshots").apply { mkdirs() }
         File(dir, "$name.png").outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }

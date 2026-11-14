@@ -123,15 +123,18 @@ fun PrnLogScreen(
     onSave: (PrnIntake) -> Unit,
     onDelete: () -> Unit,
     onBack: () -> Unit,
+    /** Reason and contexts filled in beforehand (e.g. from the cycle screen). */
+    presetReason: String = "",
+    presetContexts: List<String> = emptyList(),
 ) {
     val start = existing?.takenAt ?: now.truncatedTo(ChronoUnit.MINUTES)
     var date by rememberSaveable { mutableStateOf(start.toLocalDate()) }
     var minute by rememberSaveable { mutableStateOf(start.hour * 60 + start.minute) }
     var quantity by rememberSaveable { mutableStateOf(existing?.quantity ?: treatment.prnQuantity) }
-    var reason by rememberSaveable { mutableStateOf(existing?.reason.orEmpty()) }
+    var reason by rememberSaveable { mutableStateOf(existing?.reason ?: presetReason) }
     var customReason by rememberSaveable { mutableStateOf("") }
     var intensity by remember { mutableFloatStateOf(existing?.intensity?.toFloat() ?: 0f) }
-    val contexts = remember { mutableStateListOf<String>().apply { addAll(existing?.contexts.orEmpty()) } }
+    val contexts = remember { mutableStateListOf<String>().apply { addAll(existing?.contexts ?: presetContexts) } }
     var customContext by rememberSaveable { mutableStateOf("") }
     var relief by rememberSaveable { mutableStateOf(existing?.relief) }
     var notes by rememberSaveable { mutableStateOf(existing?.notes.orEmpty()) }

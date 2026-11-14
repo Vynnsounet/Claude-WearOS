@@ -139,6 +139,8 @@ fun HomeScreen(
     onRitual: (com.medipote.app.domain.RitualKind) -> Unit = {},
     onOpenBadges: () -> Unit = {},
     onOpenRecap: (java.time.LocalDate) -> Unit = {},
+    onProductChanged: () -> Unit = {},
+    onProductRemoved: () -> Unit = {},
 ) {
     val logs = remember(state.doseLogs) { state.doseLogs.associateBy { it.key } }
     val today = remember(state.treatments, logs, now) {
@@ -220,6 +222,14 @@ fun HomeScreen(
             val yesterday = now.toLocalDate().minusDays(1)
             val forgotten = remember(state.doseLogs, state.treatments, yesterday) { forgottenDoses(state, yesterday, now) }
             if (forgotten.isNotEmpty()) ForgottenBanner(forgotten.size) { onOpenHistory(yesterday) }
+
+            // A period product is being worn: its timer stays in sight.
+            if (state.productSession != null) {
+                com.medipote.app.ui.cycle.PeriodCareCard(
+                    state, now, onStart = {}, onChanged = onProductChanged, onRemoved = onProductRemoved,
+                    onSetReminder = { _, _ -> }, compact = true,
+                )
+            }
 
             val low = state.treatments.filter { it.isLowStock }
             if (low.isNotEmpty()) StockBanner(low, onOpenTreatments)

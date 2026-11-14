@@ -87,6 +87,7 @@ fun CycleScreen(
     onUpdate: ((CycleInfo) -> CycleInfo) -> Unit,
     onOpenDay: (LocalDate) -> Unit,
     embedded: Boolean = false,
+    header: @Composable () -> Unit = {},
 ) {
     var picking by remember { mutableStateOf(false) }
     val status = remember(info, today) { info?.let { Cycle.status(it, today) } }
@@ -106,6 +107,7 @@ fun CycleScreen(
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             if (embedded) Spacer(Modifier.height(4.dp))
+            header()
             if (info == null || status == null) {
                 Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)) {
                     Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {

@@ -18,6 +18,8 @@ object NotificationActions {
     const val ACTION_TAKE = "com.medipote.app.action.TAKE"
     const val ACTION_SNOOZE = "com.medipote.app.action.SNOOZE"
     const val ACTION_WATER = "com.medipote.app.action.WATER"
+    const val ACTION_PRODUCT_CHANGED = "com.medipote.app.action.PRODUCT_CHANGED"
+    const val ACTION_PRODUCT_REMOVED = "com.medipote.app.action.PRODUCT_REMOVED"
     const val EXTRA_TIME = "time"
     const val EXTRA_ID = "notification_id"
     const val EXTRA_MINUTES = "minutes"
@@ -35,6 +37,11 @@ object NotificationActions {
         pending(context, intent(context, ACTION_SNOOZE, id).putExtra(EXTRA_TIME, time.toString()).putExtra(EXTRA_MINUTES, minutes), id * 4 + if (minutes <= 10) 1 else 2)
 
     fun water(context: Context, id: Int) = pending(context, intent(context, ACTION_WATER, id), id * 4 + 3)
+
+    fun product(context: Context, action: String) = pending(
+        context, intent(context, action, Notifications.PRODUCT_ID),
+        Notifications.PRODUCT_ID * 4 + if (action == ACTION_PRODUCT_CHANGED) 1 else 2,
+    )
 
     fun action(context: Context, label: String, intent: PendingIntent): NotificationCompat.Action =
         NotificationCompat.Action.Builder(R.drawable.ic_notification, label, intent).build()
@@ -71,6 +78,17 @@ class NotificationActionReceiver : BroadcastReceiver() {
                 val minutes = intent.getIntExtra(NotificationActions.EXTRA_MINUTES, 10).toLong()
                 repo.update { s -> s.copy(snoozes = s.snoozes.filterNot { it.doseTime == time } + Snooze(time, now.plusMinutes(minutes))) }
                 manager.cancel(id)
+            }
+            NotificationActions.ACTION_PRODUCT_CHANGED -> {
+                val product = repo.state.value.productSession?.product
+                repo.update { com.medipote.app.domain.PeriodCare.change(it, now) }
+                manager.cancel(id)
+                product?.let { Notifications.confirm(context, id, "${it.emoji} Protection changée, minuteur relancé") }
+            }
+            NotificationActions.ACTION_PRODUCT_REMOVED -> {
+                repo.update { com.medipote.app.domain.PeriodCare.stop(it, now) }
+                manager.cancel(id)
+                Notifications.confirm(context, id, "Minuteur arrêté")
             }
             NotificationActions.ACTION_WATER -> {
                 var total = 0

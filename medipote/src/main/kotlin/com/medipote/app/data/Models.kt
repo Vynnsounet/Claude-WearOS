@@ -29,6 +29,10 @@ data class AppState(
     val sleep: List<SleepNight> = emptyList(),
     /** Health measurements (blood pressure, weight…), newest first. */
     val measurements: List<Measurement> = emptyList(),
+    /** Period product worn right now, if any. */
+    val productSession: ProductSession? = null,
+    /** Period products worn before (latest first, a few months kept). */
+    val productLog: List<ProductUse> = emptyList(),
     /** Dose reminders put off from their notification ("in 10 minutes"). */
     val snoozes: List<Snooze> = emptyList(),
 ) {
@@ -285,6 +289,8 @@ data class Settings(
     val backup: BackupSettings = BackupSettings(),
     val look: Look = Look(),
     val rituals: RitualSettings = RitualSettings(),
+    /** Reminder to change each period product, in minutes, when the user changed the default. */
+    val productReminders: Map<PeriodProduct, Int> = emptyMap(),
     /** Ask for the phone's fingerprint, face or PIN to open the app. */
     val lockEnabled: Boolean = false,
     val notificationsEnabled: Boolean = true,
