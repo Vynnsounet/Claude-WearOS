@@ -28,7 +28,7 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
-enum class AlarmKind { DOSE, FOLLOW_UP, APPOINTMENT, WATER, STOCK, TEST, PRN_CHECK }
+enum class AlarmKind { DOSE, FOLLOW_UP, APPOINTMENT, WATER, STOCK, TEST, PRN_CHECK, SLEEP }
 
 /** One planned alarm. [ref] identifies what it is about (an appointment id, for instance). */
 data class AlarmSpec(val kind: AlarmKind, val time: LocalDateTime, val ref: String = "") {
@@ -87,6 +87,16 @@ object ReminderPlanner {
             if (t.isAfter(now)) alarms += AlarmSpec(AlarmKind.PRN_CHECK, t, intake.id)
         }
 
+        // "How did you sleep?" in the morning, while the night isn't logged.
+        val sleep = state.settings.sleep
+        if (sleep.reminder) {
+            for (d in 0..1) {
+                val date = now.toLocalDate().plusDays(d.toLong())
+                val t = date.atTime(sleep.reminderMinute / 60, sleep.reminderMinute % 60)
+                if (t.isAfter(now) && state.sleep.none { it.date == date }) alarms += AlarmSpec(AlarmKind.SLEEP, t)
+            }
+        }
+
         // Low stock: a daily reminder at 10:00 until a box is bought.
         if (state.treatments.any { it.isLowStock }) {
             val today = now.toLocalDate().atTime(STOCK_CHECK)
@@ -101,6 +111,8 @@ object Notifications {
     const val CHANNEL_APPOINTMENTS = "appointments"
     const val CHANNEL_WATER = "water"
     const val CHANNEL_STOCK = "stock"
+    const val CHANNEL_SLEEP = "sleep"
+    private const val SLEEP_ID = 2004
     private const val WATER_ID = 2001
     private const val STOCK_ID = 2002
 
@@ -112,6 +124,7 @@ object Notifications {
             NotificationChannel(CHANNEL_APPOINTMENTS, "Rendez-vous médicaux", NotificationManager.IMPORTANCE_HIGH),
             NotificationChannel(CHANNEL_WATER, "Hydratation", NotificationManager.IMPORTANCE_DEFAULT),
             NotificationChannel(CHANNEL_STOCK, "Stock de médicaments", NotificationManager.IMPORTANCE_DEFAULT),
+            NotificationChannel(CHANNEL_SLEEP, "Sommeil", NotificationManager.IMPORTANCE_DEFAULT),
         ).forEach(manager::createNotificationChannel)
     }
 
@@ -212,8 +225,20 @@ object Notifications {
     fun showStock(context: Context, state: AppState) {
         val low = state.treatments.filter { it.isLowStock }
         if (low.isEmpty()) return
-        val list = low.joinToString(", ") { "${it.displayName} (${it.daysLeft} j)" }
+        val list = low.joinToString(", ") { t ->
+            val left = t.daysLeft?.let { "$it j" } ?: t.stock?.let { t.unit.format(it) }
+            if (left == null) t.displayName else "${t.displayName} ($left)"
+        }
         post(context, CHANNEL_STOCK, STOCK_ID, "Pense à racheter tes médicaments", "Stock bas : $list.")
+    }
+
+    fun showSleep(context: Context, state: AppState, now: LocalDateTime) {
+        if (!state.settings.sleep.reminder || state.sleep.any { it.date == now.toLocalDate() }) return
+        post(
+            context, CHANNEL_SLEEP, SLEEP_ID, "Bien dormi ? 🌙",
+            "Note ta nuit et tes réveils en quelques secondes : +${com.medipote.app.domain.Rules.SLEEP_BONUS} pts pour ${state.game.petName} et toi.",
+            route = "sleep_log",
+        )
     }
 
     /** Posted from the settings so the user can check notifications reach them. */
@@ -226,6 +251,7 @@ object Notifications {
     }
 
     fun cancelWater(context: Context) = NotificationManagerCompat.from(context).cancel(WATER_ID)
+    fun cancelSleep(context: Context) = NotificationManagerCompat.from(context).cancel(SLEEP_ID)
 }
 
 /** Turns the plan into AlarmManager alarms, replacing the previous set. */
@@ -299,6 +325,7 @@ class ReminderReceiver : BroadcastReceiver() {
                 AlarmKind.STOCK -> Notifications.showStock(context, state)
                 AlarmKind.TEST -> Unit
                 AlarmKind.PRN_CHECK -> Notifications.showPrnCheck(context, state, spec.ref)
+                AlarmKind.SLEEP -> Notifications.showSleep(context, state, repo.now())
             }
         }
         ReminderScheduler.reschedule(context, state, repo.now())

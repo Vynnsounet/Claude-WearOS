@@ -204,6 +204,8 @@ fun StatsScreen(state: AppState, now: LocalDateTime, embedded: Boolean = false, 
                 prnReports.forEach { r -> PrnSummaryCard(r, state, now, period.label) { onOpenPrn(r.treatmentId) } }
             }
 
+            com.medipote.app.ui.sleep.SleepSummaryCard(state, now.toLocalDate(), period.days, period.label)
+
             if (report.waterDays > 0 || report.physicalAverage != null || report.mentalAverage != null) {
                 StatCard("Bien-être et hydratation", subtitle = "Moyennes sur ${period.label}") {
                     Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {

@@ -144,13 +144,16 @@ fun BarChart(
     maxValue: Float? = null,
     gridLabel: ((Float) -> String)? = null,
     accessibility: String = "",
+    /** A target drawn as a dashed line (e.g. hours of sleep aimed for). */
+    reference: Float? = null,
 ) {
     if (values.isEmpty()) return
     var selected by remember(values) { mutableIntStateOf(initialSelected.coerceIn(0, values.lastIndex)) }
     val grid = MaterialTheme.colorScheme.outlineVariant
     val highlight = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.06f)
     val muted = color.copy(alpha = 0.55f)
-    val top = (maxValue ?: values.max()).coerceAtLeast(0.0001f)
+    val top = maxOf(maxValue ?: values.max(), (reference ?: 0f) * 1.1f).coerceAtLeast(0.0001f)
+    val refColor = MaterialTheme.colorScheme.onSurfaceVariant
     Column(modifier, verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Text(describe(selected), style = MaterialTheme.typography.bodyMedium)
         Row(verticalAlignment = Alignment.Top) {
@@ -174,6 +177,13 @@ fun BarChart(
                     drawLine(grid, Offset(0f, y), Offset(size.width, y), 1.dp.toPx())
                 }
                 drawLine(grid, Offset(0f, bottom - 0.5f), Offset(size.width, bottom - 0.5f), 1.dp.toPx())
+                reference?.let { ref ->
+                    val y = bottom - bottom * 0.94f * ref / top
+                    drawLine(
+                        refColor, Offset(0f, y), Offset(size.width, y), 1.5.dp.toPx(),
+                        pathEffect = androidx.compose.ui.graphics.PathEffect.dashPathEffect(floatArrayOf(6.dp.toPx(), 4.dp.toPx())),
+                    )
+                }
                 values.forEachIndexed { i, v ->
                     if (i == selected) drawRect(highlight, Offset(i * slot, 0f), Size(slot, bottom))
                     if (v <= 0f) return@forEachIndexed

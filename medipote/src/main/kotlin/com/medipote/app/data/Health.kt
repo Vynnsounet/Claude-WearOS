@@ -164,3 +164,46 @@ data class PrnIntake(
     val askRelief: Boolean = false,
     val notes: String = "",
 )
+
+// ─────────────────────────── Sleep ───────────────────────────
+
+@Serializable
+data class SleepSettings(
+    /** Hours of sleep aimed for each night, in minutes. */
+    val goalMinutes: Int = 8 * 60,
+    /** A morning notification to log the night, until it is logged. */
+    val reminder: Boolean = false,
+    val reminderMinute: Int = 9 * 60,
+)
+
+/** Waking up during the night: when, for how long, and why if known. */
+@Serializable
+data class Awakening(
+    @Serializable(with = LocalDateTimeSerializer::class) val at: LocalDateTime,
+    val minutes: Int = 10,
+    val reason: String = "",
+)
+
+/** One night, identified by the date of the morning it ends on. */
+@Serializable
+data class SleepNight(
+    @Serializable(with = LocalDateSerializer::class) val date: LocalDate,
+    /** Lights off. */
+    @Serializable(with = LocalDateTimeSerializer::class) val bedtime: LocalDateTime,
+    /** Time it took to fall asleep. */
+    val latencyMinutes: Int = 15,
+    /** Final wake-up. */
+    @Serializable(with = LocalDateTimeSerializer::class) val wakeTime: LocalDateTime,
+    val awakenings: List<Awakening> = emptyList(),
+    /** 1 (very bad) to 5 (excellent). */
+    val quality: Int? = null,
+    val tags: List<String> = emptyList(),
+    val notes: String = "",
+) {
+    val inBedMinutes: Int get() = java.time.Duration.between(bedtime, wakeTime).toMinutes().toInt().coerceAtLeast(0)
+    val awakeMinutes: Int get() = awakenings.sumOf { it.minutes }
+    val asleepMinutes: Int get() = (inBedMinutes - latencyMinutes - awakeMinutes).coerceAtLeast(0)
+
+    /** Share of the time in bed spent asleep. */
+    val efficiency: Float get() = if (inBedMinutes == 0) 0f else asleepMinutes.toFloat() / inBedMinutes
+}

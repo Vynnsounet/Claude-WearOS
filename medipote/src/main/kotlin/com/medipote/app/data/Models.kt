@@ -25,6 +25,8 @@ data class AppState(
     val documents: List<HealthDocument> = emptyList(),
     /** Intakes of "as needed" medications, newest first. */
     val prnIntakes: List<PrnIntake> = emptyList(),
+    /** Logged nights, newest first, at most one per date. */
+    val sleep: List<SleepNight> = emptyList(),
 ) {
     fun entryFor(date: LocalDate): DayEntry = journal.firstOrNull { it.date == date } ?: DayEntry(date)
 }
@@ -206,6 +208,8 @@ data class GameState(
     val waterRewardDays: Set<@Serializable(with = LocalDateSerializer::class) LocalDate> = emptySet(),
     /** Days the daily cuddle bonus was already given. */
     val cuddleDays: Set<@Serializable(with = LocalDateSerializer::class) LocalDate> = emptySet(),
+    /** Days the "night logged" bonus was already given. */
+    val sleepRewardDays: Set<@Serializable(with = LocalDateSerializer::class) LocalDate> = emptySet(),
     val history: List<PointEvent> = emptyList(),
 ) {
     companion object {
@@ -235,6 +239,7 @@ data class Settings(
     val accent: Accent = Accent.MINT,
     val dynamicColor: Boolean = false,
     val water: WaterSettings = WaterSettings(),
+    val sleep: SleepSettings = SleepSettings(),
     val notificationsEnabled: Boolean = true,
     /** Send a second notification when a dose is still not given 30 minutes after its time. */
     val followUpReminder: Boolean = true,

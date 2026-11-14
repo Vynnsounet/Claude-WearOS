@@ -86,6 +86,8 @@ import com.medipote.app.ui.onboarding.ProfileSetupScreen
 import com.medipote.app.ui.onboarding.WelcomeScreen
 import com.medipote.app.ui.pill.PillScreen
 import com.medipote.app.ui.prn.PrnLogScreen
+import com.medipote.app.ui.sleep.SleepEditorScreen
+import com.medipote.app.ui.sleep.SleepScreen
 import com.medipote.app.ui.prn.PrnStatsScreen
 import com.medipote.app.ui.pill.PillSetupScreen
 import com.medipote.app.ui.settings.SettingsScreen
@@ -347,6 +349,7 @@ fun MediPoteApp(vm: AppViewModel) {
                         onGiveEarly = vm::giveEarly,
                         onLogPrn = { nav.navigate("prn_log/${it.id}") },
                         onOpenPrnIntake = { nav.navigate("prn_log/${it.treatmentId}?intake=${it.id}") },
+                        onOpenSleep = { nav.navigate("sleep_log") },
                     )
                 }
                 composable("treatments") {
@@ -375,10 +378,15 @@ fun MediPoteApp(vm: AppViewModel) {
                     }
                 }
                 composable("suivi") {
-                    val tabs = if (menstruating) listOf("Journal", "Cycle", "Stats") else listOf("Journal", "Stats")
+                    val tabs = if (menstruating) listOf("Journal", "Sommeil", "Cycle", "Stats") else listOf("Journal", "Sommeil", "Stats")
                     Hub("Suivi", tabs, 0, openProfile, openSettings) { i ->
                         when (tabs[i]) {
                             "Journal" -> JournalScreen(state.journal, today) { nav.navigate("day/$it") }
+                            "Sommeil" -> SleepScreen(
+                                state, now,
+                                onLog = { nav.navigate(if (state.sleep.any { it.date == today }) "sleep_log?new=true" else "sleep_log") },
+                                onOpen = { nav.navigate("sleep_log?date=${it.date}") },
+                            )
                             "Cycle" -> CycleScreen(
                                 state.profile?.cycle, state.journal, today, vm::logPeriod, vm::updateCycle,
                                 onOpenDay = { nav.navigate("day/$it") }, embedded = true,
@@ -488,6 +496,33 @@ fun MediPoteApp(vm: AppViewModel) {
                             onEditTreatment = { nav.navigate("editor?treatment=${t.id}") },
                         )
                     }
+                }
+                composable(
+                    "sleep_log?date={date}&new={new}",
+                    arguments = listOf(
+                        navArgument("date") { type = NavType.StringType; nullable = true },
+                        navArgument("new") { type = NavType.BoolType; defaultValue = false },
+                    ),
+                ) { entry ->
+                    val asked = entry.arguments?.getString("date")?.let(LocalDate::parse)
+                    // "Another night": the most recent day without one.
+                    val date = asked ?: if (entry.arguments?.getBoolean("new") == true) {
+                        generateSequence(today) { it.minusDays(1) }.take(60).firstOrNull { d -> state.sleep.none { it.date == d } } ?: today
+                    } else today
+                    val existing = remember(date) { state.sleep.firstOrNull { it.date == date } }
+                    SleepEditorScreen(
+                        state, existing, date, today,
+                        onSave = { night ->
+                            if (existing != null && existing.date != night.date) vm.deleteSleep(existing.date)
+                            vm.saveSleep(night)
+                            nav.popBackStack()
+                        },
+                        onDelete = {
+                            existing?.let { vm.deleteSleep(it.date) }
+                            nav.popBackStack()
+                        },
+                        onBack = { nav.popBackStack() },
+                    )
                 }
                 composable("pill_setup") {
                     val existing = state.treatments.firstOrNull { it.pill != null }

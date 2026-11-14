@@ -63,6 +63,9 @@ object Rules {
     const val JOURNAL_BONUS = 5
     const val WATER_GLASS_POINTS = 2
     const val CUDDLE_BONUS = 3
+
+    /** Logging the night, once a day (never tied to how long or how well one slept). */
+    const val SLEEP_BONUS = 3
     const val WATER_BONUS = 10
 
     const val STREAK_POINTS_PER_DAY = 5

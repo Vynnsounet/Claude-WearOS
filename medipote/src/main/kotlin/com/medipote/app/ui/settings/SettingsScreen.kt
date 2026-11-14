@@ -203,6 +203,20 @@ fun SettingsScreen(
                 }
             }
 
+            SectionTitle("Sommeil")
+            SettingsCard {
+                val sl = settings.sleep
+                fun update(f: (com.medipote.app.data.SleepSettings) -> com.medipote.app.data.SleepSettings) = onChange { it.copy(sleep = f(it.sleep)) }
+                com.medipote.app.ui.components.NumberStepper(
+                    "Objectif de sommeil", sl.goalMinutes / 30, { v -> update { it.copy(goalMinutes = v * 30) } }, 10..24,
+                    display = { com.medipote.app.domain.Sleep.format(it * 30) },
+                )
+                SwitchRow("Rappel le matin", sl.reminder, supporting = "« Bien dormi ? » tant que la nuit n'est pas notée") { v -> update { it.copy(reminder = v) } }
+                if (sl.reminder) {
+                    com.medipote.app.ui.components.NumberStepper("À", sl.reminderMinute / 60, { v -> update { it.copy(reminderMinute = v * 60) } }, 5..14, suffix = " h")
+                }
+            }
+
             SectionTitle("Compte")
             SettingsCard(padding = 0) {
                 ListItem(
@@ -234,6 +248,7 @@ fun SettingsScreen(
                 Rule("Verre d'eau (jusqu'à l'objectif du jour)", "+${Rules.WATER_GLASS_POINTS} pts")
                 Rule("Objectif d'hydratation atteint", "+${Rules.WATER_BONUS} pts")
                 Rule("Journal du jour rempli", "+${Rules.JOURNAL_BONUS} pts")
+                Rule("Nuit notée le matin même", "+${Rules.SLEEP_BONUS} pts")
                 Rule("Premier câlin du jour (caresse ou appui long sur ton compagnon)", "+${Rules.CUDDLE_BONUS} pts")
                 Rule("Connexion quotidienne", "+${Rules.STREAK_POINTS_PER_DAY} pts × jours de série, jusqu'à +${Rules.STREAK_POINTS_CAP}")
                 Rule("Paliers de série", Rules.STREAK_MILESTONES.entries.joinToString(" · ") { "${it.key} j : +${it.value}" })

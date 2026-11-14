@@ -66,6 +66,14 @@ L'optimiseur de R8 reste désactivé (`-dontoptimize`) : APK de 3,8 Mo au lieu d
 le dex livré peut être reconverti et exécuté hors appareil pour vérification (voir plus bas),
 ce que l'optimiseur empêche. Il pourra être réactivé après des essais sur téléphone.
 
+### 1.2.0
+
+- Suivi du sommeil : coucher, endormissement, réveils dans la nuit (heure, durée, cause),
+  réveil, qualité, habitudes ; frise de la nuit, statistiques et analyses, rappel du matin
+  facultatif, onglet Suivi › Sommeil et résumé dans Stats.
+- Correctif : la notification de stock bas affichait « (null j) » pour un médicament
+  « si besoin » ; elle indique maintenant la quantité restante.
+
 ### 1.1.0
 
 - Médicaments « si besoin » : saisie des prises (motif, contexte, intensité, effet), limites

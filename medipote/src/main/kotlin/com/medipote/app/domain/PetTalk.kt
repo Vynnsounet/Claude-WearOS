@@ -80,6 +80,11 @@ object PetTalk {
                     add("N'oublie pas : ${it.title} $day !")
                 }
             if (!state.entryFor(now.toLocalDate()).hasJournal) add("Tu me racontes ta journée dans le journal ?")
+            val night = state.sleep.firstOrNull { it.date == now.toLocalDate() }
+            if (night == null && now.hour in 5..13) add("Bien dormi ? Raconte-moi ta nuit dans Suivi › Sommeil 🌙")
+            if (night != null && night.asleepMinutes < state.settings.sleep.goalMinutes - 60 && now.hour in 12..17) {
+                add("Courte nuit… une petite sieste, ça te dit ? 😴")
+            }
             Shop.items.filter { it.id !in state.game.owned && it.price in 1..state.game.points }.maxByOrNull { it.price }
                 ?.let { add("Avec tes ${state.game.points} points… « ${it.name} », ça m'irait bien, non ? 👀") }
         }

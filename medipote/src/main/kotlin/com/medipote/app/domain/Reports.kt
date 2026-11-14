@@ -286,19 +286,7 @@ object Reports {
         val hourCounts = IntArray(24).also { h -> intakes.forEach { h[it.takenAt.hour]++ } }
 
         // Circular mean of the time of day: 23:30 and 00:30 average to midnight, not noon.
-        val typical = if (intakes.size < 3) null else {
-            var x = 0.0
-            var y = 0.0
-            intakes.forEach {
-                val a = (it.takenAt.hour * 60 + it.takenAt.minute) / 1440.0 * 2 * Math.PI
-                x += cos(a); y += sin(a)
-            }
-            val length = sqrt(x * x + y * y) / intakes.size
-            if (length < 0.35) null else {
-                val angle = atan2(y, x).let { if (it < 0) it + 2 * Math.PI else it }
-                (angle / (2 * Math.PI) * 1440).roundToInt() % 1440
-            }
-        }
+        val typical = if (intakes.size < 3) null else circularMean(intakes.map { it.takenAt.hour * 60 + it.takenAt.minute })
 
         fun ranked(values: List<String>) = values.filter { it.isNotBlank() }.groupingBy { it }.eachCount()
             .entries.sortedByDescending { it.value }.map { it.key to it.value }
@@ -350,6 +338,26 @@ object Reports {
         )
         return report.copy(insights = prnInsights(report, last30Days))
     }
+
+    /**
+     * Mean time of day of [minutes] (minutes after midnight) on a 24 h circle, or null when they
+     * are too spread out for a mean to mean anything.
+     */
+    fun circularMean(minutes: List<Int>, minLength: Double = 0.35): Int? {
+        if (minutes.isEmpty()) return null
+        var x = 0.0
+        var y = 0.0
+        minutes.forEach {
+            val a = it / 1440.0 * 2 * Math.PI
+            x += cos(a); y += sin(a)
+        }
+        if (sqrt(x * x + y * y) / minutes.size < minLength) return null
+        val angle = atan2(y, x).let { if (it < 0) it + 2 * Math.PI else it }
+        return (angle / (2 * Math.PI) * 1440).roundToInt() % 1440
+    }
+
+    /** Signed difference a − b in minutes on a 24 h circle, between −720 and 720. */
+    fun circularDiff(a: Int, b: Int): Int = ((a - b) % 1440 + 1440 + 720) % 1440 - 720
 
     fun formatTime(minuteOfDay: Int) = "%d h %02d".format(minuteOfDay / 60, minuteOfDay % 60)
 

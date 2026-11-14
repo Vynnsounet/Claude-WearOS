@@ -124,6 +124,7 @@ fun HomeScreen(
     onGiveEarly: (DoseItem) -> Unit = {},
     onLogPrn: (com.medipote.app.data.Treatment) -> Unit = {},
     onOpenPrnIntake: (com.medipote.app.data.PrnIntake) -> Unit = {},
+    onOpenSleep: () -> Unit = {},
 ) {
     val logs = remember(state.doseLogs) { state.doseLogs.associateBy { it.key } }
     val today = remember(state.treatments, logs, now) {
@@ -249,6 +250,7 @@ fun HomeScreen(
             val water = state.settings.water
             WaterCard(state.entryFor(now.toLocalDate()).waterGlasses, water.goalGlasses, water.glassMl, onAddWater)
 
+            if (now.hour in 5..13 && state.sleep.none { it.date == now.toLocalDate() }) SleepPrompt(onOpenSleep)
             if (!state.entryFor(now.toLocalDate()).hasJournal) JournalPrompt(state.game.petName, onOpenJournal)
 
             state.appointments
@@ -681,6 +683,27 @@ private fun WaterCard(glasses: Int, goal: Int, glassMl: Int, onAdd: (Int) -> Uni
                         modifier = Modifier.size(24.dp),
                     )
                 }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SleepPrompt(onOpen: () -> Unit) {
+    Card(
+        onClick = onOpen,
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer),
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+            Text("🌙", style = MaterialTheme.typography.headlineMedium)
+            Spacer(Modifier.width(12.dp))
+            Column(Modifier.weight(1f)) {
+                Text("Bien dormi ?", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSecondaryContainer)
+                Text(
+                    "Note ta nuit et tes réveils : +${com.medipote.app.domain.Rules.SLEEP_BONUS} pts.",
+                    style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSecondaryContainer,
+                )
             }
         }
     }

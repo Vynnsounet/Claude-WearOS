@@ -70,4 +70,20 @@ class RepositoryTest {
         assertEquals(false, state.treatments.single().asNeeded)
         assertTrue(state.prnIntakes.isEmpty())
     }
+
+    @Test
+    fun sleepDataSurvivesAReload() {
+        val file = File(dir, "data.json")
+        val date = java.time.LocalDate.of(2026, 11, 12)
+        val night = com.medipote.app.data.SleepNight(
+            date, date.minusDays(1).atTime(23, 20), 25, date.atTime(6, 50),
+            listOf(com.medipote.app.data.Awakening(date.atTime(3, 10), 20, "Toilettes")), 4, listOf("Caféine"), "rêve bizarre",
+        )
+        val settings = com.medipote.app.data.Settings(sleep = com.medipote.app.data.SleepSettings(7 * 60 + 30, true, 8 * 60))
+        AppRepository(file).update { AppState(sleep = listOf(night), settings = settings, onboarded = true) }
+        Thread.sleep(300)
+        val reloaded = AppRepository(file).state.value
+        assertEquals(listOf(night), reloaded.sleep)
+        assertEquals(settings.sleep, reloaded.settings.sleep)
+    }
 }

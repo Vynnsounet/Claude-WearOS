@@ -229,6 +229,22 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         reschedule()
     }
 
+    // ── Sleep ──
+
+    fun saveSleep(night: com.medipote.app.data.SleepNight) {
+        var bonus = 0
+        repo.update { s -> com.medipote.app.domain.Sleep.save(s, night, repo.now()).let { (u, b) -> bonus = b; u } }
+        if (night.date == repo.now().toLocalDate()) Notifications.cancelSleep(getApplication())
+        _events.tryEmit(UiEvent.Message(if (bonus > 0) "Nuit enregistrée : +$bonus pts" else "Nuit enregistrée"))
+        if (bonus > 0) _events.tryEmit(UiEvent.Points(bonus))
+        reschedule()
+    }
+
+    fun deleteSleep(date: LocalDate) {
+        repo.update { com.medipote.app.domain.Sleep.delete(it, date) }
+        reschedule()
+    }
+
     private val _routes = MutableStateFlow<String?>(null)
     /** A screen to open, requested from outside the UI (a tapped notification). */
     val routes: StateFlow<String?> = _routes.asStateFlow()

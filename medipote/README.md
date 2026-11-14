@@ -13,9 +13,9 @@ l'habiller dans la boutique.
 |---|---|---|---|---|
 | ![](docs/home_sick.png) | ![](docs/agenda.png) | ![](docs/stats.png) | ![](docs/day_entry.png) | ![](docs/settings.png) |
 
-| Si besoin (accueil) | Noter une prise | Stats « si besoin » |
-|---|---|---|
-| ![](docs/home_prn.png) | ![](docs/prn_log.png) | ![](docs/prn_stats.png) |
+| Si besoin (accueil) | Noter une prise | Stats « si besoin » | Sommeil | Noter sa nuit |
+|---|---|---|---|---|
+| ![](docs/home_prn.png) | ![](docs/prn_log.png) | ![](docs/prn_stats.png) | ![](docs/sleep.png) | ![](docs/sleep_editor.png) |
 
 ## Navigation
 
@@ -23,7 +23,7 @@ l'habiller dans la boutique.
 |---|---|
 | **Accueil** | Compagnon, prises du jour, hydratation, journal du jour, prochain rendez-vous, alerte de stock |
 | **Traitements** | *Médicaments* (liste, stock, rachat) · *Pilule* (plaquette, semaine de pause) |
-| **Suivi** | *Journal* · *Cycle* (si activé dans le profil) · *Stats* |
+| **Suivi** | *Journal* · *Sommeil* · *Cycle* (si activé dans le profil) · *Stats* |
 | **Santé** | *Agenda* des rendez-vous · *Documents* (carnet de santé) |
 | **Boutique** | Accessoires du compagnon |
 
@@ -80,6 +80,24 @@ Profil médical et paramètres sont accessibles en haut à droite.
 - **Hydratation** : compteur de verres sur l'accueil (et en widget), objectif
   réglable, +2 points par verre et +10 à l'objectif, rappels toutes les 1 à 3 h
   dans une plage horaire tant que l'objectif n'est pas atteint.
+- **Sommeil** (Suivi › Sommeil) : chaque matin, heure du coucher, temps
+  d'endormissement, heure du réveil et **réveils dans la nuit** (heure, durée,
+  cause : toilettes, bruit, chaleur, douleur, cauchemar, anxiété, enfant…),
+  qualité de la nuit (5 niveaux), ce qui a pu jouer (écrans, caféine, alcool,
+  sport, repas tardif, stress…) et notes. La saisie est pré-remplie avec tes
+  horaires habituels et affiche la nuit en direct sur une frise (sommeil /
+  éveil) avec durée de sommeil, temps au lit, efficacité et plus long sommeil
+  d'une traite. Statistiques sur 7, 30 ou 90 jours : sommeil moyen et nuits à
+  l'objectif, réveils par nuit et nuits sans réveil, heures habituelles de
+  coucher et de réveil, efficacité, endormissement, qualité ; durée par nuit
+  (ou par semaine sur 90 jours) avec l'objectif en pointillés, réveils par heure
+  et leurs causes, historique avec frise de chaque nuit. Analyses : écart à
+  l'objectif, tendance, heure des réveils, cause principale, régularité du
+  coucher, efficacité, rattrapage du week-end, effet d'une habitude (« les nuits
+  avec caféine, tu dors 1 h 30 de moins ») et lien avec la forme notée dans le
+  journal. Objectif (8 h par défaut) et rappel du matin (désactivé par défaut)
+  dans les paramètres ; +3 points pour la nuit notée le matin même (jamais liés
+  à la durée ni à la qualité du sommeil).
 - **Journal** : chaque jour, état physique et psychologique (5 niveaux),
   symptômes, maladie du jour, notes ; carte des 14 derniers jours.
 - **Cycle** : les 4 phases (menstruation, folliculaire, ovulation, lutéale) sur
@@ -107,6 +125,7 @@ Profil médical et paramètres sont accessibles en haut à droite.
   | Verre d'eau (jusqu'à l'objectif du jour) | +2 par verre |
   | Objectif d'hydratation atteint | +10 |
   | Premier câlin du jour | +3 |
+  | Nuit notée le matin même | +3 |
   | Connexion quotidienne | +5 × jours de série, plafonné à +50 (dès le 10e jour) |
   | Paliers de série | 7 j : +30 · 30 j : +100 · 100 j : +300 · 365 j : +1000 |
 

@@ -8,6 +8,7 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.onFirst
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performClick
@@ -540,6 +541,68 @@ class ScreensTest {
             )
         }
         compose.onNodeWithText("Nombre maximum de prises").assertExists()
+    }
+
+    // ── Sleep ──
+
+    /** Three weeks of nights: short weeknights with awakenings, longer weekends. */
+    private fun sleepState(): AppState {
+        val reasons = listOf("Toilettes", "Bruit", "Toilettes", "Anxiété", "Chaleur")
+        val nights = (0 until 21).map { i ->
+            val d = today.minusDays(i.toLong())
+            val weekend = d.dayOfWeek.value >= 6
+            val wake = d.atTime(if (weekend) 9 else 6, if (weekend) 15 else 45)
+            val bed = com.medipote.app.domain.Sleep.bedtimeFor(d, listOf(23 * 60 + 10, 23 * 60 + 45, 30, 22 * 60 + 50)[i % 4])
+            val awakenings = (0 until (i * 7 % 3)).map { k ->
+                com.medipote.app.data.Awakening(
+                    com.medipote.app.domain.Sleep.inNight(wake, listOf(3 * 60, 4 * 60 + 30, 2 * 60 + 15)[(i + k) % 3]),
+                    listOf(10, 25, 40)[(i + k) % 3], reasons[(i + k) % reasons.size],
+                )
+            }
+            com.medipote.app.data.SleepNight(
+                d, bed, listOf(10, 20, 30)[i % 3], wake, if (weekend) emptyList() else awakenings,
+                quality = 2 + (i * 5 % 4), tags = listOfNotNull("Écrans avant de dormir".takeIf { i % 3 == 0 }, "Caféine".takeIf { i % 5 == 1 }),
+            )
+        }
+        return sampleState().copy(sleep = nights)
+    }
+
+    @Test
+    @Config(qualifiers = "w400dp-h3000dp-xhdpi")
+    fun sleepTab() {
+        val state = sleepState()
+        render("sleep") { com.medipote.app.ui.sleep.SleepScreen(state, now, {}, {}) }
+        compose.onNodeWithText("Nuit du 11 au 12 novembre").assertExists()
+        compose.onNodeWithText("Réveils dans la nuit").assertExists()
+    }
+
+    @Test
+    @Config(qualifiers = "w400dp-h3000dp-xhdpi")
+    fun sleepTabDark() {
+        val state = sleepState().let { it.copy(settings = it.settings.copy(themeMode = ThemeMode.DARK)) }
+        render("sleep_dark", ThemeMode.DARK) { com.medipote.app.ui.sleep.SleepScreen(state, now, {}, {}) }
+    }
+
+    @Test
+    fun sleepTabEmpty() {
+        render("sleep_empty") { com.medipote.app.ui.sleep.SleepScreen(sampleState(), now, {}, {}) }
+        compose.onNodeWithText("Comment as-tu dormi cette nuit ?").assertExists()
+    }
+
+    @Test
+    @Config(qualifiers = "w400dp-h2200dp-xhdpi")
+    fun sleepEditor() {
+        val state = sleepState()
+        val night = state.sleep.first { it.awakenings.size >= 2 }
+        render("sleep_editor") { com.medipote.app.ui.sleep.SleepEditorScreen(state, night, night.date, today, {}, {}, {}) }
+        compose.onNodeWithText("Ajouter un réveil").assertExists()
+        compose.onAllNodes(androidx.compose.ui.test.hasText("Vers", substring = true)).assertCountEquals(night.awakenings.size)
+    }
+
+    @Test
+    fun homeAsksAboutTheNight() {
+        render("home_sleep_prompt") { HomeScreen(sampleState(), today.atTime(8, 0), 0, 0, {}, {}, {}, {}, animate = false) }
+        compose.onNodeWithText("Bien dormi ?").performScrollTo().assertExists()
     }
 
     private fun save(name: String, bitmap: Bitmap) {
