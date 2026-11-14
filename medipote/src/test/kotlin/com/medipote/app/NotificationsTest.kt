@@ -89,4 +89,28 @@ class NotificationsTest {
         val posted = shadowOf(context.getSystemService(NotificationManager::class.java)).allNotifications
         assertEquals(1, posted.size)
     }
+
+    @Test
+    fun remindersUseLoudPopUpChannels() {
+        val manager = context.getSystemService(NotificationManager::class.java)
+        // A channel left by an older version is removed.
+        manager.createNotificationChannel(android.app.NotificationChannel("dose_reminders", "old", NotificationManager.IMPORTANCE_LOW))
+        com.medipote.app.notifications.Notifications.createChannels(context)
+        assertEquals(null, manager.getNotificationChannel("dose_reminders"))
+        for (id in com.medipote.app.notifications.Notifications.ALL_CHANNELS) {
+            val c = manager.getNotificationChannel(id)
+            assertEquals(id, NotificationManager.IMPORTANCE_HIGH, c.importance)
+            assertTrue(id, c.sound != null)
+            assertTrue(id, c.shouldVibrate())
+        }
+        assertTrue(com.medipote.app.notifications.Notifications.quietChannels(context).isEmpty())
+        // The user lowers the dose channel: the app notices and can point to its settings.
+        val doses = manager.getNotificationChannel(com.medipote.app.notifications.Notifications.CHANNEL_DOSES)
+        doses.importance = NotificationManager.IMPORTANCE_DEFAULT
+        manager.createNotificationChannel(doses) // Robolectric stores the change; on a phone only the user can do this
+        assertEquals(
+            listOf(com.medipote.app.notifications.Notifications.CHANNEL_DOSES),
+            com.medipote.app.notifications.Notifications.quietChannels(context),
+        )
+    }
 }

@@ -25,10 +25,10 @@ data class DoseOccurrence(val treatment: Treatment, val dose: DoseTime, val date
 }
 
 enum class DoseState {
-    /** More than an hour ahead: can't be given yet. */
+    /** More than 30 minutes ahead: "Already taken?" only. */
     UPCOMING,
 
-    /** From one hour before to 30 minutes after the planned time: giving it now earns full points. */
+    /** From 30 minutes before to 30 minutes after the planned time: giving it now counts as on time. */
     DUE,
 
     /** Past the 30-minute window but still giveable today, with fewer points. */
@@ -49,7 +49,8 @@ data class DoseItem(val occurrence: DoseOccurrence, val state: DoseState, val lo
 
 /** The game's timing and scoring rules, in one place so the UI can explain them. */
 object Rules {
-    const val EARLY_WINDOW_MINUTES = 60L
+    /** On time = from 30 minutes before to 30 minutes after the planned time. */
+    const val EARLY_WINDOW_MINUTES = 30L
     const val ON_TIME_MINUTES = 30L
     const val LATE_MINUTES = 120L
     const val LAST_CALL_MINUTES = 240L
@@ -58,7 +59,7 @@ object Rules {
     const val POINTS_LATE = 6
     const val POINTS_VERY_LATE = 3
 
-    /** Taken more than an hour early: counted, but not rewarded like a dose taken on time. */
+    /** Taken more than 30 minutes early: counted, but not rewarded like a dose taken on time. */
     const val POINTS_EARLY = 6
     const val PERFECT_DAY_BONUS = 20
     const val JOURNAL_BONUS = 5
@@ -76,6 +77,7 @@ object Rules {
     val STREAK_MILESTONES = mapOf(7 to 30, 30 to 100, 100 to 300, 365 to 1000)
 
     fun statusFor(scheduled: LocalDateTime, takenAt: LocalDateTime): TakeStatus {
+        // In whole minutes, rounded towards the planned time: 30 min 59 s late (or early) is still on time.
         val late = Duration.between(scheduled, takenAt).toMinutes()
         return when {
             late < -EARLY_WINDOW_MINUTES -> TakeStatus.EARLY

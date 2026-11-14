@@ -80,6 +80,8 @@ fun SettingsScreen(
     onOpenNotificationSettings: () -> Unit = {},
     batteryRestricted: Boolean = false,
     onOpenBatterySettings: () -> Unit = {},
+    quietReminders: Int = 0,
+    onFixQuietReminders: () -> Unit = {},
 ) {
     var renaming by remember { mutableStateOf(false) }
     var confirmReset by remember { mutableStateOf(false) }
@@ -139,6 +141,22 @@ fun SettingsScreen(
                         trailingContent = { Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, null) },
                         colors = ListItemDefaults.colors(containerColor = Color.Transparent),
                         modifier = Modifier.clickable(onClick = onOpenNotificationSettings),
+                    )
+                }
+                if (quietReminders > 0) {
+                    HorizontalDivider()
+                    ListItem(
+                        headlineContent = { Text("Rappels sans pop-up") },
+                        supportingContent = {
+                            Text(
+                                "Le téléphone affiche ${if (quietReminders > 1) "certains rappels" else "un type de rappel"} discrètement, sans pop-up ni son. " +
+                                    "Active « Afficher en pop-up » (ou « Notifications contextuelles ») et le son.",
+                            )
+                        },
+                        leadingContent = { Icon(Icons.Outlined.NotificationsOff, null, tint = AppTheme.status.warning) },
+                        trailingContent = { Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, null) },
+                        colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+                        modifier = Modifier.clickable(onClick = onFixQuietReminders),
                     )
                 }
                 if (batteryRestricted) {
@@ -240,10 +258,10 @@ fun SettingsScreen(
 
             SectionTitle("Règles du jeu")
             SettingsCard {
-                Rule("Prise à l'heure (jusqu'à ${Rules.ON_TIME_MINUTES} min de retard)", "+${Rules.POINTS_ON_TIME} pts")
+                Rule("Prise à l'heure (de ${Rules.EARLY_WINDOW_MINUTES} min avant à ${Rules.ON_TIME_MINUTES} min après)", "+${Rules.POINTS_ON_TIME} pts")
                 Rule("En retard (jusqu'à ${Rules.LATE_MINUTES / 60} h)", "+${Rules.POINTS_LATE} pts (malus −${Rules.POINTS_ON_TIME - Rules.POINTS_LATE})")
                 Rule("Très en retard (plus de ${Rules.LATE_MINUTES / 60} h)", "+${Rules.POINTS_VERY_LATE} pts (malus −${Rules.POINTS_ON_TIME - Rules.POINTS_VERY_LATE})")
-                Rule("Noté « Déjà pris » plus d'une heure en avance", "+${Rules.POINTS_EARLY} pts")
+                Rule("Noté « Déjà pris » plus de ${Rules.EARLY_WINDOW_MINUTES} min en avance", "+${Rules.POINTS_EARLY} pts")
                 Rule("Journée parfaite (tout à l'heure)", "+${Rules.PERFECT_DAY_BONUS} pts")
                 Rule("Verre d'eau (jusqu'à l'objectif du jour)", "+${Rules.WATER_GLASS_POINTS} pts")
                 Rule("Objectif d'hydratation atteint", "+${Rules.WATER_BONUS} pts")
@@ -253,7 +271,7 @@ fun SettingsScreen(
                 Rule("Connexion quotidienne", "+${Rules.STREAK_POINTS_PER_DAY} pts × jours de série, jusqu'à +${Rules.STREAK_POINTS_CAP}")
                 Rule("Paliers de série", Rules.STREAK_MILESTONES.entries.joinToString(" · ") { "${it.key} j : +${it.value}" })
                 Text(
-                    "Une prise peut être donnée jusqu'à 1 h avant l'heure prévue. Une prise oubliée affaiblit ton compagnon pendant deux jours, et un gros retard le rend malade.",
+                    "Une prise se donne à partir de ${Rules.EARLY_WINDOW_MINUTES} min avant l'heure prévue (plus tôt, avec « Déjà pris ? »). Une prise oubliée affaiblit ton compagnon pendant deux jours, et un gros retard le rend malade.",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )

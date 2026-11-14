@@ -47,8 +47,8 @@ class DomainTest {
 
     @Test
     fun doseStatesFollowTheTimeline() {
-        assertEquals(DoseState.UPCOMING, item(state, at(6, 30), 480).state)
-        assertEquals(DoseState.DUE, item(state, at(7, 0), 480).state) // 1 h early is allowed
+        assertEquals(DoseState.UPCOMING, item(state, at(7, 29), 480).state)
+        assertEquals(DoseState.DUE, item(state, at(7, 30), 480).state) // 30 min early is on time
         assertEquals(DoseState.DUE, item(state, at(8, 30), 480).state)
         assertEquals(DoseState.OVERDUE, item(state, at(8, 31), 480).state)
         assertEquals(DoseState.OVERDUE, item(state, at(23, 59), 480).state)
@@ -81,7 +81,8 @@ class DomainTest {
 
     @Test
     fun pointsDependOnPunctuality() {
-        assertEquals(TakeStatus.ON_TIME, Rules.statusFor(at(8), at(7, 10)))
+        assertEquals(TakeStatus.ON_TIME, Rules.statusFor(at(8), at(7, 30)))
+        assertEquals(TakeStatus.EARLY, Rules.statusFor(at(8), at(7, 10)))
         assertEquals(TakeStatus.ON_TIME, Rules.statusFor(at(8), at(8, 30)))
         assertEquals(TakeStatus.LATE, Rules.statusFor(at(8), at(9, 45)))
         assertEquals(TakeStatus.VERY_LATE, Rules.statusFor(at(8), at(12)))

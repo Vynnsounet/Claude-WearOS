@@ -164,6 +164,7 @@ fun MediPoteApp(vm: AppViewModel) {
         var batteryRestricted by remember { mutableStateOf(isBatteryRestricted(context)) }
         var checkIn by remember { mutableStateOf<UiEvent.CheckedIn?>(null) }
         var notificationsAllowed by remember { mutableStateOf(Notifications.canPost(context)) }
+        var quietChannels by remember { mutableStateOf(Notifications.quietChannels(context)) }
         var exactAllowed by remember { mutableStateOf(ReminderScheduler.canScheduleExact(context)) }
         var pendingPhoto by rememberSaveable { mutableStateOf<String?>(null) }
         val today = now.toLocalDate()
@@ -195,6 +196,7 @@ fun MediPoteApp(vm: AppViewModel) {
 
         LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
             notificationsAllowed = Notifications.canPost(context)
+            quietChannels = Notifications.quietChannels(context)
             exactAllowed = ReminderScheduler.canScheduleExact(context)
             batteryRestricted = isBatteryRestricted(context)
             vm.onResume()
@@ -344,6 +346,8 @@ fun MediPoteApp(vm: AppViewModel) {
                         onOpenTreatments = { nav.navigate("treatments") { launchSingleTop = true } },
                         pointsSignal = pointsSignal,
                         notificationsBlocked = !notificationsAllowed,
+                        remindersQuiet = notificationsAllowed && Notifications.CHANNEL_DOSES in quietChannels,
+                        onFixQuietReminders = { context.startActivity(Notifications.channelSettingsIntent(context)) },
                         onFixNotifications = ::fixNotifications,
                         onCuddle = vm::cuddle,
                         onGiveEarly = vm::giveEarly,
@@ -640,6 +644,10 @@ fun MediPoteApp(vm: AppViewModel) {
                         },
                         onOpenNotificationSettings = ::fixNotifications,
                         batteryRestricted = batteryRestricted,
+                        quietReminders = if (notificationsAllowed) quietChannels.size else 0,
+                        onFixQuietReminders = {
+                            context.startActivity(Notifications.channelSettingsIntent(context, quietChannels.firstOrNull() ?: Notifications.CHANNEL_DOSES))
+                        },
                         onOpenBatterySettings = {
                             context.startActivity(Intent(android.provider.Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS))
                         },

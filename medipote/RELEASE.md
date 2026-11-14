@@ -66,6 +66,14 @@ L'optimiseur de R8 reste désactivé (`-dontoptimize`) : APK de 3,8 Mo au lieu d
 le dex livré peut être reconverti et exécuté hors appareil pour vérification (voir plus bas),
 ce que l'optimiseur empêche. Il pourra être réactivé après des essais sur téléphone.
 
+### 1.2.2
+
+- À l'heure = de 30 min avant à 30 min après l'heure prévue (avant : de 1 h avant à 30 min
+  après). « Donner » apparaît 30 min avant ; plus tôt, « Déjà pris ? ».
+- Notifications en pop-up avec son et vibration pour tous les rappels : nouveaux canaux de
+  priorité haute (Android interdit de relever la priorité d'un canal existant, les anciens sont
+  supprimés), contenu masqué sur l'écran verrouillé, alerte si un canal est devenu discret.
+
 ### 1.2.1
 
 - Changer l'heure d'une prise ne la fait plus redonner : les prises déjà données (aujourd'hui

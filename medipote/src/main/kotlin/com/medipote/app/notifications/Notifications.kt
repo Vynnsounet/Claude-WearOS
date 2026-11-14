@@ -107,26 +107,67 @@ object ReminderPlanner {
 }
 
 object Notifications {
-    const val CHANNEL_DOSES = "dose_reminders"
-    const val CHANNEL_APPOINTMENTS = "appointments"
-    const val CHANNEL_WATER = "water"
-    const val CHANNEL_STOCK = "stock"
-    const val CHANNEL_SLEEP = "sleep"
+    // Version 2 channels: high importance (pop-up), sound and vibration. Android never lets an app
+    // raise the importance of an existing channel, so the old ones are replaced, not updated.
+    const val CHANNEL_DOSES = "doses_v2"
+    const val CHANNEL_APPOINTMENTS = "appointments_v2"
+    const val CHANNEL_WATER = "water_v2"
+    const val CHANNEL_STOCK = "stock_v2"
+    const val CHANNEL_SLEEP = "sleep_v2"
+    private val OLD_CHANNELS = listOf("dose_reminders", "appointments", "water", "stock", "sleep")
+    val ALL_CHANNELS = listOf(CHANNEL_DOSES, CHANNEL_APPOINTMENTS, CHANNEL_WATER, CHANNEL_STOCK, CHANNEL_SLEEP)
     private const val SLEEP_ID = 2004
     private const val WATER_ID = 2001
     private const val STOCK_ID = 2002
 
     fun createChannels(context: Context) {
         val manager = context.getSystemService(NotificationManager::class.java)
+        OLD_CHANNELS.forEach(manager::deleteNotificationChannel)
+        val sound = android.media.RingtoneManager.getDefaultUri(android.media.RingtoneManager.TYPE_NOTIFICATION)
+        val audio = android.media.AudioAttributes.Builder()
+            .setUsage(android.media.AudioAttributes.USAGE_NOTIFICATION_EVENT)
+            .setContentType(android.media.AudioAttributes.CONTENT_TYPE_SONIFICATION)
+            .build()
+        fun channel(id: String, name: String, desc: String) =
+            NotificationChannel(id, name, NotificationManager.IMPORTANCE_HIGH).apply {
+                description = desc
+                setSound(sound, audio)
+                enableVibration(true)
+                vibrationPattern = VIBRATION
+                enableLights(true)
+                lightColor = ACCENT
+                setShowBadge(true)
+            }
         listOf(
-            NotificationChannel(CHANNEL_DOSES, context.getString(R.string.channel_reminders), NotificationManager.IMPORTANCE_HIGH)
-                .apply { description = context.getString(R.string.channel_reminders_desc) },
-            NotificationChannel(CHANNEL_APPOINTMENTS, "Rendez-vous médicaux", NotificationManager.IMPORTANCE_HIGH),
-            NotificationChannel(CHANNEL_WATER, "Hydratation", NotificationManager.IMPORTANCE_DEFAULT),
-            NotificationChannel(CHANNEL_STOCK, "Stock de médicaments", NotificationManager.IMPORTANCE_DEFAULT),
-            NotificationChannel(CHANNEL_SLEEP, "Sommeil", NotificationManager.IMPORTANCE_DEFAULT),
+            channel(CHANNEL_DOSES, context.getString(R.string.channel_reminders), context.getString(R.string.channel_reminders_desc)),
+            channel(CHANNEL_APPOINTMENTS, "Rendez-vous médicaux", "Rappels avant chaque rendez-vous"),
+            channel(CHANNEL_WATER, "Hydratation", "Rappels pour boire de l'eau"),
+            channel(CHANNEL_STOCK, "Stock de médicaments", "Médicaments à racheter"),
+            channel(CHANNEL_SLEEP, "Sommeil", "Rappel du matin pour noter sa nuit"),
         ).forEach(manager::createNotificationChannel)
     }
+
+    private val VIBRATION = longArrayOf(0, 350, 200, 350)
+    private const val ACCENT = 0xFF2E9E83.toInt()
+
+    /**
+     * Channels whose notifications no longer pop up on screen (importance lowered by the user
+     * or by the phone): their reminders arrive silently in the notification shade.
+     */
+    fun quietChannels(context: Context): List<String> {
+        val manager = NotificationManagerCompat.from(context)
+        return ALL_CHANNELS.filter { id ->
+            val importance = manager.getNotificationChannel(id)?.importance ?: return@filter false
+            importance != NotificationManager.IMPORTANCE_NONE && importance < NotificationManager.IMPORTANCE_HIGH
+        }
+    }
+
+    /** Opens the settings of one channel (to turn "pop-up" and sound back on). */
+    fun channelSettingsIntent(context: Context, channel: String = CHANNEL_DOSES): Intent =
+        Intent(android.provider.Settings.ACTION_CHANNEL_NOTIFICATION_SETTINGS)
+            .putExtra(android.provider.Settings.EXTRA_APP_PACKAGE, context.packageName)
+            .putExtra(android.provider.Settings.EXTRA_CHANNEL_ID, channel)
+            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
 
     /** Permission granted (Android 13+) and notifications not turned off for the app or its reminder channel. */
     fun canPost(context: Context): Boolean {
@@ -159,12 +200,26 @@ object Notifications {
         )
         val notification = NotificationCompat.Builder(context, channel)
             .setSmallIcon(R.drawable.ic_notification)
-            .setColor(0xFF2E9E83.toInt())
+            .setColor(ACCENT)
             .setContentTitle(title)
             .setContentText(text)
             .setStyle(NotificationCompat.BigTextStyle().bigText(text))
             .setCategory(if (channel == CHANNEL_APPOINTMENTS) NotificationCompat.CATEGORY_EVENT else NotificationCompat.CATEGORY_REMINDER)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setDefaults(NotificationCompat.DEFAULT_ALL)
+            .setVibrate(VIBRATION)
+            .setWhen(System.currentTimeMillis())
+            .setShowWhen(true)
+            // On the lock screen: a reminder without medication names, until the phone is unlocked.
+            .setVisibility(NotificationCompat.VISIBILITY_PRIVATE)
+            .setPublicVersion(
+                NotificationCompat.Builder(context, channel)
+                    .setSmallIcon(R.drawable.ic_notification)
+                    .setColor(ACCENT)
+                    .setContentTitle("MédiPote")
+                    .setContentText("Tu as un rappel. Déverrouille pour le voir.")
+                    .build(),
+            )
             .setContentIntent(open)
             .setAutoCancel(true)
             .build()

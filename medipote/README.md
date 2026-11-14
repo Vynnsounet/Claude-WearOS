@@ -118,10 +118,10 @@ Profil médical et paramètres sont accessibles en haut à droite.
 
   | Action | Points |
   |---|---|
-  | Prise à l'heure (de 1 h avant à 30 min après) | +10 |
+  | Prise à l'heure (de 30 min avant à 30 min après) | +10 |
   | En retard (jusqu'à 2 h) | +6 (malus −4) |
   | Très en retard (au-delà de 2 h) | +3 (malus −7) |
-  | Noté « Déjà pris ? » plus d'1 h avant l'horaire (le jour même) | +6 |
+  | Noté « Déjà pris ? » plus de 30 min avant l'horaire (le jour même) | +6 |
   | Journée parfaite (toutes les prises à l'heure) | +20 |
   | Journal du jour rempli | +5 |
   | Verre d'eau (jusqu'à l'objectif du jour) | +2 par verre |
@@ -179,6 +179,12 @@ Une prise prévue avant l'ajout du traitement n'est pas due : ajouter à 15 h un
 médicament prévu à 8 h ne rend pas le compagnon malade.
 
 ## Notifications
+
+Tous les rappels (prises, rendez-vous, eau, stock, sommeil) s'affichent **en
+pop-up avec son et vibration** (canaux de priorité haute). Sur l'écran verrouillé,
+ils ne montrent pas le nom des médicaments. Si le téléphone ou l'utilisateur a
+rendu un canal discret, MédiPote le détecte et propose (accueil et paramètres)
+d'ouvrir ses réglages pour réactiver « Afficher en pop-up » et le son.
 
 Les rappels utilisent des alarmes exactes (`USE_EXACT_ALARM` sur Android 13+,
 accordée automatiquement). Si un téléphone les refuse quand même, l'app se

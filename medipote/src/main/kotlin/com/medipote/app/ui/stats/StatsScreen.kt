@@ -454,7 +454,7 @@ private fun BreakdownCard(onTime: Int, late: Int, missed: Int, periodLabel: Stri
                 Count("Oubliées", missed, total, status.critical, Modifier.weight(1f))
             }
             Text(
-                "Décalées : prises en retard, ou notées plus d'une heure en avance.",
+                "Décalées : prises plus de 30 min avant ou après l'heure prévue.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )

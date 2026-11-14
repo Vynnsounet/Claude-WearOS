@@ -111,4 +111,27 @@ class DoseTimeChangeTest {
         val state = Schedule.applyEdit(AppState(), metformine, at(10))
         assertEquals(listOf(metformine), state.treatments)
     }
+
+    @Test
+    fun onTimeMeansThirtyMinutesEitherSide() {
+        val planned = at(8)
+        fun status(minutes: Long) = com.medipote.app.domain.Rules.statusFor(planned, planned.plusMinutes(minutes))
+        assertEquals(com.medipote.app.data.TakeStatus.EARLY, status(-31))
+        assertEquals(com.medipote.app.data.TakeStatus.ON_TIME, status(-30))
+        assertEquals(com.medipote.app.data.TakeStatus.ON_TIME, status(0))
+        assertEquals(com.medipote.app.data.TakeStatus.ON_TIME, status(30))
+        assertEquals(com.medipote.app.data.TakeStatus.ON_TIME, com.medipote.app.domain.Rules.statusFor(planned, planned.plusSeconds(30 * 60 + 59)))
+        assertEquals(com.medipote.app.data.TakeStatus.LATE, status(31))
+        // "Donner" is offered from 30 minutes before; earlier, only "Déjà pris ?".
+        val state = AppState(treatments = listOf(metformine), onboarded = true)
+        assertEquals(DoseState.UPCOMING, items(state, day, at(7, 29)).first().state)
+        assertTrue(items(state, day, at(7, 29)).first().canMarkEarly(at(7, 29)))
+        assertEquals(DoseState.DUE, items(state, day, at(7, 30)).first().state)
+        assertEquals(DoseState.DUE, items(state, day, at(8, 30)).first().state)
+        assertEquals(DoseState.OVERDUE, items(state, day, at(8, 31)).first().state)
+        // Given 25 minutes early with "Donner": on time, full points.
+        val given = give(state, 8 * 60, day, at(7, 35))
+        assertEquals(com.medipote.app.data.TakeStatus.ON_TIME, given.doseLogs.single().status)
+        assertEquals(com.medipote.app.domain.Rules.POINTS_ON_TIME, given.doseLogs.single().points)
+    }
 }

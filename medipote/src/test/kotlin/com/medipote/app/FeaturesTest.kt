@@ -207,9 +207,9 @@ class FeaturesTest {
     }
 
     @Test
-    fun withinAnHourItIsStillOnTime() {
-        assertEquals(com.medipote.app.data.TakeStatus.ON_TIME, Rules.statusFor(at(20), at(19, 0)))
-        assertEquals(com.medipote.app.data.TakeStatus.EARLY, Rules.statusFor(at(20), at(18, 59)))
+    fun withinThirtyMinutesItIsStillOnTime() {
+        assertEquals(com.medipote.app.data.TakeStatus.ON_TIME, Rules.statusFor(at(20), at(19, 30)))
+        assertEquals(com.medipote.app.data.TakeStatus.EARLY, Rules.statusFor(at(20), at(19, 29)))
     }
 
     @Test

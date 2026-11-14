@@ -119,6 +119,8 @@ fun HomeScreen(
     onOpenTreatments: () -> Unit = {},
     pointsSignal: Int = feedSignal,
     notificationsBlocked: Boolean = false,
+    remindersQuiet: Boolean = false,
+    onFixQuietReminders: () -> Unit = {},
     onFixNotifications: () -> Unit = {},
     onCuddle: () -> Unit = {},
     onGiveEarly: (DoseItem) -> Unit = {},
@@ -169,6 +171,11 @@ fun HomeScreen(
                 PointsBadge(state.game.points)
             }
             if (notificationsBlocked && state.settings.notificationsEnabled) NotificationsBanner(onFixNotifications)
+            else if (remindersQuiet && state.settings.notificationsEnabled) NotificationsBanner(
+                onFixQuietReminders,
+                title = "Les rappels arrivent sans pop-up",
+                text = "Ils restent cachés dans le volet. Touche ici et active « Afficher en pop-up » (ou « Notifications contextuelles ») et le son.",
+            )
 
             // ── The companion ──
             Card(
@@ -525,7 +532,7 @@ fun EarlyDialog(name: String, time: String, onConfirm: () -> Unit, onDismiss: ()
         text = {
             Text(
                 "Prise prévue à $time : $name. Déjà faite ? Elle sera notée et le rappel ne sonnera pas.\n\n" +
-                    "Plus d'une heure en avance, elle rapporte ${com.medipote.app.domain.Rules.POINTS_EARLY} points " +
+                    "Plus de ${com.medipote.app.domain.Rules.EARLY_WINDOW_MINUTES} min en avance, elle rapporte ${com.medipote.app.domain.Rules.POINTS_EARLY} points " +
                     "au lieu de ${com.medipote.app.domain.Rules.POINTS_ON_TIME}. En cas de doute sur le moment de la prise, " +
                     "demande conseil à ton pharmacien.",
             )
@@ -731,7 +738,11 @@ private fun JournalPrompt(pet: String, onOpen: () -> Unit) {
 }
 
 @Composable
-private fun NotificationsBanner(onFix: () -> Unit) {
+private fun NotificationsBanner(
+    onFix: () -> Unit,
+    title: String = "Les notifications sont bloquées",
+    text: String = "Tu ne recevras pas les rappels. Touche ici pour les autoriser.",
+) {
     Card(
         onClick = onFix,
         colors = CardDefaults.cardColors(containerColor = AppTheme.status.warningContainer),
@@ -741,8 +752,8 @@ private fun NotificationsBanner(onFix: () -> Unit) {
             Icon(Icons.Rounded.NotificationsOff, null, tint = AppTheme.status.warning)
             Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f)) {
-                Text("Les notifications sont bloquées", style = MaterialTheme.typography.titleSmall)
-                Text("Tu ne recevras pas les rappels. Touche ici pour les autoriser.", style = MaterialTheme.typography.bodyMedium)
+                Text(title, style = MaterialTheme.typography.titleSmall)
+                Text(text, style = MaterialTheme.typography.bodyMedium)
             }
         }
     }
