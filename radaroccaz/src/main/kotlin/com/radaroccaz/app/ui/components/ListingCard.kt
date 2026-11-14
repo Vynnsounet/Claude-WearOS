@@ -48,6 +48,7 @@ fun Listing.specLine(): String = listOfNotNull(
     mileageKm?.let(Format::km),
     fuel?.label,
     gearbox?.label,
+    drive?.takeIf { it == com.radaroccaz.app.data.Drive.INTEGRALE }?.short,
 ).joinToString(" · ")
 
 @OptIn(ExperimentalLayoutApi::class)

@@ -41,7 +41,73 @@ enum class Gearbox(val label: String) {
             return when {
                 s.isBlank() -> null
                 "auto" in s || "semi" in s || "robot" in s || "dsg" in s || "edc" in s || "eat" in s || s == "a" || s == "s" -> AUTOMATIQUE
-                "manu" in s || "meca" in s || s == "m" -> MANUELLE
+                "manu" in s || "meca" in s || s == "m" || s == "man" || s == "bvm" -> MANUELLE
+                else -> null
+            }
+        }
+    }
+}
+
+@Serializable
+enum class BodyType(val label: String) {
+    CITADINE("Citadine"),
+    COMPACTE("Compacte"),
+    BERLINE("Berline"),
+    BREAK("Break"),
+    SUV("SUV / 4x4"),
+    MONOSPACE("Monospace"),
+    COUPE("Coupé"),
+    CABRIOLET("Cabriolet"),
+    UTILITAIRE("Utilitaire"),
+    PICKUP("Pick-up");
+
+    companion object {
+        /** Body labels used by the sites ("Berline Compacte", "SUV/4x4/Pick-Up", "Break"...). */
+        fun parse(raw: String?): BodyType? {
+            val s = Text.normalize(raw ?: return null)
+            return when {
+                s.isBlank() -> null
+                "compact" in s || "hatchback" in s -> COMPACTE
+                "citadine" in s || "city" in s -> CITADINE
+                "break" in s || "estate" in s || "wagon" in s || "touring" in s -> BREAK
+                "pick" in s -> PICKUP
+                "suv" in s || "4x4" in s || "tout-terrain" in s || "tout terrain" in s || "crossover" in s -> SUV
+                "monospace" in s || "ludospace" in s || "minivan" in s || s == "van" -> MONOSPACE
+                "cabrio" in s || "roadster" in s || "decapotable" in s -> CABRIOLET
+                "coupe" in s -> COUPE
+                "utilitaire" in s || "fourgon" in s || "commercial" in s -> UTILITAIRE
+                "berline" in s || "sedan" in s || "limousine" in s -> BERLINE
+                else -> null
+            }
+        }
+
+        /** Catalog codes: citadine, compacte, berline, break, suv, monospace, coupe, cabriolet, utilitaire, pickup. */
+        fun fromCode(code: String): BodyType? = entries.firstOrNull { it.name.equals(code, ignoreCase = true) }
+    }
+}
+
+@Serializable
+enum class Drive(val label: String, val short: String) {
+    TRACTION("Traction (avant)", "Traction"),
+    PROPULSION("Propulsion (arrière)", "Propulsion"),
+    INTEGRALE("4 roues motrices", "4x4");
+
+    companion object {
+        fun fromCode(code: String): Drive? = when (code.trim()) {
+            "F" -> TRACTION
+            "R" -> PROPULSION
+            "4" -> INTEGRALE
+            else -> null
+        }
+
+        /** "front-wheel", "Avant", "4x4", "all-wheel"... */
+        fun parse(raw: String?): Drive? {
+            val s = Text.normalize(raw ?: return null)
+            return when {
+                s.isBlank() -> null
+                "all" in s || "4x4" in s || "4wd" in s || "awd" in s || "integral" in s || "four" in s -> INTEGRALE
+                "front" in s || "avant" in s || "traction" in s || s == "f" || s == "fwd" -> TRACTION
+                "rear" in s || "arriere" in s || "propulsion" in s || s == "r" || s == "rwd" -> PROPULSION
                 else -> null
             }
         }
@@ -98,6 +164,12 @@ data class SearchCriteria(
     /** Department number ("33", "2A") or the start of a postal code; empty = all of France. */
     val department: String = "",
     val wantedOptions: Set<String> = emptySet(),
+    /** Engines from the catalog ("1.5 BlueHDi 130"); empty = all. */
+    val engines: Set<String> = emptySet(),
+    val bodies: Set<BodyType> = emptySet(),
+    val drives: Set<Drive> = emptySet(),
+    val powerMin: Int? = null,
+    val powerMax: Int? = null,
     /** Drop cars known to have had more owners than this. */
     val maxOwners: Int? = null,
     /** Drop cars declared accidented, damaged or sold for parts. */
@@ -120,6 +192,14 @@ data class SearchCriteria(
             yearMin?.let { add("$it+") }
             if (fuels.isNotEmpty()) add(fuels.joinToString("/") { it.label })
             gearbox?.let { add(it.label) }
+            if (engines.isNotEmpty()) add(if (engines.size == 1) engines.first() else "${engines.size} motorisations")
+            if (bodies.isNotEmpty()) add(bodies.joinToString("/") { it.label })
+            if (drives.isNotEmpty()) add(drives.joinToString("/") { it.short })
+            when {
+                powerMin != null && powerMax != null -> add("$powerMin–$powerMax ch")
+                powerMin != null -> add("≥ $powerMin ch")
+                powerMax != null -> add("≤ $powerMax ch")
+            }
             if (seller != SellerFilter.ALL) add(seller.label)
             if (department.isNotBlank()) add("Dép. ${department.trim()}")
             maxOwners?.let { add(if (it == 1) "1re main" else "≤ $it propriétaires") }
@@ -150,6 +230,10 @@ data class Listing(
     /** ISO-8601 date or date-time, as given by the site. */
     val publishedAt: String? = null,
     val powerHp: Int? = null,
+    val body: BodyType? = null,
+    val drive: Drive? = null,
+    /** Engine of the catalog this listing was matched to ("1.5 BlueHDi 130"). */
+    val engine: String? = null,
     /** Option ids (see [VehicleOptions]) found in the title, description or attributes. */
     val options: Set<String> = emptySet(),
     /** Other sources where the same car was found. */
@@ -202,10 +286,21 @@ enum class ThemeMode(val label: String) { SYSTEM("Système"), LIGHT("Clair"), DA
 @Serializable
 data class Settings(
     val themeMode: ThemeMode = ThemeMode.SYSTEM,
-    val enabledSources: Set<String> = setOf("leboncoin", "lacentrale", "autoscout24"),
+    val enabledSources: Set<String> = DEFAULT_SOURCES,
+    /**
+     * Sites whose rules forbid automated reading (Leboncoin, La Centrale) are opened in the
+     * browser unless the user explicitly turns automatic reading on for them here.
+     */
+    val autoReadRestricted: Set<String> = emptySet(),
+    /** Sources the user has already seen in the settings; new ones get switched on once. */
+    val knownSources: Set<String> = emptySet(),
     /** Uses generated listings instead of the network, to try the app. */
     val demoMode: Boolean = false,
-)
+) {
+    companion object {
+        val DEFAULT_SOURCES = setOf("autoscout24", "aramisauto", "autohero", "largus", "paruvendu", "leboncoin", "lacentrale")
+    }
+}
 
 @Serializable
 data class AppState(

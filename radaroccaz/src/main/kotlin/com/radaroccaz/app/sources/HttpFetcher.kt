@@ -12,6 +12,9 @@ import okhttp3.Request
  * anti-bot protections: a challenge page is reported as [SourceBlockedException] so the
  * app can offer to open the search on the site instead.
  */
+/** The page does not exist (unknown make or model name on that site). */
+class NotFoundException(val url: String) : IOException("Page introuvable : $url")
+
 class HttpFetcher(private val client: OkHttpClient = defaultClient()) {
 
     suspend fun get(url: String): String = runInterruptible(Dispatchers.IO) {
@@ -24,6 +27,7 @@ class HttpFetcher(private val client: OkHttpClient = defaultClient()) {
         client.newCall(request).execute().use { response ->
             val body = response.body.string()
             when {
+                response.code == 404 || response.code == 410 -> throw NotFoundException(url)
                 response.code == 403 || response.code == 429 || isChallenge(body) ->
                     throw SourceBlockedException("Le site a demandé une vérification anti-robot (code ${response.code}).")
                 !response.isSuccessful -> throw IOException("Réponse HTTP ${response.code}")

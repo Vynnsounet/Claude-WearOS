@@ -7,6 +7,7 @@ import com.radaroccaz.app.domain.SourceState
 import com.radaroccaz.app.sources.DemoSource
 import com.radaroccaz.app.sources.ListingSource
 import com.radaroccaz.app.sources.SourceBlockedException
+import com.radaroccaz.app.sources.SourcePage
 import java.io.IOException
 import java.time.LocalDate
 import kotlinx.coroutines.delay
@@ -20,14 +21,17 @@ import org.junit.Test
 class FakeSource(
     override val id: String,
     private val delayMs: Long = 0,
+    override val restricted: Boolean = false,
     private val result: () -> List<Listing>,
 ) : ListingSource {
     override val name = id.replaceFirstChar { it.uppercase() }
     override val description = ""
+    var calls = 0
     override fun searchUrl(criteria: SearchCriteria) = "https://$id.example/search"
-    override suspend fun search(criteria: SearchCriteria): List<Listing> {
+    override suspend fun search(criteria: SearchCriteria): SourcePage {
+        calls++
         delay(delayMs)
-        return result()
+        return SourcePage(result(), "https://$id.example/found")
     }
 }
 
@@ -56,6 +60,22 @@ class SearchEngineTest {
         assertEquals("HTTP 500", byId.getValue("broken").message)
         assertEquals(setOf("a:1", "b:3"), last.results.map { it.listing.id }.toSet())
         assertFalse("off" in byId)
+    }
+
+    @Test
+    fun restrictedSitesAreLinksUnlessAllowed() = runTest {
+        val lbc = FakeSource("lbc", restricted = true) { listOf(car("1", 12_000, source = "lbc")) }
+        val engine = SearchEngine(listOf(lbc, FakeSource("open") { listOf(car("2", 11_000, source = "open")) }))
+        val linked = engine.searchAll(criteria, setOf("lbc", "open"))
+        assertEquals(SourceState.LINK, linked.statuses.first { it.sourceId == "lbc" }.state)
+        assertEquals(0, lbc.calls)
+        assertEquals(listOf("open:2"), linked.results.map { it.listing.id })
+        // The URL that worked is the one offered to open.
+        assertEquals("https://open.example/found", linked.statuses.first { it.sourceId == "open" }.searchUrl)
+
+        val allowed = engine.searchAll(criteria, setOf("lbc", "open"), autoReadRestricted = setOf("lbc"))
+        assertEquals(SourceState.OK, allowed.statuses.first { it.sourceId == "lbc" }.state)
+        assertEquals(1, lbc.calls)
     }
 
     @Test

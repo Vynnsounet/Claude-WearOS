@@ -92,7 +92,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         _results.value = ResultsState(criteria = criteria, running = true, alertId = alertId, newIds = newIds,
             sort = _results.value.sort, demo = settings.demoMode)
         searchJob = viewModelScope.launch {
-            app.engine.search(criteria, app.activeSources(settings), repo.state.value.userHistory).collect { progress ->
+            app.engine.search(criteria, app.activeSources(settings), repo.state.value.userHistory, settings.autoReadRestricted).collect { progress ->
                 _results.update { it.copy(statuses = progress.statuses, results = progress.results, running = !progress.done) }
             }
             _results.update { it.copy(running = false) }

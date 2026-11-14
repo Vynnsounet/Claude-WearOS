@@ -57,6 +57,9 @@ class ScreensTest {
     @get:Rule
     val compose = createComposeRule()
 
+    @org.junit.Before
+    fun catalog() = TestCatalog.ensureLoaded()
+
     private val criteria = SearchCriteria(
         make = "Peugeot", model = "308", budgetMax = 15_000, mileageMax = 120_000, yearMin = 2017,
         fuels = setOf(Fuel.DIESEL, Fuel.ESSENCE), wantedOptions = setOf("gps", "camera", "carplay"),
@@ -64,14 +67,14 @@ class ScreensTest {
     )
 
     private val raw = listOf(
-        car("1", 11_490, 96_000, 2018, "leboncoin", "Peugeot 308 1.5 BlueHDi 130 Allure", options = setOf("gps", "camera", "carplay", "carnet"), city = "Bordeaux", postalCode = "33000"),
+        car("1", 11_490, 96_000, 2018, "largus", "Peugeot 308 1.5 BlueHDi 130 Allure", options = setOf("gps", "camera", "carplay", "carnet"), city = "Bordeaux", postalCode = "33000"),
         car("2", 13_990, 58_000, 2020, "autoscout24", "Peugeot 308 1.2 PureTech 130 GT Line", fuel = Fuel.ESSENCE, gearbox = Gearbox.AUTOMATIQUE, seller = SellerType.PRO, options = setOf("gps", "carplay", "garantie"), city = "Lyon", postalCode = "69003"),
-        car("3", 9_800, 118_000, 2017, "leboncoin", "Peugeot 308 SW 1.6 BlueHDi 120 Active", options = setOf("gps"), city = "Nantes", postalCode = "44000"),
+        car("3", 9_800, 118_000, 2017, "largus", "Peugeot 308 SW 1.6 BlueHDi 120 Active", options = setOf("gps"), city = "Nantes", postalCode = "44000"),
         car("4", 14_900, 42_000, 2021, "autoscout24", "Peugeot 308 1.5 BlueHDi 130 Allure Pack", seller = SellerType.PRO, options = setOf("gps", "camera", "carplay", "led"), city = "Lille", postalCode = "59000"),
-        car("5", 12_490, 87_000, 2019, "leboncoin", "Peugeot 308 1.2 PureTech 110 Style", fuel = Fuel.ESSENCE, options = setOf("camera"), city = "Rennes", postalCode = "35000"),
-        car("6", 10_990, 75_000, 2019, "leboncoin", "Peugeot 308 1.5 BlueHDi 100 Active Business", options = setOf("gps", "camera", "carplay", "premiere_main"), city = "Toulouse", postalCode = "31000"),
+        car("5", 12_490, 87_000, 2019, "paruvendu", "Peugeot 308 1.2 PureTech 110 Style", fuel = Fuel.ESSENCE, options = setOf("camera"), city = "Rennes", postalCode = "35000"),
+        car("6", 10_990, 75_000, 2019, "largus", "Peugeot 308 1.5 BlueHDi 100 Active Business", options = setOf("gps", "camera", "carplay", "premiere_main"), city = "Toulouse", postalCode = "31000"),
         car("7", 13_400, 101_000, 2018, "autoscout24", "Peugeot 308 2.0 BlueHDi 150 GT Line EAT8", gearbox = Gearbox.AUTOMATIQUE, seller = SellerType.PRO, city = "Paris", postalCode = "75015"),
-        car("8", 12_200, 66_000, 2019, "leboncoin", "Peugeot 308 1.2 PureTech 130 Allure", fuel = Fuel.ESSENCE, options = setOf("carplay"), city = "Pau", postalCode = "64000"),
+        car("8", 12_200, 66_000, 2019, "paruvendu", "Peugeot 308 1.2 PureTech 130 Allure", fuel = Fuel.ESSENCE, options = setOf("carplay"), city = "Pau", postalCode = "64000"),
     ).mapIndexed { i, l ->
         val past = listOf(
             "Première main, jamais accidentée, carnet d'entretien complet. CT OK de mars 2026 à 91 000 km, CT de mars 2024 à 64 000 km. Distribution faite à 90 000 km.",
@@ -91,9 +94,11 @@ class ScreensTest {
     private val results = Ranking.rank(raw, criteria, today = java.time.LocalDate.of(2026, 11, 14))
 
     private val statuses = listOf(
-        SourceStatus("leboncoin", "Leboncoin", SourceState.OK, 5, searchUrl = "https://www.leboncoin.fr"),
+        SourceStatus("largus", "L'Argus", SourceState.OK, 5, searchUrl = "https://occasion.largus.fr"),
         SourceStatus("lacentrale", "La Centrale", SourceState.BLOCKED, message = "Le site a demandé une vérification anti-robot (code 403).", searchUrl = "https://www.lacentrale.fr"),
         SourceStatus("autoscout24", "AutoScout24", SourceState.OK, 3, searchUrl = "https://www.autoscout24.fr"),
+        SourceStatus("aramisauto", "Aramis Auto", SourceState.OK, 0, searchUrl = "https://www.aramisauto.com"),
+        SourceStatus("leboncoin", "Leboncoin", SourceState.LINK, searchUrl = "https://www.leboncoin.fr"),
     )
 
     private fun render(theme: ThemeMode = ThemeMode.LIGHT, content: @Composable () -> Unit) {
@@ -112,7 +117,7 @@ class ScreensTest {
     }
 
     @Test
-    @Config(qualifiers = "w400dp-h1900dp-xhdpi")
+    @Config(qualifiers = "w400dp-h3000dp-xhdpi")
     fun search() {
         var searched = false
         render {
@@ -144,8 +149,8 @@ class ScreensTest {
     fun results() {
         var alert = false
         render { resultsScreen(ResultsState(criteria, statuses, results), onAlert = { alert = true }) }
-        compose.onNodeWithText("Leboncoin · 5").assertIsDisplayed()
-        compose.onNodeWithText("La Centrale · bloqué").assertIsDisplayed()
+        compose.onNodeWithText("L'Argus · 5").assertIsDisplayed()
+        compose.onNodeWithText("Aussi à consulter").assertIsDisplayed()
         compose.onNodeWithText("8 annonces retenues").assertIsDisplayed()
         shot("results")
         compose.onNodeWithTag("alert_button").performClick()
@@ -154,7 +159,7 @@ class ScreensTest {
 
     @Test
     fun resultsDark() {
-        render(ThemeMode.DARK) { resultsScreen(ResultsState(criteria, statuses, results, newIds = setOf("leboncoin:6"))) }
+        render(ThemeMode.DARK) { resultsScreen(ResultsState(criteria, statuses, results, newIds = setOf("largus:6"))) }
         compose.onNodeWithText("Nouveau").assertIsDisplayed()
         shot("results_dark")
     }
@@ -167,7 +172,7 @@ class ScreensTest {
 
     @Test
     fun resultsAllFailed() {
-        val failed = statuses.map { it.copy(state = SourceState.BLOCKED, count = 0) }
+        val failed = statuses.filter { it.state != SourceState.LINK }.map { it.copy(state = SourceState.BLOCKED, count = 0) }
         render { resultsScreen(ResultsState(criteria, failed, emptyList())) }
         compose.onNodeWithText("Les sites n'ont pas répondu").assertIsDisplayed()
         compose.onNodeWithText("Essayer avec des annonces de démo").assertExists()
@@ -176,7 +181,7 @@ class ScreensTest {
 
     @Composable
     private fun resultsScreen(state: ResultsState, onAlert: () -> Unit = {}) = ResultsScreen(
-        state = state, favorites = setOf("leboncoin:1"), hasAlert = false,
+        state = state, favorites = setOf("largus:1"), hasAlert = false,
         onBack = {}, onSort = {}, onOpen = {}, onToggleFavorite = {}, onCreateAlert = onAlert,
         onRetry = {}, onUseDemo = {}, onOpenUrl = {},
     )
@@ -190,14 +195,14 @@ class ScreensTest {
         }
         compose.onNodeWithText("Caractéristiques").assertExists()
         compose.onNodeWithText("Fiabilité et historique").assertIsDisplayed()
-        compose.onNodeWithText("Voir l'annonce sur ${if (best.listing.source == "leboncoin") "Leboncoin" else "AutoScout24"}").assertExists()
+        compose.onNodeWithText("Voir l'annonce sur", substring = true).assertExists()
         shot("detail")
     }
 
     @Test
     @Config(qualifiers = "w400dp-h2300dp-xhdpi")
     fun detailWithWarnings() {
-        val risky = results.first { it.listing.id == "leboncoin:3" }
+        val risky = results.first { it.listing.id == "largus:3" }
         render {
             ListingDetailScreen(risky.listing, risky, risky.analysis, criteria.wantedOptions, favorite = false, {}, {}, {}, {})
         }
@@ -264,15 +269,19 @@ class ScreensTest {
     }
 
     @Test
-    @Config(qualifiers = "w400dp-h1300dp-xhdpi")
+    @Config(qualifiers = "w400dp-h2000dp-xhdpi")
     fun settings() {
         render {
             SettingsScreen(
-                Settings(enabledSources = setOf("leboncoin", "autoscout24")),
+                Settings(enabledSources = Settings.DEFAULT_SOURCES - "paruvendu"),
                 listOf(
-                    SourceItem("leboncoin", "Leboncoin", "Particuliers et professionnels"),
-                    SourceItem("lacentrale", "La Centrale", "Particuliers et professionnels, cote La Centrale"),
-                    SourceItem("autoscout24", "AutoScout24", "Surtout des professionnels, France et Europe"),
+                    SourceItem("autoscout24", "AutoScout24", "Professionnels et particuliers, France"),
+                    SourceItem("aramisauto", "Aramis Auto", "Professionnel : véhicules récents révisés et garantis"),
+                    SourceItem("autohero", "Autohero", "Professionnel en ligne, voitures inspectées et livrées"),
+                    SourceItem("largus", "L'Argus", "Particuliers et professionnels, annonces L'Argus"),
+                    SourceItem("paruvendu", "ParuVendu", "Particuliers et professionnels"),
+                    SourceItem("leboncoin", "Leboncoin", "Particuliers et professionnels", restricted = true),
+                    SourceItem("lacentrale", "La Centrale", "Particuliers et professionnels, cote La Centrale", restricted = true),
                 ),
                 {}, {},
             )

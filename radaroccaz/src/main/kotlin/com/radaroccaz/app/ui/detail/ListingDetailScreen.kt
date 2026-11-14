@@ -27,6 +27,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.automirrored.rounded.OpenInNew
 import androidx.compose.material.icons.rounded.Bolt
+import androidx.compose.material.icons.rounded.DirectionsCar
 import androidx.compose.material.icons.rounded.CalendarMonth
 import androidx.compose.material.icons.rounded.Cancel
 import androidx.compose.material.icons.rounded.CheckCircle
@@ -151,6 +152,9 @@ fun ListingDetailScreen(
                         listing.fuel?.let { add(Triple(Icons.Rounded.LocalGasStation, "Carburant", it.label)) }
                         listing.gearbox?.let { add(Triple(Icons.Rounded.Settings, "Boîte", it.label)) }
                         listing.powerHp?.let { add(Triple(Icons.Rounded.Bolt, "Puissance", "$it ch")) }
+                        listing.engine?.let { add(Triple(Icons.Rounded.Settings, "Motorisation", it)) }
+                        listing.body?.let { add(Triple(Icons.Rounded.DirectionsCar, "Carrosserie", it.label)) }
+                        listing.drive?.let { add(Triple(Icons.Rounded.Speed, "Transmission", it.label)) }
                         listing.sellerType?.let { add(Triple(Icons.Rounded.Person, "Vendeur", it.label)) }
                         listing.location?.let { add(Triple(Icons.Rounded.Place, "Lieu", it)) }
                     }

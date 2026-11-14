@@ -1,8 +1,9 @@
 # Radar Occaz
 
 Application Android (téléphone) qui cherche les voitures d'occasion sur
-**Leboncoin**, **La Centrale** et **AutoScout24** en une seule recherche, puis
-classe les annonces selon **vos** priorités. Vous pouvez aussi créer des
+**AutoScout24**, **Aramis Auto**, **Autohero**, **L'Argus** et **ParuVendu** en
+une seule recherche (avec un lien direct vers **Leboncoin** et **La Centrale**),
+puis classe les annonces selon **vos** priorités. Vous pouvez aussi créer des
 **alertes** pour être prévenu dès qu'une nouvelle annonce correspond.
 
 | Recherche | Résultats | Analyse d'une annonce | Points de vigilance | Historique HistoVec | Alertes |
@@ -11,7 +12,12 @@ classe les annonces selon **vos** priorités. Vous pouvez aussi créer des
 
 ## Fonctionnalités
 
-- **Recherche** : marque et modèle (suggestions pour ~30 marques), budget
+- **Catalogue** : 42 marques et 1 338 modèles (la liste d'AutoScout24), dont
+  268 modèles courants avec leur fiche technique : carrosseries, transmissions
+  (traction, propulsion, 4 roues motrices) et 1 709 motorisations avec énergie
+  et puissance (`src/main/assets/catalog/`).
+- **Recherche** : marque et modèle avec suggestions, motorisation(s) du modèle
+  (regroupées par énergie), carrosserie, transmission, plage de puissance, budget
   min/max, kilométrage max, année minimum, carburant, boîte, particulier ou pro,
   département, et options souhaitées (GPS, caméra de recul, CarPlay, toit
   panoramique, première main, carnet d'entretien…).
@@ -93,35 +99,54 @@ le rapport HistoVec et l'inspection de la voiture.
 
 ## Comment les sites sont lus
 
-| Site | Méthode |
-|---|---|
-| Toutes | Page de l'annonce lue à l'ouverture de la fiche : description complète, attributs, lien HistoVec |
-| Leboncoin | Page `/recherche` (catégorie Voitures, filtres prix/km/année/carburant/boîte/vendeur), JSON `__NEXT_DATA__` → `ads[]` |
-| AutoScout24 | Page `/lst/<marque>/<modèle>`, JSON `__NEXT_DATA__` → `listings[]` |
-| La Centrale | Page `/listing`, JSON d'hydratation lu par un extracteur générique, avec JSON-LD en secours |
+Formats relevés sur les sites réels (novembre 2026) et vérifiés par
+`LiveSitesTest` : 14 modèles courants × 5 sites, aucune erreur 404.
 
-Chaque source est une classe de `sources/` qui fournit l'URL de recherche et un
-analyseur. Les tests vérifient chaque analyseur sur des pages d'exemple
-(`src/test/resources/fixtures`).
+| Site | Page lue (autorisée par son robots.txt) | Données |
+|---|---|---|
+| AutoScout24 | `/lst/<marque>/<modèle>?priceto=…&kmto=…&fregfrom=…&fuel=…&gear=…&body=…&drivetrain=…&powerfrom=…&custtype=…` (la forme `/lst?` sans chemin est interdite) | JSON Next.js `props.pageProps.listings[]` |
+| Aramis Auto | `/voitures/<marque>/<modèle>/offres/` (les paramètres de tri et de filtre sont interdits : filtrage dans l'application) | état Nuxt « devalue » (`NuxtData`) + liste JSON-LD |
+| Autohero | `/fr/auto/<marque>-<modèle>/`, sinon `/fr/search/?brand0=…&models0=<libellé>` | cache Apollo (`window.__APOLLO_STATE__`), avec propriétaires, accidents, carnet, transmission |
+| L'Argus | `/auto/<marque>/<modèle>/` | cartes HTML `<article>` |
+| ParuVendu | `/a/voiture-occasion/<marque>/<modèle>/` (son formulaire `/auto-moto/listefo/` est interdit) | cartes HTML `<article data-id>` |
+| Leboncoin | **lien direct** : `robots.txt` interdit `/recherche` et toute méthode automatique | lecture possible seulement si vous l'activez |
+| La Centrale | **lien direct** : `robots.txt` interdit `/listing*`, et le site répond par un captcha (403) | idem |
+| Toutes | page de l'annonce lue à l'ouverture de la fiche : description complète, attributs, lien HistoVec | |
+
+**Pas de 404 « bêtes »** : chaque site écrit les noms à sa façon (`mercedes` ou
+`mercedes-benz`, `serie-3` ou `serie-3-tous`, `classe-gla`, `id-3`…). Chaque
+source essaie donc plusieurs adresses dans l'ordre (`SiteNames`) : le nom exact,
+ses variantes, puis la marque seule. Elle passe à la suivante quand une page
+n'existe pas ou ne contient aucune annonce du bon modèle, et garde l'adresse
+qui a fonctionné pour le bouton « Ouvrir sur le site ». Le filtre de modèle
+connaît aussi les désignations Mercedes (« A 180 » pour la Classe A) et BMW
+(« 320d » pour la Série 3). Les loyers de LOA/LLD et les prix « sur demande »
+à 1 € sont écartés.
+
+**Écartés** : Spoticar et Le Parking refusent tout accès automatisé (403).
+
+Chaque source est une classe de `sources/`. Les tests vérifient chaque
+analyseur sur des pages enregistrées depuis les vrais sites, réduites et
+débarrassées des données personnelles des vendeurs
+(`src/test/resources/fixtures/*_real_search.html`).
 
 ### Limites à connaître
 
-- **Protections anti-robot** : Leboncoin et La Centrale protègent leurs pages
-  (DataDome). Une requête depuis un téléphone peut recevoir un captcha au lieu
-  des résultats. L'application ne contourne pas ces protections. Elle affiche
-  « bloqué » et propose d'ouvrir la même recherche sur le site. Les autres
-  sources restent utilisées.
+- **Leboncoin et La Centrale** : leurs règles interdisent la lecture
+  automatique, donc l'application ouvre la recherche (déjà filtrée) chez eux.
+  Les réglages permettent d'activer leur lecture pour un usage strictement
+  personnel, à vos risques : ils protègent leurs pages (DataDome) et
+  l'application ne contourne pas ces protections.
 - **Structure des pages** : les sites changent leur code sans prévenir. Une
   source peut alors renvoyer « page illisible » jusqu'à une mise à jour de son
-  analyseur. Les analyseurs ont été écrits d'après la structure connue des
-  pages : ils n'ont pas pu être testés contre les sites réels depuis
-  l'environnement de développement (accès bloqué).
-- **Conditions d'utilisation** : les CGU de ces sites encadrent ou interdisent
-  la collecte automatisée. L'application ne lit que les pages de résultats
-  publiques, à la demande de l'utilisateur ou pour ses alertes, sans stocker ni
-  republier les annonces. Elle est pensée pour un usage personnel. Pour une
-  diffusion publique, passez par des accès officiels (API partenaires, flux)
-  plutôt que par la lecture des pages.
+  analyseur. `LiveSitesTest` permet de le vérifier en une commande (voir plus bas).
+- **Filtres côté site** : seul AutoScout24 accepte les filtres dans l'adresse.
+  Les autres renvoient leurs ~25 annonces les plus récentes du modèle, filtrées
+  ensuite par l'application : un budget serré peut donc donner peu de résultats
+  chez eux.
+- **Motorisations** : elles sont reconnues dans le titre (famille, puissance,
+  cylindrée), sinon par la puissance. Une annonce sans indication reste
+  affichée.
 - **Options** : elles sont trouvées par mots-clés dans le titre et la
   description. « Non mentionnée » ne veut pas dire absente.
 
@@ -129,8 +154,8 @@ analyseur. Les tests vérifient chaque analyseur sur des pages d'exemple
 
 | Dossier | Contenu |
 |---|---|
-| `data/` | Modèles sérialisables, stockage JSON atomique (`AppRepository`), catalogue marques/modèles, détection des options, utilitaires texte |
-| `sources/` | `HttpFetcher` (OkHttp, détection des pages captcha), une classe par site, `GenericExtractor` (JSON embarqué + JSON-LD), `DemoSource` |
+| `data/` | Modèles sérialisables, stockage JSON atomique (`AppRepository`), `CarCatalog` (marques, modèles, fiches techniques), `VehicleSpecs` (motorisation, carrosserie, transmission et boîte reconnues dans le titre), détection des options |
+| `sources/` | `HttpFetcher` (OkHttp, 404 et captchas), `SiteNames` (adresses candidates), une classe par site, `NuxtData`, `GenericExtractor` (JSON embarqué + JSON-LD), `DemoSource` |
 | `analysis/` | `HistoryText` (historique dans le texte), `StructuredHistory` (champs des sites), `VehicleAnalysis` (constats, note de fiabilité, relevés kilométriques, questions) |
 | `domain/` | `Ranking` (filtrage, pertinence, dédoublonnage, note, tri), `MarketModel` (prix du marché), `SearchEngine` (sources en parallèle, progression en `Flow`) |
 | `work/` | `AlertChecker` (logique testée), `AlertScheduler` / `AlertWorker` (WorkManager), notifications |
@@ -142,7 +167,9 @@ JDK 17+ et le SDK Android (plateforme 37).
 
 ```bash
 ./gradlew :radaroccaz:assembleDebug       # radaroccaz/build/outputs/apk/debug/radaroccaz-debug.apk
-./gradlew :radaroccaz:testDebugUnitTest   # analyseurs, classement, moteur, alertes, écrans (captures dans radaroccaz/build/screenshots)
+./gradlew :radaroccaz:testDebugUnitTest   # analyseurs, catalogue, classement, moteur, alertes, écrans (captures dans radaroccaz/build/screenshots)
+./gradlew :radaroccaz:testDebugUnitTest --tests '*LiveSitesTest*' -Dradar.live=true --rerun-tasks
+                                          # interroge les vrais sites pour 14 modèles et affiche ce que chacun renvoie
 adb install -r radaroccaz/build/outputs/apk/debug/radaroccaz-debug.apk
 ```
 

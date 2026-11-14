@@ -116,7 +116,9 @@ fun ResultsScreen(
     ) { padding ->
         val results = state.sorted
         val okCount = state.statuses.count { it.state == SourceState.OK }
-        val allFailed = !state.running && state.statuses.isNotEmpty() && okCount == 0
+        val readable = state.statuses.filter { it.state != SourceState.LINK }
+        val links = state.statuses.filter { it.state == SourceState.LINK }
+        val allFailed = !state.running && readable.isNotEmpty() && okCount == 0
         LazyColumn(
             Modifier.fillMaxSize().padding(padding),
             contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 24.dp),
@@ -125,6 +127,7 @@ fun ResultsScreen(
             item(key = "sources") { SourceStatusRow(state.statuses, onOpenUrl) }
             if (state.running) item(key = "progress") { LinearProgressIndicator(Modifier.fillMaxWidth().clip(CircleShape)) }
             if (state.demo) item(key = "demo") { DemoBanner() }
+            if (links.isNotEmpty()) item(key = "links") { LinkSources(links, onOpenUrl) }
 
             val blocked = state.statuses.filter { it.state == SourceState.BLOCKED || it.state == SourceState.ERROR }
             if (blocked.isNotEmpty() && okCount > 0) {
@@ -159,7 +162,7 @@ fun ResultsScreen(
                         onAction = onRetry,
                         secondary = {
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                state.statuses.forEach { s ->
+                                readable.forEach { s ->
                                     TextButton(onClick = { onOpenUrl(s.searchUrl) }) {
                                         Icon(Icons.AutoMirrored.Rounded.OpenInNew, null, Modifier.size(16.dp))
                                         Spacer(Modifier.width(6.dp))
@@ -205,6 +208,7 @@ private fun SourceStatusRow(statuses: List<SourceStatus>, onOpenUrl: (String) ->
                             SourceState.OK -> "${s.name} · ${s.count}"
                             SourceState.BLOCKED -> "${s.name} · bloqué"
                             SourceState.ERROR -> "${s.name} · erreur"
+                            SourceState.LINK -> "${s.name} · ouvrir"
                         },
                     )
                 },
@@ -214,10 +218,35 @@ private fun SourceStatusRow(statuses: List<SourceStatus>, onOpenUrl: (String) ->
                         SourceState.OK -> Icon(Icons.Rounded.CheckCircle, null, tint = x.great, modifier = Modifier.size(16.dp))
                         SourceState.BLOCKED -> Icon(Icons.Rounded.Shield, null, tint = x.fair, modifier = Modifier.size(16.dp))
                         SourceState.ERROR -> Icon(Icons.Rounded.ErrorOutline, null, tint = x.weak, modifier = Modifier.size(16.dp))
+                        SourceState.LINK -> Icon(Icons.AutoMirrored.Rounded.OpenInNew, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(16.dp))
                     }
                 },
                 colors = AssistChipDefaults.assistChipColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
             )
+        }
+    }
+}
+
+/** Sites that are not read automatically: their own search, already filtered, one tap away. */
+@Composable
+private fun LinkSources(links: List<SourceStatus>, onOpenUrl: (String) -> Unit) {
+    Surface(color = MaterialTheme.colorScheme.surfaceContainerLow, shape = MaterialTheme.shapes.medium) {
+        Column(Modifier.fillMaxWidth().padding(start = 12.dp, end = 4.dp, top = 10.dp, bottom = 4.dp)) {
+            Text("Aussi à consulter", style = MaterialTheme.typography.titleSmall)
+            Text(
+                "Ces sites interdisent la lecture automatique de leurs annonces : la même recherche s'ouvre directement chez eux.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Row(Modifier.horizontalScroll(rememberScrollState())) {
+                links.forEach { s ->
+                    TextButton(onClick = { onOpenUrl(s.searchUrl) }) {
+                        Icon(Icons.AutoMirrored.Rounded.OpenInNew, null, Modifier.size(16.dp))
+                        Spacer(Modifier.width(6.dp))
+                        Text(s.name)
+                    }
+                }
+            }
         }
     }
 }

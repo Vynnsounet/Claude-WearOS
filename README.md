@@ -22,8 +22,8 @@ needs no phone app.
 > [medipote/README.md](medipote/README.md).
 >
 > It also contains **Radar Occaz** (`radaroccaz/`), an Android phone app that
-> searches used-car listings on several French sites, ranks them against the
-> user's criteria and sends alerts for new listings. See
+> searches used-car listings on seven French sites, ranks them against the
+> user's criteria (engine, body, drive, history...) and sends alerts for new listings. See
 > [radaroccaz/README.md](radaroccaz/README.md).
 
 ## Project layout

@@ -30,6 +30,7 @@ import androidx.compose.material.icons.rounded.EuroSymbol
 import androidx.compose.material.icons.rounded.History
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material.icons.rounded.Settings
+import androidx.compose.material.icons.rounded.Speed
 import androidx.compose.material.icons.rounded.Star
 import androidx.compose.material.icons.rounded.Tune
 import androidx.compose.material3.AssistChip
@@ -46,6 +47,7 @@ import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Slider
+import androidx.compose.material3.RangeSlider
 import androidx.compose.material3.SuggestionChip
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
@@ -68,7 +70,9 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import com.radaroccaz.app.data.BodyType
 import com.radaroccaz.app.data.CarCatalog
+import com.radaroccaz.app.data.Drive
 import com.radaroccaz.app.data.Format
 import com.radaroccaz.app.data.Fuel
 import com.radaroccaz.app.data.Gearbox
@@ -122,7 +126,7 @@ fun SearchScreen(
                         value = criteria.make,
                         placeholder = "ex. Peugeot",
                         suggestions = { CarCatalog.suggestMakes(it) },
-                        onValueChange = { v -> onChange { it.copy(make = v) } },
+                        onValueChange = { v -> onChange { it.copy(make = v, engines = emptySet()) } },
                         tag = "field_make",
                     )
                     Spacer(Modifier.height(10.dp))
@@ -131,9 +135,20 @@ fun SearchScreen(
                         value = criteria.model,
                         placeholder = "ex. 308",
                         suggestions = { CarCatalog.suggestModels(criteria.make, it) },
-                        onValueChange = { v -> onChange { it.copy(model = v) } },
+                        onValueChange = { v -> onChange { it.copy(model = v, engines = emptySet()) } },
                         tag = "field_model",
                     )
+                    val spec = remember(criteria.make, criteria.model) { CarCatalog.spec(criteria.make, criteria.model) }
+                    if (spec != null) {
+                        Spacer(Modifier.height(10.dp))
+                        Text(
+                            "${spec.make} ${spec.model} · ${spec.years.replace("-", " – ").trim()} · " +
+                                spec.bodies.joinToString(", ") { it.label } + " · " + spec.drives.joinToString(", ") { it.short } +
+                                " · ${spec.engines.size} motorisations",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
                 }
 
                 SectionCard("Budget", icon = Icons.Rounded.EuroSymbol) {
@@ -220,6 +235,8 @@ fun SearchScreen(
                         modifier = Modifier.fillMaxWidth(),
                     )
                 }
+
+                EngineSection(criteria, onChange)
 
                 SectionCard("Options souhaitées", icon = Icons.Rounded.Build, trailing = {
                     if (criteria.wantedOptions.isNotEmpty()) {
@@ -329,6 +346,96 @@ fun SearchScreen(
     }
 }
 
+/** Engine, body, drive and power; the choices come from the model's technical sheet when there is one. */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun EngineSection(criteria: SearchCriteria, onChange: ((SearchCriteria) -> SearchCriteria) -> Unit) {
+    val spec = remember(criteria.make, criteria.model) { CarCatalog.spec(criteria.make, criteria.model) }
+    SectionCard("Motorisation et carrosserie", icon = Icons.Rounded.Speed, trailing = {
+        val n = criteria.engines.size + criteria.bodies.size + criteria.drives.size +
+            (if (criteria.powerMin != null || criteria.powerMax != null) 1 else 0)
+        if (n > 0) TextButton(onClick = { onChange { it.copy(engines = emptySet(), bodies = emptySet(), drives = emptySet(), powerMin = null, powerMax = null) } }) { Text("Effacer") }
+    }) {
+        SubLabel("Carrosserie")
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            (spec?.bodies ?: BodyType.entries).forEach { b ->
+                FilterChip(
+                    selected = b in criteria.bodies,
+                    onClick = { onChange { it.copy(bodies = if (b in it.bodies) it.bodies - b else it.bodies + b) } },
+                    label = { Text(b.label) },
+                )
+            }
+        }
+        Spacer(Modifier.height(10.dp))
+        SubLabel("Transmission")
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            (spec?.drives?.sortedBy { it.ordinal } ?: Drive.entries).forEach { d ->
+                FilterChip(
+                    selected = d in criteria.drives,
+                    onClick = { onChange { it.copy(drives = if (d in it.drives) it.drives - d else it.drives + d) } },
+                    label = { Text(d.label) },
+                    modifier = Modifier.testTag("drive_${d.name}"),
+                )
+            }
+        }
+        Spacer(Modifier.height(10.dp))
+        val range = spec?.powerRange?.let { (it.first / 10 * 10)..((it.last + 9) / 10 * 10) }?.takeIf { it.last > it.first } ?: 50..400
+        val from = (criteria.powerMin ?: range.first).coerceIn(range.first, range.last)
+        val to = (criteria.powerMax ?: range.last).coerceIn(from, range.last)
+        LabeledValue(
+            "Puissance",
+            if (criteria.powerMin == null && criteria.powerMax == null) "Indifférente" else "$from – $to ch",
+        )
+        RangeSlider(
+            value = from.toFloat()..to.toFloat(),
+            onValueChange = { r ->
+                val lo = (r.start.roundToInt() / 5 * 5).takeIf { it > range.first }
+                val hi = ((r.endInclusive.roundToInt() + 4) / 5 * 5).takeIf { it < range.last }
+                onChange { it.copy(powerMin = lo, powerMax = hi) }
+            },
+            valueRange = range.first.toFloat()..range.last.toFloat(),
+        )
+        if (spec == null) {
+            Text(
+                if (criteria.model.isBlank()) "Choisissez un modèle pour voir ses motorisations."
+                else "Pas de fiche technique pour ce modèle : filtrez par énergie et puissance.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        } else {
+            Spacer(Modifier.height(6.dp))
+            SubLabel("Motorisations")
+            val shown = spec.engines.filter { criteria.fuels.isEmpty() || it.fuel in criteria.fuels }
+            shown.groupBy { it.fuel }.forEach { (fuel, engines) ->
+                Text(fuel.label, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(top = 6.dp, bottom = 2.dp))
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    engines.forEach { e ->
+                        val on = e.name in criteria.engines
+                        FilterChip(
+                            selected = on,
+                            onClick = { onChange { it.copy(engines = if (on) it.engines - e.name else it.engines + e.name) } },
+                            label = {
+                                Text(
+                                    e.name + (if (e.name.contains(e.powerHp.toString())) "" else " · ${e.powerHp} ch") + if (e.allWheel) " · 4x4" else "",
+                                )
+                            },
+                        )
+                    }
+                }
+            }
+            if (criteria.engines.isNotEmpty()) {
+                Text(
+                    "Les annonces dont la motorisation n'est pas reconnue restent affichées si leur puissance correspond ou n'est pas indiquée.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 6.dp),
+                )
+            }
+        }
+    }
+}
+
 @Composable
 private fun Header(demoMode: Boolean, onOpenSettings: () -> Unit) {
     val x = LocalExtraColors.current
@@ -355,7 +462,7 @@ private fun Header(demoMode: Boolean, onOpenSettings: () -> Unit) {
             )
             Spacer(Modifier.height(6.dp))
             Text(
-                "Leboncoin, La Centrale et AutoScout24 comparés et classés selon vos critères.",
+                "AutoScout24, Aramis Auto, Autohero, L'Argus, ParuVendu, Leboncoin et La Centrale comparés et classés selon vos critères.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = Color.White.copy(alpha = 0.85f),
             )

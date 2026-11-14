@@ -17,6 +17,9 @@ class LaCentraleSource(fetcher: HttpFetcher) : HtmlListingSource(fetcher) {
     override val name = "La Centrale"
     override val description = "Particuliers et professionnels, cote La Centrale"
 
+    /** robots.txt: Disallow: /listing* (and the site answers automated requests with a captcha). */
+    override val restricted = true
+
     override fun searchUrl(criteria: SearchCriteria): String {
         val params = buildList {
             val make = Text.normalize(criteria.make).uppercase().replace(' ', '-')

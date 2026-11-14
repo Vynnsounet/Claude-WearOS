@@ -246,7 +246,7 @@ fun RadarApp(vm: AppViewModel) {
                 composable(Routes.SETTINGS) {
                     SettingsScreen(
                         settings = app.settings,
-                        sources = vm.sources.map { SourceItem(it.id, it.name, it.description) },
+                        sources = vm.sources.map { SourceItem(it.id, it.name, it.description, it.restricted) },
                         onChange = vm::updateSettings,
                         onBack = { nav.popBackStack() },
                     )

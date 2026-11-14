@@ -30,6 +30,11 @@ android {
 
     testOptions {
         unitTests.isIncludeAndroidResources = true
+        // LiveSitesTest queries the real sites only when asked: ./gradlew ... -Dradar.live=true
+        unitTests.all { test ->
+            listOf("radar.live", "radar.models").forEach { key -> System.getProperty(key)?.let { test.systemProperty(key, it) } }
+            test.testLogging.showStandardStreams = System.getProperty("radar.live") == "true"
+        }
     }
 
     compileOptions {

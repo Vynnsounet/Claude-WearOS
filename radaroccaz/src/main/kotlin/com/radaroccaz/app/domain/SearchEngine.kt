@@ -16,7 +16,9 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withTimeout
 
-enum class SourceState { LOADING, OK, BLOCKED, ERROR }
+enum class SourceState { LOADING, OK, BLOCKED, ERROR,
+    /** Not read automatically (the site forbids it): offered as a link to its own search. */
+    LINK }
 
 data class SourceStatus(
     val sourceId: String,
@@ -34,6 +36,9 @@ data class SearchProgress(
     val results: List<ScoredListing>,
 ) {
     val done: Boolean get() = statuses.none { it.state == SourceState.LOADING }
+
+    /** At least one site was actually read. */
+    val anyRead: Boolean get() = statuses.any { it.state == SourceState.OK }
 }
 
 /** Queries every source in parallel and re-ranks the combined results each time one answers. */
@@ -47,12 +52,17 @@ class SearchEngine(
         criteria: SearchCriteria,
         sourceIds: Collection<String>,
         userHistory: Map<String, VehicleHistory> = emptyMap(),
+        autoReadRestricted: Collection<String> = emptySet(),
     ): Flow<SearchProgress> = channelFlow {
-        val active = sources.filter { it.id in sourceIds }
+        val enabled = sources.filter { it.id in sourceIds }
+        val linkOnly = enabled.filter { it.restricted && it.id !in autoReadRestricted }
+        val active = enabled - linkOnly.toSet()
         val lock = Mutex()
-        val statuses = active.associate {
-            it.id to SourceStatus(it.id, it.name, SourceState.LOADING, searchUrl = it.searchUrl(criteria))
-        }.toMutableMap()
+        val statuses = (active.map { it.id to SourceStatus(it.id, it.name, SourceState.LOADING, searchUrl = it.searchUrl(criteria)) } +
+            linkOnly.map {
+                it.id to SourceStatus(it.id, it.name, SourceState.LINK, searchUrl = it.searchUrl(criteria),
+                    message = "Ce site interdit la lecture automatique : ouvrez la recherche sur le site.")
+            }).toMap().toMutableMap()
         val raw = mutableListOf<Listing>()
         send(SearchProgress(statuses.values.toList(), emptyList()))
         if (active.isEmpty()) { close(); return@channelFlow }
@@ -60,9 +70,14 @@ class SearchEngine(
         val jobs = active.map { source ->
             launch {
                 val status = try {
-                    val found = withTimeout(timeoutMs) { source.search(criteria) }
+                    val page = withTimeout(timeoutMs) { source.search(criteria) }
+                    val found = page.listings.map { Ranking.annotate(it, criteria) }
                     lock.withLock { raw += found }
-                    statuses.getValue(source.id).copy(state = SourceState.OK, count = found.count { Ranking.matches(it, criteria, userHistory[it.id]) })
+                    statuses.getValue(source.id).copy(
+                        state = SourceState.OK,
+                        count = found.count { Ranking.matches(it, criteria, userHistory[it.id]) },
+                        searchUrl = page.url,
+                    )
                 } catch (e: SourceBlockedException) {
                     statuses.getValue(source.id).copy(state = SourceState.BLOCKED, message = e.message)
                 } catch (e: TimeoutCancellationException) {
@@ -87,7 +102,8 @@ class SearchEngine(
         criteria: SearchCriteria,
         sourceIds: Collection<String>,
         userHistory: Map<String, VehicleHistory> = emptyMap(),
-    ): SearchProgress = search(criteria, sourceIds, userHistory).last()
+        autoReadRestricted: Collection<String> = emptySet(),
+    ): SearchProgress = search(criteria, sourceIds, userHistory, autoReadRestricted).last()
 
     /** Reads the listing's own page for a complete analysis. */
     suspend fun details(listing: Listing): Listing =
@@ -96,6 +112,7 @@ class SearchEngine(
     private fun describe(e: Exception): String = when (e) {
         is java.net.UnknownHostException -> "Pas de connexion Internet."
         is java.net.SocketTimeoutException -> "Le site met trop de temps à répondre."
+        is com.radaroccaz.app.sources.SourceUnavailableException -> e.message ?: "Modèle introuvable sur ce site."
         is java.io.IOException -> e.message ?: "Erreur réseau."
         else -> "Page illisible : le site a peut-être changé (${e::class.simpleName})."
     }

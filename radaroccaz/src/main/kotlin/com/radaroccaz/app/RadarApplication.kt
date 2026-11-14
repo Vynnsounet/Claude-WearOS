@@ -4,7 +4,12 @@ import android.app.Application
 import com.radaroccaz.app.data.AppRepository
 import com.radaroccaz.app.data.Settings
 import com.radaroccaz.app.domain.SearchEngine
+import com.radaroccaz.app.data.CarCatalog
+import com.radaroccaz.app.sources.AramisAutoSource
 import com.radaroccaz.app.sources.AutoScout24Source
+import com.radaroccaz.app.sources.AutoheroSource
+import com.radaroccaz.app.sources.LargusSource
+import com.radaroccaz.app.sources.ParuVenduSource
 import com.radaroccaz.app.sources.DemoSource
 import com.radaroccaz.app.sources.HttpFetcher
 import com.radaroccaz.app.sources.LaCentraleSource
@@ -21,7 +26,15 @@ class RadarApplication : Application() {
 
     /** Real websites, in the order they are shown. */
     val sources: List<ListingSource> by lazy {
-        listOf(LeboncoinSource(fetcher), LaCentraleSource(fetcher), AutoScout24Source(fetcher))
+        listOf(
+            AutoScout24Source(fetcher),
+            AramisAutoSource(fetcher),
+            AutoheroSource(fetcher),
+            LargusSource(fetcher),
+            ParuVenduSource(fetcher),
+            LeboncoinSource(fetcher),
+            LaCentraleSource(fetcher),
+        )
     }
     val engine by lazy { SearchEngine(sources + DemoSource()) }
     val alertChecker by lazy { AlertChecker(repository, engine, ::activeSources) }
@@ -31,6 +44,17 @@ class RadarApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
+        try {
+            CarCatalog.load(assets.open("catalog/models.txt"), assets.open("catalog/specs.txt"))
+        } catch (e: java.io.IOException) {
+            android.util.Log.e("RadarOccaz", "Catalog not loaded", e)
+        }
+        // Sites added by an update are switched on once.
+        repository.update { s ->
+            val added = Settings.DEFAULT_SOURCES - s.settings.knownSources
+            if (added.isEmpty()) s
+            else s.copy(settings = s.settings.copy(enabledSources = s.settings.enabledSources + added, knownSources = s.settings.knownSources + added))
+        }
         Notifications.createChannel(this)
         val alerts = repository.state.value.alerts
         if (alerts.isNotEmpty()) AlertScheduler.sync(this, alerts)

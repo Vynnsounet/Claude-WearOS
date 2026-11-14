@@ -4,6 +4,9 @@ import com.radaroccaz.app.analysis.Analysis
 import com.radaroccaz.app.analysis.HistoryText
 import com.radaroccaz.app.analysis.VehicleAnalysis
 import com.radaroccaz.app.data.AccidentStatus
+import com.radaroccaz.app.data.BodyType
+import com.radaroccaz.app.data.CarCatalog
+import com.radaroccaz.app.data.VehicleSpecs
 import com.radaroccaz.app.data.Fuel
 import com.radaroccaz.app.data.Listing
 import com.radaroccaz.app.data.SearchCriteria
@@ -67,9 +70,25 @@ enum class SortOrder(val label: String) {
 
 object Ranking {
 
+    /** Engine, body and drive worked out from the title and the catalog. */
+    fun annotate(l: Listing, c: SearchCriteria): Listing {
+        val spec = CarCatalog.spec(l.make ?: c.make, l.model ?: c.model) ?: CarCatalog.spec(c.make, c.model)
+        return VehicleSpecs.annotate(l, spec)
+    }
+
     /** Drops listings that contradict the criteria. Unknown values (no mileage given...) are kept. */
+    private val leasing = Regex("(?<![a-z])(lld|loa|leasing|location longue|/ ?mois|par mois|-mois|mensualites?|sans apport)(?![a-z])")
+
+    /** A monthly lease, a "price on request" at 1 € or a deposit is not a sale price. */
+    fun isFakePrice(l: Listing): Boolean {
+        if (l.price < MIN_PLAUSIBLE_PRICE) return true
+        val recent = (l.year ?: 0) >= java.time.LocalDate.now().year - 6
+        if (l.price < 2_500 && recent && leasing.containsMatchIn(Text.normalize(l.title + " " + l.description.take(300)))) return true
+        return l.price < 1_000 && recent
+    }
+
     fun matches(l: Listing, c: SearchCriteria, user: VehicleHistory? = null): Boolean {
-        if (l.price < MIN_PLAUSIBLE_PRICE) return false
+        if (isFakePrice(l)) return false
         if (c.budgetMax != null && l.price > c.budgetMax) return false
         if (c.budgetMin != null && l.price < c.budgetMin) return false
         if (c.mileageMax != null && l.mileageKm != null && l.mileageKm > c.mileageMax) return false
@@ -78,6 +97,16 @@ object Ranking {
             !(l.fuel == Fuel.HYBRIDE_RECHARGEABLE && Fuel.HYBRIDE in c.fuels)
         ) return false
         if (c.gearbox != null && l.gearbox != null && l.gearbox != c.gearbox) return false
+        if (c.bodies.isNotEmpty() && l.body != null && l.body !in c.bodies &&
+            !(l.body == BodyType.COMPACTE && BodyType.BERLINE in c.bodies) && !(l.body == BodyType.BERLINE && BodyType.COMPACTE in c.bodies)
+        ) return false
+        if (c.drives.isNotEmpty() && l.drive != null && l.drive !in c.drives) return false
+        if (c.powerMin != null && l.powerHp != null && l.powerHp < c.powerMin) return false
+        if (c.powerMax != null && l.powerHp != null && l.powerHp > c.powerMax) return false
+        if (c.engines.isNotEmpty()) {
+            val chosen = CarCatalog.spec(c.make, c.model)?.engines?.filter { it.name in c.engines }.orEmpty()
+            if (chosen.isNotEmpty() && !VehicleSpecs.compatible(l, chosen)) return false
+        }
         when (c.seller) {
             SellerFilter.PARTICULIER -> if (l.sellerType == SellerType.PRO) return false
             SellerFilter.PRO -> if (l.sellerType == SellerType.PARTICULIER) return false
@@ -111,12 +140,34 @@ object Ranking {
             }
             return compact in compactHay
         }
+        // "Classe A" is written "A 180" and "Série 3" "320d" on many listings.
+        // The site's own model field ("A 180", "320") is reliable; in a free title the designation needs its suffix ("320d").
+        val aliasTarget = l.model?.let { Text.normalize(it) } ?: Text.normalize(l.title)
+        if (c.model.isNotBlank() && modelAliases(c.make.ifBlank { l.make.orEmpty() }, c.model, strict = l.model == null).any { it.containsMatchIn(aliasTarget) } &&
+            (c.make.isBlank() || l.make == null || contains(c.make) || contains(c.make.substringBefore('-').substringBefore(' ')))
+        ) return true
         val makeOk = c.make.isBlank() || contains(c.make) ||
             // "Mercedes-Benz" is often just "Mercedes"
             contains(c.make.substringBefore('-').substringBefore(' '))
         val modelOk = c.model.isBlank() || contains(c.model)
         // A title may omit the make ("308 SW GT Line") when the model is explicit.
         return modelOk && (makeOk || (c.model.isNotBlank() && l.make == null))
+    }
+
+    /** Designations used instead of the model's name: Mercedes "A 180" for Classe A, BMW "320d" for Série 3. */
+    fun modelAliases(make: String, model: String, strict: Boolean = false): List<Regex> {
+        val mk = Text.compact(make)
+        val m = Text.normalize(model)
+        return when {
+            mk.startsWith("mercedes") -> Regex("^classe ([a-z]{1,3})$").find(m)?.groupValues?.get(1)?.let { letter ->
+                listOf(Regex("(?<![a-z0-9])$letter ?\\d{2,3}(?![0-9])"), Regex("(?<![a-z0-9])$letter[- ]?klasse"))
+            }.orEmpty()
+            mk == "bmw" -> Regex("^serie ([1-8])$").find(m)?.groupValues?.get(1)?.let { n ->
+                val suffix = if (strict) "(?:i|d|e|xd|xi|is|ci|td|sd|li)" else "(?:i|d|e|xd|xi|is|ci|td|sd|li)?"
+                listOf(Regex("(?<![a-z0-9])$n\\d{2} ?$suffix(?![a-z0-9])"), Regex("(?<![a-z0-9])${n}er(?![a-z])"))
+            }.orEmpty()
+            else -> emptyList()
+        }
     }
 
     /** The same car posted on several sites: keeps the copy with the most photos and notes the others. */

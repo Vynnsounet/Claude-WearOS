@@ -1,0 +1,274 @@
+# Fiche technique des modèles courants sur le marché français de l'occasion.
+# Marque|Modèle|carrosseries|années|transmissions|motorisations
+# carrosseries : citadine compacte berline break suv monospace coupe cabriolet utilitaire pickup
+# transmissions : F = traction, R = propulsion, 4 = quatre roues motrices
+# motorisation : Nom:énergie:puissance en ch[@4 si quatre roues motrices]
+# énergie : E essence, D diesel, H hybride, P hybride rechargeable, EL électrique, G GPL
+Peugeot|108|citadine|2014-2021|F|1.0 VTi 68:E:68;1.2 PureTech 82:E:82
+Peugeot|208|citadine|2012-|F|1.0 VTi 68:E:68;1.2 PureTech 75:E:75;1.2 PureTech 82:E:82;1.2 PureTech 100:E:100;1.2 PureTech 110:E:110;1.2 PureTech 130:E:130;1.6 THP 208 GTi:E:208;1.6 BlueHDi 75:D:75;1.6 BlueHDi 100:D:100;1.5 BlueHDi 100:D:100;1.2 Hybrid 100:H:100;1.2 Hybrid 136:H:136;e-208:EL:136
+Peugeot|2008|suv|2013-|F|1.2 PureTech 82:E:82;1.2 PureTech 100:E:100;1.2 PureTech 110:E:110;1.2 PureTech 130:E:130;1.2 PureTech 155:E:155;1.6 BlueHDi 100:D:100;1.6 BlueHDi 120:D:120;1.5 BlueHDi 110:D:110;1.5 BlueHDi 130:D:130;1.2 Hybrid 136:H:136;e-2008:EL:136
+Peugeot|308|compacte break|2007-|F|1.2 PureTech 110:E:110;1.2 PureTech 130:E:130;1.6 THP 156:E:156;1.6 THP 205 GTi:E:205;1.6 THP 270 GTi:E:270;1.6 HDi 92:D:92;1.6 BlueHDi 100:D:100;1.6 BlueHDi 120:D:120;1.5 BlueHDi 100:D:100;1.5 BlueHDi 130:D:130;2.0 BlueHDi 150:D:150;2.0 BlueHDi 180:D:180;1.2 Hybrid 136:H:136;1.2 Hybrid 145:H:145;Hybrid 180:P:180;Hybrid 225:P:225;e-308:EL:156
+Peugeot|3008|suv|2009-|F 4|1.2 PureTech 130:E:130;1.6 PureTech 180:E:180;1.6 THP 165:E:165;1.6 BlueHDi 120:D:120;1.5 BlueHDi 130:D:130;2.0 BlueHDi 150:D:150;2.0 BlueHDi 180:D:180;1.2 Hybrid 136:H:136;Hybrid 225:P:225;Hybrid4 300:P:300@4;e-3008:EL:210
+Peugeot|408|berline|2022-|F|1.2 PureTech 130:E:130;1.2 Hybrid 136:H:136;Hybrid 180:P:180;Hybrid 225:P:225;e-408:EL:210
+Peugeot|508|berline break|2011-|F 4|1.6 PureTech 180:E:180;1.6 PureTech 225:E:225;1.6 THP 165:E:165;1.5 BlueHDi 130:D:130;1.6 BlueHDi 120:D:120;2.0 BlueHDi 150:D:150;2.0 BlueHDi 160:D:160;2.0 BlueHDi 180:D:180;Hybrid 225:P:225;PSE 360:P:360@4
+Peugeot|5008|suv monospace|2009-|F|1.2 PureTech 130:E:130;1.6 PureTech 180:E:180;1.6 BlueHDi 120:D:120;1.5 BlueHDi 130:D:130;2.0 BlueHDi 150:D:150;2.0 BlueHDi 180:D:180;1.2 Hybrid 136:H:136;e-5008:EL:210
+Peugeot|Partner|utilitaire|2008-|F|1.6 HDi 90:D:90;1.6 BlueHDi 100:D:100;1.5 BlueHDi 100:D:100;1.5 BlueHDi 130:D:130;1.2 PureTech 110:E:110;e-Partner:EL:136
+Peugeot|Rifter|utilitaire monospace|2018-|F|1.2 PureTech 110:E:110;1.2 PureTech 130:E:130;1.5 BlueHDi 100:D:100;1.5 BlueHDi 130:D:130;e-Rifter:EL:136
+Peugeot|Expert|utilitaire|2007-|F|1.6 BlueHDi 95:D:95;1.5 BlueHDi 120:D:120;2.0 BlueHDi 120:D:120;2.0 BlueHDi 150:D:150;2.0 BlueHDi 180:D:180;e-Expert:EL:136
+Peugeot|Traveller|monospace|2016-|F|1.5 BlueHDi 120:D:120;2.0 BlueHDi 150:D:150;2.0 BlueHDi 180:D:180;e-Traveller:EL:136
+Peugeot|206|citadine|1998-2012|F|1.1:E:60;1.4:E:75;1.6 16V:E:110;1.4 HDi 70:D:70;1.6 HDi 90:D:90
+Peugeot|207|citadine|2006-2014|F|1.4 VTi 95:E:95;1.6 VTi 120:E:120;1.6 THP 150:E:150;1.4 HDi 70:D:70;1.6 HDi 90:D:90;1.6 HDi 110:D:110
+Renault|Twingo|citadine|1993-|F R|1.2 16V 75:E:75;1.0 SCe 65:E:65;1.0 SCe 70:E:70;0.9 TCe 90:E:90;0.9 TCe 110 GT:E:110;Electric:EL:82;E-Tech Electric:EL:82
+Renault|Clio|citadine|1990-|F|1.2 16V 75:E:75;0.9 TCe 75:E:75;0.9 TCe 90:E:90;1.0 SCe 65:E:65;1.0 SCe 75:E:75;1.0 TCe 90:E:90;1.0 TCe 100:E:100;1.3 TCe 130:E:130;1.3 TCe 140:E:140;1.6 TCe 200 RS:E:200;1.5 dCi 75:D:75;1.5 dCi 90:D:90;1.5 Blue dCi 85:D:85;1.5 Blue dCi 100:D:100;1.5 Blue dCi 115:D:115;E-Tech 140:H:140;E-Tech 145:H:145;1.0 TCe 100 GPL:G:100
+Renault|Captur|suv|2013-|F|0.9 TCe 90:E:90;1.0 TCe 90:E:90;1.0 TCe 100:E:100;1.2 TCe 120:E:120;1.3 TCe 130:E:130;1.3 TCe 140:E:140;1.3 TCe 155:E:155;1.5 dCi 90:D:90;1.5 dCi 110:D:110;1.5 Blue dCi 95:D:95;1.5 Blue dCi 115:D:115;E-Tech 145:H:145;E-Tech Plug-in 160:P:160;1.0 TCe 100 GPL:G:100
+Renault|Megane|compacte break berline coupe cabriolet|1995-|F|1.2 TCe 115:E:115;1.2 TCe 130:E:130;1.3 TCe 115:E:115;1.3 TCe 140:E:140;1.3 TCe 160:E:160;1.6 TCe 205 GT:E:205;1.8 TCe 280 RS:E:280;1.8 TCe 300 RS:E:300;1.5 dCi 90:D:90;1.5 dCi 110:D:110;1.5 Blue dCi 115:D:115;1.6 dCi 130:D:130;1.7 Blue dCi 150:D:150;E-Tech Plug-in 160:P:160;E-Tech Electric 220:EL:220
+Renault|Scenic|monospace suv|1996-|F|1.2 TCe 115:E:115;1.2 TCe 130:E:130;1.3 TCe 140:E:140;1.3 TCe 160:E:160;1.5 dCi 110:D:110;1.7 Blue dCi 120:D:120;1.7 Blue dCi 150:D:150;1.6 dCi 130:D:130;E-Tech Electric 170:EL:170;E-Tech Electric 220:EL:220
+Renault|Kadjar|suv|2015-2022|F 4|1.2 TCe 130:E:130;1.3 TCe 140:E:140;1.3 TCe 160:E:160;1.5 dCi 110:D:110;1.5 Blue dCi 115:D:115;1.6 dCi 130 4x4:D:130@4;1.7 Blue dCi 150 4x4:D:150@4
+Renault|Arkana|suv|2021-|F|1.3 TCe 140:E:140;1.3 TCe 160:E:160;E-Tech 145:H:145
+Renault|Austral|suv|2022-|F 4|1.2 TCe 130:E:130;1.3 TCe 140:E:140;1.3 TCe 160:E:160;E-Tech 160:H:160;E-Tech 200:H:200;E-Tech 4x4 200:H:200@4
+Renault|Koleos|suv|2008-2023|F 4|2.0 dCi 150:D:150;1.7 Blue dCi 150:D:150;2.0 dCi 175 4x4:D:175@4;2.0 Blue dCi 185 4x4:D:185@4;1.3 TCe 160:E:160
+Renault|Espace|monospace suv|1984-|F 4|1.6 TCe 200:E:200;1.8 TCe 225:E:225;1.6 dCi 130:D:130;1.6 dCi 160:D:160;2.0 Blue dCi 160:D:160;2.0 Blue dCi 200:D:200;E-Tech 200:H:200;E-Tech 4x4 200:H:200@4
+Renault|Talisman|berline break|2015-2022|F|1.3 TCe 160:E:160;1.6 TCe 200:E:200;1.8 TCe 225:E:225;1.5 dCi 110:D:110;1.6 dCi 130:D:130;1.6 dCi 160:D:160;2.0 Blue dCi 160:D:160;2.0 Blue dCi 200:D:200
+Renault|Zoe|citadine|2012-2024|F|R90:EL:90;Q90:EL:90;R110:EL:108;R135:EL:135
+Renault|Kangoo|utilitaire monospace|1997-|F|1.5 dCi 75:D:75;1.5 dCi 90:D:90;1.5 dCi 110:D:110;1.5 Blue dCi 95:D:95;1.5 Blue dCi 115:D:115;1.2 TCe 115:E:115;1.3 TCe 100:E:100;1.3 TCe 130:E:130;Z.E.:EL:60;E-Tech Electric:EL:122
+Renault|Trafic|utilitaire|2001-|F|1.6 dCi 120:D:120;1.6 dCi 145:D:145;2.0 dCi 120:D:120;2.0 dCi 145:D:145;2.0 Blue dCi 150:D:150;2.0 Blue dCi 170:D:170
+Renault|Master|utilitaire|1980-|F R|2.3 dCi 130:D:130;2.3 dCi 135:D:135;2.3 dCi 150:D:150;2.3 dCi 165:D:165;2.3 dCi 180:D:180
+Renault|Symbioz|suv|2024-|F|E-Tech 160:H:160
+Renault|Rafale|suv|2024-|F 4|E-Tech 200:H:200;E-Tech 4x4 300:P:300@4
+Renault|Laguna|berline break coupe|1994-2015|F|2.0 16V 140:E:140;1.5 dCi 110:D:110;2.0 dCi 130:D:130;2.0 dCi 150:D:150;2.0 dCi 175:D:175
+Dacia|Sandero|citadine|2008-|F|1.2 16V 75:E:75;0.9 TCe 90:E:90;1.0 SCe 65:E:65;1.0 SCe 75:E:75;1.0 TCe 90:E:90;1.0 TCe 100 ECO-G:G:100;1.0 TCe 110:E:110;1.5 dCi 75:D:75;1.5 dCi 90:D:90;1.5 Blue dCi 95:D:95
+Dacia|Duster|suv|2010-|F 4|1.6 SCe 115:E:115;1.2 TCe 125:E:125;1.3 TCe 130:E:130;1.3 TCe 150:E:150;1.0 TCe 100 ECO-G:G:100;1.5 dCi 90:D:90;1.5 dCi 110:D:110;1.5 Blue dCi 115:D:115;1.5 Blue dCi 115 4x4:D:115@4;1.3 TCe 130 4x4:E:130@4;Hybrid 140:H:140;1.2 TCe 130 4x4:H:130@4
+Dacia|Jogger|monospace break|2022-|F|1.0 TCe 110:E:110;1.0 TCe 100 ECO-G:G:100;Hybrid 140:H:140
+Dacia|Spring|citadine|2021-|F|Electric 45:EL:45;Electric 65:EL:65
+Dacia|Logan|berline break|2004-|F|1.0 SCe 75:E:75;0.9 TCe 90:E:90;1.5 dCi 90:D:90;1.0 TCe 100 ECO-G:G:100
+Dacia|Lodgy|monospace|2012-2022|F|1.2 TCe 115:E:115;1.3 TCe 130:E:130;1.5 dCi 90:D:90;1.5 Blue dCi 115:D:115
+Dacia|Bigster|suv|2025-|F 4|1.2 TCe 130:H:130;1.2 TCe 130 4x4:H:130@4;Hybrid 155:H:155;ECO-G 140:G:140
+Citroën|C1|citadine|2005-2022|F|1.0 VTi 68:E:68;1.2 PureTech 82:E:82
+Citroën|C3|citadine suv|2002-|F|1.2 PureTech 68:E:68;1.2 PureTech 82:E:82;1.2 PureTech 83:E:83;1.2 PureTech 110:E:110;1.6 BlueHDi 75:D:75;1.6 BlueHDi 100:D:100;1.5 BlueHDi 100:D:100;1.2 Hybrid 110:H:110;e-C3:EL:113
+Citroën|C3 Aircross|suv|2017-|F|1.2 PureTech 82:E:82;1.2 PureTech 110:E:110;1.2 PureTech 130:E:130;1.6 BlueHDi 100:D:100;1.5 BlueHDi 110:D:110;1.5 BlueHDi 120:D:120;1.2 Hybrid 136:H:136;e-C3 Aircross:EL:113
+Citroën|C4|compacte suv|2004-|F|1.2 PureTech 100:E:100;1.2 PureTech 130:E:130;1.2 PureTech 155:E:155;1.6 HDi 92:D:92;1.6 BlueHDi 100:D:100;1.5 BlueHDi 110:D:110;1.5 BlueHDi 130:D:130;1.2 Hybrid 136:H:136;e-C4:EL:136
+Citroën|C4 Cactus|compacte suv|2014-2020|F|1.2 PureTech 82:E:82;1.2 PureTech 110:E:110;1.2 PureTech 130:E:130;1.6 BlueHDi 100:D:100;1.5 BlueHDi 120:D:120
+Citroën|C4 Picasso|monospace|2006-2018|F|1.2 PureTech 130:E:130;1.6 THP 165:E:165;1.6 HDi 110:D:110;1.6 BlueHDi 120:D:120;2.0 BlueHDi 150:D:150
+Citroën|C4 Spacetourer|monospace|2018-2022|F|1.2 PureTech 130:E:130;1.5 BlueHDi 130:D:130;2.0 BlueHDi 160:D:160
+Citroën|C5 Aircross|suv|2018-|F|1.2 PureTech 130:E:130;1.6 PureTech 180:E:180;1.5 BlueHDi 130:D:130;2.0 BlueHDi 180:D:180;1.2 Hybrid 136:H:136;Hybrid 225:P:225;e-C5 Aircross:EL:210
+Citroën|C5 X|berline break|2021-|F|1.2 PureTech 130:E:130;1.6 PureTech 180:E:180;Hybrid 225:P:225
+Citroën|C5|berline break|2001-2017|F|1.6 THP 155:E:155;1.6 HDi 110:D:110;2.0 HDi 140:D:140;2.0 HDi 160:D:160;2.2 HDi 200:D:200
+Citroën|Berlingo|utilitaire monospace|1996-|F|1.6 HDi 90:D:90;1.6 BlueHDi 100:D:100;1.5 BlueHDi 100:D:100;1.5 BlueHDi 130:D:130;1.2 PureTech 110:E:110;1.2 PureTech 130:E:130;e-Berlingo:EL:136
+Citroën|Jumpy|utilitaire|1995-|F|1.6 BlueHDi 95:D:95;1.5 BlueHDi 120:D:120;2.0 BlueHDi 120:D:120;2.0 BlueHDi 150:D:150;2.0 BlueHDi 180:D:180;ë-Jumpy:EL:136
+Citroën|Ami|citadine|2020-|R|Ami:EL:8
+DS Automobiles|DS 3|citadine suv|2010-|F|1.2 PureTech 100:E:100;1.2 PureTech 130:E:130;1.2 PureTech 155:E:155;1.6 THP 165:E:165;1.5 BlueHDi 110:D:110;1.5 BlueHDi 130:D:130;E-Tense:EL:156
+DS Automobiles|DS 4|compacte|2011-|F|1.2 PureTech 130:E:130;1.6 PureTech 180:E:180;1.6 PureTech 225:E:225;1.5 BlueHDi 130:D:130;E-Tense 225:P:225
+DS Automobiles|DS 7|suv|2017-|F 4|1.6 PureTech 180:E:180;1.6 PureTech 225:E:225;1.5 BlueHDi 130:D:130;2.0 BlueHDi 180:D:180;E-Tense 225:P:225;E-Tense 4x4 300:P:300@4;E-Tense 4x4 360:P:360@4
+Volkswagen|Up|citadine|2011-2023|F|1.0 60:E:60;1.0 75:E:75;1.0 TSI 90:E:90;GTI 1.0 TSI 115:E:115;e-Up:EL:83
+Volkswagen|Polo|citadine|1975-|F|1.0 MPI 65:E:65;1.0 MPI 75:E:75;1.0 TSI 95:E:95;1.0 TSI 110:E:110;1.2 TSI 90:E:90;1.2 TSI 110:E:110;1.4 TSI 150:E:150;2.0 TSI 200 GTI:E:200;2.0 TSI 207 GTI:E:207;1.4 TDI 75:D:75;1.4 TDI 90:D:90;1.6 TDI 80:D:80;1.6 TDI 95:D:95
+Volkswagen|Golf|compacte break cabriolet|1974-|F 4|1.0 TSI 110:E:110;1.2 TSI 105:E:105;1.4 TSI 125:E:125;1.4 TSI 150:E:150;1.5 TSI 130:E:130;1.5 TSI 150:E:150;1.5 eTSI 150:H:150;2.0 TSI 245 GTI:E:245;2.0 TSI 265 GTI:E:265;2.0 TSI 300 R:E:300@4;2.0 TSI 320 R:E:320@4;1.6 TDI 105:D:105;1.6 TDI 115:D:115;2.0 TDI 150:D:150;2.0 TDI 184 GTD:D:184;2.0 TDI 200 GTD:D:200;2.0 TDI 150 4Motion:D:150@4;1.4 TSI GTE 204:P:204;1.5 TSI eHybrid 204:P:204;e-Golf:EL:136
+Volkswagen|T-Roc|suv cabriolet|2017-|F 4|1.0 TSI 110:E:110;1.0 TSI 115:E:115;1.5 TSI 150:E:150;2.0 TSI 190 4Motion:E:190@4;2.0 TSI 300 R:E:300@4;1.6 TDI 115:D:115;2.0 TDI 115:D:115;2.0 TDI 150:D:150;2.0 TDI 150 4Motion:D:150@4
+Volkswagen|T-Cross|suv|2019-|F|1.0 TSI 95:E:95;1.0 TSI 110:E:110;1.0 TSI 115:E:115;1.5 TSI 150:E:150;1.6 TDI 95:D:95
+Volkswagen|Taigo|suv|2021-|F|1.0 TSI 95:E:95;1.0 TSI 110:E:110;1.5 TSI 150:E:150
+Volkswagen|Tiguan|suv|2007-|F 4|1.4 TSI 125:E:125;1.4 TSI 150:E:150;1.5 TSI 130:E:130;1.5 TSI 150:E:150;2.0 TSI 180 4Motion:E:180@4;2.0 TSI 220 4Motion:E:220@4;2.0 TSI 320 R:E:320@4;2.0 TDI 115:D:115;2.0 TDI 150:D:150;2.0 TDI 150 4Motion:D:150@4;2.0 TDI 190 4Motion:D:190@4;2.0 TDI 240 4Motion:D:240@4;1.4 TSI eHybrid 245:P:245;1.5 TSI eHybrid 272:P:272
+Volkswagen|Touran|monospace|2003-|F|1.2 TSI 110:E:110;1.4 TSI 150:E:150;1.5 TSI 150:E:150;1.6 TDI 110:D:110;1.6 TDI 115:D:115;2.0 TDI 150:D:150
+Volkswagen|Passat|berline break|1973-|F 4|1.4 TSI 125:E:125;1.4 TSI 150:E:150;1.5 TSI 150:E:150;2.0 TSI 220:E:220;2.0 TSI 272 4Motion:E:272@4;1.6 TDI 120:D:120;2.0 TDI 150:D:150;2.0 TDI 190:D:190;2.0 TDI 190 4Motion:D:190@4;2.0 BiTDI 240 4Motion:D:240@4;1.4 TSI GTE 218:P:218;1.5 TSI eHybrid 204:P:204
+Volkswagen|Arteon|berline break|2017-2024|F 4|1.5 TSI 150:E:150;2.0 TSI 190:E:190;2.0 TSI 280 4Motion:E:280@4;2.0 TDI 150:D:150;2.0 TDI 200:D:200;2.0 TDI 240 4Motion:D:240@4;1.4 TSI eHybrid 218:P:218
+Volkswagen|Touareg|suv|2002-|4|3.0 TDI 231:D:231@4;3.0 TDI 286:D:286@4;3.0 TSI 340:E:340@4;3.0 TSI eHybrid 381:P:381@4;4.0 TDI 421:D:421@4
+Volkswagen|ID.3|compacte|2020-|R|Pure 150:EL:150;Pro 204:EL:204;Pro S 204:EL:204;GTX 326:EL:326
+Volkswagen|ID.4|suv|2021-|R 4|Pure 170:EL:170;Pro 204:EL:204;Pro 286:EL:286;GTX 299:EL:299@4;GTX 340:EL:340@4
+Volkswagen|ID.5|suv|2022-|R 4|Pro 174:EL:174;Pro 204:EL:204;Pro 286:EL:286;GTX 299:EL:299@4;GTX 340:EL:340@4
+Volkswagen|Caddy|utilitaire monospace|1980-|F 4|1.0 TSI 102:E:102;1.5 TSI 114:E:114;2.0 TDI 75:D:75;2.0 TDI 102:D:102;2.0 TDI 122:D:122;2.0 TDI 150:D:150;2.0 TDI 122 4Motion:D:122@4
+Volkswagen|Transporter|utilitaire|1950-|F 4|2.0 TDI 90:D:90;2.0 TDI 110:D:110;2.0 TDI 150:D:150;2.0 TDI 199:D:199;2.0 TDI 150 4Motion:D:150@4
+Volkswagen|Multivan|monospace|1985-|F 4|2.0 TDI 150:D:150;2.0 TDI 199:D:199;2.0 TDI 199 4Motion:D:199@4;1.5 TSI 136:E:136;1.4 eHybrid 218:P:218
+Volkswagen|Sharan|monospace|1995-2022|F 4|1.4 TSI 150:E:150;2.0 TDI 150:D:150;2.0 TDI 177:D:177;2.0 TDI 177 4Motion:D:177@4
+Volkswagen|Scirocco|coupe|2008-2017|F|1.4 TSI 125:E:125;1.4 TSI 160:E:160;2.0 TSI 220:E:220;2.0 TSI 280 R:E:280;2.0 TDI 150:D:150;2.0 TDI 184:D:184
+Volkswagen|Amarok|pickup|2010-|4|2.0 TDI 180:D:180@4;3.0 TDI 204:D:204@4;3.0 TDI 258:D:258@4
+Toyota|Aygo|citadine|2005-2022|F|1.0 VVT-i 69:E:69;1.0 VVT-i 72:E:72
+Toyota|Aygo X|citadine|2022-|F|1.0 VVT-i 72:E:72;Hybrid 116:H:116
+Toyota|Yaris|citadine|1999-|F 4|1.0 VVT-i 69:E:69;1.0 VVT-i 72:E:72;1.33 VVT-i 99:E:99;1.5 VVT-i 111:E:111;1.5 Hybrid 100:H:100;1.5 Hybrid 116:H:116;1.5 Hybrid 130:H:130;1.4 D-4D 90:D:90;GR Yaris 261:E:261@4;GR Yaris 280:E:280@4
+Toyota|Yaris Cross|suv|2021-|F 4|1.5 Hybrid 116:H:116;1.5 Hybrid 116 AWD-i:H:116@4;1.5 Hybrid 130:H:130;1.5 Hybrid 130 AWD-i:H:130@4
+Toyota|Corolla|compacte break berline|1966-|F|1.2 Turbo 116:E:116;1.8 Hybrid 122:H:122;1.8 Hybrid 140:H:140;2.0 Hybrid 184:H:184;2.0 Hybrid 196:H:196
+Toyota|Auris|compacte break|2007-2018|F|1.2 Turbo 116:E:116;1.33 VVT-i 99:E:99;1.6 Valvematic 132:E:132;1.8 Hybrid 136:H:136;1.4 D-4D 90:D:90;1.6 D-4D 112:D:112;2.0 D-4D 124:D:124
+Toyota|C-HR|suv|2016-|F 4|1.2 Turbo 116:E:116;1.8 Hybrid 122:H:122;1.8 Hybrid 140:H:140;2.0 Hybrid 184:H:184;2.0 Hybrid 197 AWD-i:H:197@4;2.0 Plug-in 223:P:223
+Toyota|Corolla Cross|suv|2022-|F 4|2.0 Hybrid 197:H:197;2.0 Hybrid 197 AWD-i:H:197@4
+Toyota|RAV4|suv|1994-|F 4|2.0 VVT-i 152:E:152;2.0 D-4D 124:D:124;2.2 D-4D 150:D:150;2.5 Hybrid 197:H:197;2.5 Hybrid 222 AWD-i:H:222@4;2.5 Plug-in 306:P:306@4
+Toyota|Prius|compacte|1997-|F|1.8 Hybrid 122:H:122;1.8 Hybrid 136:H:136;1.8 Plug-in 122:P:122;2.0 Plug-in 223:P:223
+Toyota|Land Cruiser|suv|1951-|4|2.8 D-4D 177:D:177@4;2.8 D-4D 204:D:204@4;3.0 D-4D 190:D:190@4
+Toyota|Hilux|pickup|1968-|R 4|2.4 D-4D 150:D:150@4;2.8 D-4D 204:D:204@4;2.5 D-4D 144:D:144@4
+Toyota|Proace City|utilitaire monospace|2019-|F|1.5 D-4D 100:D:100;1.5 D-4D 130:D:130;1.2 Turbo 110:E:110;Electric:EL:136
+Toyota|bZ4X|suv|2022-|F 4|FWD 204:EL:204;AWD 218:EL:218@4
+Toyota|GR86|coupe|2022-|R|2.4 234:E:234
+Ford|Ka/Ka+|citadine|1996-2020|F|1.2 69:E:69;1.2 85:E:85
+Ford|Fiesta|citadine|1976-2023|F|1.0 EcoBoost 100:E:100;1.0 EcoBoost 125:E:125;1.0 EcoBoost 140:E:140;1.1 70:E:70;1.1 85:E:85;1.25 82:E:82;1.6 Ti-VCT 120:E:120;1.5 EcoBoost 200 ST:E:200;1.6 EcoBoost 182 ST:E:182;1.5 TDCi 75:D:75;1.5 TDCi 85:D:85;1.5 TDCi 95:D:95;1.0 EcoBoost Hybrid 125:H:125
+Ford|Puma|suv|2019-|F|1.0 EcoBoost 125:E:125;1.0 EcoBoost Hybrid 125:H:125;1.0 EcoBoost Hybrid 155:H:155;1.5 EcoBoost 200 ST:E:200;Gen-E:EL:168
+Ford|Focus|compacte break|1998-|F|1.0 EcoBoost 100:E:100;1.0 EcoBoost 125:E:125;1.5 EcoBoost 150:E:150;1.5 EcoBoost 182:E:182;2.3 EcoBoost 280 ST:E:280;2.3 EcoBoost 350 RS:E:350@4;1.6 TDCi 95:D:95;1.6 TDCi 115:D:115;1.5 TDCi 120:D:120;1.5 EcoBlue 95:D:95;1.5 EcoBlue 120:D:120;2.0 EcoBlue 150:D:150;2.0 EcoBlue 190 ST:D:190;1.0 EcoBoost Hybrid 125:H:125;1.0 EcoBoost Hybrid 155:H:155
+Ford|Kuga|suv|2008-|F 4|1.5 EcoBoost 120:E:120;1.5 EcoBoost 150:E:150;1.5 EcoBoost 182 AWD:E:182@4;1.5 TDCi 120:D:120;2.0 TDCi 150:D:150;2.0 TDCi 180 AWD:D:180@4;1.5 EcoBlue 120:D:120;2.0 EcoBlue 150 Hybrid:H:150;2.5 Hybrid 190:H:190;2.5 Hybrid 183 AWD:H:183@4;2.5 Plug-in Hybrid 225:P:225
+Ford|EcoSport|suv|2014-2022|F 4|1.0 EcoBoost 100:E:100;1.0 EcoBoost 125:E:125;1.5 TDCi 95:D:95;1.5 EcoBlue 100:D:100;1.5 EcoBlue 125 AWD:D:125@4
+Ford|Mondeo|berline break|1993-2022|F 4|1.5 EcoBoost 160:E:160;2.0 EcoBoost 240:E:240;1.5 TDCi 120:D:120;2.0 TDCi 150:D:150;2.0 TDCi 180:D:180;2.0 TDCi 180 AWD:D:180@4;2.0 Hybrid 187:H:187
+Ford|C-Max|monospace|2003-2019|F|1.0 EcoBoost 125:E:125;1.5 EcoBoost 150:E:150;1.5 TDCi 120:D:120;2.0 TDCi 150:D:150
+Ford|S-Max|monospace|2006-2023|F 4|1.5 EcoBoost 160:E:160;2.0 TDCi 150:D:150;2.0 TDCi 180:D:180;2.0 EcoBlue 190 AWD:D:190@4;2.5 Hybrid 190:H:190
+Ford|Ranger|pickup|1998-|R 4|2.0 EcoBlue 170:D:170@4;2.0 EcoBlue 213:D:213@4;2.2 TDCi 160:D:160@4;3.2 TDCi 200:D:200@4;3.0 V6 240:D:240@4
+Ford|Transit Custom|utilitaire|2012-|F 4|2.0 EcoBlue 110:D:110;2.0 EcoBlue 130:D:130;2.0 EcoBlue 170:D:170;2.0 EcoBlue 150 AWD:D:150@4;E-Transit Custom:EL:217
+Ford|Mustang|coupe cabriolet|1964-|R|2.3 EcoBoost 290:E:290;5.0 V8 450:E:450
+Ford|Mustang Mach-E|suv|2021-|R 4|RWD 269:EL:269;AWD 351:EL:351@4;GT 487:EL:487@4
+Opel|Corsa|citadine|1982-|F|1.2 70:E:70;1.2 75:E:75;1.4 90:E:90;1.0 Turbo 90:E:90;1.2 Turbo 100:E:100;1.2 Turbo 130:E:130;1.3 CDTI 75:D:75;1.3 CDTI 95:D:95;1.5 D 100:D:100;Corsa-e:EL:136;1.2 Hybrid 100:H:100
+Opel|Astra|compacte break|1991-|F|1.0 Turbo 105:E:105;1.2 Turbo 110:E:110;1.2 Turbo 130:E:130;1.4 Turbo 125:E:125;1.4 Turbo 150:E:150;1.6 Turbo 200:E:200;1.6 CDTI 110:D:110;1.6 CDTI 136:D:136;1.5 D 105:D:105;1.5 D 122:D:122;1.5 D 130:D:130;Hybrid 180:P:180;Astra Electric:EL:156
+Opel|Mokka|suv|2012-|F 4|1.2 Turbo 100:E:100;1.2 Turbo 130:E:130;1.4 Turbo 140:E:140;1.4 Turbo 140 4x4:E:140@4;1.6 CDTI 136:D:136;1.6 CDTI 136 4x4:D:136@4;1.5 D 110:D:110;Mokka-e:EL:136;1.2 Hybrid 136:H:136
+Opel|Crossland|suv|2017-2024|F|1.2 83:E:83;1.2 Turbo 110:E:110;1.2 Turbo 130:E:130;1.5 D 102:D:102;1.5 D 110:D:110;1.5 D 120:D:120
+Opel|Grandland|suv|2017-|F 4|1.2 Turbo 130:E:130;1.6 Turbo 180:E:180;1.5 D 130:D:130;Hybrid 225:P:225;Hybrid4 300:P:300@4;1.2 Hybrid 136:H:136;Grandland Electric:EL:213
+Opel|Insignia|berline break|2008-2022|F 4|1.5 Turbo 140:E:140;1.5 Turbo 165:E:165;2.0 Turbo 260 4x4:E:260@4;1.6 CDTI 110:D:110;1.6 CDTI 136:D:136;2.0 CDTI 170:D:170;2.0 D 174:D:174;2.0 BiTurbo D 210 4x4:D:210@4
+Opel|Zafira|monospace|1999-|F|1.4 Turbo 140:E:140;1.6 CDTI 136:D:136;2.0 CDTI 170:D:170;1.5 D 120:D:120;2.0 D 150:D:150;Zafira-e Life:EL:136
+Opel|Meriva|monospace|2003-2017|F|1.4 Turbo 120:E:120;1.4 Turbo 140:E:140;1.3 CDTI 95:D:95;1.6 CDTI 110:D:110;1.6 CDTI 136:D:136
+Opel|Vivaro|utilitaire|2001-|F|1.6 CDTI 120:D:120;1.5 D 120:D:120;2.0 D 150:D:150;2.0 D 180:D:180;Vivaro-e:EL:136
+Fiat|500|citadine cabriolet|2007-|F|0.9 TwinAir 85:E:85;1.0 Hybrid 70:H:70;1.2 69:E:69;1.4 100:E:100;1.3 Multijet 95:D:95;500e 95:EL:95;500e 118:EL:118
+Fiat|500X|suv|2014-|F 4|1.0 FireFly 120:E:120;1.3 FireFly 150:E:150;1.4 MultiAir 140:E:140;1.6 E-torQ 110:E:110;1.5 Hybrid 130:H:130;1.3 Multijet 95:D:95;1.6 Multijet 120:D:120;2.0 Multijet 140 4x4:D:140@4;1.3 PHEV 190 4xe:P:190@4
+Fiat|Panda|citadine|1980-|F 4|0.9 TwinAir 85:E:85;0.9 TwinAir 85 4x4:E:85@4;1.0 Hybrid 70:H:70;1.2 69:E:69;1.3 Multijet 95 4x4:D:95@4;1.3 Multijet 75:D:75
+Fiat|Tipo|berline break compacte|2015-|F|1.4 95:E:95;1.4 T-Jet 120:E:120;1.0 FireFly 100:E:100;1.5 Hybrid 130:H:130;1.3 Multijet 95:D:95;1.6 Multijet 120:D:120;1.6 Multijet 130:D:130
+Fiat|Punto|citadine|1993-2018|F|1.2 69:E:69;1.4 77:E:77;0.9 TwinAir 85:E:85;1.3 Multijet 75:D:75;1.3 Multijet 85:D:85
+Fiat|500L|monospace|2012-2022|F|1.4 95:E:95;0.9 TwinAir 105:E:105;1.3 Multijet 95:D:95;1.6 Multijet 120:D:120
+Fiat|Ducato|utilitaire|1981-|F|2.3 Multijet 120:D:120;2.3 Multijet 130:D:130;2.3 Multijet 140:D:140;2.3 Multijet 160:D:160;2.2 Multijet 140:D:140;2.2 Multijet 180:D:180;e-Ducato:EL:122
+Fiat|Doblo|utilitaire monospace|2000-|F|1.6 Multijet 105:D:105;1.5 BlueHDi 100:D:100;1.5 BlueHDi 130:D:130;1.4 95:E:95;1.2 Turbo 110:E:110;e-Doblo:EL:136
+Abarth|500/595/695|citadine cabriolet|2008-|F|1.4 T-Jet 135:E:135;1.4 T-Jet 145:E:145;1.4 T-Jet 165:E:165;1.4 T-Jet 180:E:180;Abarth 500e:EL:155
+Alfa Romeo|Giulietta|compacte|2010-2020|F|1.4 TB 120:E:120;1.4 MultiAir 170:E:170;1.75 TBi 240:E:240;1.6 JTDm 105:D:105;1.6 JTDm 120:D:120;2.0 JTDm 150:D:150;2.0 JTDm 175:D:175
+Alfa Romeo|Giulia|berline|2016-|R 4|2.0 T 200:E:200;2.0 T 280 Q4:E:280@4;2.9 V6 510 Quadrifoglio:E:510;2.2 JTD 150:D:150;2.2 JTD 160:D:160;2.2 JTD 180:D:180;2.2 JTD 190:D:190;2.2 JTD 210 Q4:D:210@4
+Alfa Romeo|Stelvio|suv|2017-|R 4|2.0 T 200 Q4:E:200@4;2.0 T 280 Q4:E:280@4;2.9 V6 510 Quadrifoglio:E:510@4;2.2 JTD 160:D:160;2.2 JTD 190 Q4:D:190@4;2.2 JTD 210 Q4:D:210@4
+Alfa Romeo|Tonale|suv|2022-|F 4|1.5 Hybrid 130:H:130;1.5 Hybrid 160:H:160;1.6 JTDm 130:D:130;1.3 PHEV 280 Q4:P:280@4
+Alfa Romeo|MiTo|citadine|2008-2018|F|1.4 78:E:78;0.9 TwinAir 105:E:105;1.4 TB 140:E:140;1.4 MultiAir 170:E:170;1.3 JTDm 95:D:95;1.6 JTDm 120:D:120
+Alfa Romeo|Junior|suv|2024-|F 4|1.2 Hybrid 136:H:136;Ibrida Q4 145:H:145@4;Elettrica 156:EL:156;Veloce 280:EL:280
+Audi|A1|citadine|2010-|F|1.0 TFSI 95:E:95;1.0 TFSI 116:E:116;1.4 TFSI 122:E:122;1.4 TFSI 150:E:150;1.5 TFSI 150:E:150;2.0 TFSI 207:E:207;1.6 TDI 90:D:90;1.6 TDI 116:D:116
+Audi|A3|compacte berline cabriolet|1996-|F 4|1.0 TFSI 110:E:110;1.0 TFSI 116:E:116;1.4 TFSI 125:E:125;1.4 TFSI 150:E:150;1.5 TFSI 150:E:150;2.0 TFSI 190 quattro:E:190@4;2.0 TFSI 300 S3 quattro:E:300@4;2.5 TFSI 400 RS3 quattro:E:400@4;1.6 TDI 110:D:110;1.6 TDI 116:D:116;2.0 TDI 150:D:150;2.0 TDI 184 quattro:D:184@4;1.4 TFSI e-tron 204:P:204;1.4 TFSI e 204:P:204
+Audi|A4|berline break cabriolet|1994-|F 4|1.4 TFSI 150:E:150;2.0 TFSI 190:E:190;2.0 TFSI 252 quattro:E:252@4;2.0 TDI 122:D:122;2.0 TDI 136:D:136;2.0 TDI 150:D:150;2.0 TDI 163:D:163;2.0 TDI 190:D:190;2.0 TDI 190 quattro:D:190@4;3.0 TDI 218 quattro:D:218@4;3.0 TDI 272 quattro:D:272@4
+Audi|A5|coupe cabriolet berline|2007-|F 4|2.0 TFSI 190:E:190;2.0 TFSI 252 quattro:E:252@4;2.0 TDI 150:D:150;2.0 TDI 190:D:190;2.0 TDI 190 quattro:D:190@4;3.0 TDI 218 quattro:D:218@4;3.0 TDI 286 quattro:D:286@4
+Audi|A6|berline break|1994-|F 4|2.0 TFSI 252:E:252;3.0 TFSI 340 quattro:E:340@4;2.0 TDI 163:D:163;2.0 TDI 190:D:190;2.0 TDI 204:D:204;3.0 TDI 218 quattro:D:218@4;3.0 TDI 272 quattro:D:272@4;3.0 TDI 286 quattro:D:286@4;2.0 TFSI e 299 quattro:P:299@4;3.0 TFSI e 367 quattro:P:367@4
+Audi|Q2|suv|2016-|F 4|1.0 TFSI 110:E:110;1.0 TFSI 116:E:116;1.4 TFSI 150:E:150;1.5 TFSI 150:E:150;2.0 TFSI 190 quattro:E:190@4;1.6 TDI 116:D:116;2.0 TDI 150:D:150;2.0 TDI 150 quattro:D:150@4
+Audi|Q3|suv|2011-|F 4|1.4 TFSI 125:E:125;1.4 TFSI 150:E:150;1.5 TFSI 150:E:150;2.0 TFSI 190 quattro:E:190@4;2.0 TFSI 230 quattro:E:230@4;2.0 TDI 120:D:120;2.0 TDI 150:D:150;2.0 TDI 150 quattro:D:150@4;2.0 TDI 184 quattro:D:184@4;2.0 TDI 200 quattro:D:200@4;1.4 TFSI e 245:P:245
+Audi|Q5|suv|2008-|4|2.0 TFSI 252 quattro:E:252@4;2.0 TFSI 265 quattro:E:265@4;2.0 TDI 150:D:150;2.0 TDI 163 quattro:D:163@4;2.0 TDI 190 quattro:D:190@4;2.0 TDI 204 quattro:D:204@4;3.0 TDI 286 quattro:D:286@4;2.0 TFSI e 299 quattro:P:299@4;2.0 TFSI e 367 quattro:P:367@4
+Audi|Q7|suv|2005-|4|3.0 TDI 218 quattro:D:218@4;3.0 TDI 231 quattro:D:231@4;3.0 TDI 272 quattro:D:272@4;3.0 TDI 286 quattro:D:286@4;3.0 TFSI 340 quattro:E:340@4;3.0 TFSI e 381 quattro:P:381@4
+Audi|Q4 e-tron|suv|2021-|R 4|35 e-tron 170:EL:170;40 e-tron 204:EL:204;45 e-tron 286:EL:286@4;50 e-tron 299 quattro:EL:299@4
+Audi|e-tron|suv|2019-2023|4|50 quattro 313:EL:313@4;55 quattro 408:EL:408@4
+Audi|TT|coupe cabriolet|1998-2023|F 4|1.8 TFSI 180:E:180;2.0 TFSI 197:E:197;2.0 TFSI 230 quattro:E:230@4;2.0 TFSI 245 quattro:E:245@4;2.0 TDI 184 quattro:D:184@4
+BMW|Série 1|compacte|2004-|R F 4|116i 109:E:109;118i 136:E:136;118i 140:E:140;120i 170:E:170;125i 218:E:218;M135i 306:E:306@4;M140i 340:E:340;116d 116:D:116;118d 150:D:150;120d 190:D:190;120d xDrive 190:D:190@4
+BMW|Série 2|coupe cabriolet monospace|2014-|R F 4|218i 136:E:136;220i 184:E:184;230i 252:E:252;M240i 340:E:340;216d 116:D:116;218d 150:D:150;220d 190:D:190;220d xDrive 190:D:190@4;225xe 224:P:224@4
+BMW|Série 3|berline break|1975-|R 4|316i 136:E:136;318i 136:E:136;318i 156:E:156;320i 184:E:184;330i 252:E:252;330i 258:E:258;M340i xDrive 374:E:374@4;316d 116:D:116;318d 136:D:136;318d 150:D:150;320d 163:D:163;320d 184:D:184;320d 190:D:190;320d xDrive 190:D:190@4;330d 258:D:258;330d 265:D:265;330d xDrive 286:D:286@4;330e 252:P:252;330e 292:P:292
+BMW|Série 4|coupe cabriolet berline|2013-|R 4|420i 184:E:184;430i 252:E:252;440i 326:E:326;M440i xDrive 374:E:374@4;418d 150:D:150;420d 190:D:190;420d xDrive 190:D:190@4;430d 258:D:258;i4 eDrive40 340:EL:340
+BMW|Série 5|berline break|1972-|R 4|520i 184:E:184;530i 252:E:252;540i 340:E:340;518d 150:D:150;520d 190:D:190;520d xDrive 190:D:190@4;525d 218:D:218;530d 258:D:258;530d xDrive 286:D:286@4;530e 292:P:292;545e xDrive 394:P:394@4
+BMW|X1|suv|2009-|F R 4|sDrive16i 109:E:109;sDrive18i 136:E:136;sDrive18i 140:E:140;sDrive20i 170:E:170;xDrive23i 218:E:218@4;sDrive16d 116:D:116;sDrive18d 150:D:150;xDrive18d 150:D:150@4;xDrive20d 190:D:190@4;xDrive25e 220:P:220@4;xDrive30e 326:P:326@4;iX1 xDrive30:EL:313@4
+BMW|X2|suv|2018-|F 4|sDrive18i 136:E:136;sDrive20i 192:E:192;sDrive18d 150:D:150;xDrive20d 190:D:190@4;xDrive25e 220:P:220@4;M35i 306:E:306@4
+BMW|X3|suv|2003-|R 4|xDrive20i 184:E:184@4;xDrive30i 252:E:252@4;sDrive18d 150:D:150;xDrive20d 190:D:190@4;xDrive30d 265:D:265@4;xDrive30d 286:D:286@4;xDrive30e 292:P:292@4;iX3 286:EL:286
+BMW|X5|suv|1999-|4|xDrive40i 340:E:340@4;xDrive25d 231:D:231@4;xDrive30d 258:D:258@4;xDrive30d 265:D:265@4;xDrive30d 286:D:286@4;xDrive40d 340:D:340@4;xDrive45e 394:P:394@4;xDrive50e 489:P:489@4
+BMW|i3|citadine|2013-2022|R|i3 170:EL:170;i3s 184:EL:184;REx 170:P:170
+BMW|Z4|cabriolet|2002-|R|sDrive20i 197:E:197;sDrive30i 258:E:258;M40i 340:E:340
+Mercedes-Benz|Classe A|compacte berline|1997-|F 4|A 160 102:E:102;A 180 122:E:122;A 180 136:E:136;A 200 156:E:156;A 200 163:E:163;A 250 224:E:224;A 35 AMG 306 4Matic:E:306@4;A 45 AMG 381 4Matic:E:381@4;A 160 d 90:D:90;A 180 d 109:D:109;A 180 d 116:D:116;A 200 d 136:D:136;A 200 d 150:D:150;A 220 d 177:D:177;A 220 d 190 4Matic:D:190@4;A 250 e 218:P:218
+Mercedes-Benz|Classe B|monospace|2005-|F 4|B 180 122:E:122;B 180 136:E:136;B 200 156:E:156;B 200 163:E:163;B 180 d 109:D:109;B 180 d 116:D:116;B 200 d 136:D:136;B 200 d 150:D:150;B 220 d 177 4Matic:D:177@4;B 250 e 218:P:218
+Mercedes-Benz|Classe C|berline break coupe cabriolet|1993-|R 4|C 160 129:E:129;C 180 156:E:156;C 200 184:E:184;C 200 204:E:204;C 300 258:E:258;C 43 AMG 4Matic:E:390@4;C 63 AMG:E:476;C 180 d 122:D:122;C 200 d 136:D:136;C 200 d 160:D:160;C 220 d 170:D:170;C 220 d 194:D:194;C 220 d 200:D:200;C 220 d 4Matic:D:194@4;C 250 d 204:D:204;C 300 d 245:D:245;C 300 e 313:P:313;C 350 e 211:P:211
+Mercedes-Benz|Classe E|berline break coupe cabriolet|1993-|R 4|E 200 184:E:184;E 200 197:E:197;E 300 245:E:245;E 200 d 150:D:150;E 200 d 160:D:160;E 220 d 170:D:170;E 220 d 194:D:194;E 220 d 4Matic:D:194@4;E 300 d 245:D:245;E 350 d 258:D:258;E 400 d 4Matic:D:340@4;E 300 e 320:P:320;E 300 de 306:P:306
+Mercedes-Benz|CLA|coupe break|2013-|F 4|CLA 180 122:E:122;CLA 180 136:E:136;CLA 200 156:E:156;CLA 200 163:E:163;CLA 250 224:E:224;CLA 35 AMG 4Matic:E:306@4;CLA 45 AMG 4Matic:E:381@4;CLA 180 d 109:D:109;CLA 200 d 136:D:136;CLA 200 d 150:D:150;CLA 220 d 177:D:177;CLA 220 d 190:D:190;CLA 250 e 218:P:218
+Mercedes-Benz|GLA|suv|2014-|F 4|GLA 180 122:E:122;GLA 200 156:E:156;GLA 200 163:E:163;GLA 250 4Matic:E:224@4;GLA 35 AMG 4Matic:E:306@4;GLA 45 AMG 4Matic:E:381@4;GLA 180 d 109:D:109;GLA 200 d 136:D:136;GLA 200 d 150:D:150;GLA 220 d 177:D:177;GLA 220 d 4Matic:D:190@4;GLA 250 e 218:P:218
+Mercedes-Benz|GLB|suv|2019-|F 4|GLB 200 163:E:163;GLB 250 4Matic:E:224@4;GLB 35 AMG 4Matic:E:306@4;GLB 200 d 150:D:150;GLB 220 d 4Matic:D:190@4
+Mercedes-Benz|GLC|suv coupe|2015-|4|GLC 200 4Matic:E:204@4;GLC 300 4Matic:E:258@4;GLC 43 AMG 4Matic:E:390@4;GLC 200 d 4Matic:D:163@4;GLC 220 d 4Matic:D:170@4;GLC 220 d 4Matic 194:D:194@4;GLC 250 d 4Matic:D:204@4;GLC 300 d 4Matic:D:245@4;GLC 300 e 4Matic:P:320@4;GLC 300 de 4Matic:P:306@4
+Mercedes-Benz|GLE|suv coupe|2015-|4|GLE 350 d 4Matic:D:258@4;GLE 300 d 4Matic:D:245@4;GLE 400 d 4Matic:D:330@4;GLE 450 4Matic:E:367@4;GLE 350 de 4Matic:P:320@4;GLE 53 AMG 4Matic+:E:435@4
+Mercedes-Benz|Classe V|monospace|2014-|R 4|V 200 d 136:D:136;V 220 d 163:D:163;V 250 d 190:D:190;V 250 d 4Matic:D:190@4;V 300 d 239:D:239;EQV 300:EL:204
+Mercedes-Benz|Vito|utilitaire|1996-|F R 4|109 CDI 88:D:88;111 CDI 114:D:114;114 CDI 136:D:136;116 CDI 163:D:163;119 CDI 190:D:190;eVito:EL:116
+Mercedes-Benz|EQA|suv|2021-|F 4|EQA 250 190:EL:190;EQA 300 4Matic:EL:228@4;EQA 350 4Matic:EL:292@4
+Mercedes-Benz|Classe GLK|suv|2008-2015|R 4|GLK 200 CDI:D:143;GLK 220 CDI 4Matic:D:170@4;GLK 250 CDI 4Matic:D:204@4;GLK 350 CDI 4Matic:D:265@4
+MINI|Mini|citadine cabriolet|2001-|F|One 75:E:75;One 102:E:102;Cooper 136:E:136;Cooper S 178:E:178;Cooper S 192:E:192;Cooper S 204:E:204;John Cooper Works 231:E:231;One D 95:D:95;Cooper D 116:D:116;Cooper SE 184:EL:184;Cooper E 184:EL:184
+MINI|Countryman|suv|2010-|F 4|One 102:E:102;Cooper 136:E:136;Cooper S 178:E:178;Cooper S ALL4 192:E:192@4;JCW ALL4 306:E:306@4;Cooper D 116:D:116;Cooper D 150:D:150;Cooper SD ALL4 190:D:190@4;Cooper SE ALL4 224:P:224@4;Countryman E 204:EL:204;Countryman SE ALL4 313:EL:313@4
+MINI|Clubman|break|2007-2024|F 4|One 102:E:102;Cooper 136:E:136;Cooper S 178:E:178;Cooper S 192:E:192;JCW ALL4 306:E:306@4;One D 116:D:116;Cooper D 150:D:150;Cooper SD ALL4 190:D:190@4
+Nissan|Micra|citadine|1982-2023|F|1.2 80:E:80;1.0 IG-T 92:E:92;1.0 IG-T 100:E:100;0.9 IG-T 90:E:90;1.5 dCi 90:D:90
+Nissan|Juke|suv|2010-|F 4|1.6 94:E:94;1.6 117:E:117;1.2 DIG-T 115:E:115;1.6 DIG-T 190:E:190;1.6 DIG-T 190 4x4:E:190@4;1.0 DIG-T 114:E:114;1.6 Hybrid 143:H:143;1.5 dCi 110:D:110
+Nissan|Qashqai|suv|2007-|F 4|1.2 DIG-T 115:E:115;1.3 DIG-T 140:E:140;1.3 DIG-T 158:E:158;1.3 DIG-T 160:E:160;1.6 DIG-T 163:E:163;1.5 dCi 110:D:110;1.5 dCi 115:D:115;1.6 dCi 130:D:130;1.6 dCi 130 4x4:D:130@4;1.7 dCi 150 4x4:D:150@4;e-Power 190:H:190
+Nissan|X-Trail|suv|2001-|F 4|1.6 DIG-T 163:E:163;1.3 DIG-T 160:E:160;1.6 dCi 130:D:130;1.6 dCi 130 4x4:D:130@4;2.0 dCi 177 4x4:D:177@4;e-Power 204:H:204;e-4orce 213:H:213@4
+Nissan|Leaf|compacte|2010-|F|Leaf 109:EL:109;Leaf 150:EL:150;Leaf e+ 217:EL:217
+Nissan|Note|monospace citadine|2006-2020|F|1.2 80:E:80;1.2 DIG-S 98:E:98;1.5 dCi 90:D:90
+Nissan|Navara|pickup|1997-2021|R 4|2.3 dCi 160:D:160@4;2.3 dCi 190:D:190@4;2.5 dCi 190:D:190@4
+Kia|Picanto|citadine|2004-|F|1.0 67:E:67;1.0 T-GDi 100:E:100;1.25 84:E:84
+Kia|Rio|citadine|2000-2023|F|1.2 84:E:84;1.0 T-GDi 100:E:100;1.0 T-GDi 120:E:120;1.1 CRDi 75:D:75;1.4 CRDi 90:D:90
+Kia|Ceed|compacte break|2006-|F|1.0 T-GDi 100:E:100;1.0 T-GDi 120:E:120;1.4 T-GDi 140:E:140;1.5 T-GDi 160:E:160;1.6 T-GDi 204 GT:E:204;1.6 CRDi 115:D:115;1.6 CRDi 136:D:136;1.6 GDi PHEV 141:P:141
+Kia|Stonic|suv|2017-|F|1.0 T-GDi 100:E:100;1.0 T-GDi 120:E:120;1.2 84:E:84;1.6 CRDi 110:D:110
+Kia|Niro|suv|2016-|F|1.6 GDi Hybrid 141:H:141;1.6 GDi PHEV 141:P:141;1.6 GDi PHEV 183:P:183;e-Niro 136:EL:136;e-Niro 204:EL:204
+Kia|Sportage|suv|1993-|F 4|1.6 GDi 132:E:132;1.6 T-GDi 150:E:150;1.6 T-GDi 177 4x4:E:177@4;1.6 CRDi 115:D:115;1.6 CRDi 136:D:136;1.7 CRDi 115:D:115;2.0 CRDi 185 4x4:D:185@4;1.6 T-GDi Hybrid 230:H:230;1.6 T-GDi PHEV 265 4x4:P:265@4
+Kia|EV6|suv|2021-|R 4|RWD 229:EL:229;AWD 325:EL:325@4;GT 585:EL:585@4
+Kia|Sorento|suv|2002-|F 4|2.2 CRDi 200 4x4:D:200@4;1.6 T-GDi Hybrid 230 4x4:H:230@4;1.6 T-GDi PHEV 265 4x4:P:265@4
+Hyundai|i10|citadine|2007-|F|1.0 67:E:67;1.0 T-GDi 100:E:100;1.2 84:E:84
+Hyundai|i20|citadine|2008-|F|1.2 84:E:84;1.0 T-GDi 100:E:100;1.0 T-GDi 120:E:120;1.6 T-GDi 204 N:E:204;1.1 CRDi 75:D:75;1.4 CRDi 90:D:90
+Hyundai|i30|compacte break|2007-|F|1.0 T-GDi 120:E:120;1.4 T-GDi 140:E:140;1.5 T-GDi 160:E:160;2.0 T-GDi 250 N:E:250;2.0 T-GDi 275 N:E:275;1.6 CRDi 110:D:110;1.6 CRDi 115:D:115;1.6 CRDi 136:D:136
+Hyundai|Kona|suv|2017-|F 4|1.0 T-GDi 120:E:120;1.6 T-GDi 177 4x4:E:177@4;1.6 T-GDi 198:E:198;1.6 CRDi 115:D:115;1.6 CRDi 136:D:136;1.6 GDi Hybrid 141:H:141;Electric 136:EL:136;Electric 204:EL:204
+Hyundai|Tucson|suv|2004-|F 4|1.6 GDi 132:E:132;1.6 T-GDi 150:E:150;1.6 T-GDi 177 4x4:E:177@4;1.7 CRDi 115:D:115;1.6 CRDi 115:D:115;1.6 CRDi 136:D:136;2.0 CRDi 185 4x4:D:185@4;1.6 T-GDi Hybrid 230:H:230;1.6 T-GDi PHEV 265 4x4:P:265@4
+Hyundai|Ioniq|compacte|2016-2022|F|1.6 GDi Hybrid 141:H:141;1.6 GDi PHEV 141:P:141;Electric 120:EL:120;Electric 136:EL:136
+Hyundai|Ioniq 5|suv|2021-|R 4|RWD 170:EL:170;RWD 218:EL:218;RWD 229:EL:229;AWD 305:EL:305@4;AWD 325:EL:325@4;N 650:EL:650@4
+Hyundai|Bayon|suv|2021-|F|1.0 T-GDi 100:E:100;1.0 T-GDi 120:E:120;1.2 84:E:84
+Skoda|Fabia|citadine break|1999-|F|1.0 MPI 60:E:60;1.0 MPI 75:E:75;1.0 TSI 95:E:95;1.0 TSI 110:E:110;1.2 TSI 90:E:90;1.2 TSI 110:E:110;1.5 TSI 150:E:150;1.4 TDI 90:D:90;1.6 TDI 90:D:90
+Skoda|Octavia|berline break|1996-|F 4|1.0 TSI 110:E:110;1.2 TSI 105:E:105;1.4 TSI 150:E:150;1.5 TSI 150:E:150;2.0 TSI 245 RS:E:245;1.6 TDI 105:D:105;1.6 TDI 115:D:115;2.0 TDI 116:D:116;2.0 TDI 150:D:150;2.0 TDI 184 RS:D:184;2.0 TDI 150 4x4:D:150@4;1.4 TSI iV 204:P:204;1.5 TSI e-TEC 150:H:150
+Skoda|Superb|berline break|2001-|F 4|1.4 TSI 150:E:150;1.5 TSI 150:E:150;2.0 TSI 220:E:220;2.0 TSI 280 4x4:E:280@4;1.6 TDI 120:D:120;2.0 TDI 150:D:150;2.0 TDI 190:D:190;2.0 TDI 190 4x4:D:190@4;1.4 TSI iV 218:P:218
+Skoda|Kamiq|suv|2019-|F|1.0 TSI 95:E:95;1.0 TSI 110:E:110;1.5 TSI 150:E:150;1.6 TDI 115:D:115
+Skoda|Karoq|suv|2017-|F 4|1.0 TSI 110:E:110;1.5 TSI 150:E:150;2.0 TSI 190 4x4:E:190@4;1.6 TDI 115:D:115;2.0 TDI 116:D:116;2.0 TDI 150:D:150;2.0 TDI 150 4x4:D:150@4
+Skoda|Kodiaq|suv|2016-|F 4|1.4 TSI 150:E:150;1.5 TSI 150:E:150;2.0 TSI 190 4x4:E:190@4;2.0 TSI 245 RS:E:245@4;2.0 TDI 150:D:150;2.0 TDI 150 4x4:D:150@4;2.0 TDI 190 4x4:D:190@4;1.5 TSI iV 204:P:204
+Skoda|Scala|compacte|2019-|F|1.0 TSI 95:E:95;1.0 TSI 110:E:110;1.5 TSI 150:E:150;1.6 TDI 116:D:116
+Skoda|Enyaq|suv|2021-|R 4|60 180:EL:180;80 204:EL:204;85 286:EL:286;80x 265:EL:265@4;RS 299:EL:299@4
+SEAT|Ibiza|citadine|1984-|F|1.0 MPI 75:E:75;1.0 MPI 80:E:80;1.0 TSI 95:E:95;1.0 TSI 110:E:110;1.2 TSI 90:E:90;1.5 TSI 150:E:150;1.4 TDI 90:D:90;1.6 TDI 95:D:95;1.0 TGI 90:G:90
+SEAT|Leon|compacte break|1999-|F 4|1.0 TSI 110:E:110;1.2 TSI 110:E:110;1.4 TSI 125:E:125;1.4 TSI 150:E:150;1.5 TSI 130:E:130;1.5 TSI 150:E:150;1.5 eTSI 150:H:150;2.0 TSI 290 Cupra:E:290;2.0 TSI 300 Cupra 4Drive:E:300@4;1.6 TDI 110:D:110;1.6 TDI 115:D:115;2.0 TDI 150:D:150;2.0 TDI 184 FR:D:184;1.4 e-Hybrid 204:P:204
+SEAT|Arona|suv|2017-|F|1.0 TSI 95:E:95;1.0 TSI 110:E:110;1.5 TSI 150:E:150;1.6 TDI 95:D:95;1.6 TDI 115:D:115;1.0 TGI 90:G:90
+SEAT|Ateca|suv|2016-|F 4|1.0 TSI 110:E:110;1.5 TSI 150:E:150;2.0 TSI 190 4Drive:E:190@4;1.6 TDI 115:D:115;2.0 TDI 150:D:150;2.0 TDI 150 4Drive:D:150@4;2.0 TDI 190 4Drive:D:190@4
+SEAT|Tarraco|suv|2018-|F 4|1.5 TSI 150:E:150;2.0 TSI 190 4Drive:E:190@4;2.0 TDI 150:D:150;2.0 TDI 190 4Drive:D:190@4;1.4 e-Hybrid 245:P:245
+CUPRA|Formentor|suv|2020-|F 4|1.5 TSI 150:E:150;2.0 TSI 190 4Drive:E:190@4;2.0 TSI 310 4Drive:E:310@4;2.0 TSI 333 VZ 4Drive:E:333@4;2.5 TSI 390 VZ5 4Drive:E:390@4;1.4 e-Hybrid 204:P:204;1.4 e-Hybrid 245 VZ:P:245;1.5 e-Hybrid 272:P:272
+CUPRA|Born|compacte|2021-|R|150:EL:150;204:EL:204;231:EL:231;VZ 326:EL:326
+CUPRA|Leon|compacte break|2020-|F 4|1.5 TSI 150:E:150;2.0 TSI 300:E:300;2.0 TSI 310 4Drive:E:310@4;1.4 e-Hybrid 204:P:204;1.4 e-Hybrid 245:P:245
+Tesla|Model 3|berline|2019-|R 4|Propulsion:EL:283;Grande Autonomie:EL:498@4;Performance:EL:513@4
+Tesla|Model Y|suv|2021-|R 4|Propulsion:EL:299;Grande Autonomie:EL:514@4;Performance:EL:534@4
+Tesla|Model S|berline|2013-|R 4|75D:EL:333@4;90D:EL:422@4;100D:EL:422@4;P100D:EL:772@4;Grande Autonomie:EL:670@4;Plaid:EL:1020@4
+Tesla|Model X|suv|2016-|4|75D:EL:333@4;100D:EL:422@4;Grande Autonomie:EL:670@4;Plaid:EL:1020@4
+Suzuki|Swift|citadine|2005-|F 4|1.2 DualJet 90:E:90;1.2 Hybrid 83:H:83;1.2 Hybrid 90:H:90;1.2 Hybrid 4x4:H:83@4;1.0 Boosterjet 111:E:111;1.4 Boosterjet 140 Sport:E:140;1.4 Boosterjet 129 Sport:H:129
+Suzuki|Ignis|citadine suv|2016-|F 4|1.2 DualJet 90:E:90;1.2 Hybrid 83:H:83;1.2 Hybrid 4x4:H:83@4
+Suzuki|Vitara|suv|1988-|F 4|1.6 VVT 120:E:120;1.0 Boosterjet 111:E:111;1.4 Boosterjet 129 Hybrid:H:129;1.4 Boosterjet 129 AllGrip:H:129@4;1.5 Hybrid 115:H:115;1.6 DDiS 120:D:120;1.6 DDiS 120 AllGrip:D:120@4
+Suzuki|S-Cross|suv|2013-|F 4|1.0 Boosterjet 111:E:111;1.4 Boosterjet 140:E:140;1.4 Boosterjet 129 Hybrid:H:129;1.4 Boosterjet 129 AllGrip:H:129@4;1.5 Hybrid 115:H:115;1.6 DDiS 120:D:120
+Suzuki|Jimny|suv|1970-|4|1.3 VVT 85:E:85@4;1.5 VVT 102:E:102@4
+Mazda|Mazda2|citadine|2003-|F|1.5 Skyactiv-G 75:E:75;1.5 Skyactiv-G 90:E:90;1.5 Skyactiv-G 115:E:115;1.5 Hybrid 116:H:116;1.5 Skyactiv-D 105:D:105
+Mazda|Mazda3|compacte berline|2003-|F 4|2.0 Skyactiv-G 120:E:120;2.0 Skyactiv-G 122:E:122;2.0 Skyactiv-G 150:E:150;2.0 Skyactiv-G 165:E:165;2.0 e-Skyactiv-X 186:E:186;2.0 e-Skyactiv-X 186 AWD:E:186@4;1.5 Skyactiv-D 105:D:105;1.8 Skyactiv-D 116:D:116;2.2 Skyactiv-D 150:D:150
+Mazda|CX-3|suv|2015-2022|F 4|2.0 Skyactiv-G 120:E:120;2.0 Skyactiv-G 121:E:121;2.0 Skyactiv-G 150 AWD:E:150@4;1.5 Skyactiv-D 105:D:105;1.8 Skyactiv-D 115:D:115
+Mazda|CX-30|suv|2019-|F 4|2.0 e-Skyactiv-G 122:E:122;2.5 e-Skyactiv-G 140:E:140;2.0 e-Skyactiv-X 186:E:186;2.0 e-Skyactiv-X 186 AWD:E:186@4;1.8 Skyactiv-D 116:D:116
+Mazda|CX-5|suv|2012-|F 4|2.0 Skyactiv-G 160:E:160;2.0 Skyactiv-G 165:E:165;2.5 Skyactiv-G 194 AWD:E:194@4;2.2 Skyactiv-D 150:D:150;2.2 Skyactiv-D 150 AWD:D:150@4;2.2 Skyactiv-D 175 AWD:D:175@4;2.2 Skyactiv-D 184 AWD:D:184@4
+Mazda|MX-5|cabriolet|1989-|R|1.5 Skyactiv-G 131:E:131;1.5 Skyactiv-G 132:E:132;2.0 Skyactiv-G 160:E:160;2.0 Skyactiv-G 184:E:184
+Volvo|XC40|suv|2018-|F 4|T2 129:E:129;T3 163:E:163;T4 190 AWD:E:190@4;T5 247 AWD:E:247@4;B3 163:H:163;B4 197:H:197;D3 150:D:150;D4 190 AWD:D:190@4;T5 Recharge 262:P:262;Recharge 231:EL:231;Recharge Twin 408:EL:408@4
+Volvo|XC60|suv|2008-|F 4|T5 250:E:250;B4 197:H:197;B5 250 AWD:H:250@4;D4 190:D:190;D4 190 AWD:D:190@4;D5 235 AWD:D:235@4;T6 Recharge 340 AWD:P:340@4;T8 Recharge 390 AWD:P:390@4
+Volvo|XC90|suv|2002-|4|B5 250 AWD:H:250@4;D5 235 AWD:D:235@4;B5 235 AWD:D:235@4;T8 Recharge 390 AWD:P:390@4;T8 455 AWD:P:455@4
+Volvo|V40|compacte|2012-2019|F|T2 122:E:122;T3 152:E:152;D2 120:D:120;D3 150:D:150;D4 190:D:190
+Volvo|V60|break|2010-|F 4|T4 190:E:190;B3 163:H:163;B4 197:H:197;D3 150:D:150;D4 190:D:190;T6 Recharge 340 AWD:P:340@4
+Volvo|EX30|suv|2024-|R 4|Single Motor 272:EL:272;Twin Motor 428:EL:428@4
+Jeep|Renegade|suv|2014-|F 4|1.0 T3 120:E:120;1.3 T4 150:E:150;1.4 MultiAir 140:E:140;1.6 E-torQ 110:E:110;1.5 e-Hybrid 130:H:130;1.6 MultiJet 120:D:120;1.6 MultiJet 130:D:130;2.0 MultiJet 140 4x4:D:140@4;1.3 4xe 190:P:190@4;1.3 4xe 240:P:240@4
+Jeep|Compass|suv|2007-|F 4|1.3 T4 130:E:130;1.3 T4 150:E:150;1.4 MultiAir 140:E:140;1.5 e-Hybrid 130:H:130;1.6 MultiJet 120:D:120;1.6 MultiJet 130:D:130;2.0 MultiJet 140 4x4:D:140@4;1.3 4xe 190:P:190@4;1.3 4xe 240:P:240@4
+Jeep|Wrangler|suv|1987-|4|2.0 T 272:E:272@4;2.2 MultiJet 200:D:200@4;2.8 CRD 200:D:200@4;4xe 380:P:380@4
+Jeep|Avenger|suv|2023-|F 4|1.2 T 100:E:100;1.2 e-Hybrid 100:H:100;4xe 136:H:136@4;Electric 156:EL:156
+Land Rover|Range Rover Evoque|suv|2011-|F 4|2.0 Si4 240:E:240@4;2.0 eD4 150:D:150;2.0 TD4 150:D:150@4;2.0 TD4 180:D:180@4;2.0 D150:D:150@4;2.0 D180:D:180@4;2.0 D200:D:200@4;1.5 P300e:P:309@4
+Land Rover|Discovery Sport|suv|2015-|F 4|2.0 Si4 240:E:240@4;2.0 eD4 150:D:150;2.0 TD4 150:D:150@4;2.0 TD4 180:D:180@4;2.0 D165:D:163@4;2.0 D200:D:204@4;1.5 P300e:P:309@4
+Land Rover|Defender|suv|1983-|4|2.0 P300:E:300@4;3.0 D200:D:200@4;3.0 D250:D:249@4;3.0 D300:D:300@4;2.0 P400e:P:404@4
+Land Rover|Range Rover Sport|suv|2005-|4|3.0 SDV6 306:D:306@4;3.0 D300:D:300@4;3.0 D350:D:350@4;2.0 P400e:P:404@4;3.0 P510e:P:510@4
+Honda|Jazz|citadine monospace|2001-|F|1.2 i-VTEC 90:E:90;1.3 i-VTEC 102:E:102;1.5 i-VTEC 130:E:130;1.5 e-HEV 109:H:109;1.5 e-HEV 122:H:122
+Honda|Civic|compacte berline|1972-|F|1.0 VTEC Turbo 126:E:126;1.5 VTEC Turbo 182:E:182;2.0 VTEC Turbo 320 Type R:E:320;1.6 i-DTEC 120:D:120;2.0 e-HEV 184:H:184
+Honda|HR-V|suv|1999-|F|1.5 i-VTEC 130:E:130;1.5 VTEC Turbo 182:E:182;1.6 i-DTEC 120:D:120;1.5 e-HEV 131:H:131
+Honda|CR-V|suv|1997-|F 4|2.0 i-VTEC 155:E:155;1.5 VTEC Turbo 173 4WD:E:173@4;1.6 i-DTEC 120:D:120;1.6 i-DTEC 160 4WD:D:160@4;2.0 e-HEV 184:H:184;2.0 e-HEV 184 AWD:H:184@4
+MG|ZS|suv|2017-|F|1.0 T-GDI 111:E:111;1.5 VTi-Tech 106:E:106;Hybrid+ 197:H:197;EV 143:EL:143;EV 156:EL:156;EV 177:EL:177
+MG|MG4|compacte|2022-|R 4|Standard 170:EL:170;Comfort 204:EL:204;Long Range 245:EL:245;XPower 435:EL:435@4
+MG|HS/EHS|suv|2019-|F|1.5 T-GDI 162:E:162;1.5 T-GDI 170:E:170;Plug-in 258:P:258;Hybrid+ 224:H:224
+Mitsubishi|Space Star|citadine|2013-|F|1.0 MIVEC 71:E:71;1.2 MIVEC 80:E:80
+Mitsubishi|ASX|suv|2010-|F 4|1.6 MIVEC 117:E:117;1.3 T 140:E:140;1.6 Hybrid 143:H:143;1.6 DI-D 114:D:114;2.2 DI-D 150 4WD:D:150@4
+Mitsubishi|Outlander|suv|2001-|F 4|2.0 MIVEC 150:E:150;2.2 DI-D 150 4WD:D:150@4;2.0 PHEV 203 4WD:P:203@4;2.4 PHEV 224 4WD:P:224@4
+Lexus|NX|suv|2014-|F 4|300h 197:H:197;300h AWD 197:H:197@4;350h 244:H:244;350h AWD 244:H:244@4;450h+ 309 AWD:P:309@4
+Lexus|UX|suv|2019-|F 4|250h 184:H:184;250h AWD 184:H:184@4;300e 204:EL:204;300h 199:H:199
+Lexus|CT|compacte|2011-2022|F|200h 136:H:136
+Porsche|Macan|suv|2014-|4|Macan 245:E:245@4;Macan 252:E:252@4;Macan S 340:E:340@4;Macan S 354:E:354@4;Macan GTS 380:E:380@4;Macan Turbo 440:E:440@4;Macan S Diesel 258:D:258@4;Macan 4 Electric 408:EL:408@4
+Porsche|Cayenne|suv coupe|2002-|4|Cayenne 340:E:340@4;Cayenne S 440:E:440@4;Cayenne Diesel 262:D:262@4;Cayenne E-Hybrid 462:P:462@4;Cayenne Turbo 550:E:550@4
+Porsche|911|coupe cabriolet|1964-|R 4|Carrera 370:E:370;Carrera 385:E:385;Carrera S 420:E:420;Carrera S 450:E:450;Carrera 4S 450:E:450@4;Turbo S 650:E:650@4;GT3 510:E:510
+Smart|Fortwo|citadine cabriolet|1998-|R|1.0 71:E:71;0.9 Turbo 90:E:90;EQ 82:EL:82
+Smart|Forfour|citadine|2004-2021|R|1.0 71:E:71;0.9 Turbo 90:E:90;EQ 82:EL:82
+Smart|#1|suv|2023-|R 4|Pro+ 272:EL:272;Brabus 428:EL:428@4
+Polestar|2|berline|2020-|F R 4|Standard Range 224:EL:224;Long Range Single Motor 231:EL:231;Long Range Dual Motor 408:EL:408@4
+BYD|Atto 3|suv|2022-|F|Comfort 204:EL:204
+BYD|Dolphin|compacte|2023-|F|Active 95:EL:95;Comfort 204:EL:204
+BYD|Seal|berline|2023-|R 4|Design 313:EL:313;Excellence AWD 530:EL:530@4
+Alpine|A110|coupe|2017-|R|1.8 TCe 252:E:252;1.8 TCe 292 S:E:292;1.8 TCe 300 GTS:E:300;1.8 TCe 300 R:E:300
+Jaguar|F-Pace|suv|2016-|R 4|2.0 P250 AWD:E:250@4;2.0 D163:D:163@4;2.0 D180:D:180@4;2.0 D200 AWD:D:204@4;3.0 D300 AWD:D:300@4;2.0 P400e:P:404@4
+Jaguar|XE|berline|2015-2024|R 4|2.0 P250:E:250;2.0 D163:D:163;2.0 D180:D:180;2.0 D180 AWD:D:180@4
+Jaguar|E-Pace|suv|2018-|F 4|2.0 P200 AWD:E:200@4;2.0 D150:D:150;2.0 D165 AWD:D:163@4;1.5 P300e:P:309@4
+Subaru|Forester|suv|1997-|4|2.0i 150:E:150@4;2.0 e-Boxer 150:H:150@4;2.0D 147:D:147@4
+Subaru|XV|suv|2012-2022|4|1.6i 114:E:114@4;2.0i 156:E:156@4;2.0 e-Boxer 150:H:150@4;2.0D 147:D:147@4
+SsangYong|Tivoli|suv|2015-|F 4|1.2 T-GDi 128:E:128;1.5 T-GDi 163:E:163;1.6 e-XGi 128:E:128;1.6 e-XDi 115:D:115;1.6 e-XDi 115 4WD:D:115@4
+SsangYong|Korando|suv|2010-|F 4|1.5 T-GDi 163:E:163;1.6 e-XDi 136:D:136;1.6 e-XDi 136 4WD:D:136@4;e-Motion:EL:190
+Lancia|Ypsilon|citadine|1995-|F|1.2 69:E:69;0.9 TwinAir 85:E:85;1.0 Hybrid 70:H:70;1.3 Multijet 95:D:95;1.2 Hybrid 100:H:100;Ypsilon Elettrica:EL:156
+Chevrolet|Spark|citadine|2010-2015|F|1.0 68:E:68;1.2 82:E:82
+Chevrolet|Captiva|suv|2006-2015|F 4|2.4 167:E:167;2.2 VCDi 163:D:163;2.2 VCDi 184 4WD:D:184@4

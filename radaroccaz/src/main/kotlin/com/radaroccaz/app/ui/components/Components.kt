@@ -49,6 +49,10 @@ object SourceInfo {
         "leboncoin" -> "Leboncoin"
         "lacentrale" -> "La Centrale"
         "autoscout24" -> "AutoScout24"
+        "aramisauto" -> "Aramis Auto"
+        "autohero" -> "Autohero"
+        "largus" -> "L'Argus"
+        "paruvendu" -> "ParuVendu"
         "demo" -> "Démo"
         else -> id
     }
@@ -57,6 +61,10 @@ object SourceInfo {
         "leboncoin" -> Color(0xFFEC5A13)
         "lacentrale" -> Color(0xFF1B64C8)
         "autoscout24" -> Color(0xFFD9A400)
+        "aramisauto" -> Color(0xFFD7263D)
+        "autohero" -> Color(0xFF00897B)
+        "largus" -> Color(0xFF3949AB)
+        "paruvendu" -> Color(0xFFD81B60)
         "demo" -> Color(0xFF7C4DFF)
         else -> Color(0xFF6B7280)
     }

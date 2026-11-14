@@ -36,7 +36,7 @@ import com.radaroccaz.app.data.ThemeMode
 import com.radaroccaz.app.ui.components.SectionCard
 import com.radaroccaz.app.ui.components.SourceBadge
 
-data class SourceItem(val id: String, val name: String, val description: String)
+data class SourceItem(val id: String, val name: String, val description: String, val restricted: Boolean = false)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -66,7 +66,11 @@ fun SettingsScreen(
                     Row(Modifier.fillMaxWidth().padding(vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
                         Column(Modifier.weight(1f)) {
                             SourceBadge(s.id)
-                            Text(s.description, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(
+                                s.description + if (s.restricted && s.id !in settings.autoReadRestricted) " · lien direct" else "",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
                         }
                         Switch(
                             checked = on,
@@ -75,6 +79,31 @@ fun SettingsScreen(
                                 onChange { st -> st.copy(enabledSources = if (checked) st.enabledSources + s.id else st.enabledSources - s.id) }
                             },
                         )
+                    }
+                }
+            }
+
+            val restricted = sources.filter { it.restricted }
+            if (restricted.isNotEmpty()) {
+                SectionCard("Sites en lien direct", icon = Icons.Rounded.Info) {
+                    Text(
+                        "Leurs règles (robots.txt et conditions d'utilisation) interdisent la lecture automatique de leurs pages de recherche. " +
+                            "Radar Occaz ouvre donc la recherche, déjà filtrée, sur leur site. Vous pouvez activer la lecture automatique " +
+                            "pour un usage strictement personnel, à vos risques : le site peut bloquer l'accès ou vous le reprocher.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    restricted.forEach { s ->
+                        Row(Modifier.fillMaxWidth().padding(top = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Text("Lire ${s.name} automatiquement", style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
+                            Switch(
+                                checked = s.id in settings.autoReadRestricted,
+                                enabled = s.id in settings.enabledSources && !settings.demoMode,
+                                onCheckedChange = { v ->
+                                    onChange { st -> st.copy(autoReadRestricted = if (v) st.autoReadRestricted + s.id else st.autoReadRestricted - s.id) }
+                                },
+                            )
+                        }
                     }
                 }
             }

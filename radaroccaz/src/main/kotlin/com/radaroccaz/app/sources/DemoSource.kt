@@ -1,6 +1,7 @@
 package com.radaroccaz.app.sources
 
 import com.radaroccaz.app.data.CarCatalog
+import com.radaroccaz.app.data.Drive
 import com.radaroccaz.app.data.Format
 import com.radaroccaz.app.data.Fuel
 import com.radaroccaz.app.data.Gearbox
@@ -31,9 +32,9 @@ class DemoSource(
 
     override fun searchUrl(criteria: SearchCriteria) = "https://www.example.com/demo"
 
-    override suspend fun search(criteria: SearchCriteria): List<Listing> {
+    override suspend fun search(criteria: SearchCriteria): SourcePage {
         if (latencyMs > 0) delay(latencyMs)
-        return generate(criteria, 30)
+        return SourcePage(generate(criteria, 30), searchUrl(criteria))
     }
 
     fun generate(criteria: SearchCriteria, count: Int = 24): List<Listing> {
@@ -47,11 +48,21 @@ class DemoSource(
         val newPrice = criteria.budgetMax?.let { (it / (0.86.pow(medianAge) * 0.82)).roundToInt() }
             ?: (18_000 + (Text.compact(make + model).hashCode().mod(25)) * 1_400)
         val kmCap = criteria.mileageMax ?: 220_000
+        val spec = CarCatalog.spec(make, model)
+        // Engines of the catalog that fit the criteria (energy, chosen engines, power).
+        val engines = spec?.engines.orEmpty().filter { e ->
+            (criteria.fuels.isEmpty() || e.fuel in criteria.fuels) &&
+                (criteria.engines.isEmpty() || e.name in criteria.engines) &&
+                (criteria.powerMin == null || e.powerHp >= criteria.powerMin) &&
+                (criteria.powerMax == null || e.powerHp <= criteria.powerMax) &&
+                (criteria.drives.isEmpty() || (Drive.INTEGRALE in criteria.drives) == e.allWheel || criteria.drives.size > 1)
+        }
         return (0 until count).map { i ->
             val year = (minYear + rnd.nextInt(max(1, thisYear - minYear + 1))).coerceAtMost(thisYear)
             val age = thisYear - year
             val km = ((age * 13_500 + rnd.nextInt(-9_000, 16_000)).coerceIn(4_000, kmCap) / 100) * 100
-            val fuel = criteria.fuels.randomOrNull(rnd)
+            val catalogEngine = engines.randomOrNull(rnd)
+            val fuel = catalogEngine?.fuel ?: criteria.fuels.randomOrNull(rnd)
                 ?: listOf(Fuel.ESSENCE, Fuel.DIESEL, Fuel.DIESEL, Fuel.HYBRIDE, Fuel.ESSENCE).random(rnd)
             val gearbox = criteria.gearbox ?: if (rnd.nextInt(3) == 0) Gearbox.AUTOMATIQUE else Gearbox.MANUELLE
             val seller = when (criteria.seller) {
@@ -62,7 +73,7 @@ class DemoSource(
             val fair = newPrice * 0.86.pow(age) * (1 - km / 400_000.0) * (if (seller == SellerType.PRO) 1.07 else 1.0)
             val price = ((fair * rnd.nextDouble(0.8, 1.2)).roundToInt() / 50 * 50).coerceAtLeast(1_500)
             val trim = listOf("Active", "Allure", "GT Line", "Business", "Style", "Intens", "Zen", "Titanium", "Life").random(rnd)
-            val engine = when (fuel) {
+            val engine = catalogEngine?.name ?: when (fuel) {
                 Fuel.DIESEL -> listOf("1.5 dCi 115", "1.6 HDi 110", "2.0 TDI 150", "1.5 BlueHDi 130").random(rnd)
                 Fuel.ELECTRIQUE -> listOf("Électrique 136 ch", "EV 50 kWh").random(rnd)
                 Fuel.HYBRIDE, Fuel.HYBRIDE_RECHARGEABLE -> listOf("Hybrid 136", "E-Tech 145", "Hybrid 180 e-EAT8").random(rnd)
@@ -92,7 +103,12 @@ class DemoSource(
                 postalCode = zip,
                 description = description,
                 publishedAt = today.minusDays(rnd.nextLong(0, 21)).toString(),
-                powerHp = Text.digits(engine.substringAfterLast(' '))?.takeIf { it in 60..400 },
+                powerHp = catalogEngine?.powerHp ?: Text.digits(engine.substringAfterLast(' '))?.takeIf { it in 60..400 },
+                engine = catalogEngine?.name,
+                body = spec?.bodies?.let { b -> criteria.bodies.intersect(b.toSet()).randomOrNull(rnd) ?: b.randomOrNull(rnd) },
+                drive = catalogEngine?.let { e ->
+                    if (e.allWheel) Drive.INTEGRALE else spec?.drives?.firstOrNull { it != Drive.INTEGRALE }
+                },
                 options = VehicleOptions.detect(description),
             ).withHistory()
         }
