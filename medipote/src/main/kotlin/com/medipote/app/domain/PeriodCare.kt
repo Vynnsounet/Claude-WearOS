@@ -66,5 +66,25 @@ object PeriodCare {
         state.productLog.count { it.start.toLocalDate() == date } + (if (state.productSession?.since?.toLocalDate() == date) 1 else 0)
 
     /** Intakes of as-needed medications on a given day, linked to periods or not. */
-    fun intakesOn(state: AppState, date: LocalDate) = state.prnIntakes.filter { it.takenAt.toLocalDate() == date }.sortedBy { it.takenAt }
+    /** Whether an as-needed medication belongs in the period list (painkillers by default, or chosen). */
+    fun isPeriodMed(t: com.medipote.app.data.Treatment): Boolean = t.asNeeded && (t.forPeriod ?: (t.drugId in COMMON_MEDS))
+
+    /** As-needed medications listed for periods, still in use on [date]. */
+    fun periodMeds(state: AppState, date: LocalDate) =
+        state.treatments.filter { isPeriodMed(it) && (it.endDate == null || !it.endDate.isBefore(date)) }
+
+    /** Other as-needed medications that could be added to the period list. */
+    fun otherMeds(state: AppState, date: LocalDate) =
+        state.treatments.filter { it.asNeeded && !isPeriodMed(it) && (it.endDate == null || !it.endDate.isBefore(date)) }
+
+    fun setPeriodMed(state: AppState, treatmentId: String, listed: Boolean): AppState =
+        state.copy(treatments = state.treatments.map { if (it.id == treatmentId) it.copy(forPeriod = listed) else it })
+
+    /** Intakes of period medications (or noted for painful periods) on [date]. */
+    fun intakesOn(state: AppState, date: LocalDate): List<com.medipote.app.data.PrnIntake> {
+        val ids = state.treatments.filter(::isPeriodMed).map { it.id }.toSet()
+        return state.prnIntakes
+            .filter { it.takenAt.toLocalDate() == date && (it.treatmentId in ids || it.reason == REASON) }
+            .sortedBy { it.takenAt }
+    }
 }

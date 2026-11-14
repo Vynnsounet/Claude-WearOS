@@ -57,4 +57,29 @@ class PeriodCareTest {
         PeriodProduct.entries.forEach { assertTrue(it.name, it.defaultMinutes <= it.maxMinutes) }
         assertTrue(PeriodProduct.entries.filter { it.internal }.all { it.maxMinutes <= 12 * 60 })
     }
+
+    @Test
+    fun periodListOnlyHoldsPeriodMedications() {
+        fun prn(id: String, drug: String?, name: String) = com.medipote.app.data.Treatment(
+            id, drug, name, doses = emptyList(), startDate = day.minusDays(3), asNeeded = true,
+        )
+        var state = AppState(
+            treatments = listOf(prn("ibu", "ibuprofene", "Ibuprofène"), prn("alp", "alprazolam", "Alprazolam"), prn("own", null, "Antadys")),
+            prnIntakes = listOf(
+                com.medipote.app.data.PrnIntake("1", "ibu", at(9)),
+                com.medipote.app.data.PrnIntake("2", "alp", at(10)),
+                com.medipote.app.data.PrnIntake("3", "own", at(11), reason = PeriodCare.REASON),
+            ),
+        )
+        // Painkillers by default; an anxiolytic or a medication typed by hand is not listed.
+        assertEquals(listOf("ibu"), PeriodCare.periodMeds(state, day).map { it.id })
+        assertEquals(listOf("alp", "own"), PeriodCare.otherMeds(state, day).map { it.id })
+        // Today's period intakes: listed medications, or noted for painful periods.
+        assertEquals(listOf("1", "3"), PeriodCare.intakesOn(state, day).map { it.id })
+        // Choosing one's own, removing another.
+        state = PeriodCare.setPeriodMed(state, "own", true)
+        state = PeriodCare.setPeriodMed(state, "ibu", false)
+        assertEquals(listOf("own"), PeriodCare.periodMeds(state, day).map { it.id })
+        assertEquals(listOf("ibu", "alp"), PeriodCare.otherMeds(state, day).map { it.id })
+    }
 }

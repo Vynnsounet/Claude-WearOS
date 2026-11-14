@@ -435,14 +435,28 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     /** Adds a common period medication (from the guide) as "as needed"; returns its id. */
     fun addPeriodMedication(drugId: String): String? {
         val drug = com.medipote.app.data.DrugGuide.byId(drugId) ?: return null
-        state.value.treatments.firstOrNull { it.drugId == drugId && it.asNeeded }?.let { return it.id }
+        state.value.treatments.firstOrNull { it.drugId == drugId && it.asNeeded }?.let { existing ->
+            setPeriodMed(existing.id, true)
+            return existing.id
+        }
+        return addCustomPeriodMedication(drug.dci, drug.strengths.firstOrNull().orEmpty(), drug.id)
+    }
+
+    /** A medication of one's own for periods (typed in, or picked from the guide). */
+    fun addCustomPeriodMedication(name: String, strength: String, drugId: String? = null): String {
+        val drug = drugId?.let(com.medipote.app.data.DrugGuide::byId)
         val t = Treatment(
-            id = java.util.UUID.randomUUID().toString(), drugId = drug.id, name = drug.dci,
-            strength = drug.strengths.firstOrNull().orEmpty(), unit = drug.unit, doses = emptyList(),
-            startDate = repo.now().toLocalDate(), asNeeded = true, createdAt = repo.now(),
+            id = java.util.UUID.randomUUID().toString(), drugId = drug?.id, name = name.trim(),
+            strength = strength.trim(), unit = drug?.unit ?: com.medipote.app.data.DoseUnit.TABLET, doses = emptyList(),
+            startDate = repo.now().toLocalDate(), asNeeded = true, createdAt = repo.now(), forPeriod = true,
         )
         repo.update { it.copy(treatments = it.treatments + t) }
+        _events.tryEmit(UiEvent.Message("${t.displayName} ajouté à tes médicaments pour les règles"))
         return t.id
+    }
+
+    fun setPeriodMed(treatmentId: String, listed: Boolean) {
+        repo.update { com.medipote.app.domain.PeriodCare.setPeriodMed(it, treatmentId, listed) }
     }
 
     // ── Rituals ──

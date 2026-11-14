@@ -101,6 +101,8 @@ data class Treatment(
     val everyDays: Int = 1,
     /** Dose that changes over time (tapering): from each date, every dose time takes this quantity. */
     val steps: List<DoseStep> = emptyList(),
+    /** Shown in the period medication list; null = automatic (common period painkillers only). */
+    val forPeriod: Boolean? = null,
 ) {
     val displayName: String get() = if (strength.isBlank()) name else "$name $strength"
 

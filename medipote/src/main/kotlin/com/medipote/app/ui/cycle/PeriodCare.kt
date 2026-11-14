@@ -14,6 +14,12 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material.icons.rounded.Edit
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
@@ -167,14 +173,25 @@ fun PeriodCareCard(
 /** Medication for painful periods: logged in two taps, with the reason already filled in. */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun PeriodMedsCard(state: AppState, now: LocalDateTime, onLog: (String) -> Unit, onAddCommon: (String) -> Unit) {
-    val prn = state.treatments.filter { it.asNeeded && (it.endDate == null || !it.endDate.isBefore(now.toLocalDate())) }
-    val todayIntakes = PeriodCare.intakesOn(state, now.toLocalDate())
-    val missing = PeriodCare.COMMON_MEDS.filter { id -> prn.none { it.drugId == id } }.mapNotNull(DrugGuide::byId)
+fun PeriodMedsCard(
+    state: AppState,
+    now: LocalDateTime,
+    onLog: (String) -> Unit,
+    onAddCommon: (String) -> Unit,
+    onAddCustom: (name: String, strength: String, drugId: String?) -> Unit = { _, _, _ -> },
+    onSetListed: (String, Boolean) -> Unit = { _, _ -> },
+) {
+    val date = now.toLocalDate()
+    val meds = PeriodCare.periodMeds(state, date)
+    val others = PeriodCare.otherMeds(state, date)
+    val todayIntakes = PeriodCare.intakesOn(state, date)
+    val missing = PeriodCare.COMMON_MEDS.filter { id -> meds.none { it.drugId == id } }.mapNotNull(DrugGuide::byId)
+    var adding by remember { mutableStateOf(false) }
+    var removing by remember { mutableStateOf<com.medipote.app.data.Treatment?>(null) }
     Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow), modifier = Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Text("💊 Un médicament pour tes règles ?", style = MaterialTheme.typography.titleMedium)
-            prn.forEach { t ->
+            meds.forEach { t ->
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Column(Modifier.weight(1f)) {
                         Text(t.displayName, style = MaterialTheme.typography.bodyLarge)
@@ -191,23 +208,29 @@ fun PeriodMedsCard(state: AppState, now: LocalDateTime, onLog: (String) -> Unit,
                         Spacer(Modifier.width(4.dp))
                         Text("Noter")
                     }
-                }
-            }
-            if (missing.isNotEmpty()) {
-                Text(
-                    if (prn.isEmpty()) "Ajoute ce que tu prends quand tu as mal :" else "Ou ajoute :",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    missing.forEach { d ->
-                        AssistChip(
-                            onClick = { onAddCommon(d.id) },
-                            label = { Text(if (d.id == "phloroglucinol") "${d.dci} (Spasfon)" else d.dci) },
-                            leadingIcon = { Icon(Icons.Rounded.Add, null, Modifier.size(18.dp)) },
-                        )
+                    IconButton(onClick = { removing = t }) {
+                        Icon(Icons.Rounded.Close, "Retirer ${t.displayName} de la liste", tint = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
+            }
+            Text(
+                if (meds.isEmpty()) "Ajoute ce que tu prends quand tu as mal :" else "Ajouter :",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                missing.forEach { d ->
+                    AssistChip(
+                        onClick = { onAddCommon(d.id) },
+                        label = { Text(if (d.id == "phloroglucinol") "${d.dci} (Spasfon)" else d.dci) },
+                        leadingIcon = { Icon(Icons.Rounded.Add, null, Modifier.size(18.dp)) },
+                    )
+                }
+                AssistChip(
+                    onClick = { adding = true },
+                    label = { Text("Autre médicament") },
+                    leadingIcon = { Icon(Icons.Rounded.Edit, null, Modifier.size(18.dp)) },
+                )
             }
             if (todayIntakes.isNotEmpty()) {
                 Text(
@@ -223,6 +246,89 @@ fun PeriodMedsCard(state: AppState, now: LocalDateTime, onLog: (String) -> Unit,
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+        }
+    }
+    if (adding) {
+        AddPeriodMedDialog(
+            others = others,
+            onPickExisting = { adding = false; onSetListed(it, true) },
+            onAdd = { name, strength, drugId -> adding = false; onAddCustom(name, strength, drugId) },
+            onDismiss = { adding = false },
+        )
+    }
+    removing?.let { t ->
+        AlertDialog(
+            onDismissRequest = { removing = null },
+            title = { Text("Retirer ${t.displayName} ?") },
+            text = { Text("Il ne sera plus proposé ici. Le médicament et ses prises restent dans tes traitements.") },
+            confirmButton = { TextButton(onClick = { removing = null; onSetListed(t.id, false) }) { Text("Retirer") } },
+            dismissButton = { TextButton(onClick = { removing = null }) { Text("Annuler") } },
+        )
+    }
+}
+
+/** Adds a medication to the period list: one already in the treatments, or a new one. [asDialog] = false for tests. */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+internal fun AddPeriodMedDialog(
+    others: List<com.medipote.app.data.Treatment>,
+    onPickExisting: (String) -> Unit,
+    onAdd: (String, String, String?) -> Unit,
+    onDismiss: () -> Unit,
+    asDialog: Boolean = true,
+) {
+    var name by remember { mutableStateOf("") }
+    var strength by remember { mutableStateOf("") }
+    var drugId by remember { mutableStateOf<String?>(null) }
+    val suggestions = remember(name, drugId) {
+        if (name.trim().length < 2 || drugId != null) emptyList() else DrugGuide.search(name).take(3)
+    }
+    val form: @Composable () -> Unit = {
+            Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                if (others.isNotEmpty()) {
+                    Text("Parmi tes médicaments « si besoin » :", style = MaterialTheme.typography.bodyMedium)
+                    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        others.forEach { t -> AssistChip(onClick = { onPickExisting(t.id) }, label = { Text(t.displayName) }) }
+                    }
+                    Text("Ou un nouveau :", style = MaterialTheme.typography.bodyMedium)
+                }
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = { name = it; drugId = null },
+                    label = { Text("Nom") },
+                    placeholder = { Text("Ex. : Antadys, Antarène…") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                if (suggestions.isNotEmpty()) {
+                    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        suggestions.forEach { d ->
+                            AssistChip(
+                                onClick = { name = d.dci; drugId = d.id; if (strength.isBlank()) strength = d.strengths.firstOrNull().orEmpty() },
+                                label = { Text(d.dci) },
+                            )
+                        }
+                    }
+                }
+                OutlinedTextField(
+                    value = strength,
+                    onValueChange = { strength = it },
+                    label = { Text("Dosage (facultatif)") },
+                    placeholder = { Text("Ex. : 100 mg") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+    }
+    val confirm: @Composable () -> Unit = { TextButton(onClick = { onAdd(name, strength, drugId) }, enabled = name.isNotBlank()) { Text("Ajouter") } }
+    val dismiss: @Composable () -> Unit = { TextButton(onClick = onDismiss) { Text("Annuler") } }
+    if (asDialog) {
+        AlertDialog(onDismissRequest = onDismiss, title = { Text("Médicament pour les règles") }, text = form, confirmButton = confirm, dismissButton = dismiss)
+    } else {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Text("Médicament pour les règles", style = MaterialTheme.typography.titleLarge)
+            form()
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) { dismiss(); confirm() }
         }
     }
 }

@@ -13,6 +13,7 @@ import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.click
 import androidx.compose.ui.test.longClick
 import androidx.compose.ui.test.swipeRight
@@ -996,6 +997,37 @@ class ScreensTest {
         compose.onNodeWithText("Mise en place à 09:05", substring = true).assertExists()
         compose.onNodeWithText("J'ai changé").assertExists()
         compose.onNodeWithText("Phloroglucinol (Spasfon)").assertExists()
+        compose.onNodeWithText("Autre médicament").assertExists()
+    }
+
+    @Test
+    @Config(qualifiers = "w400dp-h1000dp-xhdpi")
+    fun periodMedsOwnMedication() {
+        val alprazolam = Treatment("alp", "alprazolam", "Alprazolam", "0,25 mg", DoseUnit.TABLET, emptyList(), startDate = today.minusDays(5), asNeeded = true)
+        val own = Treatment("own", null, "Antadys", "100 mg", DoseUnit.TABLET, emptyList(), startDate = today.minusDays(1), asNeeded = true, forPeriod = true)
+        val state = sampleState().let { it.copy(treatments = it.treatments + alprazolam + own) }
+        render("period_meds_add") { com.medipote.app.ui.cycle.PeriodMedsCard(state, now, {}, {}) }
+        compose.onNodeWithText("Antadys 100 mg").assertExists()
+        compose.onNodeWithText("Alprazolam 0,25 mg").assertDoesNotExist()
+        compose.onNodeWithText("Autre médicament").assertExists()
+    }
+
+    @Test
+    @Config(qualifiers = "w400dp-h900dp-xhdpi")
+    fun periodMedsAddForm() {
+        // A text field inside a dialog window never lets Robolectric go idle: the form is tested on its own.
+        val alprazolam = Treatment("alp", "alprazolam", "Alprazolam", "0,25 mg", DoseUnit.TABLET, emptyList(), startDate = today.minusDays(5), asNeeded = true)
+        var picked: String? = null
+        var added: Triple<String, String, String?>? = null
+        render("period_meds_add_dialog") {
+            com.medipote.app.ui.cycle.AddPeriodMedDialog(listOf(alprazolam), { picked = it }, { n, s, d -> added = Triple(n, s, d) }, {}, asDialog = false)
+        }
+        compose.onNodeWithText("Nom").performTextInput("Spasfon")
+        compose.onNodeWithText("Phloroglucinol").performClick()
+        compose.onNodeWithText("Ajouter").performClick()
+        org.junit.Assert.assertEquals(Triple("Phloroglucinol", "80 mg", "phloroglucinol"), added)
+        compose.onNodeWithText("Alprazolam 0,25 mg").performClick()
+        org.junit.Assert.assertEquals("alp", picked)
     }
 
     @Test

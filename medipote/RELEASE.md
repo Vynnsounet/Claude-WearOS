@@ -66,6 +66,14 @@ L'optimiseur de R8 reste désactivé (`-dontoptimize`) : APK de 3,8 Mo au lieu d
 le dex livré peut être reconverti et exécuté hors appareil pour vérification (voir plus bas),
 ce que l'optimiseur empêche. Il pourra être réactivé après des essais sur téléphone.
 
+### 1.7.1
+
+- La carte « médicaments pour les règles » ne montre plus tous les médicaments « si besoin »
+  (un anxiolytique n'y a rien à faire) : seulement les antidouleurs courants et ceux qu'on
+  choisit. Bouton ✕ pour retirer un médicament de la liste (il reste dans les traitements).
+- « Autre médicament » : en choisir un parmi ses médicaments « si besoin », ou en créer un
+  nouveau (nom avec suggestions du guide, dosage facultatif).
+
 ### 1.7.0
 
 - Minuteur de protection périodique (serviette, serviette lavable, tampon, coupe, disque,

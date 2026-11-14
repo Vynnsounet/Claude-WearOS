@@ -496,6 +496,8 @@ fun MediPoteApp(vm: AppViewModel) {
                                     state, now,
                                     onLog = periodLog,
                                     onAddCommon = { drugId -> vm.addPeriodMedication(drugId)?.let(periodLog) },
+                                    onAddCustom = { name, strength, drugId -> vm.addCustomPeriodMedication(name, strength, drugId) },
+                                    onSetListed = vm::setPeriodMed,
                                 )
                             }
                         }
