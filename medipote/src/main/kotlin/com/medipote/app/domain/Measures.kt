@@ -78,22 +78,14 @@ object Measures {
             m.value < 95 -> Assessment(Level.LOW, "Un peu basse (sous 95 %).")
             else -> Assessment(Level.NORMAL, "Normale (95 % ou plus).")
         }
-        MeasureType.WEIGHT -> profile?.heightCm?.takeIf { it > 0 }?.let { h ->
-            val bmi = m.value / ((h / 100.0) * (h / 100.0))
-            val (level, label) = when {
-                bmi < 18.5 -> Level.LOW to "maigreur"
-                bmi < 25 -> Level.NORMAL to "corpulence normale"
-                bmi < 30 -> Level.HIGH to "surpoids"
-                else -> Level.HIGH to "obésité"
-            }
-            Assessment(level, "IMC ${dec(bmi)} ($label).")
-        }
+        // Weight is shown as it is, without a BMI or a verdict: it shouldn't make anyone feel judged.
+        MeasureType.WEIGHT -> null
     }
 
     fun latest(state: AppState, type: MeasureType): Measurement? =
         state.measurements.filter { it.type == type }.maxByOrNull { it.at }
 
-    /** Adds or updates a measurement; a new latest weight also updates the profile (for the BMI). */
+    /** Adds or updates a measurement; a new latest weight also updates the profile. */
     fun save(state: AppState, m: Measurement): AppState {
         val list = (state.measurements.filterNot { it.id == m.id } + m).sortedByDescending { it.at }
         var profile = state.profile
@@ -165,7 +157,6 @@ object Measures {
                         out += Insight("Poids stable sur la période.", Tone.INFO)
                     }
                 }
-                assess(r.values.last(), state.profile)?.let { out += Insight("Dernière mesure : ${it.text}", Tone.INFO) }
             }
             MeasureType.GLUCOSE -> {
                 val hypo = r.values.count { it.value < 0.70 }

@@ -292,11 +292,8 @@ class DomainTest {
     }
 
     @Test
-    fun profileBmi() {
+    fun profileDefaults() {
         val p = com.medipote.app.data.Profile(name = "A", weightKg = 70.0, heightCm = 175)
-        assertEquals(22.86, p.bmi!!, 0.01)
-        assertNull(p.copy(heightCm = null).bmi)
-        assertNotNull(p.bmi)
         assertFalse(p.menstruating)
     }
 }

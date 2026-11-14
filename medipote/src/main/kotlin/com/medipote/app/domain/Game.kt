@@ -20,7 +20,8 @@ data class PetCondition(
     val message: String,
 )
 
-data class CheckInReward(val streak: Int, val points: Int, val milestoneBonus: Int) {
+/** [previousStreak]: the streak that just ended (to cheer a new start), 0 when it continues. */
+data class CheckInReward(val streak: Int, val points: Int, val milestoneBonus: Int, val previousStreak: Int = 0, val best: Int = streak) {
     val total: Int get() = points + milestoneBonus
 }
 
@@ -49,8 +50,10 @@ object Game {
         val today = now.toLocalDate()
         if (game.lastCheckIn == today) return null
         val streak = if (game.lastCheckIn == today.minusDays(1)) game.streak + 1 else 1
-        val reward = CheckInReward(streak, Rules.streakReward(streak), Rules.STREAK_MILESTONES[streak] ?: 0)
-        var updated = game.copy(streak = streak, bestStreak = maxOf(game.bestStreak, streak), lastCheckIn = today)
+        val broken = if (streak == 1 && game.streak > 1) game.streak else 0
+        val best = maxOf(game.bestStreak, streak)
+        val reward = CheckInReward(streak, Rules.streakReward(streak), Rules.STREAK_MILESTONES[streak] ?: 0, broken, best)
+        var updated = game.copy(streak = streak, bestStreak = best, lastCheckIn = today)
         updated = addPoints(updated, reward.points, "Connexion quotidienne (série de $streak j)", now)
         if (reward.milestoneBonus > 0) {
             updated = addPoints(updated, reward.milestoneBonus, "Palier de série : $streak jours", now)
@@ -64,16 +67,49 @@ object Game {
      */
     fun give(state: AppState, item: DoseItem, now: LocalDateTime, early: Boolean = false): GiveResult? {
         if (!item.canGive && !(early && item.canMarkEarly(now))) return null
-        val occ = item.occurrence
-        val status = Rules.statusFor(occ.scheduled, now)
+        return record(state, item.occurrence, now, now, afterwards = false)
+    }
+
+    /** How far back a forgotten dose can still be noted. */
+    const val CATCH_UP_DAYS = 14L
+
+    /**
+     * Notes afterwards a dose that was taken but not recorded (forgotten in the app): it counts as
+     * taken at [takenAt], with the points of that time. Only for doses not yet given, up to
+     * [CATCH_UP_DAYS] back, and never in the future.
+     */
+    fun catchUp(state: AppState, item: DoseItem, takenAt: LocalDateTime, now: LocalDateTime): GiveResult? {
+        if (item.state == DoseState.TAKEN || item.log != null) return null
+        if (takenAt.isAfter(now) || item.occurrence.date.isBefore(now.toLocalDate().minusDays(CATCH_UP_DAYS))) return null
+        // A time before midnight of the day before makes no sense for that dose.
+        if (takenAt.isBefore(item.occurrence.date.minusDays(1).atStartOfDay())) return null
+        return record(state, item.occurrence, takenAt, now, afterwards = true)
+    }
+
+    /**
+     * Removes a dose recorded by mistake: it goes back to "not given", its points are taken back
+     * and its quantity returns to the stock.
+     */
+    fun undo(state: AppState, key: String, now: LocalDateTime): AppState {
+        val log = state.doseLogs.firstOrNull { it.key == key } ?: return state
+        val t = state.treatments.firstOrNull { it.id == log.treatmentId }
+        val minute = log.scheduled.hour * 60 + log.scheduled.minute
+        val quantity = t?.let { tr -> tr.doses.firstOrNull { it.minuteOfDay == minute }?.let { tr.quantityOn(log.scheduled.toLocalDate(), it) } } ?: 0.0
+        val treatments = state.treatments.map { if (it.id == log.treatmentId && it.stock != null) it.copy(stock = it.stock + quantity) else it }
+        val game = if (log.points > 0) addPoints(state.game, -log.points, "Prise annulée : ${t?.displayName ?: "?"}", now) else state.game
+        return state.copy(doseLogs = state.doseLogs - log, treatments = treatments, game = game)
+    }
+
+    private fun record(state: AppState, occ: com.medipote.app.domain.DoseOccurrence, takenAt: LocalDateTime, now: LocalDateTime, afterwards: Boolean): GiveResult {
+        val status = Rules.statusFor(occ.scheduled, takenAt)
         val points = Rules.pointsFor(status)
-        val log = DoseLog(occ.key, occ.treatment.id, occ.scheduled, now, status, points)
+        val log = DoseLog(occ.key, occ.treatment.id, occ.scheduled, takenAt, status, points)
         val label = when (status) {
             TakeStatus.ON_TIME -> "à l'heure"
             TakeStatus.LATE -> "en retard"
             TakeStatus.VERY_LATE -> "très en retard"
             TakeStatus.EARLY -> "pris en avance"
-        }
+        } + if (afterwards) " (noté après coup)" else ""
         var game = addPoints(state.game, points, "${occ.treatment.displayName} $label", now)
         // Growth: start from the history the first time, then one point per dose given on time.
         if (status == TakeStatus.ON_TIME) game = game.copy(growth = Evolution.points(state) + 1)

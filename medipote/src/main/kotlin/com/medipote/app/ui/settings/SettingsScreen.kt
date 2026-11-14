@@ -84,6 +84,7 @@ fun SettingsScreen(
     quietReminders: Int = 0,
     onFixQuietReminders: () -> Unit = {},
     onOpenBackup: () -> Unit = {},
+    onOpenAppearance: () -> Unit = {},
     lockEnabled: Boolean = false,
     onToggleLock: (Boolean) -> Unit = {},
     lastBackup: java.time.LocalDateTime? = null,
@@ -115,14 +116,8 @@ fun SettingsScreen(
                         ) { Text(mode.label) }
                     }
                 }
-                Text("Couleur d'accent", style = MaterialTheme.typography.bodyLarge)
-                AccentPicker(settings.accent, enabled = !settings.dynamicColor) { a -> onChange { it.copy(accent = a) } }
-                if (dynamicColorAvailable) {
-                    SwitchRow(
-                        "Couleurs du fond d'écran",
-                        settings.dynamicColor,
-                        supporting = "Adapte les couleurs de l'app à ton téléphone",
-                    ) { v -> onChange { it.copy(dynamicColor = v) } }
+                androidx.compose.material3.FilledTonalButton(onClick = onOpenAppearance, modifier = Modifier.fillMaxWidth()) {
+                    Text("🎨  Personnaliser : couleurs, police, accueil…")
                 }
             }
 
@@ -355,29 +350,6 @@ fun SettingsScreen(
             confirmButton = { TextButton(onClick = { confirmReset = false; onReset() }) { Text("Effacer", color = MaterialTheme.colorScheme.error) } },
             dismissButton = { TextButton(onClick = { confirmReset = false }) { Text("Annuler") } },
         )
-    }
-}
-
-@Composable
-private fun AccentPicker(selected: com.medipote.app.data.Accent, enabled: Boolean, onPick: (com.medipote.app.data.Accent) -> Unit) {
-    androidx.compose.foundation.layout.Row(Modifier.fillMaxWidth(), horizontalArrangement = androidx.compose.foundation.layout.Arrangement.SpaceBetween) {
-        com.medipote.app.data.Accent.entries.forEach { a ->
-            val on = a == selected
-            Column(horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally) {
-                androidx.compose.foundation.layout.Box(
-                    Modifier.padding(2.dp).size(44.dp)
-                        .clip(androidx.compose.foundation.shape.CircleShape)
-                        .background(com.medipote.app.ui.theme.accentSwatch(a).copy(alpha = if (enabled) 1f else 0.35f))
-                        .border(if (on) 3.dp else 0.dp, if (on) MaterialTheme.colorScheme.onSurface else Color.Transparent, androidx.compose.foundation.shape.CircleShape)
-                        .clickable(enabled = enabled) { onPick(a) }
-                        .semantics { contentDescription = "Accent ${a.label}" + if (on) ", sélectionné" else "" },
-                    contentAlignment = androidx.compose.ui.Alignment.Center,
-                ) {
-                    if (on) Icon(androidx.compose.material.icons.Icons.Rounded.Check, null, tint = Color.White)
-                }
-                Text(a.label, style = MaterialTheme.typography.labelSmall)
-            }
-        }
     }
 }
 

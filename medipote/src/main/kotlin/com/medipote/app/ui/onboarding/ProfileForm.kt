@@ -98,18 +98,6 @@ class ProfileDraft(profile: Profile?, private val today: LocalDate) {
         )
     }
 
-    fun bmiText(): String? {
-        val p = Profile(name = "", weightKg = weightValue, heightCm = heightValue)
-        val bmi = p.bmi ?: return null
-        val label = when {
-            bmi < 18.5 -> "insuffisance pondérale"
-            bmi < 25 -> "corpulence normale"
-            bmi < 30 -> "surpoids"
-            else -> "obésité"
-        }
-        return "IMC : %.1f (%s)".format(java.util.Locale.FRANCE, bmi, label)
-    }
-
     val maxDate: LocalDate get() = today
 }
 
@@ -130,9 +118,6 @@ fun ProfileForm(draft: ProfileDraft, modifier: Modifier = Modifier) {
             NumberField("Âge", draft.age, { draft.age = it }, "ans", draft.ageError, Modifier.weight(1f))
             NumberField("Poids", draft.weight, { draft.weight = it }, "kg", draft.weightError, Modifier.weight(1f), decimal = true)
             NumberField("Taille", draft.height, { draft.height = it }, "cm", draft.heightError, Modifier.weight(1f))
-        }
-        draft.bmiText()?.let {
-            Text(it, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
 
         Text("Sexe", style = MaterialTheme.typography.labelLarge)

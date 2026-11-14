@@ -21,6 +21,10 @@ l'habiller dans la boutique.
 |---|---|---|---|
 | ![](docs/prn_stats.png) | ![](docs/sleep.png) | ![](docs/sleep_editor.png) | ![](docs/report.png) |
 
+| Accueil personnalisé | Noir pur | Personnaliser | Série du jour | Prises oubliées |
+|---|---|---|---|---|
+| ![](docs/home_custom.png) | ![](docs/home_black.png) | ![](docs/appearance.png) | ![](docs/streak.png) | ![](docs/dose_history.png) |
+
 Le compagnon grandit avec la régularité (graine, pousse, bouton, fleur, floraison) :
 
 ![](docs/pet_stages.png)
@@ -39,7 +43,7 @@ Profil médical et paramètres sont accessibles en haut à droite.
 
 ## Fonctionnalités
 
-- **Profil médical** : prénom, âge, poids, taille (IMC calculé), sexe,
+- **Profil médical** : prénom, âge, poids, taille (sans calcul d'IMC), sexe,
   antécédents et allergies (suggestions + saisie libre), suivi du cycle.
 - **Guide des médicaments intégré** : environ 130 médicaments courants en France,
   recherche sans accents par nom commercial, molécule (DCI) ou classe, fiche
@@ -163,19 +167,33 @@ Profil médical et paramètres sont accessibles en haut à droite.
   pendant les règles, 12 dernières semaines, historique modifiable. Une alerte
   conseille d'en parler à un professionnel au-delà de 10 jours d'usage sur 30
   ou si le maximum quotidien a été dépassé.
-- **Apparence** : thème clair, sombre ou système, 6 couleurs d'accent
-  (Menthe, Océan, Lavande, Corail, Ambre, Rose) ou couleurs du fond d'écran
-  (Android 12+).
-
+- **Personnalisation** (Paramètres › Personnaliser) : 18 couleurs ou **ta
+  propre couleur** (teinte et intensité, nuances ajustées pour rester lisibles
+  en clair comme en sombre), couleurs du fond d'écran (Android 12+), thème
+  clair / sombre / système, fond teinté de ta couleur, noir pur pour les écrans
+  OLED, police des titres (moderne, élégante, manuscrite, machine à écrire),
+  taille du texte (85 à 130 %), coins plus ou moins arrondis, ton emoji à côté
+  du « Bonjour », ta phrase du jour en haut de l'accueil, **ordre et affichage
+  des blocs de l'accueil** (compagnon, prises, si besoin, mesures, eau,
+  invitations, rendez-vous), animations de célébration. Aperçu en direct.
+- **Série quotidienne** : à la première ouverture du jour, une animation
+  (flamme qui grandit, compteur de jours, les 7 derniers jours, confettis,
+  points gagnés, prochain palier). Après une interruption : « Nouveau départ »,
+  avec le rappel du record, sans culpabiliser.
+- **Prises oubliées** : « Jours précédents : noter un oubli » (et un bandeau
+  le lendemain s'il reste des prises non notées) ouvre l'historique jour par
+  jour, jusqu'à 14 jours en arrière ; « Je l'ai pris » note la prise avec
+  l'heure réelle (points selon cette heure, le compagnon s'en remet),
+  « Annuler » retire une prise notée par erreur (points et stock rendus).
 - **Mesures de santé** : tension (avec pouls), pouls, glycémie (à jeun, avant
   ou après un repas, au coucher), poids, température, saturation en oxygène.
   **Chaque type s'affiche ou non selon les paramètres** (aucun par défaut) :
   seuls ceux cochés apparaissent sur l'accueil, dans Suivi › Mesures et dans
   le rapport. Saisie rapide avec repères indicatifs (tension 135/85 à domicile,
-  glycémie à jeun 0,70–1,10 g/L, fièvre ≥ 38 °C, IMC…), courbe avec zone de
+  glycémie à jeun 0,70–1,10 g/L, fièvre ≥ 38 °C…), courbe avec zone de
   repères, moyenne, minimum, maximum, part dans les repères, évolution du poids,
   analyses (matin / soir pour la tension, hypoglycémies, jours de fièvre).
-  Le dernier poids met à jour le profil (IMC).
+  Le poids est affiché sans IMC ni jugement ; le dernier poids met à jour le profil.
 - **Sauvegarde et restauration** (Paramètres › Sauvegarde) : un fichier
   `.medipote` qui contient tout (données et documents), avec mot de passe
   facultatif (chiffrement AES-256-GCM, clé dérivée par PBKDF2) ; restauration

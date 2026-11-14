@@ -66,6 +66,16 @@ L'optimiseur de R8 reste désactivé (`-dontoptimize`) : APK de 3,8 Mo au lieu d
 le dex livré peut être reconverti et exécuté hors appareil pour vérification (voir plus bas),
 ce que l'optimiseur empêche. Il pourra être réactivé après des essais sur téléphone.
 
+### 1.4.0
+
+- Prises oubliées : historique des 14 derniers jours, « Je l'ai pris » avec l'heure réelle,
+  « Annuler » pour une prise notée par erreur ; bandeau le lendemain.
+- Personnalisation : 18 couleurs + couleur libre (tons générés avec contraste vérifié, testé
+  pour chaque couleur), fond teinté, noir pur, police des titres, taille du texte, coins,
+  emoji, phrase du jour, ordre et affichage des blocs de l'accueil, animations.
+- Animation de la série quotidienne à la première ouverture du jour.
+- L'IMC n'est plus calculé ni affiché nulle part (profil, mesures, rapport).
+
 ### 1.3.1
 
 - Sommeil : la nuit se note aussi « reposante » et « agréable » (en plus de « bonne »), d'un

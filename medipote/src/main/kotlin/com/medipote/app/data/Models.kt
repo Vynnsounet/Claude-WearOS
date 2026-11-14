@@ -49,16 +49,7 @@ data class Profile(
     val allergies: List<String> = emptyList(),
     val menstruating: Boolean = false,
     val cycle: CycleInfo? = null,
-) {
-    /** Body-mass index, or null when weight or height is missing. */
-    val bmi: Double?
-        get() {
-            val w = weightKg ?: return null
-            val h = heightCm?.takeIf { it > 0 } ?: return null
-            val m = h / 100.0
-            return w / (m * m)
-        }
-}
+)
 
 @Serializable
 data class CycleInfo(
@@ -262,8 +253,14 @@ data class PointEvent(
 enum class ThemeMode(val label: String) { SYSTEM("Système"), LIGHT("Clair"), DARK("Sombre") }
 
 @Serializable
-enum class Accent(val label: String) {
-    MINT("Menthe"), OCEAN("Océan"), LAVENDER("Lavande"), CORAL("Corail"), AMBER("Ambre"), ROSE("Rose")
+/** Accent colours; [seed] is the colour the tones are derived from (the first six are hand-tuned). */
+enum class Accent(val label: String, val seed: Long) {
+    MINT("Menthe", 0xFF1F7F69), OCEAN("Océan", 0xFF0B61A4), LAVENDER("Lavande", 0xFF6750A4),
+    CORAL("Corail", 0xFF9C4234), AMBER("Ambre", 0xFF8B5000), ROSE("Rose", 0xFF984061),
+    FOREST("Forêt", 0xFF2E7D32), SKY("Ciel", 0xFF0288D1), INDIGO("Indigo", 0xFF3949AB), PLUM("Prune", 0xFF8E24AA),
+    CHERRY("Cerise", 0xFFC62828), TANGERINE("Mandarine", 0xFFEF6C00), SUNFLOWER("Tournesol", 0xFFF9A825),
+    TEAL("Lagon", 0xFF00897B), SLATE("Ardoise", 0xFF546E7A), COCOA("Cacao", 0xFF6D4C41),
+    BUBBLEGUM("Bonbon", 0xFFEC407A), OLIVE("Olive", 0xFF7C8B24),
 }
 
 @Serializable
@@ -276,6 +273,7 @@ data class Settings(
     /** Measurement kinds shown in the app; none by default. */
     val measures: Set<MeasureType> = emptySet(),
     val backup: BackupSettings = BackupSettings(),
+    val look: Look = Look(),
     /** Ask for the phone's fingerprint, face or PIN to open the app. */
     val lockEnabled: Boolean = false,
     val notificationsEnabled: Boolean = true,

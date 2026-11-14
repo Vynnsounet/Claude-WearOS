@@ -53,9 +53,10 @@ class AppFlowTest {
         compose.onNodeWithText("Paracétamol 500 mg").assertExists()
         compose.onNodeWithText("C'est parti !").performScrollTo().performClick()
 
-        // Daily check-in reward on the first day
-        compose.onNodeWithText("Bienvenue !").assertExists()
-        compose.onNodeWithText("Super !").performClick()
+        // Daily streak celebration on the first day
+        compose.onAllNodes(androidx.compose.ui.test.hasText("C'est parti !")).onFirst().assertExists()
+        compose.onAllNodes(androidx.compose.ui.test.hasText("jour")).onFirst().assertExists()
+        compose.onAllNodes(androidx.compose.ui.test.hasText("C'est parti !") and androidx.compose.ui.test.hasClickAction()).onFirst().performClick()
         compose.onNodeWithText("Bonjour Sam 👋").assertExists()
 
         val repo = ApplicationProvider.getApplicationContext<MediPoteApplication>().repository

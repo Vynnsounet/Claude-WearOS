@@ -156,7 +156,7 @@ fun Hub(
 fun MediPoteApp(vm: AppViewModel) {
     val state by vm.state.collectAsStateWithLifecycle()
     val now by vm.now.collectAsStateWithLifecycle()
-    MediPoteTheme(state.settings.themeMode, state.settings.dynamicColor, state.settings.accent) {
+    MediPoteTheme(state.settings.themeMode, state.settings.dynamicColor, state.settings.accent, state.settings.look) {
         val context = LocalContext.current
         val nav = rememberNavController()
         val snackbar = remember { SnackbarHostState() }
@@ -360,6 +360,7 @@ fun MediPoteApp(vm: AppViewModel) {
                         onAddMeasure = { nav.navigate("measure_log/${it.name}") },
                         onOpenMeasure = { nav.navigate("measure/${it.name}") },
                         onOpenDocument = { nav.navigate("document/${it.id}") },
+                        onOpenHistory = { nav.navigate("history/$it") },
                     )
                 }
                 composable("treatments") {
@@ -570,6 +571,23 @@ fun MediPoteApp(vm: AppViewModel) {
                         )
                     }
                 }
+                composable("history/{date}") { entry ->
+                    var date by rememberSaveable { mutableStateOf(entry.arguments?.getString("date")?.let(LocalDate::parse) ?: today.minusDays(1)) }
+                    com.medipote.app.ui.home.DoseHistoryScreen(
+                        state, date, now,
+                        onDate = { date = it },
+                        onCatchUp = vm::catchUp,
+                        onUndo = vm::undoDose,
+                        onBack = { nav.popBackStack() },
+                    )
+                }
+                composable("appearance") {
+                    com.medipote.app.ui.settings.AppearanceScreen(
+                        state.settings, state.profile?.name.orEmpty(), Build.VERSION.SDK_INT >= 31,
+                        onChange = vm::updateSettings,
+                        onBack = { nav.popBackStack() },
+                    )
+                }
                 composable("report") {
                     com.medipote.app.ui.report.ReportScreen(state, now, onMessage = vm::message, onBack = { nav.popBackStack() })
                 }
@@ -699,6 +717,7 @@ fun MediPoteApp(vm: AppViewModel) {
                         batteryRestricted = batteryRestricted,
                         quietReminders = if (notificationsAllowed) quietChannels.size else 0,
                         onOpenBackup = { nav.navigate("backup") },
+                        onOpenAppearance = { nav.navigate("appearance") },
                         lockEnabled = state.settings.lockEnabled,
                         onToggleLock = { on ->
                             val activity = context.findActivity()
@@ -727,7 +746,13 @@ fun MediPoteApp(vm: AppViewModel) {
             }
         }
 
-        checkIn?.let { event -> CheckInDialog(event, pet) { checkIn = null } }
+        checkIn?.let { event ->
+            if (state.settings.look.celebrations) {
+                com.medipote.app.ui.home.StreakCelebration(event.reward, pet, today) { checkIn = null }
+            } else {
+                CheckInDialog(event, pet) { checkIn = null }
+            }
+        }
 
         val locked by vm.locked.collectAsStateWithLifecycle()
         if (locked) LockScreen(pet, onUnlocked = vm::unlock)

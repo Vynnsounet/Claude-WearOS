@@ -87,7 +87,6 @@ object DoctorReports {
             p?.sex?.let { add("Sexe" to it.label) }
             p?.weightKg?.let { add("Poids" to "${"%.1f".format(FR, it)} kg") }
             p?.heightCm?.let { add("Taille" to "$it cm") }
-            p?.bmi?.let { add("IMC" to "%.1f".format(FR, it)) }
             add("Antécédents" to (p?.medicalHistory?.takeIf { it.isNotEmpty() }?.joinToString(", ") ?: "aucun renseigné"))
             add("Allergies" to (p?.allergies?.takeIf { it.isNotEmpty() }?.joinToString(", ") ?: "aucune renseignée"))
         }

@@ -233,7 +233,6 @@ fun ProfileScreen(profile: Profile, today: LocalDate, onBack: () -> Unit, onSave
                             LabeledValue("Poids", profile.weightKg?.let { "${it.toString().removeSuffix(".0").replace('.', ',')} kg" } ?: "—", Modifier.weight(1f))
                             LabeledValue("Taille", profile.heightCm?.let { "$it cm" } ?: "—", Modifier.weight(1f))
                         }
-                        profile.bmi?.let { LabeledValue("IMC", "%.1f".format(java.util.Locale.FRANCE, it)) }
                     }
                 }
                 Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)) {

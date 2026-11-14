@@ -117,8 +117,8 @@ fun renderPet(mood: PetMood, equipped: Map<String, String>, widthPx: Int, height
 }
 
 @Composable
-private fun WidgetTheme(accent: Accent, content: @Composable () -> Unit) {
-    GlanceTheme(colors = ColorProviders(light = appColorScheme(accent, false), dark = appColorScheme(accent, true)), content = content)
+private fun WidgetTheme(accent: Accent, look: com.medipote.app.data.Look = com.medipote.app.data.Look(), content: @Composable () -> Unit) {
+    GlanceTheme(colors = ColorProviders(light = appColorScheme(accent, look, false), dark = appColorScheme(accent, look, true)), content = content)
 }
 
 @Composable
@@ -203,7 +203,7 @@ class PetWidget : GlanceAppWidget() {
         val repo = context.repository
         provideContent {
             val state by repo.state.collectAsState()
-            WidgetTheme(state.settings.accent) { PetContent(state, repo.now()) }
+            WidgetTheme(state.settings.accent, state.settings.look) { PetContent(state, repo.now()) }
         }
     }
 }
@@ -286,7 +286,7 @@ class DosesWidget : GlanceAppWidget() {
         val repo = context.repository
         provideContent {
             val state by repo.state.collectAsState()
-            WidgetTheme(state.settings.accent) { DosesContent(state, repo.now()) }
+            WidgetTheme(state.settings.accent, state.settings.look) { DosesContent(state, repo.now()) }
         }
     }
 }
@@ -367,7 +367,7 @@ class WaterWidget : GlanceAppWidget() {
         val repo = context.repository
         provideContent {
             val state by repo.state.collectAsState()
-            WidgetTheme(state.settings.accent) { WaterContent(state, repo.now()) }
+            WidgetTheme(state.settings.accent, state.settings.look) { WaterContent(state, repo.now()) }
         }
     }
 }
@@ -429,7 +429,7 @@ class SleepWidget : GlanceAppWidget() {
         val repo = context.repository
         provideContent {
             val state by repo.state.collectAsState()
-            WidgetTheme(state.settings.accent) { SleepContent(state, repo.now()) }
+            WidgetTheme(state.settings.accent, state.settings.look) { SleepContent(state, repo.now()) }
         }
     }
 }

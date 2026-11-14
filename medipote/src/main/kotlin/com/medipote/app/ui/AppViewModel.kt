@@ -233,6 +233,30 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         reschedule()
     }
 
+    // ── Doses noted afterwards ──
+
+    fun catchUp(item: DoseItem, takenAt: LocalDateTime) {
+        var points = 0
+        var lowStock: Treatment? = null
+        repo.update { s ->
+            val r = Game.catchUp(s, item, takenAt, repo.now()) ?: return@update s
+            points = r.log.points + r.perfectDayBonus
+            lowStock = r.lowStock
+            r.state
+        }
+        if (lowStock != null) Notifications.showStock(getApplication(), state.value)
+        _now.value = repo.now()
+        _events.tryEmit(UiEvent.Message("Prise notée : +$points pts · ${state.value.game.petName} va mieux 💚"))
+        reschedule()
+    }
+
+    fun undoDose(key: String) {
+        repo.update { Game.undo(it, key, repo.now()) }
+        _now.value = repo.now()
+        _events.tryEmit(UiEvent.Message("Prise annulée"))
+        reschedule()
+    }
+
     // ── App lock ──
 
     private val _locked = MutableStateFlow(state.value.settings.lockEnabled && state.value.onboarded)

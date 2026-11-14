@@ -3,6 +3,7 @@ package com.medipote.app
 import android.graphics.Bitmap
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.asAndroidBitmap
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
@@ -198,7 +199,8 @@ class ScreensTest {
     @Test
     fun profileSetup() {
         render("profile_setup") { ProfileSetupScreen(profile, today, {}, {}) }
-        compose.onNodeWithText("IMC : 22,9 (corpulence normale)").assertExists()
+        // No BMI: weight and height are shown without any verdict.
+        compose.onNodeWithText("IMC", substring = true).assertDoesNotExist()
     }
 
     @Test
@@ -726,6 +728,103 @@ class ScreensTest {
             android.graphics.Canvas(bitmap).drawBitmap(one, (i * size).toFloat(), 0f, null)
         }
         save("pet_stages", bitmap)
+    }
+
+    // ── Version 1.4 ──
+
+    @Test
+    @Config(qualifiers = "w400dp-h1300dp-xhdpi")
+    fun doseHistory() {
+        // Yesterday: the evening doses were forgotten in the app.
+        val state = sampleState().let { s -> s.copy(doseLogs = s.doseLogs.filterNot { it.scheduled.toLocalDate() == today.minusDays(1) && it.scheduled.hour >= 12 }) }
+        render("dose_history") { com.medipote.app.ui.home.DoseHistoryScreen(state, today.minusDays(1), now, {}, { _, _ -> }, {}, {}) }
+        compose.onNodeWithText("Hier").assertExists()
+        compose.onAllNodes(androidx.compose.ui.test.hasText("Je l'ai pris")).onFirst().assertExists()
+        compose.onAllNodes(androidx.compose.ui.test.hasText("Annuler")).onFirst().assertExists()
+    }
+
+    @Test
+    @Config(qualifiers = "w400dp-h2400dp-xhdpi")
+    fun homeFullyPersonalized() {
+        val look = com.medipote.app.data.Look(
+            customColor = 0xFFE0559F, headingFont = com.medipote.app.data.FontChoice.ELEGANT, corners = com.medipote.app.data.Corners.SOFT,
+            backdrop = com.medipote.app.data.Backdrop.TINTED, avatar = "🌸", motto = "Un jour après l'autre, en douceur",
+            homeOrder = listOf(com.medipote.app.data.HomeSection.DOSES, com.medipote.app.data.HomeSection.WATER, com.medipote.app.data.HomeSection.COMPANION),
+        )
+        val state = sampleState().let { s ->
+            s.copy(
+                settings = s.settings.copy(look = look),
+                doseLogs = s.doseLogs.filterNot { it.scheduled.toLocalDate() == today.minusDays(1) && it.scheduled.hour == 20 },
+            )
+        }
+        compose.setContent {
+            MediPoteTheme(themeMode = ThemeMode.LIGHT, look = look) {
+                androidx.compose.material3.Surface(color = androidx.compose.material3.MaterialTheme.colorScheme.background) {
+                    HomeScreen(state, now, 0, 0, {}, {}, {}, {}, animate = false)
+                }
+            }
+        }
+        compose.waitForIdle()
+        save("home_custom", compose.onRoot().captureToImage().asAndroidBitmap())
+        compose.onNodeWithText("Bonjour Alex 🌸").assertExists()
+        compose.onNodeWithText("« Un jour après l'autre, en douceur »").assertExists()
+        compose.onNodeWithText("Hier : ", substring = true).assertExists()
+    }
+
+    @Test
+    @Config(qualifiers = "w400dp-h1600dp-xhdpi")
+    fun homePureBlack() {
+        val look = com.medipote.app.data.Look(pureBlack = true, customColor = 0xFF4FC3F7, headingFont = com.medipote.app.data.FontChoice.TYPEWRITER, avatar = "🦊")
+        compose.setContent {
+            MediPoteTheme(themeMode = ThemeMode.DARK, look = look) {
+                androidx.compose.material3.Surface(color = androidx.compose.material3.MaterialTheme.colorScheme.background) {
+                    HomeScreen(sampleState(ThemeMode.DARK).let { it.copy(settings = it.settings.copy(look = look)) }, now, 0, 0, {}, {}, {}, {}, animate = false)
+                }
+            }
+        }
+        compose.waitForIdle()
+        save("home_black", compose.onRoot().captureToImage().asAndroidBitmap())
+    }
+
+    @Test
+    @Config(qualifiers = "w400dp-h3800dp-xhdpi")
+    fun appearanceScreen() {
+        val settings = Settings(look = com.medipote.app.data.Look(customColor = 0xFF7E57C2, motto = "Je prends soin de moi", avatar = "🦋"))
+        render("appearance") { com.medipote.app.ui.settings.AppearanceScreen(settings, "Alex", true, {}, {}) }
+        compose.onNodeWithText("Police des titres").assertExists()
+        compose.onNodeWithText("Ordre par défaut").assertExists()
+        compose.onNodeWithText("Teinte").assertExists()
+    }
+
+    @Test
+    fun streakCelebration() {
+        val reward = com.medipote.app.domain.CheckInReward(12, 50, 0, 0, 12)
+        render("streak") { com.medipote.app.ui.home.StreakCelebration(reward, "Pilou", today, animate = false) {} }
+        compose.onNodeWithText("12").assertExists()
+        compose.onNodeWithText("jours d'affilée").assertExists()
+        compose.onNodeWithText("Encore 18 jours avant le palier de 30 jours (+100 pts)").assertExists()
+    }
+
+    @Test
+    fun streakNewStartDark() {
+        val reward = com.medipote.app.domain.CheckInReward(1, 5, 0, 9, 15)
+        render("streak_restart", ThemeMode.DARK) { com.medipote.app.ui.home.StreakCelebration(reward, "Pilou", today, animate = false) {} }
+        compose.onNodeWithText("Nouveau départ 💪").assertExists()
+    }
+
+    @Test
+    fun generatedColorsKeepTextReadable() {
+        // Every accent, and a few custom colours (yellow is the hardest): white text on the main
+        // colour in light mode, and the main colour on the dark background, stay readable.
+        val seeds = com.medipote.app.data.Accent.entries.drop(6).map { it.seed } + listOf(0xFFFFEB3B, 0xFF00E5FF, 0xFFC6FF00, 0xFF9E9E9E)
+        for (seed in seeds) {
+            val light = com.medipote.app.ui.theme.appColorScheme(com.medipote.app.data.Accent.MINT, com.medipote.app.data.Look(customColor = seed), false)
+            val dark = com.medipote.app.ui.theme.appColorScheme(com.medipote.app.data.Accent.MINT, com.medipote.app.data.Look(customColor = seed), true)
+            val onLight = androidx.core.graphics.ColorUtils.calculateContrast(android.graphics.Color.WHITE, light.primary.toArgb())
+            val onDark = androidx.core.graphics.ColorUtils.calculateContrast(dark.primary.toArgb(), dark.background.toArgb())
+            org.junit.Assert.assertTrue("${seed.toString(16)} light $onLight", onLight >= 4.5)
+            org.junit.Assert.assertTrue("${seed.toString(16)} dark $onDark", onDark >= 4.5)
+        }
     }
 
     private fun save(name: String, bitmap: Bitmap) {

@@ -61,10 +61,9 @@ class V13Test {
         assertEquals(Level.LOW, glucose(0.60, "2 h après un repas"))
         assertEquals(Level.HIGH, Measures.assess(Measurement("t", MeasureType.TEMPERATURE, at(8), 38.4))!!.level)
         assertEquals(Level.LOW, Measures.assess(Measurement("o", MeasureType.OXYGEN, at(8), 93.0))!!.level)
-        // Weight: BMI only when the height is known.
+        // Weight: never judged (no BMI), even when the height is known.
         assertNull(Measures.assess(Measurement("w", MeasureType.WEIGHT, at(8), 70.0)))
-        val bmi = Measures.assess(Measurement("w", MeasureType.WEIGHT, at(8), 70.0), Profile("A", heightCm = 170))!!
-        assertTrue(bmi.text, bmi.text.contains("IMC 24,2"))
+        assertNull(Measures.assess(Measurement("w", MeasureType.WEIGHT, at(8), 70.0), Profile("A", heightCm = 170)))
     }
 
     @Test
