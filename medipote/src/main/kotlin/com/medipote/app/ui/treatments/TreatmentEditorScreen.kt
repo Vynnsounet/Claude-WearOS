@@ -111,7 +111,6 @@ fun TreatmentEditorScreen(
     var days by remember { mutableStateOf(existing?.daysOfWeek ?: Treatment.ALL_DAYS) }
     var startDate by remember { mutableStateOf(existing?.startDate ?: today) }
     var endDate by remember { mutableStateOf(existing?.endDate) }
-    var longTerm by remember { mutableStateOf(existing?.endDate == null) }
     var withFood by remember { mutableStateOf(existing?.withFood ?: false) }
     var notes by remember { mutableStateOf(existing?.notes.orEmpty()) }
     var editingTime by remember { mutableStateOf<Int?>(null) }
@@ -128,11 +127,34 @@ fun TreatmentEditorScreen(
     var hasInterval by remember { mutableStateOf(existing?.minIntervalHours != null) }
     var minInterval by remember { mutableIntStateOf(existing?.minIntervalHours ?: 6) }
     var lowUnits by remember { mutableIntStateOf(existing?.lowStockUnits ?: 4) }
+    // 0 = every day, 1 = some days of the week, 2 = every N days
+    var rhythm by remember {
+        mutableIntStateOf(
+            when {
+                (existing?.everyDays ?: 1) > 1 -> 2
+                (existing?.daysOfWeek?.size ?: 7) < 7 -> 1
+                else -> 0
+            },
+        )
+    }
+    var everyDays by remember { mutableIntStateOf((existing?.everyDays ?: 2).coerceAtLeast(2)) }
+    // 0 = long term, 1 = until a date, 2 = for N days
+    var durationMode by remember { mutableIntStateOf(if (existing?.endDate == null) 0 else 1) }
+    var durationDays by remember {
+        mutableIntStateOf(existing?.endDate?.let { (java.time.temporal.ChronoUnit.DAYS.between(existing.startDate, it) + 1).toInt().coerceIn(1, 365) } ?: 7)
+    }
+    var useSteps by remember { mutableStateOf(existing?.steps?.isNotEmpty() == true) }
+    val steps = remember { mutableStateListOf<com.medipote.app.data.DoseStep>().apply { addAll(existing?.steps.orEmpty()) } }
     val stockValue = stockText.replace(',', '.').toDoubleOrNull()
 
     val allergyHits = remember(drug, allergies) { drug?.let { DrugGuide.allergyMatches(it, allergies) }.orEmpty() }
+    val effectiveEnd = when (durationMode) {
+        0 -> null
+        2 -> startDate.plusDays(durationDays - 1L)
+        else -> endDate
+    }
     val valid = name.isNotBlank() && (!trackStock || stockValue != null) &&
-        (asNeeded || (doses.isNotEmpty() && days.isNotEmpty() && (longTerm || (endDate != null && !endDate!!.isBefore(startDate)))))
+        (asNeeded || (doses.isNotEmpty() && (rhythm != 1 || days.isNotEmpty()) && (durationMode == 0 || (effectiveEnd != null && !effectiveEnd.isBefore(startDate)))))
 
     Scaffold(
         topBar = {
@@ -157,9 +179,11 @@ fun TreatmentEditorScreen(
                                 strength = strength.trim(),
                                 unit = unit,
                                 doses = if (asNeeded) emptyList() else doses.sortedBy { it.minuteOfDay }.distinctBy { it.minuteOfDay },
-                                daysOfWeek = days,
+                                daysOfWeek = if (rhythm == 1) days else Treatment.ALL_DAYS,
                                 startDate = startDate,
-                                endDate = if (longTerm) null else endDate,
+                                endDate = if (asNeeded) null else effectiveEnd,
+                                everyDays = if (rhythm == 2 && !asNeeded) everyDays else 1,
+                                steps = if (useSteps && !asNeeded) steps.sortedBy { it.from }.distinctBy { it.from } else emptyList(),
                                 withFood = withFood,
                                 notes = notes.trim(),
                                 createdAt = existing?.createdAt,
@@ -304,9 +328,84 @@ fun TreatmentEditorScreen(
                 Text("Ajouter une prise")
             }
 
+            // Dose steps: the quantity changes on given dates (e.g. tapering).
+            SwitchRow(
+                "La dose change avec le temps",
+                useSteps,
+                supporting = "Paliers : par exemple 1 comprimé la 1re semaine, puis ½ la 2e…",
+            ) {
+                useSteps = it
+                if (it && steps.isEmpty()) {
+                    val q = doses.firstOrNull()?.quantity ?: 1.0
+                    steps.add(com.medipote.app.data.DoseStep(startDate.plusDays(7), nextQuantity(q, false)))
+                }
+            }
+            AnimatedVisibility(useSteps) {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        "Jusqu'au premier palier : la quantité indiquée pour chaque prise ci-dessus.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    steps.forEachIndexed { i, step ->
+                        Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)) {
+                            Column(Modifier.padding(start = 12.dp, end = 4.dp, top = 8.dp, bottom = 4.dp)) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    DateField("À partir du", step.from, { steps[i] = step.copy(from = it) }, Modifier.weight(1f), minDate = startDate.plusDays(1))
+                                    IconButton(onClick = { steps.removeAt(i) }) { Icon(Icons.Rounded.Close, "Retirer ce palier") }
+                                }
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text("Par prise", style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
+                                    IconButton(onClick = { steps[i] = step.copy(quantity = nextQuantity(step.quantity, false)) }, enabled = step.quantity > 0.25) {
+                                        Icon(Icons.Rounded.Remove, "Moins")
+                                    }
+                                    Text(unit.format(step.quantity), style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
+                                    IconButton(onClick = { steps[i] = step.copy(quantity = nextQuantity(step.quantity, true)) }) { Icon(Icons.Rounded.Add, "Plus") }
+                                }
+                            }
+                        }
+                    }
+                    TextButton(onClick = {
+                        val last = steps.maxByOrNull { it.from }
+                        steps.add(
+                            com.medipote.app.data.DoseStep(
+                                (last?.from ?: startDate).plusDays(7),
+                                nextQuantity(last?.quantity ?: doses.firstOrNull()?.quantity ?: 1.0, false),
+                            ),
+                        )
+                    }) {
+                        Icon(Icons.Rounded.Add, null)
+                        Spacer(Modifier.width(6.dp))
+                        Text("Ajouter un palier")
+                    }
+                }
+            }
+
             SectionTitle("Jours de prise")
-            SwitchRow("Tous les jours", days.size == 7) { days = if (it) Treatment.ALL_DAYS else setOf(1, 2, 3, 4, 5) }
-            AnimatedVisibility(days.size < 7) {
+            SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
+                listOf("Tous les jours", "Certains jours", "Tous les X jours").forEachIndexed { i, label ->
+                    SegmentedButton(
+                        selected = rhythm == i,
+                        onClick = {
+                            rhythm = i
+                            if (i == 1 && days.size == 7) days = setOf(1, 2, 3, 4, 5)
+                        },
+                        shape = SegmentedButtonDefaults.itemShape(i, 3),
+                        icon = {},
+                    ) { Text(label, maxLines = 1, style = MaterialTheme.typography.labelMedium) }
+                }
+            }
+            AnimatedVisibility(rhythm == 2) {
+                Column {
+                    com.medipote.app.ui.components.NumberStepper("Tous les", everyDays, { everyDays = it }, 2..60, suffix = " jours")
+                    Text(
+                        "À partir du début du traitement (${startDate.format(com.medipote.app.ui.components.dayMonth)}).",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+            AnimatedVisibility(rhythm == 1) {
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     (1..7).forEach { d ->
                         FilterChip(
@@ -320,8 +419,17 @@ fun TreatmentEditorScreen(
 
             SectionTitle("Durée")
             DateField("Début du traitement", startDate, { startDate = it })
-            SwitchRow("Traitement au long cours", longTerm) { longTerm = it }
-            AnimatedVisibility(!longTerm) {
+            SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
+                listOf("Au long cours", "Jusqu'au…", "Pendant…").forEachIndexed { i, label ->
+                    SegmentedButton(
+                        selected = durationMode == i,
+                        onClick = { durationMode = i },
+                        shape = SegmentedButtonDefaults.itemShape(i, 3),
+                        icon = {},
+                    ) { Text(label, maxLines = 1, style = MaterialTheme.typography.labelMedium) }
+                }
+            }
+            AnimatedVisibility(durationMode == 1) {
                 DateField(
                     "Fin du traitement",
                     endDate,
@@ -329,6 +437,16 @@ fun TreatmentEditorScreen(
                     minDate = startDate,
                     supporting = "Dernier jour de prise inclus",
                 )
+            }
+            AnimatedVisibility(durationMode == 2) {
+                Column {
+                    com.medipote.app.ui.components.NumberStepper("Pendant", durationDays, { durationDays = it }, 1..365, suffix = " jours")
+                    Text(
+                        "Dernier jour : ${startDate.plusDays(durationDays - 1L).format(com.medipote.app.ui.components.dayMonthYear)}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
             }
             }
             }

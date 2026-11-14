@@ -139,6 +139,10 @@ data class HealthDocument(
     val fileName: String,
     val mimeType: String,
     val notes: String = "",
+    /** Prescriptions: last day it can be used at the pharmacy. */
+    @Serializable(with = LocalDateSerializer::class) val validUntil: LocalDate? = null,
+    /** Remind this many days before [validUntil] to get it renewed (null: no reminder). */
+    val remindDays: Int? = 10,
 ) {
     val isPdf: Boolean get() = mimeType == "application/pdf"
 }
@@ -207,3 +211,19 @@ data class SleepNight(
     /** Share of the time in bed spent asleep. */
     val efficiency: Float get() = if (inBedMinutes == 0) 0f else asleepMinutes.toFloat() / inBedMinutes
 }
+
+// ─────────────────────────── Backup ───────────────────────────
+
+@Serializable
+data class BackupSettings(
+    /** A copy of everything, every week, in a folder the user picked. */
+    val auto: Boolean = false,
+    /** Storage Access Framework tree URI of that folder. */
+    val folderUri: String? = null,
+    val folderName: String = "",
+    /** Automatic backups are protected by a password (kept on this device only). */
+    val encrypted: Boolean = false,
+    @Serializable(with = LocalDateTimeSerializer::class) val lastAuto: LocalDateTime? = null,
+    @Serializable(with = LocalDateTimeSerializer::class) val lastManual: LocalDateTime? = null,
+    val lastError: String? = null,
+)

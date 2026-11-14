@@ -27,6 +27,7 @@ import androidx.compose.material.icons.outlined.NotificationsActive
 import androidx.compose.material.icons.outlined.NotificationsOff
 import androidx.compose.material.icons.outlined.DeleteForever
 import androidx.compose.material.icons.outlined.Pets
+import androidx.compose.material.icons.outlined.Save
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -82,6 +83,10 @@ fun SettingsScreen(
     onOpenBatterySettings: () -> Unit = {},
     quietReminders: Int = 0,
     onFixQuietReminders: () -> Unit = {},
+    onOpenBackup: () -> Unit = {},
+    lockEnabled: Boolean = false,
+    onToggleLock: (Boolean) -> Unit = {},
+    lastBackup: java.time.LocalDateTime? = null,
 ) {
     var renaming by remember { mutableStateOf(false) }
     var confirmReset by remember { mutableStateOf(false) }
@@ -235,8 +240,43 @@ fun SettingsScreen(
                 }
             }
 
+            SectionTitle("Mesures de santé")
+            SettingsCard {
+                Text(
+                    "Choisis ce que tu veux suivre : seules les mesures cochées apparaissent (accueil, Suivi › Mesures, rapport).",
+                    style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                com.medipote.app.data.MeasureType.entries.forEach { type ->
+                    SwitchRow("${type.emoji}  ${type.label}", type in settings.measures) { on ->
+                        onChange { it.copy(measures = if (on) it.measures + type else it.measures - type) }
+                    }
+                }
+            }
+
+            SectionTitle("Confidentialité")
+            SettingsCard {
+                SwitchRow(
+                    "Verrouiller l'appli",
+                    lockEnabled,
+                    supporting = "Avec l'empreinte, le visage ou le code du téléphone, à l'ouverture et après 1 min en arrière-plan. " +
+                        "Les rappels n'affichent pas le nom des médicaments sur l'écran verrouillé ; les widgets, eux, restent visibles sur l'écran d'accueil.",
+                    onChange = onToggleLock,
+                )
+            }
+
             SectionTitle("Compte")
             SettingsCard(padding = 0) {
+                ListItem(
+                    headlineContent = { Text("Sauvegarde et restauration") },
+                    supportingContent = {
+                        Text(lastBackup?.let { "Dernière sauvegarde le ${it.format(com.medipote.app.ui.components.dayMonthYear)}" } ?: "Aucune sauvegarde : pense à en faire une")
+                    },
+                    leadingContent = { Icon(Icons.Outlined.Save, null) },
+                    trailingContent = { Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, null) },
+                    colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+                    modifier = Modifier.clickable(onClick = onOpenBackup),
+                )
+                HorizontalDivider()
                 ListItem(
                     headlineContent = { Text("Profil médical") },
                     supportingContent = { Text("Infos personnelles, antécédents, allergies, cycle") },

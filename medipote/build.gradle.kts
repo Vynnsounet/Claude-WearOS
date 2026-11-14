@@ -28,8 +28,8 @@ android {
         applicationId = "com.medipote.app"
         minSdk = 26
         targetSdk = 36
-        versionCode = 8
-        versionName = "1.2.2"
+        versionCode = 9
+        versionName = "1.3.0"
         manifestPlaceholders["appLabel"] = "@string/app_name"
     }
 
@@ -108,6 +108,8 @@ dependencies {
     implementation(libs.glance.appwidget)
     implementation(libs.glance.material3)
     implementation(libs.androidx.exifinterface)
+    implementation(libs.androidx.biometric)
+    implementation(libs.androidx.fragment)
     implementation(libs.androidx.profileinstaller)
     // Glance pulls WorkManager 2.7.1, whose Room 2.2.5 keep rules predate R8 full mode: the release
     // build then lost WorkDatabase_Impl's constructor and crashed at launch. Use a current WorkManager.

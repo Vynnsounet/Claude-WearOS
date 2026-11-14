@@ -87,6 +87,7 @@ object Widgets {
         PetWidget().updateAll(context)
         DosesWidget().updateAll(context)
         WaterWidget().updateAll(context)
+        SleepWidget().updateAll(context)
     }
 
     fun requestUpdate(context: Context) {
@@ -102,14 +103,14 @@ object Widgets {
 }
 
 /** The pet drawn into a bitmap with rounded corners, since widgets can't run Compose drawing. */
-fun renderPet(mood: PetMood, equipped: Map<String, String>, widthPx: Int, heightPx: Int): Bitmap {
+fun renderPet(mood: PetMood, equipped: Map<String, String>, widthPx: Int, heightPx: Int, stage: com.medipote.app.domain.Stage = com.medipote.app.domain.Stage.BUD): Bitmap {
     val image = ImageBitmap(widthPx, heightPx)
     val size = Size(widthPx.toFloat(), heightPx.toFloat())
     CanvasDrawScope().draw(Density(1f), LayoutDirection.Ltr, Canvas(image), size) {
         val clip = Path().apply { addRoundRect(RoundRect(0f, 0f, size.width, size.height, CornerRadius(size.minDimension * 0.12f))) }
         clipPath(clip) {
             drawBackground(equipped["BACKGROUND"])
-            drawPet(mood, equipped, 0.5f, 0f, 0.3f, 1f)
+            drawPet(mood, equipped, 0.5f, 0f, 0.3f, 1f, stage = stage)
         }
     }
     return image.asAndroidBitmap()
@@ -214,7 +215,8 @@ fun PetContent(state: AppState, now: LocalDateTime) {
     val items = Widgets.todayItems(state, now)
     val due = items.filter { it.canGive }
     val next = items.firstOrNull { it.state == DoseState.UPCOMING }
-    val pet = remember(condition.mood, state.game.equipped) { renderPet(condition.mood, state.game.equipped, 300, 240) }
+    val stage = com.medipote.app.domain.Evolution.growth(state).stage
+    val pet = remember(condition.mood, state.game.equipped, stage) { renderPet(condition.mood, state.game.equipped, 300, 240, stage) }
     val giveButton: @Composable () -> Unit = {
         if (due.isNotEmpty()) {
             Button(
@@ -331,7 +333,7 @@ private fun DoseRow(item: DoseItem) {
         DoseState.MISSED -> "oublié" to GlanceTheme.colors.error
         DoseState.OVERDUE -> "en retard" to GlanceTheme.colors.error
         DoseState.DUE -> "c'est l'heure" to GlanceTheme.colors.primary
-        DoseState.UPCOMING -> t.unit.format(item.occurrence.dose.quantity) to GlanceTheme.colors.onSurfaceVariant
+        DoseState.UPCOMING -> t.unit.format(item.occurrence.quantity) to GlanceTheme.colors.onSurfaceVariant
     }
     Row(GlanceModifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
         Text(item.occurrence.dose.timeLabel, style = TextStyle(color = GlanceTheme.colors.onSurface, fontSize = 14.sp, fontWeight = FontWeight.Bold), modifier = GlanceModifier.width(48.dp))
@@ -416,4 +418,73 @@ fun WaterContent(state: AppState, now: LocalDateTime) {
 
 class WaterWidgetReceiver : GlanceAppWidgetReceiver() {
     override val glanceAppWidget: GlanceAppWidget = WaterWidget()
+}
+
+// ─────────────────────────── 4. Sleep ───────────────────────────
+
+class SleepWidget : GlanceAppWidget() {
+    override val sizeMode = SizeMode.Exact
+
+    override suspend fun provideGlance(context: Context, id: GlanceId) {
+        val repo = context.repository
+        provideContent {
+            val state by repo.state.collectAsState()
+            WidgetTheme(state.settings.accent) { SleepContent(state, repo.now()) }
+        }
+    }
+}
+
+private val NightBlue = ColorProvider(Color(0xFF5C6BC0))
+
+@Composable
+fun SleepContent(state: AppState, now: LocalDateTime) {
+    val context = androidx.glance.LocalContext.current
+    val compact = LocalSize.current.height < 150.dp
+    val today = now.toLocalDate()
+    val night = state.sleep.firstOrNull { it.date == today }
+    val week = com.medipote.app.domain.Sleep.report(state, today, 7)
+    val open = androidx.glance.appwidget.action.actionStartActivity(
+        android.content.Intent(context, MainActivity::class.java)
+            .setFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK or android.content.Intent.FLAG_ACTIVITY_CLEAR_TOP)
+            .putExtra(com.medipote.app.notifications.Notifications.EXTRA_ROUTE, "sleep_log"),
+    )
+    Card {
+        Column(GlanceModifier.fillMaxSize().padding(12.dp)) {
+            Text("🌙 Sommeil", style = muted, maxLines = 1)
+            if (night != null) {
+                Text(
+                    com.medipote.app.domain.Sleep.format(night.asleepMinutes),
+                    style = TextStyle(color = GlanceTheme.colors.onSurface, fontSize = 22.sp, fontWeight = FontWeight.Bold),
+                    maxLines = 1,
+                )
+                Text(
+                    when (night.awakenings.size) {
+                        0 -> "cette nuit · sans réveil"
+                        1 -> "cette nuit · 1 réveil"
+                        else -> "cette nuit · ${night.awakenings.size} réveils"
+                    },
+                    style = muted, maxLines = 1,
+                )
+            } else {
+                Text("Bien dormi ?", style = TextStyle(color = GlanceTheme.colors.onSurface, fontSize = 18.sp, fontWeight = FontWeight.Bold), maxLines = 1)
+                if (!compact) Text("Pas encore notée", style = muted, maxLines = 1)
+            }
+            if (!compact) {
+                Spacer(GlanceModifier.height(4.dp))
+                week.averageAsleep?.let { Text("Moy. 7 j : ${com.medipote.app.domain.Sleep.format(it)}", style = muted, maxLines = 1) }
+            }
+            Spacer(GlanceModifier.defaultWeight())
+            if (night == null) {
+                Button(
+                    "Noter ma nuit", open,
+                    modifier = GlanceModifier.fillMaxWidth(),
+                    colors = ButtonDefaults.buttonColors(NightBlue, ColorProvider(Color.White)),
+                )
+            }
+        }
+    }
+}
+
+class SleepWidgetReceiver : GlanceAppWidgetReceiver() {
+    override val glanceAppWidget: GlanceAppWidget = SleepWidget()
 }

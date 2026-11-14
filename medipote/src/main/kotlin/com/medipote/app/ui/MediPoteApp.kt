@@ -19,6 +19,9 @@ import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Insights
 import androidx.compose.material.icons.outlined.Medication
 import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.layout.size
+import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material.icons.outlined.Storefront
 import androidx.compose.material.icons.rounded.Favorite
 import androidx.compose.material.icons.rounded.Home
@@ -354,6 +357,9 @@ fun MediPoteApp(vm: AppViewModel) {
                         onLogPrn = { nav.navigate("prn_log/${it.id}") },
                         onOpenPrnIntake = { nav.navigate("prn_log/${it.treatmentId}?intake=${it.id}") },
                         onOpenSleep = { nav.navigate("sleep_log") },
+                        onAddMeasure = { nav.navigate("measure_log/${it.name}") },
+                        onOpenMeasure = { nav.navigate("measure/${it.name}") },
+                        onOpenDocument = { nav.navigate("document/${it.id}") },
                     )
                 }
                 composable("treatments") {
@@ -382,10 +388,20 @@ fun MediPoteApp(vm: AppViewModel) {
                     }
                 }
                 composable("suivi") {
-                    val tabs = if (menstruating) listOf("Journal", "Sommeil", "Cycle", "Stats") else listOf("Journal", "Sommeil", "Stats")
+                    val tabs = listOfNotNull(
+                        "Journal", "Sommeil",
+                        "Mesures".takeIf { state.settings.measures.isNotEmpty() },
+                        "Cycle".takeIf { menstruating }, "Stats",
+                    )
                     Hub("Suivi", tabs, 0, openProfile, openSettings) { i ->
                         when (tabs[i]) {
                             "Journal" -> JournalScreen(state.journal, today) { nav.navigate("day/$it") }
+                            "Mesures" -> com.medipote.app.ui.measures.MeasuresScreen(
+                                state, now,
+                                onAdd = { nav.navigate("measure_log/${it.name}") },
+                                onOpen = { nav.navigate("measure/${it.name}") },
+                                onSettings = openSettings,
+                            )
                             "Sommeil" -> SleepScreen(
                                 state, now,
                                 onLog = { nav.navigate(if (state.sleep.any { it.date == today }) "sleep_log?new=true" else "sleep_log") },
@@ -395,7 +411,7 @@ fun MediPoteApp(vm: AppViewModel) {
                                 state.profile?.cycle, state.journal, today, vm::logPeriod, vm::updateCycle,
                                 onOpenDay = { nav.navigate("day/$it") }, embedded = true,
                             )
-                            else -> StatsScreen(state, now, embedded = true, onOpenPrn = { nav.navigate("prn_stats/$it") })
+                            else -> StatsScreen(state, now, embedded = true, onOpenPrn = { nav.navigate("prn_stats/$it") }, onReport = { nav.navigate("report") })
                         }
                     }
                 }
@@ -528,6 +544,43 @@ fun MediPoteApp(vm: AppViewModel) {
                         onBack = { nav.popBackStack() },
                     )
                 }
+                composable("measure/{type}") { entry ->
+                    val type = entry.arguments?.getString("type")?.let { runCatching { com.medipote.app.data.MeasureType.valueOf(it) }.getOrNull() }
+                    if (type == null) LaunchedEffect(Unit) { nav.popBackStack() } else {
+                        com.medipote.app.ui.measures.MeasureDetailScreen(
+                            state, type, now,
+                            onBack = { nav.popBackStack() },
+                            onAdd = { nav.navigate("measure_log/${type.name}") },
+                            onEdit = { nav.navigate("measure_log/${type.name}?id=${it.id}") },
+                        )
+                    }
+                }
+                composable(
+                    "measure_log/{type}?id={id}",
+                    arguments = listOf(navArgument("id") { type = NavType.StringType; nullable = true }),
+                ) { entry ->
+                    val type = entry.arguments?.getString("type")?.let { runCatching { com.medipote.app.data.MeasureType.valueOf(it) }.getOrNull() }
+                    val existing = entry.arguments?.getString("id")?.let { id -> state.measurements.firstOrNull { it.id == id } }
+                    if (type == null) LaunchedEffect(Unit) { nav.popBackStack() } else {
+                        com.medipote.app.ui.measures.MeasureEditorScreen(
+                            state, type, existing, now,
+                            onSave = { vm.saveMeasurement(it); nav.popBackStack() },
+                            onDelete = { existing?.let { vm.deleteMeasurement(it.id) }; nav.popBackStack() },
+                            onBack = { nav.popBackStack() },
+                        )
+                    }
+                }
+                composable("report") {
+                    com.medipote.app.ui.report.ReportScreen(state, now, onMessage = vm::message, onBack = { nav.popBackStack() })
+                }
+                composable("backup") {
+                    com.medipote.app.ui.settings.BackupScreen(
+                        state.settings, now,
+                        onChange = vm::updateSettings,
+                        onMessage = vm::message,
+                        onBack = { nav.popBackStack() },
+                    )
+                }
                 composable("pill_setup") {
                     val existing = state.treatments.firstOrNull { it.pill != null }
                     PillSetupScreen(
@@ -645,6 +698,21 @@ fun MediPoteApp(vm: AppViewModel) {
                         onOpenNotificationSettings = ::fixNotifications,
                         batteryRestricted = batteryRestricted,
                         quietReminders = if (notificationsAllowed) quietChannels.size else 0,
+                        onOpenBackup = { nav.navigate("backup") },
+                        lockEnabled = state.settings.lockEnabled,
+                        onToggleLock = { on ->
+                            val activity = context.findActivity()
+                            when {
+                                !on -> vm.updateSettings { it.copy(lockEnabled = false) }
+                                activity == null || !AppLock.available(context) ->
+                                    vm.message("Configure d'abord un code, un schéma ou une empreinte dans les réglages du téléphone")
+                                else -> AppLock.prompt(activity, "Confirme pour activer le verrouillage", onSuccess = {
+                                    vm.updateSettings { it.copy(lockEnabled = true) }
+                                    vm.message("Verrouillage activé")
+                                })
+                            }
+                        },
+                        lastBackup = listOfNotNull(state.settings.backup.lastAuto, state.settings.backup.lastManual).maxOrNull(),
                         onFixQuietReminders = {
                             context.startActivity(Notifications.channelSettingsIntent(context, quietChannels.firstOrNull() ?: Notifications.CHANNEL_DOSES))
                         },
@@ -660,6 +728,62 @@ fun MediPoteApp(vm: AppViewModel) {
         }
 
         checkIn?.let { event -> CheckInDialog(event, pet) { checkIn = null } }
+
+        val locked by vm.locked.collectAsStateWithLifecycle()
+        if (locked) LockScreen(pet, onUnlocked = vm::unlock)
+    }
+}
+
+private tailrec fun android.content.Context.findActivity(): androidx.fragment.app.FragmentActivity? = when (this) {
+    is androidx.fragment.app.FragmentActivity -> this
+    is android.content.ContextWrapper -> baseContext.findActivity()
+    else -> null
+}
+
+/** Covers the app until the phone's fingerprint, face or PIN is given. */
+@Composable
+private fun LockScreen(pet: String, onUnlocked: () -> Unit) {
+    val context = LocalContext.current
+    var error by remember { mutableStateOf<String?>(null) }
+    fun ask() {
+        val activity = context.findActivity()
+        // Nothing protects the phone anymore (or no prompt possible): don't lock the person out.
+        if (activity == null || !AppLock.available(context)) {
+            onUnlocked()
+            return
+        }
+        AppLock.prompt(activity, "Déverrouille pour voir tes données de santé", onSuccess = onUnlocked, onError = { error = it })
+    }
+    LaunchedEffect(Unit) { ask() }
+    androidx.compose.ui.window.Dialog(
+        onDismissRequest = {},
+        properties = androidx.compose.ui.window.DialogProperties(
+            usePlatformDefaultWidth = false, dismissOnBackPress = false, dismissOnClickOutside = false, decorFitsSystemWindows = false,
+        ),
+    ) {
+        androidx.compose.material3.Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+            Column(
+                Modifier.fillMaxSize().padding(32.dp),
+                verticalArrangement = androidx.compose.foundation.layout.Arrangement.Center,
+                horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally,
+            ) {
+                Icon(Icons.Outlined.Lock, null, Modifier.size(56.dp), tint = MaterialTheme.colorScheme.primary)
+                androidx.compose.foundation.layout.Spacer(Modifier.size(16.dp))
+                Text("MédiPote est verrouillé", style = MaterialTheme.typography.headlineSmall, textAlign = TextAlign.Center)
+                Text(
+                    "$pet garde tes données de santé au chaud 🔒",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center,
+                )
+                error?.let {
+                    androidx.compose.foundation.layout.Spacer(Modifier.size(8.dp))
+                    Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error, textAlign = TextAlign.Center)
+                }
+                androidx.compose.foundation.layout.Spacer(Modifier.size(24.dp))
+                androidx.compose.material3.Button(onClick = { error = null; ask() }) { Text("Déverrouiller") }
+            }
+        }
     }
 }
 

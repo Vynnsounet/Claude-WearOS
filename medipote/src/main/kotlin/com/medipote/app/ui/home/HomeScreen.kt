@@ -127,12 +127,16 @@ fun HomeScreen(
     onLogPrn: (com.medipote.app.data.Treatment) -> Unit = {},
     onOpenPrnIntake: (com.medipote.app.data.PrnIntake) -> Unit = {},
     onOpenSleep: () -> Unit = {},
+    onAddMeasure: (com.medipote.app.data.MeasureType) -> Unit = {},
+    onOpenMeasure: (com.medipote.app.data.MeasureType) -> Unit = {},
+    onOpenDocument: (com.medipote.app.data.HealthDocument) -> Unit = {},
 ) {
     val logs = remember(state.doseLogs) { state.doseLogs.associateBy { it.key } }
     val today = remember(state.treatments, logs, now) {
         Schedule.carriedOver(state.treatments, logs, now) + Schedule.itemsOn(state.treatments, logs, now.toLocalDate(), now)
     }
     val condition = remember(state, now) { Game.petCondition(state, now) }
+    val growth = remember(state.game.growth, state.doseLogs) { com.medipote.app.domain.Evolution.growth(state) }
     val giveable = today.filter { it.canGive }
     var petBounds by remember { mutableStateOf<Rect?>(null) }
     var dragHover by remember { mutableStateOf(false) }
@@ -201,9 +205,10 @@ fun HomeScreen(
                         description = "${state.game.petName} : ${condition.message}",
                         greeting = remember(state.profile?.name) { PetTalk.greeting(state, now) },
                         onCuddle = onCuddle,
+                        stage = growth.stage,
                         modifier = Modifier.fillMaxSize(),
                     )
-                    HealthTag(state.game.petName, condition, Modifier.align(Alignment.TopStart).padding(12.dp))
+                    HealthTag(state.game.petName, condition, growth, Modifier.align(Alignment.TopStart).padding(12.dp))
                     FloatingPoints(pointsSignal, lastPoints, Modifier.align(Alignment.TopCenter).padding(top = 32.dp))
                 }
                 MoodMessage(condition)
@@ -251,8 +256,11 @@ fun HomeScreen(
             val prn = state.treatments.filter { it.asNeeded && (it.endDate == null || !it.endDate.isBefore(now.toLocalDate())) }
             if (prn.isNotEmpty()) PrnCard(state, prn, now, onLogPrn, onOpenPrnIntake)
 
+            com.medipote.app.ui.measures.HomeMeasuresCard(state, now, onAddMeasure, onOpenMeasure)
+
             val low = state.treatments.filter { it.isLowStock }
             if (low.isNotEmpty()) StockBanner(low, onOpenTreatments)
+            com.medipote.app.domain.Renewals.due(state, now.toLocalDate()).forEach { doc -> RenewalBanner(doc, now.toLocalDate()) { onOpenDocument(doc) } }
 
             val water = state.settings.water
             WaterCard(state.entryFor(now.toLocalDate()).waterGlasses, water.goalGlasses, water.glassMl, onAddWater)
@@ -273,7 +281,7 @@ fun HomeScreen(
 }
 
 @Composable
-private fun HealthTag(name: String, condition: PetCondition, modifier: Modifier) {
+private fun HealthTag(name: String, condition: PetCondition, growth: com.medipote.app.domain.Growth, modifier: Modifier) {
     val status = AppTheme.status
     val color = when {
         condition.health >= 80 -> status.good
@@ -299,6 +307,16 @@ private fun HealthTag(name: String, condition: PetCondition, modifier: Modifier)
                 Text("${condition.health} %", style = MaterialTheme.typography.labelSmall)
             }
             Text("Santé", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Spacer(Modifier.height(4.dp))
+            Text(
+                "🌱 ${growth.stage.label}",
+                style = MaterialTheme.typography.labelMedium,
+            )
+            Text(
+                growth.toNext?.let { "encore $it prise${if (it > 1) "s" else ""} à l'heure pour grandir" } ?: "taille adulte, en fleurs",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
     }
 }
@@ -437,7 +455,7 @@ private fun DraggablePill(item: DoseItem, petBounds: Rect?, onHover: (Boolean) -
             Column {
                 Text(t.displayName, style = MaterialTheme.typography.labelLarge, maxLines = 1)
                 Text(
-                    "${item.occurrence.dose.timeLabel} · ${t.unit.format(item.occurrence.dose.quantity)}",
+                    "${item.occurrence.dose.timeLabel} · ${t.unit.format(item.occurrence.quantity)}",
                     style = MaterialTheme.typography.labelSmall,
                 )
             }
@@ -479,7 +497,7 @@ private fun DoseCard(item: DoseItem, now: LocalDateTime, onGive: (DoseItem) -> U
                 Text(t.displayName, style = MaterialTheme.typography.titleMedium, maxLines = 2, overflow = TextOverflow.Ellipsis)
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
-                        t.unit.format(item.occurrence.dose.quantity),
+                        t.unit.format(item.occurrence.quantity),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -564,6 +582,28 @@ private fun EmptyTreatments(petName: String, onAdd: () -> Unit) {
 }
 
 @Composable
+private fun RenewalBanner(doc: com.medipote.app.data.HealthDocument, today: java.time.LocalDate, onClick: () -> Unit) {
+    val left = com.medipote.app.domain.Renewals.daysLeft(doc, today) ?: 0
+    Card(
+        onClick = onClick,
+        colors = CardDefaults.cardColors(containerColor = if (left < 0) AppTheme.status.criticalContainer else AppTheme.status.warningContainer),
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Row(Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
+            Text("📄", style = MaterialTheme.typography.titleLarge)
+            Spacer(Modifier.width(12.dp))
+            Column(Modifier.weight(1f)) {
+                Text(if (left < 0) "Ordonnance expirée" else "Ordonnance à renouveler", style = MaterialTheme.typography.titleSmall)
+                Text(
+                    "${doc.title} · ${com.medipote.app.domain.Renewals.label(doc, today)?.lowercase()}. Pense à prendre rendez-vous.",
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+            }
+        }
+    }
+}
+
+@Composable
 private fun StockBanner(low: List<com.medipote.app.data.Treatment>, onClick: () -> Unit) {
     Card(
         onClick = onClick,
@@ -576,7 +616,7 @@ private fun StockBanner(low: List<com.medipote.app.data.Treatment>, onClick: () 
             Column(Modifier.weight(1f)) {
                 Text("Pense à racheter", style = MaterialTheme.typography.titleSmall)
                 Text(
-                    low.joinToString(" · ") { t -> "${t.displayName} : ${t.daysLeft} j" },
+                    low.joinToString(" · ") { t -> "${t.displayName} : " + (t.daysLeft?.let { "$it j" } ?: t.stock?.let { t.unit.format(it) } ?: "") },
                     style = MaterialTheme.typography.bodyMedium,
                 )
             }

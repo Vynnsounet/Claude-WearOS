@@ -183,11 +183,24 @@ fun DocumentsScreen(documents: List<HealthDocument>, onTakePhoto: () -> Unit, on
                             "${doc.category.label} · ${doc.date.format(com.medipote.app.ui.components.shortDate)}",
                             style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
+                        com.medipote.app.domain.Renewals.label(doc, LocalDate.now())?.let { label ->
+                            val left = com.medipote.app.domain.Renewals.daysLeft(doc, LocalDate.now()) ?: 0
+                            Text(
+                                label,
+                                style = MaterialTheme.typography.labelMedium,
+                                color = when {
+                                    left < 0 -> com.medipote.app.ui.theme.AppTheme.status.critical
+                                    left <= (doc.remindDays ?: 0) -> com.medipote.app.ui.theme.AppTheme.status.warning
+                                    else -> MaterialTheme.colorScheme.onSurfaceVariant
+                                },
+                                maxLines = 1,
+                            )
+                        }
                     }
                 }
             }
             item(span = { GridItemSpan(maxLineSpan) }) {
-                Disclaimer("Tes documents restent dans le stockage privé de l'app, sur ce téléphone uniquement, et ne sont pas sauvegardés dans le cloud.")
+                Disclaimer("Tes documents restent dans le stockage privé de l'app, sur ce téléphone. Ils sont inclus dans les sauvegardes que tu crées (Paramètres › Sauvegarde).")
             }
         }
     }
@@ -201,6 +214,9 @@ fun DocumentInfoScreen(doc: HealthDocument, isNew: Boolean, onSave: (HealthDocum
     var category by remember { mutableStateOf(doc.category) }
     var date by remember { mutableStateOf(doc.date) }
     var notes by remember { mutableStateOf(doc.notes) }
+    var validUntil by remember { mutableStateOf(doc.validUntil) }
+    var remind by remember { mutableStateOf(doc.remindDays != null) }
+    var remindDays by remember { mutableStateOf(doc.remindDays ?: 10) }
     Scaffold(
         topBar = {
             TopAppBar(
@@ -212,7 +228,13 @@ fun DocumentInfoScreen(doc: HealthDocument, isNew: Boolean, onSave: (HealthDocum
         bottomBar = {
             Surface(tonalElevation = 3.dp) {
                 Button(
-                    onClick = { onSave(doc.copy(title = title.trim(), category = category, date = date, notes = notes.trim())) },
+                    onClick = { onSave(
+                            doc.copy(
+                                title = title.trim(), category = category, date = date, notes = notes.trim(),
+                                validUntil = if (category == DocCategory.PRESCRIPTION) validUntil else null,
+                                remindDays = if (remind) remindDays else null,
+                            ),
+                        ) },
                     enabled = title.isNotBlank(),
                     modifier = Modifier.fillMaxWidth().navigationBarsPadding().padding(16.dp).height(52.dp),
                 ) { Text("Enregistrer") }
@@ -238,6 +260,25 @@ fun DocumentInfoScreen(doc: HealthDocument, isNew: Boolean, onSave: (HealthDocum
                 keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences), modifier = Modifier.fillMaxWidth(),
             )
             DateField("Date du document", date, { date = it }, maxDate = LocalDate.now().plusDays(1))
+            if (category == DocCategory.PRESCRIPTION) {
+                Text("Validité de l'ordonnance", style = MaterialTheme.typography.labelLarge)
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    listOf(3L to "3 mois", 6L to "6 mois", 12L to "1 an").forEach { (months, label) ->
+                        val until = date.plusMonths(months).minusDays(1)
+                        FilterChip(selected = validUntil == until, onClick = { validUntil = until }, label = { Text(label) })
+                    }
+                }
+                DateField(
+                    "Valable jusqu'au", validUntil, { validUntil = it }, minDate = date,
+                    supporting = "Une ordonnance classique se présente en pharmacie dans les 3 mois ; un traitement chronique peut être renouvelé jusqu'à 1 an.",
+                )
+                if (validUntil != null) {
+                    com.medipote.app.ui.treatments.SwitchRow("Me rappeler de la renouveler", remind) { remind = it }
+                    if (remind) {
+                        com.medipote.app.ui.components.NumberStepper("Rappel", remindDays, { remindDays = it }, 1..60, suffix = " j avant")
+                    }
+                }
+            }
             OutlinedTextField(
                 value = notes, onValueChange = { notes = it }, label = { Text("Notes (médecin, laboratoire…)") }, minLines = 2,
                 keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences), modifier = Modifier.fillMaxWidth(),

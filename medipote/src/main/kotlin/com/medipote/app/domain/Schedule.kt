@@ -13,6 +13,9 @@ import java.time.LocalTime
 /** One planned dose of one treatment on one day. */
 data class DoseOccurrence(val treatment: Treatment, val dose: DoseTime, val date: LocalDate) {
     val key: String get() = keyOf(treatment.id, date, dose.minuteOfDay)
+
+    /** What to take that day (dose steps included). */
+    val quantity: Double get() = treatment.quantityOn(date, dose)
     val scheduled: LocalDateTime get() = date.atTime(LocalTime.of(dose.minuteOfDay / 60, dose.minuteOfDay % 60))
 
     /** Last moment the dose can still be given: end of its day, or 4 hours after it for late-evening doses. */

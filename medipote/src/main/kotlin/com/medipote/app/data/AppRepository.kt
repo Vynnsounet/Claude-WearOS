@@ -21,10 +21,7 @@ class AppRepository(private val file: File, clock: Clock = Clock.systemDefaultZo
     @androidx.annotation.VisibleForTesting
     var clock: Clock = clock
 
-    private val json = Json {
-        ignoreUnknownKeys = true
-        encodeDefaults = true
-    }
+    private val json = JSON
     private val writer = Executors.newSingleThreadExecutor()
     private val _state = MutableStateFlow(load())
     val state: StateFlow<AppState> = _state.asStateFlow()
@@ -41,6 +38,18 @@ class AppRepository(private val file: File, clock: Clock = Clock.systemDefaultZo
         return updated
     }
 
+    /** Waits until pending writes are on disk (a notification action may end the process right after). */
+    fun flush() {
+        runCatching { writer.submit {}.get(3, java.util.concurrent.TimeUnit.SECONDS) }
+    }
+
+    /** Replaces everything at once (restoring a backup). */
+    @Synchronized
+    fun replace(state: AppState) {
+        _state.value = state
+        writer.execute { save(state) }
+    }
+
     @Synchronized
     fun reset() {
         _state.value = AppState()
@@ -50,8 +59,12 @@ class AppRepository(private val file: File, clock: Clock = Clock.systemDefaultZo
     /** Keeps the file small: dose history older than ~13 months is dropped. */
     private fun prune(state: AppState): AppState {
         val cutoff = now().minusDays(400)
-        return if (state.doseLogs.none { it.scheduled.isBefore(cutoff) }) state
-        else state.copy(doseLogs = state.doseLogs.filter { !it.scheduled.isBefore(cutoff) })
+        var s = state
+        if (s.doseLogs.any { it.scheduled.isBefore(cutoff) }) s = s.copy(doseLogs = s.doseLogs.filter { !it.scheduled.isBefore(cutoff) })
+        // Snoozed reminders are only useful until they ring.
+        val yesterday = now().minusDays(1)
+        if (s.snoozes.any { it.until.isBefore(yesterday) }) s = s.copy(snoozes = s.snoozes.filterNot { it.until.isBefore(yesterday) })
+        return s
     }
 
     private fun load(): AppState {
@@ -77,6 +90,14 @@ class AppRepository(private val file: File, clock: Clock = Clock.systemDefaultZo
         } catch (e: Exception) {
             atomic.failWrite(out)
             Log.e("MediPote", "Could not save data", e)
+        }
+    }
+
+    companion object {
+        /** The data format, shared with backups. */
+        val JSON = Json {
+            ignoreUnknownKeys = true
+            encodeDefaults = true
         }
     }
 }

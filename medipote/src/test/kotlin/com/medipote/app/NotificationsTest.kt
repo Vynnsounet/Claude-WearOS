@@ -113,4 +113,34 @@ class NotificationsTest {
             com.medipote.app.notifications.Notifications.quietChannels(context),
         )
     }
+
+    @Test
+    fun notificationButtonsSnoozeAndGive() {
+        val repo = context.repository
+        val zone = java.time.ZoneId.systemDefault()
+        repo.clock = java.time.Clock.fixed(doseTime.plusMinutes(5).atZone(zone).toInstant(), zone)
+        try {
+            com.medipote.app.notifications.Notifications.showDoses(context, repo.state.value, doseTime, followUp = false)
+            val manager = shadowOf(context.getSystemService(NotificationManager::class.java))
+            val n = manager.allNotifications.single()
+            assertEquals(listOf("Pris ✓", "+10 min", "+30 min"), n.actions.map { it.title.toString() })
+            val receiver = com.medipote.app.notifications.NotificationActionReceiver()
+            // "+10 min": the reminder comes back 10 minutes later.
+            receiver.onReceive(context, shadowOf(n.actions[1].actionIntent).savedIntent)
+            assertEquals(doseTime.plusMinutes(15), repo.state.value.snoozes.single().until)
+            assertTrue(manager.allNotifications.isEmpty())
+            val snoozeAlarm = alarms.scheduledAlarms.map { shadowOf(it.operation).savedIntent.getStringExtra(ReminderScheduler.EXTRA_KEY) }
+            assertTrue(snoozeAlarm.toString(), snoozeAlarm.any { it!!.startsWith("SNOOZE|") })
+            // "Pris": the dose is given (the pet is fed) without opening the app.
+            receiver.onReceive(context, shadowOf(n.actions[0].actionIntent).savedIntent)
+            val log = repo.state.value.doseLogs.single()
+            assertEquals(com.medipote.app.data.TakeStatus.ON_TIME, log.status)
+            assertTrue(repo.state.value.snoozes.isEmpty())
+            assertTrue(repo.state.value.game.points >= 10)
+            val confirm = manager.allNotifications.single()
+            assertTrue(confirm.extras.getCharSequence("android.title").toString().contains("a bien reçu ses médicaments"))
+        } finally {
+            repo.clock = java.time.Clock.systemDefaultZone()
+        }
+    }
 }

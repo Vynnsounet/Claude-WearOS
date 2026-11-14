@@ -17,6 +17,10 @@ navigationCompose = "2.10.2"
 serialization = "1.12.0"
 glance = "1.2.0"
 exifinterface = "1.4.2"
+biometric = "1.1.0"
+# Biometric 1.1.0 depends on fragment 1.2.5, whose FragmentActivity rejects the request codes of
+# today's activity-result APIs (permission prompt, file pickers): pin a current version.
+fragment = "1.8.9"
 profileinstaller = "1.4.1"
 work = "2.11.2"
 
@@ -49,6 +53,8 @@ compose-material-icons-extended = { module = "androidx.compose.material:material
 compose-foundation = { module = "androidx.compose.foundation:foundation" }
 androidx-navigation-compose = { module = "androidx.navigation:navigation-compose", version.ref = "navigationCompose" }
 androidx-exifinterface = { module = "androidx.exifinterface:exifinterface", version.ref = "exifinterface" }
+androidx-biometric = { module = "androidx.biometric:biometric", version.ref = "biometric" }
+androidx-fragment = { module = "androidx.fragment:fragment-ktx", version.ref = "fragment" }
 androidx-profileinstaller = { module = "androidx.profileinstaller:profileinstaller", version.ref = "profileinstaller" }
 androidx-work-runtime = { module = "androidx.work:work-runtime", version.ref = "work" }
 androidx-work-runtime-ktx = { module = "androidx.work:work-runtime-ktx", version.ref = "work" }

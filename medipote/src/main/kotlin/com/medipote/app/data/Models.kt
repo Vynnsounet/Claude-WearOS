@@ -27,6 +27,10 @@ data class AppState(
     val prnIntakes: List<PrnIntake> = emptyList(),
     /** Logged nights, newest first, at most one per date. */
     val sleep: List<SleepNight> = emptyList(),
+    /** Health measurements (blood pressure, weight…), newest first. */
+    val measurements: List<Measurement> = emptyList(),
+    /** Dose reminders put off from their notification ("in 10 minutes"). */
+    val snoozes: List<Snooze> = emptyList(),
 ) {
     fun entryFor(date: LocalDate): DayEntry = journal.firstOrNull { it.date == date } ?: DayEntry(date)
 }
@@ -98,19 +102,30 @@ data class Treatment(
     val minIntervalHours: Int? = null,
     /** As-needed stock warning, in units (days of treatment make no sense without a schedule). */
     val lowStockUnits: Int = 4,
+    /** Taken every N days from the start date (1 = follow [daysOfWeek]). */
+    val everyDays: Int = 1,
+    /** Dose that changes over time (tapering): from each date, every dose time takes this quantity. */
+    val steps: List<DoseStep> = emptyList(),
 ) {
     val displayName: String get() = if (strength.isBlank()) name else "$name $strength"
 
     fun isActiveOn(date: LocalDate): Boolean =
         !asNeeded && !date.isBefore(startDate) && (endDate == null || !date.isAfter(endDate)) &&
-            date.dayOfWeek.value in daysOfWeek && (pill == null || pill.mustTake(date))
+            (if (everyDays > 1) java.time.temporal.ChronoUnit.DAYS.between(startDate, date) % everyDays == 0L else date.dayOfWeek.value in daysOfWeek) &&
+            (pill == null || pill.mustTake(date))
+
+    /** Quantity of [dose] on [date], following the dose steps if there are any. */
+    fun quantityOn(date: LocalDate, dose: DoseTime): Double =
+        steps.filter { !it.from.isAfter(date) }.maxByOrNull { it.from }?.quantity ?: dose.quantity
 
     /** Average units used per day, taking the days of the week and pill breaks into account. */
     val dailyUse: Double
         get() {
-            val perDay = doses.sumOf { it.quantity }
+            val today = LocalDate.now()
+            val perDay = doses.sumOf { quantityOn(today, it) }
             val pillRatio = pill?.let { if (it.placebo) 1.0 else it.activeDays.toDouble() / it.cycleLength } ?: 1.0
-            return perDay * daysOfWeek.size / 7.0 * pillRatio
+            val dayRatio = if (everyDays > 1) 1.0 / everyDays else daysOfWeek.size / 7.0
+            return perDay * dayRatio * pillRatio
         }
 
     /** Whole days of treatment left in stock, or null when not tracked. */
@@ -129,6 +144,13 @@ data class Treatment(
         val ALL_DAYS: Set<Int> = (1..7).toSet()
     }
 }
+
+/** From [from] on, each dose is [quantity] (e.g. a corticosteroid tapered week after week). */
+@Serializable
+data class DoseStep(
+    @Serializable(with = LocalDateSerializer::class) val from: LocalDate,
+    val quantity: Double,
+)
 
 @Serializable
 data class DoseTime(
@@ -210,6 +232,8 @@ data class GameState(
     val waterRewardDays: Set<@Serializable(with = LocalDateSerializer::class) LocalDate> = emptySet(),
     /** Days the daily cuddle bonus was already given. */
     val cuddleDays: Set<@Serializable(with = LocalDateSerializer::class) LocalDate> = emptySet(),
+    /** Doses given on time since the beginning: makes the companion grow (never decreases). */
+    val growth: Int = 0,
     /** Days the "night logged" bonus was already given. */
     val sleepRewardDays: Set<@Serializable(with = LocalDateSerializer::class) LocalDate> = emptySet(),
     val history: List<PointEvent> = emptyList(),
@@ -219,6 +243,13 @@ data class GameState(
         val DEFAULT_EQUIPPED = mapOf("COLOR" to "color_mint", "BACKGROUND" to "bg_room")
     }
 }
+
+/** A dose reminder (doses planned at [doseTime]) to show again at [until]. */
+@Serializable
+data class Snooze(
+    @Serializable(with = LocalDateTimeSerializer::class) val doseTime: LocalDateTime,
+    @Serializable(with = LocalDateTimeSerializer::class) val until: LocalDateTime,
+)
 
 @Serializable
 data class PointEvent(
@@ -242,6 +273,11 @@ data class Settings(
     val dynamicColor: Boolean = false,
     val water: WaterSettings = WaterSettings(),
     val sleep: SleepSettings = SleepSettings(),
+    /** Measurement kinds shown in the app; none by default. */
+    val measures: Set<MeasureType> = emptySet(),
+    val backup: BackupSettings = BackupSettings(),
+    /** Ask for the phone's fingerprint, face or PIN to open the app. */
+    val lockEnabled: Boolean = false,
     val notificationsEnabled: Boolean = true,
     /** Send a second notification when a dose is still not given 30 minutes after its time. */
     val followUpReminder: Boolean = true,

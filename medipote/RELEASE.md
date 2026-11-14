@@ -66,6 +66,24 @@ L'optimiseur de R8 reste désactivé (`-dontoptimize`) : APK de 3,8 Mo au lieu d
 le dex livré peut être reconverti et exécuté hors appareil pour vérification (voir plus bas),
 ce que l'optimiseur empêche. Il pourra être réactivé après des essais sur téléphone.
 
+### 1.3.0
+
+- Mesures de santé (tension, pouls, glycémie, poids, température, saturation), chaque type
+  affiché ou non selon les paramètres ; repères indicatifs, courbes, statistiques.
+- Sauvegarde et restauration (fichier `.medipote`, mot de passe facultatif, AES-256-GCM +
+  PBKDF2), sauvegarde automatique hebdomadaire dans un dossier choisi.
+- Boutons « Pris ✓ », « +10 min », « +30 min » dans les rappels ; « J'ai bu un verre ».
+- Rapport PDF pour le médecin.
+- Verrouillage par empreinte, visage ou code du téléphone (androidx.biometric ;
+  androidx.fragment épinglé en 1.8.9 car biometric 1.1.0 tire fragment 1.2.5, dont la
+  FragmentActivity refuse les codes de requête des API actuelles : le test d'intégration
+  plantait au lancement d'un sélecteur).
+- Ordonnances : date de validité et rappel de renouvellement.
+- Posologie : tous les N jours, pendant N jours, paliers de dose.
+- Compagnon qui grandit avec les prises à l'heure ; widget Sommeil.
+- Correctif : le bandeau de stock de l'accueil affichait « null j » pour un médicament
+  « si besoin ».
+
 ### 1.2.2
 
 - À l'heure = de 30 min avant à 30 min après l'heure prévue (avant : de 1 h avant à 30 min

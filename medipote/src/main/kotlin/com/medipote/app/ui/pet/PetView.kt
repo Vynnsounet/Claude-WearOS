@@ -32,6 +32,7 @@ import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import com.medipote.app.domain.PetMood
+import com.medipote.app.domain.Stage
 import com.medipote.app.domain.PetReaction
 import kotlin.math.PI
 import kotlin.math.cos
@@ -75,6 +76,7 @@ fun PetView(
     reaction: PetReaction = PetReaction.NONE,
     reactionSignal: Int = 0,
     look: Offset = Offset.Zero,
+    stage: Stage = Stage.BUD,
 ) {
     val transition = rememberInfiniteTransition(label = "pet")
     val breathe by if (animate) transition.animateFloat(
@@ -114,7 +116,7 @@ fun PetView(
 
     Canvas(modifier.semantics { if (description.isNotEmpty()) contentDescription = description }) {
         if (showBackground) drawBackground(equipped["BACKGROUND"])
-        drawPet(mood, equipped, breathe, blink, loop, feed.value, reaction, react.value, look)
+        drawPet(mood, equipped, breathe, blink, loop, feed.value, reaction, react.value, look, stage)
     }
 }
 
@@ -324,6 +326,7 @@ private fun DrawScope.drawHeart(c: Offset, r: Float, color: Color) {
 
 // ─────────────────────────────── The pet ───────────────────────────────
 
+/** The companion; smaller while young (see [Stage]), standing on the same spot whatever its size. */
 internal fun DrawScope.drawPet(
     mood: PetMood,
     equipped: Map<String, String>,
@@ -334,6 +337,38 @@ internal fun DrawScope.drawPet(
     reaction: PetReaction = PetReaction.NONE,
     rp: Float = 1f,
     look: Offset = Offset.Zero,
+    stage: Stage = Stage.BUD,
+) {
+    val k = when (stage) {
+        Stage.SEED -> 0.8f
+        Stage.SPROUT -> 0.9f
+        else -> 1f
+    }
+    val s = min(size.width, size.height)
+    val ground = Offset(size.width / 2, size.height * 0.6f + s * 0.25f)
+    if (stage == Stage.BLOOM) drawSparkles(ground.x, size.height * 0.6f, s, loop)
+    scale(k, k, ground) { drawPetBody(mood, equipped, breathe, blink, loop, feed, reaction, rp, look, stage) }
+}
+
+private fun DrawScope.drawSparkles(cx: Float, cy: Float, s: Float, loop: Float) {
+    val gold = Color(0xFFFFD54F)
+    listOf(Triple(-0.36f, -0.22f, 0f), Triple(0.38f, -0.3f, 0.33f), Triple(-0.3f, 0.12f, 0.66f), Triple(0.33f, 0.08f, 0.5f)).forEach { (dx, dy, phase) ->
+        val a = 0.35f + 0.65f * ((sin((loop + phase) * 2 * PI).toFloat() + 1) / 2)
+        drawStar(Offset(cx + dx * s, cy + dy * s), s * 0.03f, gold.copy(alpha = a), 4, 0.35f)
+    }
+}
+
+private fun DrawScope.drawPetBody(
+    mood: PetMood,
+    equipped: Map<String, String>,
+    breathe: Float,
+    blink: Float,
+    loop: Float,
+    feed: Float,
+    reaction: PetReaction,
+    rp: Float,
+    look: Offset,
+    stage: Stage,
 ) {
     val s = min(size.width, size.height)
     val cx = size.width / 2
@@ -435,7 +470,7 @@ internal fun DrawScope.drawPet(
         drawOval(Color.White.copy(alpha = 0.35f), Offset(cx - hw * 0.62f, top + bh * 0.12f), Size(bw * 0.13f, bh * 0.08f))
 
         val hasHat = equipped["HAT"] != null
-        if (!hasHat) drawSprout(cx, top, s, sick = mood == PetMood.SICK || mood == PetMood.UNWELL)
+        if (!hasHat) drawSprout(cx, top, s, sick = mood == PetMood.SICK || mood == PetMood.UNWELL, stage = stage)
 
         drawFace(mood, cx, cy, bw, bh, s, blink, loop, feed, shade, r, rp, look)
 
@@ -507,7 +542,7 @@ private fun DrawScope.drawNote(c: Offset, h: Float, color: Color) {
     drawLine(color, c + Offset(0f, -h), c + Offset(h * 0.45f, -h * 0.7f), h * 0.12f, StrokeCap.Round)
 }
 
-private fun DrawScope.drawSprout(cx: Float, top: Float, s: Float, sick: Boolean) {
+private fun DrawScope.drawSprout(cx: Float, top: Float, s: Float, sick: Boolean, stage: Stage = Stage.SPROUT) {
     val stem = Color(0xFF2E7D5B)
     val leaf = if (sick) Color(0xFF9DAF7E) else Color(0xFF4CAF7A)
     val droop = if (sick) s * 0.03f else 0f
@@ -527,6 +562,23 @@ private fun DrawScope.drawSprout(cx: Float, top: Float, s: Float, sick: Boolean)
         cubicTo(tipX - s * 0.03f, tipY - s * 0.04f + droop, tipX - s * 0.08f, tipY - s * 0.02f + droop * 2, tipX - s * 0.09f, tipY + s * 0.005f + droop * 2)
         cubicTo(tipX - s * 0.06f, tipY + s * 0.03f + droop, tipX - s * 0.03f, tipY + s * 0.025f, tipX - s * 0.005f, tipY + s * 0.01f)
     }, lerp(leaf, Color.White, 0.15f))
+    when (stage) {
+        Stage.SEED, Stage.SPROUT -> Unit
+        Stage.BUD -> {
+            // A closed bud on top of the stem.
+            drawOval(Color(0xFFF48FB1), Offset(tipX - s * 0.018f, tipY - s * 0.05f), Size(s * 0.036f, s * 0.05f))
+            drawOval(leaf, Offset(tipX - s * 0.02f, tipY - s * 0.018f), Size(s * 0.04f, s * 0.022f))
+        }
+        Stage.FLOWER, Stage.BLOOM -> {
+            val center = Offset(tipX, tipY - s * 0.035f)
+            val petal = if (sick) Color(0xFFE1B5C4) else Color(0xFFF06292)
+            for (i in 0 until 5) {
+                val a = i * 2 * PI / 5 - PI / 2
+                drawCircle(petal, s * 0.022f, Offset(center.x + (cos(a) * s * 0.024f).toFloat(), center.y + (sin(a) * s * 0.024f).toFloat()))
+            }
+            drawCircle(Color(0xFFFFD54F), s * 0.016f, center)
+        }
+    }
 }
 
 private fun DrawScope.drawFace(

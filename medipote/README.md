@@ -13,9 +13,17 @@ l'habiller dans la boutique.
 |---|---|---|---|---|
 | ![](docs/home_sick.png) | ![](docs/agenda.png) | ![](docs/stats.png) | ![](docs/day_entry.png) | ![](docs/settings.png) |
 
-| Si besoin (accueil) | Noter une prise | Stats « si besoin » | Sommeil | Noter sa nuit |
+| Accueil | Mesures | Sauvegarde | Si besoin (accueil) | Noter une prise |
 |---|---|---|---|---|
-| ![](docs/home_prn.png) | ![](docs/prn_log.png) | ![](docs/prn_stats.png) | ![](docs/sleep.png) | ![](docs/sleep_editor.png) |
+| ![](docs/home_v13.png) | ![](docs/measures.png) | ![](docs/backup.png) | ![](docs/home_prn.png) | ![](docs/prn_log.png) |
+
+| Stats « si besoin » | Sommeil | Noter sa nuit | Rapport PDF |
+|---|---|---|---|
+| ![](docs/prn_stats.png) | ![](docs/sleep.png) | ![](docs/sleep_editor.png) | ![](docs/report.png) |
+
+Le compagnon grandit avec la régularité (graine, pousse, bouton, fleur, floraison) :
+
+![](docs/pet_stages.png)
 
 ## Navigation
 
@@ -38,7 +46,11 @@ Profil médical et paramètres sont accessibles en haut à droite.
   courte (indication, posologie habituelle, précautions, ordonnance) et alerte
   si une allergie déclarée peut être concernée. Saisie manuelle possible.
 - **Posologie** : 1 à 4 prises par jour ou horaires libres, quantité, forme,
-  jours de la semaine, date de fin ou traitement au long cours, prise au repas. Changer l'heure d'une prise déjà donnée ne
+  tous les jours, certains jours de la semaine ou **tous les N jours** ;
+  au long cours, jusqu'à une date ou **pendant N jours** ; prise au repas ;
+  **paliers** (dose qui change à des dates données, par exemple une
+  corticothérapie dégressive : la quantité du jour est utilisée partout,
+  stock compris). Changer l'heure d'une prise déjà donnée ne
   la fait pas redonner : elle suit sa nouvelle heure (aujourd'hui comme dans
   l'historique), et une heure ajoutée n'est due qu'à partir de son ajout.
 - **Médicaments « si besoin »** (antidouleur, antiallergique, anxiolytique…) :
@@ -152,6 +164,36 @@ Profil médical et paramètres sont accessibles en haut à droite.
   (Menthe, Océan, Lavande, Corail, Ambre, Rose) ou couleurs du fond d'écran
   (Android 12+).
 
+- **Mesures de santé** : tension (avec pouls), pouls, glycémie (à jeun, avant
+  ou après un repas, au coucher), poids, température, saturation en oxygène.
+  **Chaque type s'affiche ou non selon les paramètres** (aucun par défaut) :
+  seuls ceux cochés apparaissent sur l'accueil, dans Suivi › Mesures et dans
+  le rapport. Saisie rapide avec repères indicatifs (tension 135/85 à domicile,
+  glycémie à jeun 0,70–1,10 g/L, fièvre ≥ 38 °C, IMC…), courbe avec zone de
+  repères, moyenne, minimum, maximum, part dans les repères, évolution du poids,
+  analyses (matin / soir pour la tension, hypoglycémies, jours de fièvre).
+  Le dernier poids met à jour le profil (IMC).
+- **Sauvegarde et restauration** (Paramètres › Sauvegarde) : un fichier
+  `.medipote` qui contient tout (données et documents), avec mot de passe
+  facultatif (chiffrement AES-256-GCM, clé dérivée par PBKDF2) ; restauration
+  après confirmation ; **sauvegarde automatique chaque semaine** dans un
+  dossier choisi (les 4 dernières sont gardées), protégée ou non par mot de passe.
+- **Boutons dans les rappels** : « Pris ✓ » donne les médicaments au
+  compagnon sans ouvrir l'appli (points compris), « +10 min » et « +30 min »
+  font revenir le rappel plus tard ; « J'ai bu un verre » sur le rappel d'eau.
+  Ils apparaissent aussi sur une montre connectée Android.
+- **Rapport pour le médecin** (Suivi › Stats) : PDF sur 1, 3, 6 ou 12 mois
+  avec les parties au choix (profil, traitements, observance, « si besoin »,
+  mesures avec courbes, sommeil, journal, cycle), à partager, prévisualiser ou
+  enregistrer.
+- **Ordonnances à renouveler** : validité de l'ordonnance (3 mois, 6 mois,
+  1 an ou une date), rappel X jours avant (10 par défaut) par notification et
+  sur l'accueil, état visible dans le carnet de santé.
+- **Verrouillage** (Paramètres › Confidentialité) : empreinte, visage ou code du
+  téléphone à l'ouverture et après 1 min en arrière-plan.
+- **Compagnon qui grandit** : chaque prise à l'heure le fait grandir (graine,
+  pousse, bouton, fleur, floraison) ; l'étape et les prises restantes sont
+  affichées sur l'accueil.
 - **Widgets d'écran d'accueil** (appui long sur l'écran d'accueil → Widgets → MédiPote) :
 
   | Widget | Contenu | Tailles |
@@ -159,11 +201,13 @@ Profil médical et paramètres sont accessibles en haut à droite.
   | Mon compagnon | Le compagnon avec son humeur, sa santé, la prochaine prise et un bouton « Donner » | 2×2 à 4×3 |
   | Prises du jour | Les prises du jour avec leur état, et « Donner » pour celles à prendre | 3×2 et plus |
   | Hydratation | Verres du jour, progression, boutons « +1 verre » et « − » | 2×2 et plus |
+  | Sommeil | Dernière nuit (durée, réveils), moyenne sur 7 jours, « Noter ma nuit » | 2×2 et plus |
 
   ![Widgets](docs/widgets.png)
 
 Les données (y compris de santé et les documents) restent sur le téléphone, dans
-le stockage privé de l'app, exclu de la sauvegarde cloud.
+le stockage privé de l'app, exclu de la sauvegarde cloud. Elles n'en sortent que
+par une action de la personne : sauvegarde, rapport PDF ou document partagé.
 
 ## Architecture
 

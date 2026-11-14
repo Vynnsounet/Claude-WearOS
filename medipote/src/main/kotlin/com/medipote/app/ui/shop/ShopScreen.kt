@@ -95,6 +95,7 @@ fun ShopScreen(game: GameState, onBuy: (ShopItem) -> Unit, onEquip: (ShopItem) -
                         InteractivePet(
                             mood = PetMood.HAPPY,
                             equipped = preview,
+                            stage = com.medipote.app.domain.Evolution.stageFor(game.growth),
                             talk = { r ->
                                 when (r) {
                                     com.medipote.app.domain.PetReaction.JUMP -> listOf("Ça me va bien ?", "Trop stylé !", "On le prend ? 😍", "Nouveau look !").random()

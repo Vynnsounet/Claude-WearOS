@@ -59,6 +59,7 @@ import com.medipote.app.domain.Reports
 import com.medipote.app.domain.Tone
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
+import androidx.compose.material.icons.outlined.PictureAsPdf
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.saveable.rememberSaveable
 import kotlin.math.abs
@@ -83,7 +84,7 @@ private fun signedMinutes(m: Int) = when {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun StatsScreen(state: AppState, now: LocalDateTime, embedded: Boolean = false, onOpenPrn: (String) -> Unit = {}) {
+fun StatsScreen(state: AppState, now: LocalDateTime, embedded: Boolean = false, onOpenPrn: (String) -> Unit = {}, onReport: () -> Unit = {}) {
     var period by rememberSaveable { mutableStateOf(Period.MONTH) }
     val report = remember(state, now.toLocalDate(), now.hour, period) { Reports.adherence(state, now, period.days) }
     val prn = state.treatments.filter { it.asNeeded }
@@ -107,6 +108,11 @@ fun StatsScreen(state: AppState, now: LocalDateTime, embedded: Boolean = false, 
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             PeriodSelector(Period.entries.map { it to it.label }, period, { period = it })
+            androidx.compose.material3.OutlinedButton(onClick = onReport, modifier = Modifier.fillMaxWidth()) {
+                Icon(androidx.compose.material.icons.Icons.Outlined.PictureAsPdf, null, Modifier.size(18.dp))
+                Spacer(Modifier.width(8.dp))
+                Text("Rapport pour le médecin (PDF)")
+            }
 
             val rate = report.rate.value
             val before = report.previousRate.value

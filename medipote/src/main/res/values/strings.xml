@@ -9,4 +9,6 @@
     <string name="widget_doses_desc">Les médicaments du jour, à valider d\'un geste</string>
     <string name="widget_water">Hydratation</string>
     <string name="widget_water_desc">Ton compteur de verres d\'eau, avec un bouton +1</string>
+    <string name="widget_sleep">Sommeil</string>
+    <string name="widget_sleep_desc">Ta dernière nuit et ta moyenne sur 7 jours, avec un raccourci pour la noter</string>
 </resources>

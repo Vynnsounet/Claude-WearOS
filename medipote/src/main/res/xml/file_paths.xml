@@ -2,4 +2,6 @@
 <!-- Health documents and photos live in the app's private "documents" folder. -->
 <paths>
     <files-path name="documents" path="documents/" />
+    <!-- PDF reports for the doctor, generated on demand. -->
+    <cache-path name="reports" path="reports/" />
 </paths>

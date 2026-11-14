@@ -605,6 +605,127 @@ class ScreensTest {
         compose.onNodeWithText("Bien dormi ?").performScrollTo().assertExists()
     }
 
+    // ── Version 1.3 ──
+
+    /** Everything at once: measurements shown, a prescription to renew, a grown-up companion. */
+    private fun richState(): AppState {
+        val base = sleepState().let { s -> s.copy(treatments = s.treatments + ibu, prnIntakes = prnState().prnIntakes) }
+        val m = mutableListOf<com.medipote.app.data.Measurement>()
+        for (i in 0 until 20) {
+            val d = today.minusDays(i.toLong() * 3 / 2)
+            val sys = listOf(128, 134, 141, 126, 138, 131, 145, 129)[i % 8].toDouble()
+            m += com.medipote.app.data.Measurement("bp$i", com.medipote.app.data.MeasureType.BLOOD_PRESSURE, d.atTime(if (i % 2 == 0) 8 else 20, 5), sys, sys - 50 + i % 5, pulse = 64 + i % 9)
+            if (i % 3 == 0) m += com.medipote.app.data.Measurement("w$i", com.medipote.app.data.MeasureType.WEIGHT, d.atTime(7, 30), 66.8 - i * 0.07)
+        }
+        val ordo = com.medipote.app.data.HealthDocument(
+            "ordo", "Ordonnance Dr Martin", com.medipote.app.data.DocCategory.PRESCRIPTION, today.minusMonths(3).plusDays(6),
+            "ordo.jpg", "image/jpeg", validUntil = today.plusDays(5), remindDays = 10,
+        )
+        return base.copy(
+            measurements = m.sortedByDescending { it.at },
+            documents = listOf(ordo),
+            settings = base.settings.copy(measures = setOf(com.medipote.app.data.MeasureType.BLOOD_PRESSURE, com.medipote.app.data.MeasureType.WEIGHT)),
+            game = base.game.copy(growth = 230),
+        )
+    }
+
+    @Test
+    @Config(qualifiers = "w400dp-h2600dp-xhdpi")
+    fun homeV13() {
+        render("home_v13") { HomeScreen(richState(), today.atTime(12, 10), 0, 0, {}, {}, {}, {}, animate = false) }
+        compose.onNodeWithText("Ordonnance à renouveler").assertExists()
+        compose.onNodeWithText("Mes mesures").assertExists()
+        compose.onNodeWithText("🌱 Fleur").assertExists()
+    }
+
+    @Test
+    @Config(qualifiers = "w400dp-h1600dp-xhdpi")
+    fun measuresTab() {
+        render("measures") { com.medipote.app.ui.measures.MeasuresScreen(richState(), now, {}, {}, {}) }
+        compose.onNodeWithText("Tension").assertExists()
+        compose.onNodeWithText("Poids").assertExists()
+    }
+
+    @Test
+    @Config(qualifiers = "w400dp-h2600dp-xhdpi")
+    fun measureDetail() {
+        render("measure_detail") {
+            com.medipote.app.ui.measures.MeasureDetailScreen(richState(), com.medipote.app.data.MeasureType.BLOOD_PRESSURE, now, {}, {}, {})
+        }
+        compose.onNodeWithText("Dans les repères").assertExists()
+    }
+
+    @Test
+    @Config(qualifiers = "w400dp-h1200dp-xhdpi")
+    fun measureEditor() {
+        val state = richState()
+        val m = state.measurements.first { it.type == com.medipote.app.data.MeasureType.BLOOD_PRESSURE && it.value >= 140 }
+        render("measure_editor") { com.medipote.app.ui.measures.MeasureEditorScreen(state, m.type, m, now, {}, {}, {}) }
+        compose.onNodeWithText("Au-dessus des repères", substring = true).assertExists()
+    }
+
+    @Test
+    @Config(qualifiers = "w400dp-h1300dp-xhdpi")
+    fun backupScreen() {
+        val settings = Settings(backup = com.medipote.app.data.BackupSettings(auto = true, folderUri = "content://x", folderName = "Documents", encrypted = true, lastAuto = now.minusDays(2), lastManual = now.minusDays(9)))
+        render("backup") { com.medipote.app.ui.settings.BackupScreen(settings, now, {}, {}, {}) }
+        compose.onNodeWithText("Créer une sauvegarde").assertExists()
+        compose.onNodeWithText("Dossier : Documents · changer").assertExists()
+    }
+
+    @Test
+    @Config(qualifiers = "w400dp-h1300dp-xhdpi")
+    fun reportScreenAndPdf() {
+        val state = richState()
+        render("report") { com.medipote.app.ui.report.ReportScreen(state, now, {}, {}) }
+        compose.onNodeWithText("Mesures de santé").assertExists()
+        val report = com.medipote.app.domain.DoctorReports.build(state, now, 90, com.medipote.app.domain.DoctorReports.availableParts(state).toSet())
+        // Robolectric has no native PDF writer: the same drawing code renders into bitmaps here.
+        val pages = com.medipote.app.ui.report.ReportPdf.BitmapPages()
+        com.medipote.app.ui.report.ReportPdf.draw(report, pages)
+        org.junit.Assert.assertTrue(pages.bitmaps.size in 2..6)
+        pages.bitmaps.forEachIndexed { i, b -> save("report_page${i + 1}", b) }
+    }
+
+    @Test
+    @Config(qualifiers = "w400dp-h2600dp-xhdpi")
+    fun editorWithStepsAndRhythm() {
+        val t = Treatment(
+            "pred", null, "Prednisolone", "20 mg", DoseUnit.TABLET, listOf(DoseTime(8 * 60, 2.0)),
+            startDate = today, endDate = today.plusDays(13), everyDays = 2,
+            steps = listOf(com.medipote.app.data.DoseStep(today.plusDays(4), 1.0), com.medipote.app.data.DoseStep(today.plusDays(8), 0.5)),
+        )
+        render("editor_steps") { TreatmentEditorScreen(existing = t, drug = null, customName = "", allergies = emptyList(), today = today, onSave = {}, onDelete = {}, onBack = {}) }
+        compose.onNodeWithText("Ajouter un palier").assertExists()
+        compose.onNodeWithText("Tous les X jours").assertExists()
+    }
+
+    @Test
+    @Config(qualifiers = "w400dp-h3400dp-xhdpi")
+    fun settingsV13() {
+        render("settings_v13") {
+            SettingsScreen(
+                richState().settings, "Pilou", notificationsAllowed = true, exactAlarmsAllowed = true, dynamicColorAvailable = true,
+                onBack = {}, onChange = {}, onRequestNotifications = {}, onRequestExactAlarms = {},
+                onRenamePet = {}, onOpenProfile = {}, onReset = {}, quietReminders = 1, lockEnabled = true, lastBackup = now.minusDays(2),
+            )
+        }
+        compose.onNodeWithText("Verrouiller l'appli").assertExists()
+        compose.onNodeWithText("Rappels sans pop-up").assertExists()
+        compose.onNodeWithText("Mesures de santé").assertExists()
+    }
+
+    @Test
+    fun petStages() {
+        val size = 240
+        val bitmap = Bitmap.createBitmap(size * 5, size, Bitmap.Config.ARGB_8888)
+        com.medipote.app.domain.Stage.entries.forEachIndexed { i, stage ->
+            val one = com.medipote.app.widget.renderPet(com.medipote.app.domain.PetMood.HAPPY, mapOf("COLOR" to "color_mint", "BACKGROUND" to "bg_meadow"), size, size, stage)
+            android.graphics.Canvas(bitmap).drawBitmap(one, (i * size).toFloat(), 0f, null)
+        }
+        save("pet_stages", bitmap)
+    }
+
     private fun save(name: String, bitmap: Bitmap) {
         val dir = File("build/screenshots").apply { mkdirs() }
         File(dir, "$name.png").outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }

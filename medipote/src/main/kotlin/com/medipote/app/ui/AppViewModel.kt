@@ -83,6 +83,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         val now = repo.now()
         var fed: UiEvent.Fed? = null
         var lowStock: Treatment? = null
+        val stageBefore = com.medipote.app.domain.Evolution.growth(state.value).stage
         repo.update { s ->
             val result = Game.give(s, item, now, early) ?: return@update s
             fed = UiEvent.Fed(item.occurrence.treatment.name, result.log.status, result.log.points, result.perfectDayBonus)
@@ -102,6 +103,11 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             val sameTime = com.medipote.app.domain.Schedule.occurrencesOn(state.value.treatments, time.toLocalDate())
                 .filter { o -> o.scheduled == time }
             if (sameTime.all { o -> o.key in logs }) Notifications.cancel(ctx, time)
+        }
+        // Emitted after the "fed" message so it shows next instead of being replaced by it.
+        val stageAfter = com.medipote.app.domain.Evolution.growth(state.value).stage
+        if (stageAfter.ordinal > stageBefore.ordinal) {
+            _events.tryEmit(UiEvent.Message("✨ ${state.value.game.petName} a grandi : ${stageAfter.label.lowercase()} ! (${stageAfter.description})"))
         }
     }
 
@@ -225,6 +231,37 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     fun deletePrnIntake(id: String) {
         repo.update { com.medipote.app.domain.Prn.delete(it, id) }
         reschedule()
+    }
+
+    // ── App lock ──
+
+    private val _locked = MutableStateFlow(state.value.settings.lockEnabled && state.value.onboarded)
+    /** True while the app waits for the phone's fingerprint, face or PIN. */
+    val locked: StateFlow<Boolean> = _locked.asStateFlow()
+    private var stoppedAt: Long? = null
+
+    fun onAppStop() {
+        stoppedAt = android.os.SystemClock.elapsedRealtime()
+    }
+
+    fun onAppStart() {
+        val since = stoppedAt?.let { android.os.SystemClock.elapsedRealtime() - it } ?: return
+        if (state.value.settings.lockEnabled && since > AppLock.TIMEOUT_MS) _locked.value = true
+    }
+
+    fun unlock() {
+        _locked.value = false
+    }
+
+    // ── Health measurements ──
+
+    fun saveMeasurement(m: com.medipote.app.data.Measurement) {
+        repo.update { com.medipote.app.domain.Measures.save(it, m) }
+        _events.tryEmit(UiEvent.Message("Mesure enregistrée"))
+    }
+
+    fun deleteMeasurement(id: String) {
+        repo.update { com.medipote.app.domain.Measures.delete(it, id) }
     }
 
     // ── Sleep ──

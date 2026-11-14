@@ -19,3 +19,8 @@
 # Room creates its generated *_Impl databases by reflection (WorkManager's included): keep their
 # no-arg constructor. R8 full mode doesn't keep constructors for a plain "-keep class".
 -keep class * extends androidx.room.RoomDatabase { <init>(); }
+
+# WorkManager creates workers by class name (weekly automatic backup): keep their constructor.
+-keep class * extends androidx.work.ListenableWorker {
+    <init>(android.content.Context, androidx.work.WorkerParameters);
+}

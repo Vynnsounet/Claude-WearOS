@@ -19,6 +19,7 @@ import com.medipote.app.data.WaterSettings
 import com.medipote.app.domain.Schedule
 import com.medipote.app.widget.DosesWidget
 import com.medipote.app.widget.PetWidget
+import com.medipote.app.widget.SleepWidget
 import com.medipote.app.widget.WaterWidget
 import com.medipote.app.widget.WidgetActions
 import com.medipote.app.widget.Widgets
@@ -134,5 +135,19 @@ class WidgetsTest {
 
         WidgetActions.water(context, 1)
         assertEquals(6, context.repository.state.value.entryFor(now.toLocalDate()).waterGlasses)
+    }
+
+    @Test
+    fun sleepWidget() {
+        val empty = texts(render(SleepWidget(), "sleep_empty", 130, 160))
+        assertTrue(empty.toString(), empty.contains("Noter ma nuit"))
+        context.repository.update { s ->
+            val d = now.toLocalDate()
+            s.copy(sleep = listOf(com.medipote.app.data.SleepNight(d, d.minusDays(1).atTime(23, 0), 15, d.atTime(7, 0),
+                listOf(com.medipote.app.data.Awakening(d.atTime(3, 0), 20)))))
+        }
+        val t = texts(render(SleepWidget(), "sleep", 130, 160))
+        assertTrue(t.toString(), t.contains("7 h 25"))
+        assertTrue(t.toString(), t.contains("cette nuit · 1 réveil"))
     }
 }

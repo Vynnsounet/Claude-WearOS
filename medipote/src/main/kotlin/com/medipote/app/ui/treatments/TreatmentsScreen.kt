@@ -148,7 +148,7 @@ fun TreatmentsScreen(
                 }
             }
             val (prn, scheduled) = current.partition { it.asNeeded }
-            items(scheduled, key = { it.id }) { TreatmentCard(it, onClick = { onEdit(it) }, onRefill = { onRefill(it) }) }
+            items(scheduled, key = { it.id }) { TreatmentCard(it, today, onClick = { onEdit(it) }, onRefill = { onRefill(it) }) }
             if (prn.isNotEmpty()) {
                 item { SectionTitle("Si besoin") }
                 items(prn, key = { it.id }) {
@@ -157,7 +157,7 @@ fun TreatmentsScreen(
             }
             if (finished.isNotEmpty()) {
                 item { SectionTitle("Terminés") }
-                items(finished, key = { it.id }) { TreatmentCard(it, onClick = { onEdit(it) }, onRefill = { onRefill(it) }, finished = true) }
+                items(finished, key = { it.id }) { TreatmentCard(it, today, onClick = { onEdit(it) }, onRefill = { onRefill(it) }, finished = true) }
             }
             if (onboarding) {
                 item {
@@ -174,7 +174,7 @@ fun TreatmentsScreen(
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun TreatmentCard(t: Treatment, onClick: () -> Unit, onRefill: () -> Unit, finished: Boolean = false) {
+private fun TreatmentCard(t: Treatment, today: LocalDate, onClick: () -> Unit, onRefill: () -> Unit, finished: Boolean = false) {
     val drug = t.drugId?.let(DrugGuide::byId)
     Card(
         onClick = onClick,
@@ -208,14 +208,14 @@ private fun TreatmentCard(t: Treatment, onClick: () -> Unit, onRefill: () -> Uni
             FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 t.doses.sortedBy { it.minuteOfDay }.forEach {
                     Pill(
-                        "${it.timeLabel} · ${t.unit.format(it.quantity)}",
+                        "${it.timeLabel} · ${t.unit.format(t.quantityOn(today, it))}",
                         container = MaterialTheme.colorScheme.secondaryContainer,
                         content = MaterialTheme.colorScheme.onSecondaryContainer,
                     )
                 }
             }
             val period = buildString {
-                append(t.pill?.let { com.medipote.app.data.PillRegimen.of(it).label } ?: daysSummary(t.daysOfWeek))
+                append(t.pill?.let { com.medipote.app.data.PillRegimen.of(it).label } ?: if (t.everyDays > 1) "Tous les ${t.everyDays} jours" else daysSummary(t.daysOfWeek))
                 append(" · ")
                 append(t.endDate?.let { "jusqu'au ${it.format(shortDate)}" } ?: "au long cours")
             }
@@ -225,6 +225,13 @@ private fun TreatmentCard(t: Treatment, onClick: () -> Unit, onRefill: () -> Uni
                     Spacer(Modifier.width(8.dp))
                     Icon(Icons.Outlined.Restaurant, "Pendant le repas", Modifier.size(14.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
+            }
+            t.steps.filter { it.from.isAfter(today) }.minByOrNull { it.from }?.let { next ->
+                Text(
+                    "Paliers : ${t.unit.format(next.quantity)} par prise à partir du ${next.from.format(shortDate)}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
             t.stock?.let { stock -> StockLine(t, stock, onRefill) }
         }

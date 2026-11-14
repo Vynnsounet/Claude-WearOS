@@ -57,6 +57,7 @@ import com.medipote.app.domain.Tone
 import com.medipote.app.ui.theme.AppTheme
 import java.time.format.TextStyle
 import java.util.Locale
+import kotlin.math.abs
 import kotlin.math.roundToInt
 
 internal fun pct(v: Float?) = v?.let { "${(it * 100).roundToInt()} %" } ?: "—"
@@ -379,6 +380,97 @@ fun AdherenceHeatmap(days: List<DayStats>, modifier: Modifier = Modifier) {
                 }
             }
             Text("Plus", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+    }
+}
+
+/** One x position of a [LineChart], with one value per series. */
+data class LinePoint(val at: java.time.LocalDateTime, val values: List<Double>)
+
+/**
+ * Lines over time (one or two series, e.g. systolic and diastolic pressure). Tap to read a point.
+ * [band] shades the reference range, so values outside it stand out.
+ */
+@Composable
+fun LineChart(
+    points: List<LinePoint>,
+    describe: (Int) -> String,
+    format: (Double) -> String,
+    modifier: Modifier = Modifier,
+    colors: List<Color> = listOf(MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.tertiary),
+    band: ClosedFloatingPointRange<Double>? = null,
+    height: Dp = 160.dp,
+) {
+    if (points.isEmpty()) return
+    var selected by remember(points) { mutableIntStateOf(points.lastIndex) }
+    val grid = MaterialTheme.colorScheme.outlineVariant
+    val bandColor = AppTheme.status.good.copy(alpha = 0.10f)
+    val surface = MaterialTheme.colorScheme.surfaceContainerLow
+    val all = points.flatMap { it.values }
+    var lo = all.min()
+    var hi = all.max()
+    band?.let { lo = minOf(lo, it.start); hi = maxOf(hi, it.endInclusive) }
+    val pad = ((hi - lo) * 0.12).coerceAtLeast(if (hi == lo) maxOf(1.0, abs(hi) * 0.05) else 0.0)
+    lo -= pad
+    hi += pad
+    val t0 = points.first().at
+    val span = java.time.Duration.between(t0, points.last().at).toMinutes().toFloat().coerceAtLeast(1f)
+    fun xOf(i: Int, width: Float, inset: Float): Float =
+        if (points.size == 1) width / 2 else inset + (width - 2 * inset) * java.time.Duration.between(t0, points[i].at).toMinutes() / span
+    Column(modifier, verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Text(describe(selected), style = MaterialTheme.typography.bodyMedium)
+        Row {
+            Canvas(
+                Modifier
+                    .weight(1f)
+                    .height(height)
+                    .semantics { contentDescription = points.indices.joinToString("; ") { describe(it) } }
+                    .pointerInput(points) {
+                        detectTapGestures { pos ->
+                            val inset = 8.dp.toPx()
+                            selected = points.indices.minBy { abs(xOf(it, size.width.toFloat(), inset) - pos.x) }
+                        }
+                    },
+            ) {
+                val inset = 8.dp.toPx()
+                fun y(v: Double) = (size.height * (1 - (v - lo) / (hi - lo))).toFloat()
+                band?.let { b -> drawRect(bandColor, Offset(0f, y(b.endInclusive)), Size(size.width, y(b.start) - y(b.endInclusive))) }
+                listOf(lo + pad, hi - pad).forEach { v -> drawLine(grid, Offset(0f, y(v)), Offset(size.width, y(v)), 1.dp.toPx()) }
+                val sx = xOf(selected, size.width, inset)
+                drawLine(grid, Offset(sx, 0f), Offset(sx, size.height), 1.dp.toPx())
+                val seriesCount = points.maxOf { it.values.size }
+                for (s in 0 until seriesCount) {
+                    val color = colors[s % colors.size]
+                    val path = androidx.compose.ui.graphics.Path()
+                    var started = false
+                    points.forEachIndexed { i, p ->
+                        val v = p.values.getOrNull(s) ?: return@forEachIndexed
+                        val x = xOf(i, size.width, inset)
+                        if (!started) { path.moveTo(x, y(v)); started = true } else path.lineTo(x, y(v))
+                    }
+                    if (points.size > 1) drawPath(path, color, style = androidx.compose.ui.graphics.drawscope.Stroke(2.dp.toPx(), cap = androidx.compose.ui.graphics.StrokeCap.Round, join = androidx.compose.ui.graphics.StrokeJoin.Round))
+                    points.forEachIndexed { i, p ->
+                        val v = p.values.getOrNull(s) ?: return@forEachIndexed
+                        val c = Offset(xOf(i, size.width, inset), y(v))
+                        if (i == selected) {
+                            drawCircle(surface, 6.dp.toPx(), c)
+                            drawCircle(color, 5.dp.toPx(), c)
+                        } else if (points.size <= 40) {
+                            drawCircle(color, 2.5.dp.toPx(), c)
+                        }
+                    }
+                }
+            }
+            Box(Modifier.height(height).widthIn(min = 36.dp).padding(start = 6.dp)) {
+                Text(format(hi - pad), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.align(Alignment.TopStart).offset(y = 4.dp))
+                Text(format(lo + pad), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.align(Alignment.BottomStart).offset(y = (-14).dp))
+            }
+        }
+        Row(Modifier.fillMaxWidth().padding(end = 42.dp)) {
+            val fmt = java.time.format.DateTimeFormatter.ofPattern("d MMM", Locale.FRANCE)
+            Text(points.first().at.format(fmt), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Spacer(Modifier.weight(1f))
+            if (points.size > 1) Text(points.last().at.format(fmt), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }

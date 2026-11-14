@@ -75,13 +75,15 @@ object Game {
             TakeStatus.EARLY -> "pris en avance"
         }
         var game = addPoints(state.game, points, "${occ.treatment.displayName} $label", now)
+        // Growth: start from the history the first time, then one point per dose given on time.
+        if (status == TakeStatus.ON_TIME) game = game.copy(growth = Evolution.points(state) + 1)
         val logs = state.doseLogs + log
 
         // Stock: one dose less; warn once when it reaches the warning level.
         var lowStock: com.medipote.app.data.Treatment? = null
         val treatments = state.treatments.map { t ->
             if (t.id != occ.treatment.id || t.stock == null) return@map t
-            val updated = t.copy(stock = (t.stock - occ.dose.quantity).coerceAtLeast(0.0))
+            val updated = t.copy(stock = (t.stock - occ.quantity).coerceAtLeast(0.0))
             if (updated.isLowStock && !t.isLowStock) lowStock = updated
             updated
         }
@@ -99,6 +101,28 @@ object Game {
             }
         }
         return GiveResult(state.copy(doseLogs = logs, game = game, treatments = treatments), log, bonus, lowStock)
+    }
+
+    /**
+     * Gives every dose planned at [time] that isn't given yet (the "Taken" button of a reminder).
+     * Returns the new state and the points won, or null when there was nothing to give.
+     */
+    fun giveAllAt(state: AppState, time: LocalDateTime, now: LocalDateTime): Pair<AppState, Int>? {
+        var s = state
+        var points = 0
+        var given = 0
+        val items = Schedule.itemsOn(state.treatments, state.doseLogs.associateBy { it.key }, time.toLocalDate(), now)
+            .filter { it.occurrence.scheduled == time }
+        for (item in items) {
+            val fresh = Schedule.itemsOn(s.treatments, s.doseLogs.associateBy { it.key }, time.toLocalDate(), now)
+                .first { it.occurrence.key == item.occurrence.key }
+            val r = give(s, fresh, now) ?: give(s, fresh, now, early = true) ?: continue
+            s = r.state
+            points += r.log.points + r.perfectDayBonus
+            given++
+        }
+        if (given == 0) return null
+        return s.copy(snoozes = s.snoozes.filterNot { it.doseTime == time }) to points
     }
 
     /** Saves a journal entry; the first filled-in entry of a day earns a small bonus. */

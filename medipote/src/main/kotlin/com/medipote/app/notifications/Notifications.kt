@@ -28,7 +28,7 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
-enum class AlarmKind { DOSE, FOLLOW_UP, APPOINTMENT, WATER, STOCK, TEST, PRN_CHECK, SLEEP }
+enum class AlarmKind { DOSE, FOLLOW_UP, APPOINTMENT, WATER, STOCK, TEST, PRN_CHECK, SLEEP, SNOOZE, RENEWAL }
 
 /** One planned alarm. [ref] identifies what it is about (an appointment id, for instance). */
 data class AlarmSpec(val kind: AlarmKind, val time: LocalDateTime, val ref: String = "") {
@@ -59,6 +59,14 @@ object ReminderPlanner {
             if (time.isAfter(now)) alarms += AlarmSpec(AlarmKind.DOSE, time)
             val follow = time.plusMinutes(FOLLOW_UP_MINUTES)
             if (state.settings.followUpReminder && follow.isAfter(now)) alarms += AlarmSpec(AlarmKind.FOLLOW_UP, time)
+        }
+
+        // Reminders put off from their notification, while their doses aren't given.
+        val given = state.doseLogs.mapTo(HashSet()) { it.key }
+        for (s in state.snoozes) {
+            if (!s.until.isAfter(now)) continue
+            val pending = Schedule.occurrencesOn(state.treatments, s.doseTime.toLocalDate()).any { it.scheduled == s.doseTime && it.key !in given }
+            if (pending) alarms += AlarmSpec(AlarmKind.SNOOZE, s.until, s.doseTime.toString())
         }
 
         // Appointments: every reminder still ahead.
@@ -95,6 +103,13 @@ object ReminderPlanner {
                 val t = date.atTime(sleep.reminderMinute / 60, sleep.reminderMinute % 60)
                 if (t.isAfter(now) && state.sleep.none { it.date == date }) alarms += AlarmSpec(AlarmKind.SLEEP, t)
             }
+        }
+
+        // Prescriptions to renew: at 10:00 on the reminder day.
+        for (doc in state.documents) {
+            val day = com.medipote.app.domain.Renewals.reminderDate(doc) ?: continue
+            val t = day.atTime(STOCK_CHECK)
+            if (t.isAfter(now)) alarms += AlarmSpec(AlarmKind.RENEWAL, t, doc.id)
         }
 
         // Low stock: a daily reminder at 10:00 until a box is bought.
@@ -189,7 +204,15 @@ object Notifications {
     /** Extra telling the app which screen to open when the notification is tapped. */
     const val EXTRA_ROUTE = "route"
 
-    private fun post(context: Context, channel: String, id: Int, title: String, text: String, route: String? = null) {
+    private fun post(
+        context: Context,
+        channel: String,
+        id: Int,
+        title: String,
+        text: String,
+        route: String? = null,
+        actions: List<NotificationCompat.Action> = emptyList(),
+    ) {
         if (!canPost(context)) return
         val intent = Intent(context, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP)
         if (route != null) intent.putExtra(EXTRA_ROUTE, route)
@@ -222,6 +245,7 @@ object Notifications {
             )
             .setContentIntent(open)
             .setAutoCancel(true)
+            .apply { actions.forEach(::addAction) }
             .build()
         try {
             NotificationManagerCompat.from(context).notify(id, notification)
@@ -236,10 +260,18 @@ object Notifications {
             .filter { it.scheduled == time && it.key !in taken }
         if (doses.isEmpty()) return
         val pet = state.game.petName
-        val list = doses.joinToString(", ") { "${it.treatment.displayName} (${it.treatment.unit.format(it.dose.quantity)})" }
+        val list = doses.joinToString(", ") { "${it.treatment.displayName} (${it.treatment.unit.format(it.quantity)})" }
         val title = if (followUp) "$pet ne se sent pas très bien…" else "C'est l'heure des médicaments 💊"
         val text = if (followUp) "Tu n'as pas encore donné : $list. Mieux vaut tard que jamais !" else "$pet attend : $list"
-        post(context, CHANNEL_DOSES, notificationId(time), title, text)
+        val id = notificationId(time)
+        post(
+            context, CHANNEL_DOSES, id, title, text,
+            actions = listOf(
+                NotificationActions.action(context, "Pris ✓", NotificationActions.take(context, time, id)),
+                NotificationActions.action(context, "+10 min", NotificationActions.snooze(context, time, id, 10)),
+                NotificationActions.action(context, "+30 min", NotificationActions.snooze(context, time, id, 30)),
+            ),
+        )
     }
 
     fun showAppointment(context: Context, state: AppState, ref: String) {
@@ -262,7 +294,11 @@ object Notifications {
         val water = state.settings.water
         val glasses = state.entryFor(now.toLocalDate()).waterGlasses
         if (!water.enabled || glasses >= water.goalGlasses) return
-        post(context, CHANNEL_WATER, WATER_ID, "Un verre d'eau ? 💧", "${state.game.petName} a soif ! Tu en es à $glasses / ${water.goalGlasses} verres aujourd'hui.")
+        post(
+            context, CHANNEL_WATER, WATER_ID, "Un verre d'eau ? 💧",
+            "${state.game.petName} a soif ! Tu en es à $glasses / ${water.goalGlasses} verres aujourd'hui.",
+            actions = listOf(NotificationActions.action(context, "J'ai bu un verre", NotificationActions.water(context, WATER_ID))),
+        )
     }
 
     fun showPrnCheck(context: Context, state: AppState, intakeId: String) {
@@ -287,6 +323,18 @@ object Notifications {
         post(context, CHANNEL_STOCK, STOCK_ID, "Pense à racheter tes médicaments", "Stock bas : $list.")
     }
 
+    fun showRenewal(context: Context, state: AppState, id: String, now: LocalDateTime) {
+        val doc = state.documents.firstOrNull { it.id == id } ?: return
+        val until = doc.validUntil ?: return
+        post(
+            context, CHANNEL_APPOINTMENTS, "renewal:$id".hashCode(),
+            "Ordonnance à renouveler 📄",
+            "« ${doc.title} » n'est plus valable après le ${until.format(DateTimeFormatter.ofPattern("d MMMM", Locale.FRANCE))}. " +
+                "Pense à prendre rendez-vous avec ton médecin.",
+            route = "document/$id",
+        )
+    }
+
     fun showSleep(context: Context, state: AppState, now: LocalDateTime) {
         if (!state.settings.sleep.reminder || state.sleep.any { it.date == now.toLocalDate() }) return
         post(
@@ -294,6 +342,23 @@ object Notifications {
             "Note ta nuit et tes réveils en quelques secondes : +${com.medipote.app.domain.Rules.SLEEP_BONUS} pts pour ${state.game.petName} et toi.",
             route = "sleep_log",
         )
+    }
+
+    /** A short confirmation after a notification button, without sound; it goes away by itself. */
+    fun confirm(context: Context, id: Int, text: String) {
+        if (!canPost(context)) return
+        val n = NotificationCompat.Builder(context, CHANNEL_DOSES)
+            .setSmallIcon(R.drawable.ic_notification)
+            .setColor(ACCENT)
+            .setContentTitle(text)
+            .setSilent(true)
+            .setTimeoutAfter(5_000)
+            .setAutoCancel(true)
+            .build()
+        try {
+            NotificationManagerCompat.from(context).notify(id, n)
+        } catch (_: SecurityException) {
+        }
     }
 
     /** Posted from the settings so the user can check notifications reach them. */
@@ -381,6 +446,12 @@ class ReminderReceiver : BroadcastReceiver() {
                 AlarmKind.TEST -> Unit
                 AlarmKind.PRN_CHECK -> Notifications.showPrnCheck(context, state, spec.ref)
                 AlarmKind.SLEEP -> Notifications.showSleep(context, state, repo.now())
+                AlarmKind.RENEWAL -> Notifications.showRenewal(context, state, spec.ref, repo.now())
+                AlarmKind.SNOOZE -> {
+                    val time = LocalDateTime.parse(spec.ref)
+                    repo.update { s -> s.copy(snoozes = s.snoozes.filterNot { it.doseTime == time && !it.until.isAfter(spec.time) }) }
+                    Notifications.showDoses(context, repo.state.value, time, followUp = true)
+                }
             }
         }
         ReminderScheduler.reschedule(context, state, repo.now())

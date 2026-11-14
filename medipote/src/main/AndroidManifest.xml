@@ -49,6 +49,10 @@
             android:exported="false" />
 
         <receiver
+            android:name=".notifications.NotificationActionReceiver"
+            android:exported="false" />
+
+        <receiver
             android:name=".notifications.BootReceiver"
             android:exported="true">
             <intent-filter>
@@ -94,6 +98,18 @@
             <meta-data
                 android:name="android.appwidget.provider"
                 android:resource="@xml/widget_water" />
+        </receiver>
+
+        <receiver
+            android:name=".widget.SleepWidgetReceiver"
+            android:exported="true"
+            android:label="@string/widget_sleep">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_sleep" />
         </receiver>
     </application>
 </manifest>

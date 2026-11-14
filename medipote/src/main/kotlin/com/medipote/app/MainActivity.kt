@@ -2,7 +2,7 @@ package com.medipote.app
 
 import android.content.Intent
 import android.os.Bundle
-import androidx.activity.ComponentActivity
+import androidx.fragment.app.FragmentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
@@ -10,7 +10,8 @@ import com.medipote.app.notifications.Notifications
 import com.medipote.app.ui.AppViewModel
 import com.medipote.app.ui.MediPoteApp
 
-class MainActivity : ComponentActivity() {
+/** A FragmentActivity so the fingerprint / PIN prompt can be shown over it. */
+class MainActivity : FragmentActivity() {
     private val vm: AppViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -19,6 +20,16 @@ class MainActivity : ComponentActivity() {
         if (savedInstanceState == null) openRoute(intent)
         setContent { MediPoteApp(vm) }
         CrashReporter.offerReport(this)
+    }
+
+    override fun onStart() {
+        super.onStart()
+        vm.onAppStart()
+    }
+
+    override fun onStop() {
+        super.onStop()
+        vm.onAppStop()
     }
 
     override fun onNewIntent(intent: Intent) {
