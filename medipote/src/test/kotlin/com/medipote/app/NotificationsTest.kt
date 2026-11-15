@@ -48,7 +48,10 @@ class NotificationsTest {
         context.repository.update { state }
     }
 
-    private fun doseAlarm() = alarms.scheduledAlarms.minBy { it.triggerAtTime }
+    // The first dose alarm (other reminders, such as the evening ritual, may fall earlier in the day).
+    private fun doseAlarm() = alarms.scheduledAlarms
+        .filter { shadowOf(it.operation).savedIntent.getStringExtra(ReminderScheduler.EXTRA_KEY).orEmpty().startsWith("DOSE|") }
+        .minBy { it.triggerAtTime }
 
     @Test
     fun exactAlarmsWhenAllowed() {

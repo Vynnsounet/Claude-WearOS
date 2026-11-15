@@ -7,6 +7,7 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.assertCountEquals
@@ -622,6 +623,90 @@ class ScreensTest {
                 com.medipote.app.ui.sleep.NightTimeline(night)
             }
         }
+    }
+
+    private fun napState(timer: Boolean = false): AppState {
+        val base = sleepState()
+        val naps = listOf(
+            com.medipote.app.data.Nap("n1", today.atTime(14, 10), 25, com.medipote.app.data.NapFeeling.FRESH),
+            com.medipote.app.data.Nap("n2", today.minusDays(1).atTime(15, 30), 40),
+            com.medipote.app.data.Nap("n3", today.minusDays(3).atTime(13, 45), 20, com.medipote.app.data.NapFeeling.FOGGY),
+        )
+        return base.copy(naps = naps, napSince = if (timer) now.minusMinutes(12) else null)
+    }
+
+    @Test
+    @Config(qualifiers = "w400dp-h2600dp-xhdpi")
+    fun sleepTabWithNaps() {
+        render("sleep_naps") { com.medipote.app.ui.sleep.SleepScreen(napState(), now, {}, {}) }
+        compose.onNodeWithText("😴 Je m'endors").assertExists()
+        compose.onNodeWithText("Noter une sieste").assertExists()
+        // Today's nap under the night, and the stats apart from the night's figures.
+        compose.onNodeWithText("Sieste · 14:10 · 25 min").assertExists()
+        compose.onNodeWithText("😴 Siestes").assertExists()
+        compose.onNodeWithText("Voir mes siestes").assertExists()
+    }
+
+    @Test
+    @Config(qualifiers = "w400dp-h1000dp-xhdpi")
+    fun sleepTabWithARunningNap() {
+        var woke = 0
+        render("sleep_nap_timer") { com.medipote.app.ui.sleep.SleepScreen(napState(timer = true), now, {}, {}, onNapWake = { woke++ }) }
+        compose.onNodeWithText("Sieste en cours").assertExists()
+        compose.onNodeWithText("12 min").assertExists()
+        compose.onNodeWithText("😴 Je m'endors").assertDoesNotExist()
+        compose.onNodeWithText("Je me réveille").performClick()
+        org.junit.Assert.assertEquals(1, woke)
+    }
+
+    @Test
+    @Config(qualifiers = "w400dp-h1800dp-xhdpi")
+    fun homeWithARunningNapAndQuickAddNap() {
+        val state = napState(timer = true)
+        render("home_nap") { HomeScreen(state, now, 0, 0, {}, {}, {}, {}, animate = false, quickAdd = com.medipote.app.ui.home.QuickAddActions()) }
+        compose.onNodeWithText("Sieste en cours").assertExists()
+        compose.onNodeWithText("Je me réveille").assertExists()
+    }
+
+    @Test
+    @Config(qualifiers = "w400dp-h1100dp-xhdpi")
+    fun quickAddOffersNaps() {
+        var started = 0
+        render("quick_add_nap") {
+            com.medipote.app.ui.home.QuickAddContent(
+                napState(), now, com.medipote.app.ui.home.QuickAddActions(onNapStart = { started++ }), onDone = {},
+                initial = com.medipote.app.ui.home.QuickPage.NAP,
+            )
+        }
+        compose.onNodeWithText("Je m'endors maintenant").performClick()
+        org.junit.Assert.assertEquals(1, started)
+        compose.onNodeWithText("Noter une sieste déjà faite").assertExists()
+    }
+
+    @Test
+    @Config(qualifiers = "w400dp-h1000dp-xhdpi")
+    fun napEditor() {
+        var saved: com.medipote.app.data.Nap? = null
+        render("nap_editor") { com.medipote.app.ui.sleep.NapEditorScreen(null, null, null, now, onSave = { saved = it }, onDelete = {}, onBack = {}) }
+        compose.onNodeWithText("Noter une sieste").assertExists()
+        // 30 minutes by default: the big figure and its shortcut.
+        compose.onAllNodesWithText("30 min").assertCountEquals(2)
+        compose.onNodeWithText("😊 En forme").performClick()
+        // 20 minutes from a start 30 minutes ago: it has ended, so it can be saved.
+        compose.onNodeWithText("20 min").performClick()
+        compose.onNodeWithText("Enregistrer").performClick()
+        org.junit.Assert.assertEquals(20, saved?.minutes)
+        org.junit.Assert.assertEquals(com.medipote.app.data.NapFeeling.FRESH, saved?.feeling)
+    }
+
+    @Test
+    @Config(qualifiers = "w400dp-h900dp-xhdpi")
+    fun napEditorRefusesANapEndingInTheFuture() {
+        // Started 10 minutes ago, 60 minutes long: it would end in the future.
+        render("nap_editor_future") {
+            com.medipote.app.ui.sleep.NapEditorScreen(null, now.minusMinutes(10), 60, now, onSave = {}, onDelete = {}, onBack = {})
+        }
+        compose.onNodeWithText("Une sieste ne peut pas finir dans le futur", substring = true).assertExists()
     }
 
     @Test

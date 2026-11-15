@@ -73,6 +73,10 @@ data class WatchSnapshot(
     val lastHeartRateAt: String? = null,
     val lastOxygen: Int? = null,
     val lastOxygenAt: String? = null,
+    /** A nap being timed: when "I'm falling asleep" was pressed (phone or watch). */
+    val napSince: String? = null,
+    /** Minutes of nap noted today, to show at a glance. */
+    val napMinutesToday: Int = 0,
 ) {
     val generated: LocalDateTime get() = LocalDateTime.parse(generatedAt)
 }
@@ -98,6 +102,12 @@ data class WatchAction(
 
         /** Oxygen saturation (%) typed on the watch: no public API gives apps the watch's own sensor. */
         const val OXYGEN = "OXYGEN"
+
+        /** A nap that just ended: [value] minutes, ending at the time of the gesture. */
+        const val NAP = "NAP"
+        const val NAP_START = "NAP_START"
+        const val NAP_STOP = "NAP_STOP"
+        const val NAP_CANCEL = "NAP_CANCEL"
         const val PRODUCT_CHANGED = "PRODUCT_CHANGED"
     }
 }
@@ -190,6 +200,15 @@ object WatchPlanner {
         WatchAction.PRN -> snapshot.copy(prn = snapshot.prn.map { if (it.id == action.treatmentId) it.copy(lastTakenAt = action.at) else it })
         WatchAction.HEART_RATE -> snapshot.copy(lastHeartRate = action.value.toInt(), lastHeartRateAt = action.at)
         WatchAction.OXYGEN -> snapshot.copy(lastOxygen = action.value.toInt(), lastOxygenAt = action.at)
+        WatchAction.NAP -> snapshot.copy(napMinutesToday = snapshot.napMinutesToday + action.value.toInt())
+        WatchAction.NAP_START -> if (snapshot.napSince == null) snapshot.copy(napSince = action.at) else snapshot
+        WatchAction.NAP_CANCEL -> snapshot.copy(napSince = null)
+        WatchAction.NAP_STOP -> {
+            val since = snapshot.napSince?.let(LocalDateTime::parse)
+            val minutes = since?.let { java.time.Duration.between(it, action.time).toMinutes().toInt() } ?: 0
+            // Counted here only when it is a real nap (the phone applies the same limits).
+            snapshot.copy(napSince = null, napMinutesToday = snapshot.napMinutesToday + if (minutes in 1..240) minutes else 0)
+        }
         WatchAction.PRODUCT_CHANGED -> snapshot.copy(reminders = snapshot.reminders.filterNot { it.kind == WatchReminder.PRODUCT })
         else -> snapshot
     }
@@ -237,5 +256,19 @@ object Oxygen {
         value < 92 -> "Basse (sous 92 %) : refais la mesure et contacte un médecin si elle reste basse."
         value < 95 -> "Un peu basse (sous 95 %)."
         else -> null
+    }
+}
+
+/** Naps timed or noted on the watch. */
+object NapTimer {
+    val DURATIONS = listOf(20, 30, 45, 60)
+    const val MAX_MINUTES = 240
+
+    fun minutes(since: LocalDateTime, now: LocalDateTime): Int = java.time.Duration.between(since, now).toMinutes().toInt().coerceAtLeast(0)
+
+    fun label(minutes: Int): String = when {
+        minutes < 60 -> "$minutes min"
+        minutes % 60 == 0 -> "${minutes / 60} h"
+        else -> "${minutes / 60} h ${"%02d".format(minutes % 60)}"
     }
 }

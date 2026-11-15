@@ -293,6 +293,17 @@ Les données (y compris de santé et les documents) restent sur le téléphone, 
 le stockage privé de l'app, exclu de la sauvegarde cloud. Elles n'en sortent que
 par une action de la personne : sauvegarde, rapport PDF ou document partagé.
 
+## Siestes
+
+Dans Suivi › Sommeil : **« 😴 Je m'endors »** lance un chronomètre (visible aussi sur l'accueil,
+« Je me réveille » note la sieste), ou **« Noter une sieste »** pour une sieste déjà faite
+(durée, début, ressenti). Les siestes sont comptées **à part** : la moyenne, les réveils,
+l'efficacité, les séries et les badges de la nuit ne bougent pas. À côté : une carte « Siestes »,
+le total « nuit + siestes » par jour, et un réglage pour les compter ou non dans l'objectif.
+Pas de points ni de rappels : on n'encourage pas à dormir plus.
+
+![](docs/sleep_naps.png)
+
 ## Montre Wear OS
 
 Une appli compagnon pour montres Wear OS 3 et plus (module `medipote-wear`), reliée
@@ -307,6 +318,8 @@ Une appli compagnon pour montres Wear OS 3 et plus (module `medipote-wear`), rel
   « protection changée » en un geste aussi.
 - **Pouls** : mesure avec le capteur de la montre, enregistrée dans Suivi › Mesures
   du téléphone (« Depuis la montre »).
+- **Sieste** : « Je m'endors » / « Je me réveille » (chronomètre partagé avec le téléphone),
+  ou une sieste qui vient de finir en un geste (20 min à 1 h).
 - **Saturation** : saisie sur la montre (oxymètre ou appli santé de la montre), enregistrée
   dans les mesures du téléphone. La montre ne la mesure pas elle-même : le capteur n'est pas
   ouvert aux applis tierces.

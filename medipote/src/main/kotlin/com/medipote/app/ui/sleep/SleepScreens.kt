@@ -73,6 +73,7 @@ import androidx.compose.ui.unit.dp
 import com.medipote.app.data.AppState
 import com.medipote.app.data.Awakening
 import com.medipote.app.data.SleepNight
+import com.medipote.app.domain.Naps
 import com.medipote.app.domain.Reports
 import com.medipote.app.domain.Rules
 import com.medipote.app.domain.Sleep
@@ -216,7 +217,17 @@ private fun nightSummary(n: SleepNight): String = buildString {
 private enum class SleepPeriod(val days: Int, val label: String) { WEEK(7, "7 j"), MONTH(30, "30 j"), QUARTER(90, "90 j") }
 
 @Composable
-fun SleepScreen(state: AppState, now: LocalDateTime, onLog: () -> Unit, onOpen: (SleepNight) -> Unit) {
+fun SleepScreen(
+    state: AppState,
+    now: LocalDateTime,
+    onLog: () -> Unit,
+    onOpen: (SleepNight) -> Unit,
+    onNapStart: () -> Unit = {},
+    onNapWake: () -> Unit = {},
+    onNapCancel: () -> Unit = {},
+    onNapLog: () -> Unit = {},
+    onOpenNap: (com.medipote.app.data.Nap) -> Unit = {},
+) {
     val today = now.toLocalDate()
     var period by rememberSaveable { mutableStateOf(SleepPeriod.WEEK) }
     val report = remember(state.sleep, state.journal, state.settings.sleep, today, period) { Sleep.report(state, today, period.days) }
@@ -267,6 +278,12 @@ fun SleepScreen(state: AppState, now: LocalDateTime, onLog: () -> Unit, onOpen: 
             }
         }
 
+        // Naps: the timer when one is running, else the two ways to note one; today's under the night.
+        val napSince = Naps.running(state, now)
+        if (napSince != null) NapTimerCard(napSince, now, onWake = onNapWake, onCancel = onNapCancel)
+        else NapActions(onStart = onNapStart, onLog = onNapLog)
+        Naps.on(state, today).forEach { NapLine(it) { onOpenNap(it) } }
+
         PeriodSelector(SleepPeriod.entries.map { it to it.label }, period, { period = it })
 
         if (report.count == 0) {
@@ -277,9 +294,11 @@ fun SleepScreen(state: AppState, now: LocalDateTime, onLog: () -> Unit, onOpen: 
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
+            NapsCard(report)
         } else {
             // The essentials first; the detailed figures and past nights one tap away.
             SleepTiles(report, more = false)
+            NapsCard(report)
             InsightsCard(report.insights)
             DurationChart(report, today)
             com.medipote.app.ui.components.MoreOptions(
@@ -292,6 +311,28 @@ fun SleepScreen(state: AppState, now: LocalDateTime, onLog: () -> Unit, onOpen: 
                     StatCard("Ce qui a accompagné tes nuits") { RankedBars(report.tags, report.count) }
                 }
             }
+            if (report.naps.naps.isNotEmpty()) {
+                com.medipote.app.ui.components.MoreOptions(
+                    "${report.naps.naps.size} sieste${if (report.naps.naps.size > 1) "s" else ""} sur la période",
+                    label = "Voir mes siestes",
+                ) {
+                    Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)) {
+                        Column {
+                            report.naps.naps.reversed().forEachIndexed { i, nap ->
+                                if (i > 0) HorizontalDivider(Modifier.padding(horizontal = 16.dp))
+                                Row(
+                                    Modifier.fillMaxWidth().clickable { onOpenNap(nap) }.padding(horizontal = 16.dp, vertical = 12.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                ) {
+                                    Text(nap.date.format(shortDay).capitalized() + " · " + nap.start.format(hourMinute), style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
+                                    Text(Sleep.format(nap.minutes), style = MaterialTheme.typography.titleSmall)
+                                    nap.feeling?.let { Text("  " + it.emoji, style = MaterialTheme.typography.titleSmall) }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
             com.medipote.app.ui.components.MoreOptions(
                 "${report.count} nuit${if (report.count > 1) "s" else ""} sur la période",
                 label = "Voir mes nuits précédentes",
@@ -300,7 +341,7 @@ fun SleepScreen(state: AppState, now: LocalDateTime, onLog: () -> Unit, onOpen: 
                     Column {
                         report.nights.reversed().forEachIndexed { i, n ->
                             if (i > 0) HorizontalDivider(Modifier.padding(horizontal = 16.dp))
-                            NightRow(n, report.goalMinutes) { onOpen(n) }
+                            NightRow(n, report.goalMinutes, naps = Naps.minutesOn(state, n.date)) { onOpen(n) }
                         }
                     }
                 }
@@ -310,6 +351,34 @@ fun SleepScreen(state: AppState, now: LocalDateTime, onLog: () -> Unit, onOpen: 
             TextButton(onClick = onLog, modifier = Modifier.align(Alignment.CenterHorizontally)) { Text("Noter une autre nuit") }
         }
         Spacer(Modifier.height(8.dp))
+    }
+}
+
+/** Naps of the period, apart from the night's figures; and the day's total (night + naps). */
+@Composable
+private fun NapsCard(r: SleepReport) {
+    val naps = r.naps
+    if (naps.naps.isEmpty()) return
+    StatCard("😴 Siestes", subtitle = "Comptées à part : elles ne changent pas les chiffres de ta nuit") {
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            NapFigure("${naps.naps.size}", if (naps.naps.size > 1) "siestes" else "sieste")
+            NapFigure(naps.averageMinutes?.let(Sleep::format) ?: "—", "en moyenne")
+            NapFigure(Sleep.format(naps.totalMinutes), "au total")
+        }
+        r.averageDailyTotal?.let { total ->
+            Text(
+                "Nuit + siestes : ${Sleep.format(total)} de sommeil par jour en moyenne.",
+                style = MaterialTheme.typography.bodyMedium,
+            )
+        }
+    }
+}
+
+@Composable
+private fun NapFigure(value: String, label: String) {
+    Column {
+        Text(value, style = MaterialTheme.typography.headlineSmall)
+        Text(label, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }
 
@@ -501,7 +570,7 @@ private fun AwakeningsCard(r: SleepReport) {
 }
 
 @Composable
-private fun NightRow(n: SleepNight, goal: Int, onClick: () -> Unit) {
+private fun NightRow(n: SleepNight, goal: Int, naps: Int = 0, onClick: () -> Unit) {
     Column(
         Modifier.fillMaxWidth().clickable(onClick = onClick).padding(horizontal = 16.dp, vertical = 12.dp),
         verticalArrangement = Arrangement.spacedBy(6.dp),
@@ -516,7 +585,7 @@ private fun NightRow(n: SleepNight, goal: Int, onClick: () -> Unit) {
         }
         NightTimeline(n, height = 8, labels = false)
         Text(
-            nightSummary(n) + (feelings(n)?.let { " · $it" } ?: ""),
+            nightSummary(n) + (feelings(n)?.let { " · $it" } ?: "") + if (naps > 0) " · 😴 +${Sleep.format(naps)} de sieste" else "",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             maxLines = 2,

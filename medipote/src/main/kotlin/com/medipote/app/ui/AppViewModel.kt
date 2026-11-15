@@ -323,6 +323,51 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         checkAchievements()
     }
 
+    // ── Naps ──
+
+    fun startNap() {
+        repo.update { com.medipote.app.domain.Naps.start(it, repo.now()) }
+        _events.trySend(UiEvent.Message("Bonne sieste ! 😴"))
+    }
+
+    fun cancelNap() {
+        repo.update { com.medipote.app.domain.Naps.cancel(it) }
+    }
+
+    /** "I wake up": notes the nap; the caller fixes it by hand when the timer was forgotten. */
+    fun stopNap(): com.medipote.app.domain.NapStop {
+        var result: com.medipote.app.domain.NapStop? = null
+        repo.update { s ->
+            val r = com.medipote.app.domain.Naps.stop(s, repo.now(), java.util.UUID.randomUUID().toString())
+            result = r
+            when (r) {
+                is com.medipote.app.domain.NapStop.Saved -> r.state
+                is com.medipote.app.domain.NapStop.TooShort -> r.state
+                is com.medipote.app.domain.NapStop.TooLong -> r.state
+            }
+        }
+        val r = result!!
+        _events.trySend(
+            UiEvent.Message(
+                when (r) {
+                    is com.medipote.app.domain.NapStop.Saved -> "Sieste de ${com.medipote.app.domain.Sleep.format(r.nap.minutes)} enregistrée"
+                    is com.medipote.app.domain.NapStop.TooShort -> "Sieste trop courte pour être notée"
+                    is com.medipote.app.domain.NapStop.TooLong -> "Le minuteur tournait depuis longtemps : corrige la durée"
+                },
+            ),
+        )
+        return r
+    }
+
+    fun saveNap(nap: com.medipote.app.data.Nap) {
+        repo.update { com.medipote.app.domain.Naps.save(it, nap) }
+        _events.trySend(UiEvent.Message("Sieste enregistrée"))
+    }
+
+    fun deleteNap(id: String) {
+        repo.update { com.medipote.app.domain.Naps.delete(it, id) }
+    }
+
     fun deleteSleep(date: LocalDate) {
         repo.update { com.medipote.app.domain.Sleep.delete(it, date) }
         reschedule()

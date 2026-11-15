@@ -88,6 +88,24 @@ class WatchSyncTest {
     }
 
     @Test
+    fun napsShowAtOnceOnTheWatch() {
+        val started = WatchPlanner.apply(snapshot, WatchAction("a", WatchAction.NAP_START, at(14, 10).toString()))
+        assertEquals(at(14, 10).toString(), started.napSince)
+        // A second "I fall asleep" doesn't restart it.
+        assertEquals(started, WatchPlanner.apply(started, WatchAction("b", WatchAction.NAP_START, at(14, 20).toString())))
+        val woke = WatchPlanner.apply(started, WatchAction("c", WatchAction.NAP_STOP, at(14, 40).toString()))
+        assertNull(woke.napSince)
+        assertEquals(30, woke.napMinutesToday)
+        // A few seconds, or a timer forgotten overnight, count for nothing.
+        val tooShort = WatchPlanner.apply(started, WatchAction("d", WatchAction.NAP_STOP, at(14, 10).plusSeconds(20).toString()))
+        assertEquals(0, tooShort.napMinutesToday)
+        assertEquals(0, WatchPlanner.apply(started, WatchAction("e", WatchAction.NAP_STOP, at(23, 0).toString())).napMinutesToday)
+        assertNull(WatchPlanner.apply(started, WatchAction("f", WatchAction.NAP_CANCEL, at(14, 12).toString())).napSince)
+        assertEquals(45, WatchPlanner.apply(snapshot, WatchAction("g", WatchAction.NAP, at(15).toString(), value = 45.0)).napMinutesToday)
+        assertEquals("1 h 30", NapTimer.label(90))
+    }
+
+    @Test
     fun heartRateWaitsForSteadyReadings() {
         assertNull(HeartRate.steady(listOf(70f, 71f, 72f)))
         assertNull(HeartRate.steady(listOf(0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f)))

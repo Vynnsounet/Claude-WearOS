@@ -66,6 +66,27 @@ L'optimiseur de R8 reste désactivé (`-dontoptimize`) : APK de 3,8 Mo au lieu d
 le dex livré peut être reconverti et exécuté hors appareil pour vérification (voir plus bas),
 ce que l'optimiseur empêche. Il pourra être réactivé après des essais sur téléphone.
 
+### 1.13.0 — les siestes
+
+- Suivi › Sommeil : « 😴 Je m'endors » (chronomètre) ou « Noter une sieste ». Le chronomètre
+  reste visible sur la page Sommeil et sur l'accueil ; « Je me réveille » note la sieste avec la
+  durée écoulée (un minuteur oublié des heures demande de corriger la durée, une pression de
+  quelques secondes ne note rien).
+- Écran de saisie court : durée (− / +, raccourcis 15 min à 2 h), début, « Et après ? »
+  (en forme / pareil / dans le brouillard) ; jour et note repliés. Jusqu'à 4 h, au-delà on propose
+  de noter une nuit.
+- Les siestes sont **comptées à part** : les chiffres de la nuit (moyenne, réveils, efficacité,
+  séries, badges, défis) ne changent jamais. Ils s'ajoutent : carte « Siestes » (nombre, durée
+  moyenne, total), « Nuit + siestes : … par jour », liste « Voir mes siestes », la sieste du jour
+  sous la nuit, « +… de sieste » sur la nuit du jour.
+- Paramètres › Sommeil : « Compter les siestes dans mon objectif » (activé) ; il ne touche que
+  l'objectif.
+- Aussi dans : bouton « + Noter » (« Une sieste », « Terminer ma sieste »), Ma journée, rapport
+  pour le médecin, compagnon (un mot après une sieste, plus de « une petite sieste ? » ce jour-là).
+- Aucun point, badge, défi ni rappel pour les siestes.
+- Montre : « 😴 Sieste » (chronomètre « Je m'endors » / « Je me réveille », ou une sieste qui vient
+  de finir : 20 min, 30 min, 45 min, 1 h).
+
 ### 1.12.0
 
 - Montre : « 💨 Noter ma saturation » (70 à 100 %, boutons − et +). La valeur arrive dans

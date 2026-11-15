@@ -100,9 +100,11 @@ object PetTalk {
             add(DailyPhrases.of(now.toLocalDate()))
             val night = state.sleep.firstOrNull { it.date == now.toLocalDate() }
             if (night == null && now.hour in 5..13) add("Bien dormi ? Raconte-moi ta nuit dans Suivi › Sommeil 🌙")
-            if (night != null && night.asleepMinutes < state.settings.sleep.goalMinutes - 60 && now.hour in 12..17) {
+            val napToday = Naps.on(state, now.toLocalDate()).isNotEmpty()
+            if (night != null && night.asleepMinutes < state.settings.sleep.goalMinutes - 60 && now.hour in 12..17 && !napToday) {
                 add("Courte nuit… une petite sieste, ça te dit ? 😴")
             }
+            if (napToday) add("Une petite sieste, ça fait du bien 😴")
             Shop.items.filter { it.id !in state.game.owned && it.price in 1..state.game.points }.maxByOrNull { it.price }
                 ?.let { add("Avec tes ${state.game.points} points… « ${it.name} », ça m'irait bien, non ? 👀") }
         }

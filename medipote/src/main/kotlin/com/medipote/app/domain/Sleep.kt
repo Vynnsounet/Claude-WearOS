@@ -46,6 +46,10 @@ data class SleepReport(
     val weekdayAverage: Int?,
     val weekendAverage: Int?,
     val insights: List<Insight>,
+    /** Naps of the period: shown apart, never part of the night's figures. */
+    val naps: NapReport = NapReport(emptyList(), 0, null, 0),
+    /** Night plus that day's naps, on average (null without a nap in the period). */
+    val averageDailyTotal: Int? = null,
 ) {
     val count: Int get() = nights.size
     val awakeningCount: Int get() = nights.sumOf { it.awakenings.size }
@@ -183,7 +187,7 @@ object Sleep {
             typicalBedtime = typicalBed,
             typicalWake = Reports.circularMean(nights.map { minuteOf(it.wakeTime) }, 0.3),
             bedtimeSpread = typicalBed?.let { t -> avg(beds.map { abs(Reports.circularDiff(it, t)) }) },
-            goalNights = nights.count { it.asleepMinutes >= goal },
+            goalNights = nights.count { Naps.reachesGoal(state, it) },
             calmNights = nights.count { it.awakenings.isEmpty() },
             averageQuality = nights.mapNotNull { it.quality }.takeIf { it.isNotEmpty() }?.average()?.toFloat(),
             averageRested = nights.mapNotNull { it.rested }.takeIf { it.isNotEmpty() }?.average()?.toFloat(),
@@ -197,7 +201,12 @@ object Sleep {
             weekendAverage = if (weekend.size >= 2) avg(weekend.map { it.asleepMinutes }) else null,
             insights = emptyList(),
         )
-        return report.copy(insights = insights(report, state))
+        val naps = Naps.report(state, today, days)
+        return report.copy(
+            insights = insights(report, state),
+            naps = naps,
+            averageDailyTotal = if (naps.naps.isEmpty()) null else Naps.averageDailyTotal(state, nights),
+        )
     }
 
     private fun pct(f: Float) = "${(f * 100).roundToInt()} %"

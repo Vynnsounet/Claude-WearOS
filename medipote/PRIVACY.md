@@ -33,7 +33,7 @@ Uniquement ce que tu saisis toi-même :
 - profil : prénom, âge, poids, taille, sexe, antécédents médicaux, allergies ;
 - traitements, posologies, stocks et historique des prises ;
 - pilule contraceptive, cycle menstruel, symptômes, rapports sexuels si tu les notes ;
-- journal (état physique et psychologique, maladies, notes), hydratation, sommeil ;
+- journal (état physique et psychologique, maladies, notes), hydratation, sommeil et siestes ;
 - mesures de santé que tu choisis de suivre (tension, poids, glycémie…) ;
 - rendez-vous médicaux ;
 - photos et fichiers ajoutés au carnet de santé (ordonnances, analyses…) ;

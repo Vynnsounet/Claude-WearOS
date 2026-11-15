@@ -43,6 +43,9 @@ data class QuickAddActions(
     val onAddPrnTreatment: () -> Unit = {},
     val onMood: (Int?) -> Unit = {},
     val onSleep: () -> Unit = {},
+    val onNapStart: () -> Unit = {},
+    val onNapWake: () -> Unit = {},
+    val onNapLog: () -> Unit = {},
     val onWater: () -> Unit = {},
     val onProduct: (PeriodProduct) -> Unit = {},
     val onProductChanged: () -> Unit = {},
@@ -51,7 +54,7 @@ data class QuickAddActions(
     val onAppointment: () -> Unit = {},
 )
 
-enum class QuickPage { MAIN, PRN, PRODUCT, MEASURE }
+enum class QuickPage { MAIN, PRN, PRODUCT, MEASURE, NAP }
 
 /** The "+ Noter" button of the home screen and its panel. */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -94,6 +97,11 @@ fun QuickAddContent(state: AppState, now: LocalDateTime, actions: QuickAddAction
                     if (prn.isEmpty()) done(actions.onAddPrnTreatment) else page = QuickPage.PRN
                 }
                 QuickRow("🌙", "Ma nuit", if (state.sleep.any { it.date == today }) "Déjà notée : la modifier" else null, onClick = { done(actions.onSleep) })
+                val napRunning = com.medipote.app.domain.Naps.running(state, now) != null
+                QuickRow(
+                    "😴", if (napRunning) "Terminer ma sieste" else "Une sieste",
+                    if (napRunning) "Elle est en cours" else null, more = !napRunning,
+                ) { if (napRunning) done(actions.onNapWake) else page = QuickPage.NAP }
                 QuickRow("💧", "Un verre d'eau", "${entry.waterGlasses} / ${state.settings.water.goalGlasses} aujourd'hui", onClick = { done(actions.onWater) })
                 if (menstruating) {
                     QuickRow(
@@ -132,6 +140,11 @@ fun QuickAddContent(state: AppState, now: LocalDateTime, actions: QuickAddAction
                     )
                 }
                 PeriodProduct.entries.forEach { p -> QuickRow(p.emoji, p.label, null) { done { actions.onProduct(p) } } }
+            }
+            QuickPage.NAP -> {
+                BackRow("Une sieste") { page = QuickPage.MAIN }
+                QuickRow("▶️", "Je m'endors maintenant", "Un minuteur compte la sieste") { done(actions.onNapStart) }
+                QuickRow("✍️", "Noter une sieste déjà faite", null) { done(actions.onNapLog) }
             }
             QuickPage.MEASURE -> {
                 BackRow("Une mesure") { page = QuickPage.MAIN }

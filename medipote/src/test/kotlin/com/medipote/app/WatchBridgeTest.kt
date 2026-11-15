@@ -101,5 +101,20 @@ class WatchBridgeTest {
         assertTrue(MeasureType.OXYGEN in s.settings.measures)
         assertEquals(97, WatchBridge.snapshot(s, at(11)).lastOxygen)
         assertEquals(s, WatchBridge.apply(s, WatchAction("7", WatchAction.OXYGEN, at(10, 50).toString(), value = 20.0), at(11)))
+
+        // A nap noted on the watch ends at the gesture time and starts that many minutes earlier.
+        s = WatchBridge.apply(s, WatchAction("8", WatchAction.NAP, at(15, 0).toString(), value = 30.0), at(15, 5))
+        val nap = s.naps.single()
+        assertEquals(at(14, 30), nap.start)
+        assertEquals(30, nap.minutes)
+        assertEquals(30, WatchBridge.snapshot(s, at(15, 5)).napMinutesToday)
+        // Timed on the watch: started, then stopped 40 minutes later.
+        s = WatchBridge.apply(s, WatchAction("9", WatchAction.NAP_START, at(16, 0).toString()), at(16, 1))
+        assertEquals(at(16, 0).toString(), WatchBridge.snapshot(s, at(16, 10)).napSince)
+        s = WatchBridge.apply(s, WatchAction("10", WatchAction.NAP_STOP, at(16, 40).toString()), at(16, 41))
+        assertEquals(2, s.naps.size)
+        assertEquals(40, s.naps.first().minutes)
+        assertEquals(null, s.napSince)
+        assertEquals(70, WatchBridge.snapshot(s, at(17)).napMinutesToday)
     }
 }

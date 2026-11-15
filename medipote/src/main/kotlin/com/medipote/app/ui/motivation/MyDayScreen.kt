@@ -154,6 +154,12 @@ fun MyDayScreen(
             }
 
             Section("🌙 Nuit", if (night == null) "Noter" else "Modifier", onEditSleep) {
+                com.medipote.app.domain.Naps.on(state, date).forEach { nap ->
+                    Text(
+                        "😴 Sieste · ${nap.start.format(hourMinute)} · ${Sleep.format(nap.minutes)}" + (nap.feeling?.let { " · ${it.label.lowercase()}" } ?: ""),
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                }
                 if (night == null) Muted("Nuit pas notée.")
                 else {
                     Text(

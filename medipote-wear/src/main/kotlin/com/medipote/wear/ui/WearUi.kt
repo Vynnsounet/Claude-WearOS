@@ -45,6 +45,7 @@ import androidx.wear.compose.navigation.SwipeDismissableNavHost
 import androidx.wear.compose.navigation.composable
 import androidx.wear.compose.navigation.rememberSwipeDismissableNavController
 import com.medipote.sync.HeartRate
+import com.medipote.sync.NapTimer
 import com.medipote.sync.Oxygen
 import com.medipote.sync.WatchAction
 import com.medipote.sync.WatchDose
@@ -71,6 +72,10 @@ data class WearActions(
     val onProductChanged: () -> Unit = {},
     val onHeartRate: (Int) -> Unit = {},
     val onOxygen: (Int) -> Unit = {},
+    val onNap: (Int) -> Unit = {},
+    val onNapStart: () -> Unit = {},
+    val onNapStop: () -> Unit = {},
+    val onNapCancel: () -> Unit = {},
     val onRetry: () -> Unit = {},
 )
 
@@ -100,13 +105,25 @@ fun MediPoteWearApp() {
         onProductChanged = { send(WatchAction.PRODUCT_CHANGED) },
         onHeartRate = { bpm -> send(WatchAction.HEART_RATE, value = bpm.toDouble()) },
         onOxygen = { percent -> send(WatchAction.OXYGEN, value = percent.toDouble()) },
+        onNap = { minutes -> send(WatchAction.NAP, value = minutes.toDouble()) },
+        onNapStart = { send(WatchAction.NAP_START) },
+        onNapStop = { send(WatchAction.NAP_STOP) },
+        onNapCancel = { send(WatchAction.NAP_CANCEL) },
         onRetry = { WearLink.hello(context) },
     )
     MediPoteWearTheme {
         AppScaffold {
             SwipeDismissableNavHost(navController = nav, startDestination = "home") {
                 composable("home") {
-                    HomeScreen(state, now, pet, actions, onOpenHeartRate = { nav.navigate("pulse") }, onOpenOxygen = { nav.navigate("oxygen") })
+                    HomeScreen(
+                        state, now, pet, actions,
+                        onOpenHeartRate = { nav.navigate("pulse") },
+                        onOpenOxygen = { nav.navigate("oxygen") },
+                        onOpenNap = { nav.navigate("nap") },
+                    )
+                }
+                composable("nap") {
+                    NapScreen(state.snapshot, now, actions, onDone = { nav.popBackStack() })
                 }
                 composable("oxygen") {
                     OxygenScreen(initial = state.snapshot?.lastOxygen, onSave = { percent -> actions.onOxygen(percent); nav.popBackStack() })
@@ -134,6 +151,7 @@ fun HomeScreen(
     actions: WearActions,
     onOpenHeartRate: () -> Unit,
     onOpenOxygen: () -> Unit = {},
+    onOpenNap: () -> Unit = {},
 ) {
     val snapshot = state.snapshot
     val listState = rememberTransformingLazyColumnState()
@@ -206,6 +224,24 @@ fun HomeScreen(
                     onClick = actions.onWater,
                     label = { Text("💧 $glasses / ${snapshot.goal} verres") },
                     secondaryLabel = { Text("Toucher : +1 verre") },
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+
+            item {
+                val since = snapshot.napSince?.let(LocalDateTime::parse)
+                FilledTonalButton(
+                    onClick = onOpenNap,
+                    label = { Text("😴 Sieste") },
+                    secondaryLabel = {
+                        Text(
+                            when {
+                                since != null -> "En cours · ${NapTimer.label(NapTimer.minutes(since, now))}"
+                                snapshot.napMinutesToday > 0 -> "Aujourd'hui : ${NapTimer.label(snapshot.napMinutesToday)}"
+                                else -> "Noter ou chronométrer"
+                            },
+                        )
+                    },
                     modifier = Modifier.fillMaxWidth(),
                 )
             }
@@ -413,6 +449,35 @@ fun PulseContent(
                 else -> {
                     item { Big(live?.toString() ?: "…", "bpm") }
                     item { Info("Reste immobile, le bras posé, quelques secondes.") }
+                }
+            }
+        }
+    }
+}
+
+/** A nap: time it ("I'm falling asleep" / "I wake up") or note one that just ended. */
+@Composable
+fun NapScreen(snapshot: WatchSnapshot?, now: LocalDateTime, actions: WearActions, onDone: () -> Unit) {
+    val since = snapshot?.napSince?.let(LocalDateTime::parse)
+    val listState = rememberTransformingLazyColumnState()
+    ScreenScaffold(scrollState = listState) { contentPadding ->
+        TransformingLazyColumn(state = listState, contentPadding = contentPadding) {
+            item { ListHeader { Text("😴 Sieste") } }
+            if (since != null) {
+                item { Big("${NapTimer.minutes(since, now)}", "min · depuis ${since.format(hourMinute)}") }
+                item { Button(onClick = { actions.onNapStop(); onDone() }, label = { Text("Je me réveille") }, modifier = Modifier.fillMaxWidth()) }
+                item { OutlinedButton(onClick = { actions.onNapCancel(); onDone() }, label = { Text("Annuler") }, modifier = Modifier.fillMaxWidth()) }
+            } else {
+                item { Button(onClick = { actions.onNapStart(); onDone() }, label = { Text("Je m'endors") }, secondaryLabel = { Text("Un minuteur démarre") }, modifier = Modifier.fillMaxWidth()) }
+                item { Info("Ou je viens de me réveiller après :") }
+                NapTimer.DURATIONS.forEach { minutes ->
+                    item {
+                        FilledTonalButton(
+                            onClick = { actions.onNap(minutes); onDone() },
+                            label = { Text(NapTimer.label(minutes)) },
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                    }
                 }
             }
         }

@@ -143,6 +143,8 @@ fun HomeScreen(
     onProductRemoved: () -> Unit = {},
     onProductStart: (com.medipote.app.data.PeriodProduct) -> Unit = {},
     onOpenHomeLayout: () -> Unit = {},
+    onNapWake: () -> Unit = {},
+    onNapCancel: () -> Unit = {},
     quickAdd: QuickAddActions? = null,
 ) {
     val logs = remember(state.doseLogs) { state.doseLogs.associateBy { it.key } }
@@ -327,6 +329,10 @@ fun HomeScreen(
         // The status line and the phrase of the day stay on top, then the companion, then the alerts.
         while (rest.firstOrNull() in setOf(HomeSection.STATUS, HomeSection.PHRASE)) block(rest.removeAt(0))?.let(::add)
         if (rest.firstOrNull() == HomeSection.COMPANION) block(rest.removeAt(0))?.let(::add)
+        // A nap being timed stays in sight, whatever the layout.
+        com.medipote.app.domain.Naps.running(state, now)?.let { since ->
+            add { com.medipote.app.ui.sleep.NapTimerCard(since, now, onWake = onNapWake, onCancel = onNapCancel, compact = true) }
+        }
         alerts?.let(::add)
         rest.forEach { section -> block(section)?.let(::add) }
     }

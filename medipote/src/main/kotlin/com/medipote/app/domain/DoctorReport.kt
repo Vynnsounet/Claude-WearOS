@@ -51,7 +51,7 @@ object DoctorReports {
         when (it) {
             ReportPart.PRN -> state.treatments.any { t -> t.asNeeded }
             ReportPart.MEASURES -> state.measurements.isNotEmpty()
-            ReportPart.SLEEP -> state.sleep.isNotEmpty()
+            ReportPart.SLEEP -> state.sleep.isNotEmpty() || state.naps.isNotEmpty()
             ReportPart.JOURNAL -> state.journal.any { e -> e.hasJournal }
             ReportPart.CYCLE -> state.profile?.menstruating == true && state.profile.cycle?.periodStarts?.isNotEmpty() == true
             else -> true
@@ -229,9 +229,9 @@ object DoctorReports {
 
     private fun sleep(state: AppState, today: LocalDate, days: Int): ReportSection? {
         val r = Sleep.report(state, today, days)
-        if (r.count == 0) return null
+        if (r.count == 0 && r.naps.naps.isEmpty()) return null
         val facts = listOfNotNull(
-            "Nuits notées" to "${r.count}",
+            r.count.takeIf { it > 0 }?.let { "Nuits notées" to "$it" },
             r.averageAsleep?.let { "Sommeil moyen" to "${Sleep.format(it)} (au lit ${Sleep.format(r.averageInBed ?: 0)})" },
             r.typicalBedtime?.let { "Coucher / réveil habituels" to "${Reports.formatTime(it)} / ${r.typicalWake?.let(Reports::formatTime) ?: "—"}" },
             r.averageLatency?.let { "Endormissement" to Sleep.format(it) },
@@ -241,6 +241,11 @@ object DoctorReports {
             r.averageQuality?.let { "Qualité ressentie" to "${dec(it)}/5" },
             r.averageRested?.let { "Nuits reposantes" to "${dec(it)}/5" },
             r.averagePleasant?.let { "Nuits agréables" to "${dec(it)}/5" },
+            // Naps are counted apart: the night's figures above are about nights only.
+            r.naps.takeIf { it.naps.isNotEmpty() }?.let {
+                "Siestes" to "${it.naps.size} (${Sleep.format(it.averageMinutes ?: 0)} en moyenne, ${Sleep.format(it.totalMinutes)} au total)"
+            },
+            r.averageDailyTotal?.let { "Sommeil par jour, siestes comprises" to Sleep.format(it) },
         )
         return ReportSection(ReportPart.SLEEP.label, listOf(ReportBlock.Facts(facts)))
     }

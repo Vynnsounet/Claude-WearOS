@@ -27,6 +27,10 @@ data class AppState(
     val prnIntakes: List<PrnIntake> = emptyList(),
     /** Logged nights, newest first, at most one per date. */
     val sleep: List<SleepNight> = emptyList(),
+    /** Naps, newest first. */
+    val naps: List<Nap> = emptyList(),
+    /** A nap being timed: when "I'm falling asleep" was pressed. */
+    @Serializable(with = LocalDateTimeSerializer::class) val napSince: LocalDateTime? = null,
     /** Health measurements (blood pressure, weight…), newest first. */
     val measurements: List<Measurement> = emptyList(),
     /** Period product worn right now, if any. */

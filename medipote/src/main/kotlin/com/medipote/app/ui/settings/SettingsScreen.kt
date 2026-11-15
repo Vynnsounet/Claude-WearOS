@@ -240,6 +240,10 @@ fun SettingsScreen(
                     "Objectif de sommeil", sl.goalMinutes / 30, { v -> update { it.copy(goalMinutes = v * 30) } }, 10..24,
                     display = { com.medipote.app.domain.Sleep.format(it * 30) },
                 )
+                SwitchRow(
+                    "Compter les siestes dans mon objectif", sl.napsInGoal,
+                    supporting = "Seulement pour l'objectif : les chiffres de la nuit ne changent jamais",
+                ) { v -> update { it.copy(napsInGoal = v) } }
                 SwitchRow("Rappel le matin", sl.reminder, supporting = "« Bien dormi ? » tant que la nuit n'est pas notée") { v -> update { it.copy(reminder = v) } }
                 if (sl.reminder) {
                     com.medipote.app.ui.components.NumberStepper("À", sl.reminderMinute / 60, { v -> update { it.copy(reminderMinute = v * 60) } }, 5..14, suffix = " h")

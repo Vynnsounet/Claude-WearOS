@@ -72,6 +72,8 @@ class WearScreensTest {
         compose.onNodeWithText("72 bpm · il y a 2 h").assertExists()
         compose.onNodeWithText("💨 Noter ma saturation").assertExists()
         compose.onNodeWithText("97 % · il y a 2 h").assertExists()
+        compose.onNodeWithText("😴 Sieste").assertExists()
+        compose.onNodeWithText("Aujourd'hui : 25 min").assertExists()
         compose.onNodeWithText("💧 4 / 8 verres").performClick()
         assertEquals(1, water)
     }
@@ -101,6 +103,27 @@ class WearScreensTest {
         compose.onNodeWithText("95").assertExists()
         compose.onNodeWithText("Enregistrer").performClick()
         assertEquals(95, saved)
+    }
+
+    @Test
+    fun napScreenTimesOrNotesANap() {
+        var started = 0
+        var noted: Int? = null
+        render("wear_nap") { com.medipote.wear.ui.NapScreen(snapshot, at(15), WearActions(onNapStart = { started++ }, onNap = { noted = it }), onDone = {}) }
+        compose.onNodeWithText("Je m'endors").performClick()
+        assertEquals(1, started)
+        compose.onNodeWithText("30 min").performClick()
+        assertEquals(30, noted)
+    }
+
+    @Test
+    fun napScreenShowsARunningNapAndWakesUp() {
+        var stopped = 0
+        val running = snapshot.copy(napSince = at(14, 40).toString())
+        render("wear_nap_running") { com.medipote.wear.ui.NapScreen(running, at(15), WearActions(onNapStop = { stopped++ }), onDone = {}) }
+        compose.onNodeWithText("20").assertExists()
+        compose.onNodeWithText("Je me réveille").performClick()
+        assertEquals(1, stopped)
     }
 
     @Test
@@ -143,5 +166,6 @@ fun sampleSnapshot(day: LocalDate): WatchSnapshot {
         prn = listOf(WatchPrn("ibu", "Ibuprofène 400 mg", "1 comprimé", at(5).toString())),
         lastHeartRate = 72, lastHeartRateAt = at(6).toString(),
         lastOxygen = 97, lastOxygenAt = at(6, 5).toString(),
+        napMinutesToday = 25,
     )
 }

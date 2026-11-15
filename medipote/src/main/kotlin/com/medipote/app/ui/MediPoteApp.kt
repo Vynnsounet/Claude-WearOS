@@ -101,6 +101,8 @@ import com.medipote.app.ui.pill.PillScreen
 import com.medipote.app.ui.prn.PrnLogScreen
 import com.medipote.app.ui.sleep.SleepEditorScreen
 import com.medipote.app.ui.sleep.SleepScreen
+import com.medipote.app.ui.sleep.NapEditorScreen
+import java.time.LocalDateTime
 import com.medipote.app.ui.prn.PrnStatsScreen
 import com.medipote.app.ui.pill.PillSetupScreen
 import com.medipote.app.ui.settings.SettingsScreen
@@ -310,6 +312,11 @@ fun MediPoteApp(vm: AppViewModel) {
         val showBar = TABS.any { it.route == route }
         val openProfile = { nav.navigate("profile") }
         val openSettings = { nav.navigate("settings") }
+        // "I wake up": noted at once, unless the timer was forgotten (then the duration is fixed by hand).
+        val wakeNap: () -> Unit = {
+            val r = vm.stopNap()
+            if (r is com.medipote.app.domain.NapStop.TooLong) nav.navigate("nap_log?start=${Uri.encode(r.start.toString())}&minutes=60")
+        }
 
         Scaffold(
             snackbarHost = { SnackbarHost(snackbar) },
@@ -407,11 +414,16 @@ fun MediPoteApp(vm: AppViewModel) {
                         onProductRemoved = vm::productRemoved,
                         onProductStart = vm::startProduct,
                         onOpenHomeLayout = { nav.navigate("home_layout") },
+                        onNapWake = wakeNap,
+                        onNapCancel = vm::cancelNap,
                         quickAdd = com.medipote.app.ui.home.QuickAddActions(
                             onLogPrn = { nav.navigate("prn_log/${it.id}") },
                             onAddPrnTreatment = { nav.navigate("search") },
                             onMood = vm::setMood,
                             onSleep = { nav.navigate("sleep_log") },
+                            onNapStart = vm::startNap,
+                            onNapWake = wakeNap,
+                            onNapLog = { nav.navigate("nap_log") },
                             onWater = { vm.addWater(1) },
                             onProduct = vm::startProduct,
                             onProductChanged = vm::productChanged,
@@ -492,6 +504,11 @@ fun MediPoteApp(vm: AppViewModel) {
                                 state, now,
                                 onLog = { nav.navigate(if (state.sleep.any { it.date == today }) "sleep_log?new=true" else "sleep_log") },
                                 onOpen = { nav.navigate("sleep_log?date=${it.date}") },
+                                onNapStart = vm::startNap,
+                                onNapWake = wakeNap,
+                                onNapCancel = vm::cancelNap,
+                                onNapLog = { nav.navigate("nap_log") },
+                                onOpenNap = { nav.navigate("nap_log?id=${it.id}") },
                             )
                             else -> {
                                 // During the period, protection and medication come first; the rest of the month, after the cycle.
@@ -661,6 +678,25 @@ fun MediPoteApp(vm: AppViewModel) {
                             nav.popBackStack()
                         },
                         onBack = { nav.popBackStack() },
+                    )
+                }
+                composable(
+                    "nap_log?id={id}&start={start}&minutes={minutes}",
+                    arguments = listOf(
+                        navArgument("id") { type = NavType.StringType; nullable = true },
+                        navArgument("start") { type = NavType.StringType; nullable = true },
+                        navArgument("minutes") { type = NavType.IntType; defaultValue = 0 },
+                    ),
+                ) { entry ->
+                    val existing = entry.arguments?.getString("id")?.let { id -> state.naps.firstOrNull { it.id == id } }
+                    val start = entry.arguments?.getString("start")?.let { runCatching { LocalDateTime.parse(it) }.getOrNull() }
+                    val minutes = entry.arguments?.getInt("minutes")?.takeIf { it > 0 }
+                    NapEditorScreen(
+                        existing, start, minutes, now,
+                        onSave = { nap -> vm.saveNap(nap); nav.popBackStack() },
+                        onDelete = { existing?.let { vm.deleteNap(it.id) }; nav.popBackStack() },
+                        onBack = { nav.popBackStack() },
+                        onNight = { nav.navigate("sleep_log") { popUpTo("nap_log?id={id}&start={start}&minutes={minutes}") { inclusive = true } } },
                     )
                 }
                 composable("measure/{type}") { entry ->

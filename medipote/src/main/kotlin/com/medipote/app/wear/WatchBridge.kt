@@ -7,6 +7,8 @@ import com.medipote.app.data.PrnIntake
 import com.medipote.app.domain.DoseState
 import com.medipote.app.domain.Game
 import com.medipote.app.domain.Measures
+import com.medipote.app.domain.NapStop
+import com.medipote.app.domain.Naps
 import com.medipote.app.domain.PeriodCare
 import com.medipote.app.domain.Prn
 import com.medipote.app.domain.Schedule
@@ -88,6 +90,8 @@ object WatchBridge {
             lastHeartRateAt = pulse?.at?.toString(),
             lastOxygen = oxygen?.value?.toInt(),
             lastOxygenAt = oxygen?.at?.toString(),
+            napSince = Naps.running(state, now)?.toString(),
+            napMinutesToday = Naps.minutesOn(state, today),
         )
     }
 
@@ -133,6 +137,19 @@ object WatchBridge {
                     Measurement(id = "watch-${action.id}", type = MeasureType.OXYGEN, at = at, value = Math.round(percent).toDouble(), notes = FROM_WATCH),
                 )
                 saved.copy(settings = saved.settings.copy(measures = saved.settings.measures + MeasureType.OXYGEN))
+            }
+            // Naps: the watch says when they ended or when the timer started and stopped.
+            WatchAction.NAP -> {
+                val minutes = action.value.toInt().coerceIn(Naps.MIN_MINUTES, Naps.MAX_MINUTES)
+                Naps.save(state, Naps.endingAt("watch-${action.id}", at, minutes))
+            }
+            WatchAction.NAP_START -> Naps.start(state, at)
+            WatchAction.NAP_CANCEL -> Naps.cancel(state)
+            WatchAction.NAP_STOP -> when (val r = Naps.stop(state, at, "watch-${action.id}")) {
+                is NapStop.Saved -> r.state
+                is NapStop.TooShort -> r.state
+                // Forgotten for hours: nothing is noted; the nap can be noted by hand.
+                is NapStop.TooLong -> r.state
             }
             WatchAction.PRODUCT_CHANGED -> PeriodCare.change(state, at)
             else -> state

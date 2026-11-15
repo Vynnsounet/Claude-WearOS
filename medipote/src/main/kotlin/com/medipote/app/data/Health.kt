@@ -180,6 +180,8 @@ data class SleepSettings(
     /** A morning notification to log the night, until it is logged. */
     val reminder: Boolean = false,
     val reminderMinute: Int = 9 * 60,
+    /** Naps count towards the daily sleep goal (never in the night's own figures). */
+    val napsInGoal: Boolean = true,
 )
 
 /** Waking up during the night: when, for how long, and why if known. */
@@ -216,6 +218,25 @@ data class SleepNight(
 
     /** Share of the time in bed spent asleep. */
     val efficiency: Float get() = if (inBedMinutes == 0) 0f else asleepMinutes.toFloat() / inBedMinutes
+}
+
+/** How a nap left one feeling. */
+@Serializable
+enum class NapFeeling(val emoji: String, val label: String) {
+    FRESH("😊", "En forme"), SAME("😐", "Pareil"), FOGGY("😵", "Dans le brouillard"),
+}
+
+/** A nap: its own record, apart from the nights, so the night's figures stay about the night. */
+@Serializable
+data class Nap(
+    val id: String,
+    @Serializable(with = LocalDateTimeSerializer::class) val start: LocalDateTime,
+    val minutes: Int,
+    val feeling: NapFeeling? = null,
+    val notes: String = "",
+) {
+    val date: LocalDate get() = start.toLocalDate()
+    val end: LocalDateTime get() = start.plusMinutes(minutes.toLong())
 }
 
 // ─────────────────────────── Backup ───────────────────────────
