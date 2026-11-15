@@ -112,14 +112,38 @@ fun nightLabel(date: LocalDate): String {
 @Composable
 private fun sleepColor() = MaterialTheme.colorScheme.primary
 
+/**
+ * Awake time must stand out from sleep whatever the accent: the theme's second colour when it is
+ * clearly different, else the most different of a few warm and cool alternatives.
+ */
 @Composable
-private fun awakeColor() = MaterialTheme.colorScheme.tertiary
+private fun awakeColor(): androidx.compose.ui.graphics.Color =
+    distinctFrom(MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.tertiary)
+
+private val AWAKE_ALTERNATIVES = listOf(0xFFFFB300, 0xFFFB8C00, 0xFF4FC3F7, 0xFFF06292, 0xFF26A69A, 0xFFFFE082)
+    .map { androidx.compose.ui.graphics.Color(it) }
+
+/** Perceptual-ish distance between two colours ("redmean"), 0 for the same colour up to about 765. */
+internal fun colorDistance(a: androidx.compose.ui.graphics.Color, b: androidx.compose.ui.graphics.Color): Float {
+    val r1 = a.red * 255f; val g1 = a.green * 255f; val b1 = a.blue * 255f
+    val r2 = b.red * 255f; val g2 = b.green * 255f; val b2 = b.blue * 255f
+    val rmean = (r1 + r2) / 2f
+    val dr = r1 - r2; val dg = g1 - g2; val db = b1 - b2
+    return kotlin.math.sqrt((2f + rmean / 256f) * dr * dr + 4f * dg * dg + (2f + (255f - rmean) / 256f) * db * db)
+}
+
+internal const val MIN_AWAKE_DISTANCE = 220f
+
+/** [preferred] when it differs enough from [from], else the most different alternative. */
+internal fun distinctFrom(from: androidx.compose.ui.graphics.Color, preferred: androidx.compose.ui.graphics.Color): androidx.compose.ui.graphics.Color =
+    if (colorDistance(from, preferred) >= MIN_AWAKE_DISTANCE) preferred else AWAKE_ALTERNATIVES.maxBy { colorDistance(from, it) }
 
 /** The night from bedtime to waking up: asleep in the accent colour, awake (falling asleep, awakenings) in a second hue. */
 @Composable
 fun NightTimeline(night: SleepNight, modifier: Modifier = Modifier, height: Int = 22, labels: Boolean = true) {
     val asleep = sleepColor()
     val awake = awakeColor()
+    val gapColor = MaterialTheme.colorScheme.surfaceContainerLow
     val segments = remember(night) { Sleep.segments(night) }
     val total = night.inBedMinutes.coerceAtLeast(1)
     Column(modifier, verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -140,6 +164,12 @@ fun NightTimeline(night: SleepNight, modifier: Modifier = Modifier, height: Int 
                 // Short awakenings stay visible: at least 2 dp wide.
                 val width = (size.width * w).coerceAtLeast(if (seg.asleep) 0f else 2.dp.toPx())
                 drawRect(if (seg.asleep) asleep else awake, Offset(size.width * from, 0f), Size(width, size.height))
+                // A thin line of background on each side keeps an awakening apart from the sleep around it.
+                if (!seg.asleep) {
+                    val gap = 1.dp.toPx()
+                    drawRect(gapColor, Offset(size.width * from - gap, 0f), Size(gap, size.height))
+                    drawRect(gapColor, Offset(size.width * from + width, 0f), Size(gap, size.height))
+                }
             }
         }
         if (labels) {

@@ -54,6 +54,7 @@ import com.medipote.app.domain.Schedule
 import com.medipote.app.domain.Shop
 import androidx.compose.foundation.layout.size
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.layout.padding
 import com.medipote.app.ui.cycle.CycleScreen
 import com.medipote.app.ui.home.HomeScreen
 import com.medipote.app.ui.onboarding.ProfileSetupScreen
@@ -593,6 +594,34 @@ class ScreensTest {
             )
         }
         return sampleState().copy(sleep = nights)
+    }
+
+    @Test
+    fun awakeTimeStandsOutFromSleepWhateverTheAccent() {
+        val sleepers = mutableListOf<Pair<String, androidx.compose.material3.ColorScheme>>()
+        for (dark in listOf(false, true)) {
+            for (accent in Accent.entries) sleepers += "$accent dark=$dark" to com.medipote.app.ui.theme.appColorScheme(accent, com.medipote.app.data.Look(), dark)
+            // Violets and other colours picked by hand.
+            for (seed in listOf(0xFF7E57C2, 0xFF6750A4, 0xFF9C27B0, 0xFF673AB7, 0xFF3F51B5, 0xFFD97757, 0xFF00897B, 0xFFFF9800, 0xFF000000, 0xFFFFFFFF)) {
+                sleepers += "custom ${seed.toString(16)} dark=$dark" to com.medipote.app.ui.theme.appColorScheme(Accent.MINT, com.medipote.app.data.Look(customColor = seed), dark)
+            }
+        }
+        sleepers.forEach { (name, scheme) ->
+            val awake = com.medipote.app.ui.sleep.distinctFrom(scheme.primary, scheme.tertiary)
+            val gap = com.medipote.app.ui.sleep.colorDistance(scheme.primary, awake)
+            org.junit.Assert.assertTrue("$name: awake colour too close to sleep ($gap)", gap >= com.medipote.app.ui.sleep.MIN_AWAKE_DISTANCE)
+        }
+    }
+
+    @Test
+    @Config(qualifiers = "w400dp-h700dp-xhdpi")
+    fun sleepTimelineInPurple() {
+        val night = sleepState().sleep.first { it.awakenings.size >= 2 }
+        render("sleep_purple", accent = Accent.LAVENDER) {
+            androidx.compose.foundation.layout.Column(androidx.compose.ui.Modifier.padding(16.dp)) {
+                com.medipote.app.ui.sleep.NightTimeline(night)
+            }
+        }
     }
 
     @Test

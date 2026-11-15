@@ -66,6 +66,14 @@ L'optimiseur de R8 reste désactivé (`-dontoptimize`) : APK de 3,8 Mo au lieu d
 le dex livré peut être reconverti et exécuté hors appareil pour vérification (voir plus bas),
 ce que l'optimiseur empêche. Il pourra être réactivé après des essais sur téléphone.
 
+### 1.11.5
+
+- Sommeil : avec une couleur d'appli violette (ou toute couleur proche de la seconde teinte du
+  thème), les phases d'éveil se confondaient avec le sommeil. La couleur d'éveil est maintenant
+  choisie pour toujours bien trancher sur celle du sommeil (ambre, orange, bleu clair… selon
+  l'accent), et un fin liseré sépare chaque éveil du sommeil autour. Un test vérifie le contraste
+  pour toutes les couleurs proposées et des couleurs libres claires et sombres.
+
 ### 1.11.4
 
 - Accueil : le compagnon passe juste sous la série et la phrase du jour, puis viennent les
