@@ -74,6 +74,20 @@ class WatchSyncTest {
     }
 
     @Test
+    fun oxygenIsShownAtOnceAndKeepsWithinRange() {
+        val saved = WatchPlanner.apply(snapshot, WatchAction("o", WatchAction.OXYGEN, at(9).toString(), value = 97.0))
+        assertEquals(97, saved.lastOxygen)
+        assertEquals(at(9).toString(), saved.lastOxygenAt)
+        assertEquals(70, Oxygen.clamp(12))
+        assertEquals(100, Oxygen.clamp(130))
+        assertNull(Oxygen.advice(96))
+        assertEquals("Un peu basse (sous 95 %).", Oxygen.advice(93))
+        assertTrue(Oxygen.advice(90)!!.startsWith("Basse"))
+        // A snapshot from an older phone app, without these fields, still reads.
+        assertNull(WatchSync.decodeSnapshot("""{"generatedAt":"2026-11-12T07:00"}""")?.lastOxygen)
+    }
+
+    @Test
     fun heartRateWaitsForSteadyReadings() {
         assertNull(HeartRate.steady(listOf(70f, 71f, 72f)))
         assertNull(HeartRate.steady(listOf(0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f)))

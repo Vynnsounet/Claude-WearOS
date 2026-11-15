@@ -71,6 +71,8 @@ data class WatchSnapshot(
     val product: WatchProduct? = null,
     val lastHeartRate: Int? = null,
     val lastHeartRateAt: String? = null,
+    val lastOxygen: Int? = null,
+    val lastOxygenAt: String? = null,
 ) {
     val generated: LocalDateTime get() = LocalDateTime.parse(generatedAt)
 }
@@ -93,6 +95,9 @@ data class WatchAction(
         const val WATER = "WATER"
         const val PRN = "PRN"
         const val HEART_RATE = "HEART_RATE"
+
+        /** Oxygen saturation (%) typed on the watch: no public API gives apps the watch's own sensor. */
+        const val OXYGEN = "OXYGEN"
         const val PRODUCT_CHANGED = "PRODUCT_CHANGED"
     }
 }
@@ -184,6 +189,7 @@ object WatchPlanner {
         }
         WatchAction.PRN -> snapshot.copy(prn = snapshot.prn.map { if (it.id == action.treatmentId) it.copy(lastTakenAt = action.at) else it })
         WatchAction.HEART_RATE -> snapshot.copy(lastHeartRate = action.value.toInt(), lastHeartRateAt = action.at)
+        WatchAction.OXYGEN -> snapshot.copy(lastOxygen = action.value.toInt(), lastOxygenAt = action.at)
         WatchAction.PRODUCT_CHANGED -> snapshot.copy(reminders = snapshot.reminders.filterNot { it.kind == WatchReminder.PRODUCT })
         else -> snapshot
     }
@@ -215,5 +221,21 @@ object HeartRate {
         val sorted = good.sorted()
         if (sorted.last() - sorted.first() > 12f) return null
         return Math.round((sorted[sorted.size / 2 - 1] + sorted[sorted.size / 2]) / 2f)
+    }
+}
+
+/** Oxygen saturation typed on the watch (from a pulse oximeter or the watch's own health app). */
+object Oxygen {
+    const val MIN = 70
+    const val MAX = 100
+    const val DEFAULT = 96
+
+    fun clamp(value: Int): Int = value.coerceIn(MIN, MAX)
+
+    /** The same gentle wording as the phone's measurements; null when there is nothing to say. */
+    fun advice(value: Int): String? = when {
+        value < 92 -> "Basse (sous 92 %) : refais la mesure et contacte un médecin si elle reste basse."
+        value < 95 -> "Un peu basse (sous 95 %)."
+        else -> null
     }
 }

@@ -66,6 +66,7 @@ object WatchBridge {
             .filter { it.asNeeded && (it.endDate == null || !it.endDate.isBefore(today)) }
             .map { t -> WatchPrn(t.id, t.displayName, t.unit.format(t.prnQuantity), Prn.last(state, t.id, now)?.takenAt?.toString()) }
         val pulse = Measures.latest(state, MeasureType.HEART_RATE)
+        val oxygen = Measures.latest(state, MeasureType.OXYGEN)
         return WatchSnapshot(
             generatedAt = now.withNano(0).toString(),
             petName = state.game.petName,
@@ -85,6 +86,8 @@ object WatchBridge {
             },
             lastHeartRate = pulse?.value?.toInt(),
             lastHeartRateAt = pulse?.at?.toString(),
+            lastOxygen = oxygen?.value?.toInt(),
+            lastOxygenAt = oxygen?.at?.toString(),
         )
     }
 
@@ -121,6 +124,15 @@ object WatchBridge {
                 )
                 // Measuring from the watch turns the pulse on in the app, or it would stay hidden.
                 saved.copy(settings = saved.settings.copy(measures = saved.settings.measures + MeasureType.HEART_RATE))
+            }
+            WatchAction.OXYGEN -> {
+                val percent = action.value
+                if (percent < MeasureType.OXYGEN.min || percent > MeasureType.OXYGEN.max) return state
+                val saved = Measures.save(
+                    state,
+                    Measurement(id = "watch-${action.id}", type = MeasureType.OXYGEN, at = at, value = Math.round(percent).toDouble(), notes = FROM_WATCH),
+                )
+                saved.copy(settings = saved.settings.copy(measures = saved.settings.measures + MeasureType.OXYGEN))
             }
             WatchAction.PRODUCT_CHANGED -> PeriodCare.change(state, at)
             else -> state

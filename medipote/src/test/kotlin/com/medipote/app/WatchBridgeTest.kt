@@ -91,5 +91,15 @@ class WatchBridgeTest {
         assertEquals(72, WatchBridge.snapshot(s, at(11)).lastHeartRate)
         // Nonsense values are ignored.
         assertEquals(s, WatchBridge.apply(s, WatchAction("5", WatchAction.HEART_RATE, at(10, 40).toString(), value = 500.0), at(11)))
+
+        // Oxygen saturation typed on the watch: a measurement of its own, turned on in the app too.
+        assertFalse(MeasureType.OXYGEN in s.settings.measures)
+        s = WatchBridge.apply(s, WatchAction("6", WatchAction.OXYGEN, at(10, 45).toString(), value = 97.0), at(11))
+        val o = s.measurements.first { it.type == MeasureType.OXYGEN }
+        assertEquals(97.0, o.value, 0.0)
+        assertEquals(WatchBridge.FROM_WATCH, o.notes)
+        assertTrue(MeasureType.OXYGEN in s.settings.measures)
+        assertEquals(97, WatchBridge.snapshot(s, at(11)).lastOxygen)
+        assertEquals(s, WatchBridge.apply(s, WatchAction("7", WatchAction.OXYGEN, at(10, 50).toString(), value = 20.0), at(11)))
     }
 }

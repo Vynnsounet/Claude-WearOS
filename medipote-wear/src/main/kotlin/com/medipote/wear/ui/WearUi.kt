@@ -45,6 +45,7 @@ import androidx.wear.compose.navigation.SwipeDismissableNavHost
 import androidx.wear.compose.navigation.composable
 import androidx.wear.compose.navigation.rememberSwipeDismissableNavController
 import com.medipote.sync.HeartRate
+import com.medipote.sync.Oxygen
 import com.medipote.sync.WatchAction
 import com.medipote.sync.WatchDose
 import com.medipote.sync.WatchDoseState
@@ -69,6 +70,7 @@ data class WearActions(
     val onPrn: (WatchPrn) -> Unit = {},
     val onProductChanged: () -> Unit = {},
     val onHeartRate: (Int) -> Unit = {},
+    val onOxygen: (Int) -> Unit = {},
     val onRetry: () -> Unit = {},
 )
 
@@ -97,12 +99,18 @@ fun MediPoteWearApp() {
         onPrn = { send(WatchAction.PRN, treatmentId = it.id) },
         onProductChanged = { send(WatchAction.PRODUCT_CHANGED) },
         onHeartRate = { bpm -> send(WatchAction.HEART_RATE, value = bpm.toDouble()) },
+        onOxygen = { percent -> send(WatchAction.OXYGEN, value = percent.toDouble()) },
         onRetry = { WearLink.hello(context) },
     )
     MediPoteWearTheme {
         AppScaffold {
             SwipeDismissableNavHost(navController = nav, startDestination = "home") {
-                composable("home") { HomeScreen(state, now, pet, actions, onOpenHeartRate = { nav.navigate("pulse") }) }
+                composable("home") {
+                    HomeScreen(state, now, pet, actions, onOpenHeartRate = { nav.navigate("pulse") }, onOpenOxygen = { nav.navigate("oxygen") })
+                }
+                composable("oxygen") {
+                    OxygenScreen(initial = state.snapshot?.lastOxygen, onSave = { percent -> actions.onOxygen(percent); nav.popBackStack() })
+                }
                 composable("pulse") {
                     PulseScreen(onSave = { bpm -> actions.onHeartRate(bpm); nav.popBackStack() })
                 }
@@ -119,7 +127,14 @@ private sealed interface Confirm {
 
 /** Today at a glance: the doses to take, water, as-needed medications, pulse. */
 @Composable
-fun HomeScreen(state: WearState, now: LocalDateTime, pet: Bitmap?, actions: WearActions, onOpenHeartRate: () -> Unit) {
+fun HomeScreen(
+    state: WearState,
+    now: LocalDateTime,
+    pet: Bitmap?,
+    actions: WearActions,
+    onOpenHeartRate: () -> Unit,
+    onOpenOxygen: () -> Unit = {},
+) {
     val snapshot = state.snapshot
     val listState = rememberTransformingLazyColumnState()
     var confirm by remember { mutableStateOf<Confirm?>(null) }
@@ -233,6 +248,19 @@ fun HomeScreen(state: WearState, now: LocalDateTime, pet: Bitmap?, actions: Wear
                         val last = snapshot.lastHeartRate
                         val at = snapshot.lastHeartRateAt
                         Text(if (last != null && at != null) "$last bpm · ${WatchPlanner.ago(LocalDateTime.parse(at), now)}" else "Envoyé au téléphone")
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+
+            item {
+                OutlinedButton(
+                    onClick = onOpenOxygen,
+                    label = { Text("💨 Noter ma saturation") },
+                    secondaryLabel = {
+                        val last = snapshot.lastOxygen
+                        val at = snapshot.lastOxygenAt
+                        Text(if (last != null && at != null) "$last % · ${WatchPlanner.ago(LocalDateTime.parse(at), now)}" else "Envoyée au téléphone")
                     },
                     modifier = Modifier.fillMaxWidth(),
                 )
@@ -387,6 +415,31 @@ fun PulseContent(
                     item { Info("Reste immobile, le bras posé, quelques secondes.") }
                 }
             }
+        }
+    }
+}
+
+/** Oxygen saturation, typed in: the watch's own sensor isn't open to apps, an oximeter is. */
+@Composable
+fun OxygenScreen(initial: Int?, onSave: (Int) -> Unit) {
+    var value by remember { mutableStateOf(Oxygen.clamp(initial ?: Oxygen.DEFAULT)) }
+    val listState = rememberTransformingLazyColumnState()
+    ScreenScaffold(scrollState = listState) { contentPadding ->
+        TransformingLazyColumn(state = listState, contentPadding = contentPadding) {
+            item { ListHeader { Text("💨 Saturation") } }
+            item { Big("$value", "%") }
+            item {
+                androidx.compose.foundation.layout.Row(
+                    Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
+                ) {
+                    FilledTonalButton(onClick = { value = Oxygen.clamp(value - 1) }, label = { Text("−", style = MaterialTheme.typography.titleLarge, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth()) }, modifier = Modifier.weight(1f))
+                    FilledTonalButton(onClick = { value = Oxygen.clamp(value + 1) }, label = { Text("+", style = MaterialTheme.typography.titleLarge, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth()) }, modifier = Modifier.weight(1f))
+                }
+            }
+            Oxygen.advice(value)?.let { advice -> item { Info(advice) } }
+            item { Button(onClick = { onSave(value) }, label = { Text("Enregistrer") }, secondaryLabel = { Text("Envoyée au téléphone") }, modifier = Modifier.fillMaxWidth()) }
+            item { Info("Lis la valeur sur ton oxymètre ou dans l'appli santé de ta montre.") }
         }
     }
 }

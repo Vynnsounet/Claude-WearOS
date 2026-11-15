@@ -307,6 +307,9 @@ Une appli compagnon pour montres Wear OS 3 et plus (module `medipote-wear`), rel
   « protection changée » en un geste aussi.
 - **Pouls** : mesure avec le capteur de la montre, enregistrée dans Suivi › Mesures
   du téléphone (« Depuis la montre »).
+- **Saturation** : saisie sur la montre (oxymètre ou appli santé de la montre), enregistrée
+  dans les mesures du téléphone. La montre ne la mesure pas elle-même : le capteur n'est pas
+  ouvert aux applis tierces.
 - Ce qui est fait sur la montre s'affiche tout de suite et part vers le téléphone
   dès qu'il est à portée ; l'heure retenue est celle du geste sur la montre.
 - Quand la montre sonne elle-même, les rappels du téléphone restent sur le

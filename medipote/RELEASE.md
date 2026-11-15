@@ -66,6 +66,15 @@ L'optimiseur de R8 reste désactivé (`-dontoptimize`) : APK de 3,8 Mo au lieu d
 le dex livré peut être reconverti et exécuté hors appareil pour vérification (voir plus bas),
 ce que l'optimiseur empêche. Il pourra être réactivé après des essais sur téléphone.
 
+### 1.12.0
+
+- Montre : « 💨 Noter ma saturation » (70 à 100 %, boutons − et +). La valeur arrive dans
+  Suivi › Mesures du téléphone (« Depuis la montre »), le suivi de la saturation s'active tout
+  seul, et la montre affiche la dernière valeur. Message doux si elle est sous 95 % (comme sur
+  le téléphone). La montre ne la **mesure pas** elle-même : ni Android ni Health Services
+  (1.1.0) n'ouvrent le capteur de saturation aux applis tierces ; la valeur se lit sur un
+  oxymètre ou dans l'appli santé de la montre.
+
 ### 1.11.5
 
 - Sommeil : avec une couleur d'appli violette (ou toute couleur proche de la seconde teinte du

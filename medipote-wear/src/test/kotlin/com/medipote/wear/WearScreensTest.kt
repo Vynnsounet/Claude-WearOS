@@ -70,6 +70,8 @@ class WearScreensTest {
         compose.onNodeWithText("Ibuprofène 400 mg").assertExists()
         compose.onNodeWithText("❤️ Mesurer mon pouls").assertExists()
         compose.onNodeWithText("72 bpm · il y a 2 h").assertExists()
+        compose.onNodeWithText("💨 Noter ma saturation").assertExists()
+        compose.onNodeWithText("97 % · il y a 2 h").assertExists()
         compose.onNodeWithText("💧 4 / 8 verres").performClick()
         assertEquals(1, water)
     }
@@ -87,6 +89,18 @@ class WearScreensTest {
         compose.onNodeWithText("72").assertExists()
         compose.onNodeWithText("Enregistrer").performClick()
         assertEquals(72, saved)
+    }
+
+    @Test
+    fun oxygenIsTypedInAndSent() {
+        var saved: Int? = null
+        render("wear_oxygen") { com.medipote.wear.ui.OxygenScreen(initial = 94, onSave = { saved = it }) }
+        compose.onNodeWithText("94").assertExists()
+        compose.onNodeWithText("Un peu basse (sous 95 %).").assertExists()
+        compose.onNodeWithText("+").performClick()
+        compose.onNodeWithText("95").assertExists()
+        compose.onNodeWithText("Enregistrer").performClick()
+        assertEquals(95, saved)
     }
 
     @Test
@@ -128,5 +142,6 @@ fun sampleSnapshot(day: LocalDate): WatchSnapshot {
         waterEnabled = true, waterDate = day.toString(), glasses = 3, goal = 8,
         prn = listOf(WatchPrn("ibu", "Ibuprofène 400 mg", "1 comprimé", at(5).toString())),
         lastHeartRate = 72, lastHeartRateAt = at(6).toString(),
+        lastOxygen = 97, lastOxygenAt = at(6, 5).toString(),
     )
 }
