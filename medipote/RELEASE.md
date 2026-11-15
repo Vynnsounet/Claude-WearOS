@@ -66,6 +66,12 @@ L'optimiseur de R8 reste désactivé (`-dontoptimize`) : APK de 3,8 Mo au lieu d
 le dex livré peut être reconverti et exécuté hors appareil pour vérification (voir plus bas),
 ce que l'optimiseur empêche. Il pourra être réactivé après des essais sur téléphone.
 
+### 1.11.3
+
+- Écran de la série : le titre (« Ça continue ! »…) était noir sur le fond sombre du thème
+  sombre, donc presque invisible. Il est maintenant clair, plus grand et en gras, comme le texte
+  qui l'accompagne ; le test vérifie son contraste dans les conditions de l'appli.
+
 ### 1.11.2
 
 - Série quotidienne : le jour change à **4 h du matin** (avant, à minuit). Ouvrir l'appli à 1 h

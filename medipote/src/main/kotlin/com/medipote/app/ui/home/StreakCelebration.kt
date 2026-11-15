@@ -117,6 +117,9 @@ fun StreakCelebration(reward: CheckInReward, pet: String, today: LocalDate, anim
     val milestone = nextMilestone(reward.streak)
 
     Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false)) {
+        // A dialog has no Surface around it: without this, text with no colour of its own is black,
+        // which vanishes on the dark theme's background.
+        androidx.compose.runtime.CompositionLocalProvider(androidx.compose.material3.LocalContentColor provides colors.onBackground) {
         Box(
             Modifier
                 .fillMaxSize()
@@ -150,9 +153,15 @@ fun StreakCelebration(reward: CheckInReward, pet: String, today: LocalDate, anim
                     color = colors.onBackground,
                 )
                 Spacer(Modifier.height(18.dp))
-                Text(title, style = MaterialTheme.typography.headlineSmall, textAlign = TextAlign.Center)
+                Text(
+                    title,
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = colors.onBackground,
+                    textAlign = TextAlign.Center,
+                )
                 Spacer(Modifier.height(6.dp))
-                Text(message, style = MaterialTheme.typography.bodyLarge, textAlign = TextAlign.Center, color = colors.onSurfaceVariant)
+                Text(message, style = MaterialTheme.typography.bodyLarge, textAlign = TextAlign.Center, color = colors.onBackground.copy(alpha = 0.8f))
                 Spacer(Modifier.height(22.dp))
                 WeekStrip(reward.streak, today, flicker)
                 Spacer(Modifier.height(18.dp))
@@ -190,6 +199,7 @@ fun StreakCelebration(reward: CheckInReward, pet: String, today: LocalDate, anim
                     Text(if (reward.streak == 1) "C'est parti !" else "On continue !", style = MaterialTheme.typography.titleMedium)
                 }
             }
+        }
         }
     }
 }

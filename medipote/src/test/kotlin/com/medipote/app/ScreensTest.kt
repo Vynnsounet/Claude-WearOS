@@ -767,6 +767,30 @@ class ScreensTest {
     }
 
     @Test
+    @Config(qualifiers = "w400dp-h880dp-xhdpi")
+    fun streakTitleIsReadableOnTheDarkThemeWithoutASurfaceAround() {
+        // As in the real app, where the celebration is a dialog with no Surface around it.
+        val reward = com.medipote.app.domain.CheckInReward(5, 25, 0, 0, 12)
+        compose.setContent {
+            MediPoteTheme(themeMode = ThemeMode.DARK) {
+                com.medipote.app.ui.home.StreakCelebration(reward, "Pilou", today, animate = false) {}
+            }
+        }
+        compose.waitForIdle()
+        val title = compose.onNodeWithText("Ça continue", substring = true)
+        title.assertExists()
+        val shot = title.captureToImage().asAndroidBitmap()
+        save("streak_dark_title", shot)
+        // The brightest pixel of the words (not the emoji at the end) is clearly light, not black on black.
+        var best = 0f
+        for (x in 0 until shot.width * 6 / 10 step 2) for (y in 0 until shot.height step 2) {
+            val c = shot.getPixel(x, y)
+            best = maxOf(best, (android.graphics.Color.red(c) + android.graphics.Color.green(c) + android.graphics.Color.blue(c)) / (3f * 255f))
+        }
+        org.junit.Assert.assertTrue("title too dark: $best", best > 0.8f)
+    }
+
+    @Test
     fun petSkyFollowsTheClock() {
         val size = 300
         val times = com.medipote.app.domain.TimeOfDay.entries
