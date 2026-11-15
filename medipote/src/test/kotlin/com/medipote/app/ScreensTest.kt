@@ -760,6 +760,13 @@ class ScreensTest {
     }
 
     @Test
+    @Config(qualifiers = "w400dp-h2400dp-xhdpi")
+    fun homeCompanionUnderThePhrase() {
+        render("home_order") { HomeScreen(motivationState(), today.atTime(15, 0), 0, 0, {}, {}, {}, {}, animate = false) }
+        compose.onNodeWithText(com.medipote.app.domain.DailyPhrases.of(today), substring = true).assertExists()
+    }
+
+    @Test
     @Config(qualifiers = "w400dp-h1400dp-xhdpi")
     fun homeAtNight() {
         render("home_night") { HomeScreen(motivationState(), today.atTime(21, 30), 0, 0, {}, {}, {}, {}, animate = false) }

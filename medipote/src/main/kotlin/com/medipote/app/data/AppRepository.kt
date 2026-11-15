@@ -70,7 +70,9 @@ class AppRepository(private val file: File, clock: Clock = Clock.systemDefaultZo
     private fun load(): AppState {
         if (!file.exists()) return AppState()
         return try {
-            json.decodeFromString(AppState.serializer(), AtomicFile(file).readFully().decodeToString())
+            json.decodeFromString(AppState.serializer(), AtomicFile(file).readFully().decodeToString()).let { s ->
+                s.copy(settings = s.settings.copy(look = s.settings.look.migrated()))
+            }
         } catch (e: Exception) {
             // Never lose data silently: keep the unreadable file aside before starting fresh,
             // since the next save would overwrite it.

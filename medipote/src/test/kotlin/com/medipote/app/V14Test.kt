@@ -114,11 +114,36 @@ class V14Test {
         // Sections missing from the saved order (added by an update) go after the one they follow by default.
         assertEquals(
             listOf(
-                HomeSection.STATUS, HomeSection.PHRASE, HomeSection.NEXT_DOSE, HomeSection.WATER, HomeSection.PROMPTS,
+                HomeSection.STATUS, HomeSection.PHRASE, HomeSection.WATER, HomeSection.PROMPTS,
                 HomeSection.CHALLENGES, HomeSection.GARDEN, HomeSection.DOSES, HomeSection.AS_NEEDED, HomeSection.MEASURES,
-                HomeSection.COMPANION, HomeSection.MOOD, HomeSection.RITUAL, HomeSection.PERIOD,
+                HomeSection.COMPANION, HomeSection.NEXT_DOSE, HomeSection.MOOD, HomeSection.RITUAL, HomeSection.PERIOD,
             ),
             look.visibleSections,
         )
+    }
+
+    @Test
+    fun theCompanionComesUnderThePhraseForSavedLayoutsToo() {
+        // An order saved by the previous version: companion after the next dose, alerts in between.
+        val saved = Look(
+            homeOrder = listOf(
+                HomeSection.STATUS, HomeSection.PHRASE, HomeSection.NEXT_DOSE, HomeSection.COMPANION, HomeSection.MOOD,
+                HomeSection.DOSES, HomeSection.WATER,
+            ),
+            hiddenSections = setOf(HomeSection.WATER),
+        )
+        val migrated = saved.migrated()
+        assertEquals(
+            listOf(HomeSection.STATUS, HomeSection.PHRASE, HomeSection.COMPANION, HomeSection.NEXT_DOSE, HomeSection.MOOD),
+            migrated.fullOrder.take(5),
+        )
+        assertTrue(migrated.fullOrder.indexOf(HomeSection.DOSES) > migrated.fullOrder.indexOf(HomeSection.MOOD))
+        assertEquals(setOf(HomeSection.WATER), migrated.hiddenSections)
+        assertEquals(Look.LAYOUT_VERSION, migrated.layoutVersion)
+        // Done once: a later change by the user is left alone, and a fresh install already has this order.
+        val reordered = migrated.copy(homeOrder = migrated.fullOrder.reversed())
+        assertEquals(reordered, reordered.migrated())
+        assertEquals(Look().fullOrder, Look().migrated().fullOrder)
+        assertEquals(listOf(HomeSection.STATUS, HomeSection.PHRASE, HomeSection.COMPANION, HomeSection.NEXT_DOSE), Look().fullOrder.take(4))
     }
 }

@@ -66,6 +66,13 @@ L'optimiseur de R8 reste désactivé (`-dontoptimize`) : APK de 3,8 Mo au lieu d
 le dex livré peut être reconverti et exécuté hors appareil pour vérification (voir plus bas),
 ce que l'optimiseur empêche. Il pourra être réactivé après des essais sur téléphone.
 
+### 1.11.4
+
+- Accueil : le compagnon passe juste sous la série et la phrase du jour, puis viennent les
+  alertes (« Pense à racheter »…) et la prochaine prise. L'ordre déjà enregistré est mis à jour
+  une seule fois (le reste de ton ordre est gardé) ; Paramètres › Mon accueil permet toujours de
+  tout réorganiser.
+
 ### 1.11.3
 
 - Écran de la série : le titre (« Ça continue ! »…) était noir sur le fond sombre du thème

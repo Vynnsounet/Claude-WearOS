@@ -324,8 +324,9 @@ fun HomeScreen(
 
     val blocks = buildList<@Composable () -> Unit> {
         val rest = sections.toMutableList()
-        // The status line and the phrase of the day stay on top, above the alerts.
+        // The status line and the phrase of the day stay on top, then the companion, then the alerts.
         while (rest.firstOrNull() in setOf(HomeSection.STATUS, HomeSection.PHRASE)) block(rest.removeAt(0))?.let(::add)
+        if (rest.firstOrNull() == HomeSection.COMPANION) block(rest.removeAt(0))?.let(::add)
         alerts?.let(::add)
         rest.forEach { section -> block(section)?.let(::add) }
     }

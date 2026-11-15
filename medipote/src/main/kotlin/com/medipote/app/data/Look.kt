@@ -7,8 +7,8 @@ import kotlinx.serialization.Serializable
 enum class HomeSection(val label: String, val emoji: String, val hint: String = "") {
     STATUS("Série, points et défis", "🔥"),
     PHRASE("Phrase du jour", "🌼", "Une petite phrase douce, différente chaque jour"),
-    NEXT_DOSE("Prochaine prise, en grand", "⏰"),
     COMPANION("Compagnon", "🐾"),
+    NEXT_DOSE("Prochaine prise, en grand", "⏰"),
     MOOD("Humeur du jour", "😊", "Se replie en une ligne une fois notée"),
     RITUAL("Rituel du matin / du soir", "✨", "Le matin et le soir seulement"),
     PERIOD("Protection pendant les règles", "🩸", "Pendant les règles ou quand un minuteur tourne"),
@@ -49,6 +49,8 @@ data class Look(
     /** No longer shown (replaced by the phrase of the day); kept so old saves still load. */
     val motto: String = "",
     val homeOrder: List<HomeSection> = HomeSection.entries,
+    /** 1 = the companion comes right under the phrase of the day, the next dose after the alerts. */
+    val layoutVersion: Int = 0,
     val hiddenSections: Set<HomeSection> = emptySet(),
     /** Celebration animations (daily streak…). */
     val celebrations: Boolean = true,
@@ -65,10 +67,23 @@ data class Look(
             return order
         }
 
+    /**
+     * One-time update of a saved order (the same result on a fresh one): the companion goes right
+     * under the status line and the phrase, then the next dose; everything else keeps its place.
+     */
+    fun migrated(): Look {
+        if (layoutVersion >= LAYOUT_VERSION) return this
+        val rest = fullOrder.filter { it != HomeSection.COMPANION && it != HomeSection.NEXT_DOSE }
+        val top = rest.takeWhile { it == HomeSection.STATUS || it == HomeSection.PHRASE }
+        val order = top + listOf(HomeSection.COMPANION, HomeSection.NEXT_DOSE) + rest.drop(top.size)
+        return copy(homeOrder = order, layoutVersion = LAYOUT_VERSION)
+    }
+
     val visibleSections: List<HomeSection>
         get() = fullOrder.filter { it !in hiddenSections }
 
     companion object {
+        const val LAYOUT_VERSION = 1
         val AVATARS = listOf(
             "👋", "😊", "🌸", "🌻", "🌿", "🍀", "🌈", "⭐", "🌙", "☀️", "🔥", "💜",
             "🐱", "🐶", "🦊", "🐼", "🐸", "🦄", "🐝", "🦋", "🍓", "🍵", "🎧", "🎨",

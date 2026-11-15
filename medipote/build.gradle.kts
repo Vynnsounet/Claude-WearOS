@@ -28,8 +28,8 @@ android {
         applicationId = "com.medipote.app"
         minSdk = 26
         targetSdk = 36
-        versionCode = 22
-        versionName = "1.11.3"
+        versionCode = 23
+        versionName = "1.11.4"
         manifestPlaceholders["appLabel"] = "@string/app_name"
     }
 
