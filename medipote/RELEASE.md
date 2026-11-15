@@ -66,6 +66,41 @@ L'optimiseur de R8 reste désactivé (`-dontoptimize`) : APK de 3,8 Mo au lieu d
 le dex livré peut être reconverti et exécuté hors appareil pour vérification (voir plus bas),
 ce que l'optimiseur empêche. Il pourra être réactivé après des essais sur téléphone.
 
+### 1.11.0 — compagnon Wear OS
+
+- Nouvelle appli montre (`medipote-wear`, même identifiant et même signature que le téléphone) :
+  rappels qui vibrent au poignet, validation des prises, eau, « si besoin », protection, pouls.
+- Téléphone : envoi de l'état à la montre, réception des actions (enregistrées à l'heure du
+  geste), section « Montre » dans les Paramètres, rappels gardés sur le téléphone quand la
+  montre sonne elle-même. Dépendance ajoutée : `play-services-wearable` (toujours aucune
+  permission Internet).
+- Correctif : le rappel de relance (« pas encore pris ») était programmé à l'heure de la prise
+  au lieu de 30 minutes après.
+
+#### Construire et installer la montre
+
+```bash
+./gradlew :medipote-wear:testDebugUnitTest :medipote-wear:lintRelease
+./gradlew :medipote-wear:assembleRelease   # medipote-wear/build/outputs/apk/release/medipote-wear-release.apk
+./gradlew :medipote-wear:bundleRelease     # AAB à joindre à la même fiche Play Store (format « Wear OS »)
+```
+
+Hors Play Store, l'APK s'installe sur la montre par ADB sans fil :
+
+1. Sur la montre : Paramètres › Système › À propos › Versions, toucher 7 fois « Numéro de
+   build » ; puis Paramètres › Options pour les développeurs › « Débogage ADB » et « Débogage
+   sans fil » (montre et ordinateur sur le même Wi-Fi). « Associer un appareil » affiche une
+   adresse et un code.
+2. Sur l'ordinateur : `adb pair ADRESSE:PORT` (saisir le code), puis `adb connect ADRESSE:PORT`
+   (le port affiché sur l'écran « Débogage sans fil »), puis
+   `adb install MediPote-Montre-1.11.0.apk`.
+3. Mettre à jour l'appli du téléphone (1.11.0 ou plus), ouvrir MédiPote sur la montre et
+   accepter les notifications : la montre se relie toute seule (Paramètres › Montre sur le
+   téléphone affiche « Montre reliée »).
+
+Sans ordinateur, des applis comme « Bugjaeger » (sur le téléphone) font la même chose.
+Les deux applis doivent être signées avec la même clé, sinon elles ne se parlent pas.
+
 ### 1.10.0
 
 - Sous-onglets : un emoji avec un petit mot dessous ; nouveaux emojis 🔁 Pilule, 🩸 Cycle,

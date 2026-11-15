@@ -15,4 +15,4 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = "ClaudeWearOS"
-include(":app", ":core", ":medipote")
+include(":app", ":core", ":medipote", ":medipote-sync", ":medipote-wear")

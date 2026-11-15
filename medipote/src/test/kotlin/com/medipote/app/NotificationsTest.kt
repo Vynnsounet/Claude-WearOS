@@ -164,4 +164,39 @@ class NotificationsTest {
         com.medipote.app.notifications.Notifications.showProduct(context, repo.state.value, "remind", session.since.plusMinutes(10))
         assertTrue(manager.allNotifications.isEmpty())
     }
+
+    @Test
+    fun withTheWatchAppRemindersStayOnThePhoneAndWatchActionsAreRecordedOnce() {
+        val repo = context.repository
+        val link = com.medipote.app.wear.WatchLink
+        link.forget(context)
+        val manager = shadowOf(context.getSystemService(NotificationManager::class.java))
+        val doseTime = repo.state.value.let { s -> com.medipote.app.wear.WatchBridge.snapshot(s, now).doses.first().at }
+
+        // No watch app: the reminder may be mirrored on a watch by the system.
+        com.medipote.app.notifications.Notifications.showDoses(context, repo.state.value, doseTime, followUp = false)
+        assertEquals(0, manager.allNotifications.single().flags and android.app.Notification.FLAG_LOCAL_ONLY)
+        context.getSystemService(NotificationManager::class.java).cancelAll()
+
+        // The watch app said it rings by itself: the phone's copy stays on the phone.
+        link.onHello(context, handlesReminders = true)
+        assertTrue(link.watchHandlesReminders(context))
+        com.medipote.app.notifications.Notifications.showDoses(context, repo.state.value, doseTime, followUp = false)
+        assertTrue(manager.allNotifications.single().flags and android.app.Notification.FLAG_LOCAL_ONLY != 0)
+        // Without news of the watch for days, the phone goes back to mirroring.
+        assertTrue(!link.watchHandlesReminders(context, System.currentTimeMillis() + 4 * 24 * 3600_000L))
+
+        // A glass noted on the watch counts once, even if the action is delivered twice.
+        val glass = com.medipote.sync.WatchAction("w1", com.medipote.sync.WatchAction.WATER, now.toString(), value = 1.0)
+        assertTrue(link.record(context, glass))
+        assertTrue(!link.record(context, glass))
+        assertEquals(1, repo.state.value.entryFor(now.toLocalDate()).waterGlasses)
+
+        // The dose validated on the watch: recorded, and its reminder leaves the phone.
+        val keys = com.medipote.app.wear.WatchBridge.snapshot(repo.state.value, now).doses.filter { it.at == doseTime }.map { it.key }
+        assertTrue(link.record(context, com.medipote.sync.WatchAction("t1", com.medipote.sync.WatchAction.TAKE, now.toString(), doseKeys = keys)))
+        assertEquals(keys.size, repo.state.value.doseLogs.size)
+        assertTrue(manager.allNotifications.isEmpty())
+        link.forget(context)
+    }
 }

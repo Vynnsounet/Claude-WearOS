@@ -292,6 +292,30 @@ Les données (y compris de santé et les documents) restent sur le téléphone, 
 le stockage privé de l'app, exclu de la sauvegarde cloud. Elles n'en sortent que
 par une action de la personne : sauvegarde, rapport PDF ou document partagé.
 
+## Montre Wear OS
+
+Une appli compagnon pour montres Wear OS 3 et plus (module `medipote-wear`), reliée
+à l'appli du téléphone par la liaison montre-téléphone de Google (Bluetooth) :
+
+- **Rappels au poignet** : la montre vibre à l'heure des prises (et 30 min après si
+  ce n'est pas pris), pour l'eau et pour la protection périodique. Elle programme
+  ses propres rappels à partir de l'état envoyé par le téléphone : ils sonnent
+  même si le téléphone est loin.
+- **Valider depuis la montre** : « Pris ✓ » ou « +10 min » dans le rappel, ou dans
+  l'appli (un geste et une confirmation). Verre d'eau, médicament « si besoin » et
+  « protection changée » en un geste aussi.
+- **Pouls** : mesure avec le capteur de la montre, enregistrée dans Suivi › Mesures
+  du téléphone (« Depuis la montre »).
+- Ce qui est fait sur la montre s'affiche tout de suite et part vers le téléphone
+  dès qu'il est à portée ; l'heure retenue est celle du geste sur la montre.
+- Quand la montre sonne elle-même, les rappels du téléphone restent sur le
+  téléphone : pas de double vibration.
+
+![](docs/wear.png)
+
+Le protocole commun (module `medipote-sync`, Kotlin pur) : un « instantané » du
+téléphone vers la montre, des « actions » de la montre vers le téléphone.
+
 ## Architecture
 
 | Dossier | Contenu |
@@ -336,6 +360,7 @@ JDK 17+ et le SDK Android (plateforme 37).
 ```bash
 ./gradlew :medipote:assembleDebug       # medipote/build/outputs/apk/debug/medipote-debug.apk
 ./gradlew :medipote:testDebugUnitTest   # 75 tests : règles métier, alarmes et notifications, widgets, écrans (captures dans medipote/build/screenshots) et parcours complet
+./gradlew :medipote-wear:testDebugUnitTest :medipote-sync:test   # montre : écrans (medipote-wear/build/screenshots), rappels, protocole
 adb install -r medipote/build/outputs/apk/debug/medipote-debug.apk
 ./gradlew :medipote:assembleRelease     # APK release signé (voir RELEASE.md)
 ```

@@ -1,6 +1,6 @@
 # Politique de confidentialité de MédiPote
 
-*Dernière mise à jour : 14 novembre 2026*
+*Dernière mise à jour : 15 novembre 2026*
 
 MédiPote est une application d'aide à la prise de traitements. Cette politique explique
 quelles données l'application utilise et ce qu'elle en fait.
@@ -12,6 +12,19 @@ quelles données l'application utilise et ce qu'elle en fait.
 - Les données sont enregistrées uniquement dans l'espace privé de l'application sur ton
   appareil, inaccessible aux autres applications.
 - Tu peux tout effacer à tout moment.
+
+## Si tu utilises la montre Wear OS
+
+L'appli compagnon pour montre est facultative. Si tu l'installes, le téléphone envoie à **ta**
+montre ce dont elle a besoin pour t'aider : tes prises d'aujourd'hui et de demain (nom et
+quantité des médicaments), tes rappels, ton compteur d'eau, tes médicaments « si besoin », le
+minuteur de protection et ta dernière mesure de pouls. La montre renvoie ce que tu y fais
+(prise validée, verre d'eau, pouls mesuré).
+
+Ces échanges passent par la liaison montre-téléphone d'Android (les services Google Play, en
+Bluetooth, chiffrés entre tes deux appareils). MédiPote n'envoie toujours rien à un serveur et
+n'a toujours pas de permission Internet, ni sur le téléphone ni sur la montre. Le capteur de
+pouls n'est lu que pendant une mesure que tu lances.
 
 ## Données enregistrées sur ton appareil
 

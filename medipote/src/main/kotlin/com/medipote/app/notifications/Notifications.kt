@@ -58,7 +58,8 @@ object ReminderPlanner {
         for (time in times) {
             if (time.isAfter(now)) alarms += AlarmSpec(AlarmKind.DOSE, time)
             val follow = time.plusMinutes(FOLLOW_UP_MINUTES)
-            if (state.settings.followUpReminder && follow.isAfter(now)) alarms += AlarmSpec(AlarmKind.FOLLOW_UP, time)
+            // Rings 30 minutes after the dose; [ref] keeps the dose time it is about.
+            if (state.settings.followUpReminder && follow.isAfter(now)) alarms += AlarmSpec(AlarmKind.FOLLOW_UP, follow, time.toString())
         }
 
         // Reminders put off from their notification, while their doses aren't given.
@@ -247,8 +248,11 @@ object Notifications {
         text: String,
         route: String? = null,
         actions: List<NotificationCompat.Action> = emptyList(),
+        onWatchToo: Boolean = false,
     ) {
         if (!canPost(context)) return
+        // The watch app rings these reminders itself: keep the phone's copy off the watch.
+        val phoneOnly = onWatchToo && com.medipote.app.wear.WatchLink.watchHandlesReminders(context)
         val intent = Intent(context, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP)
         if (route != null) intent.putExtra(EXTRA_ROUTE, route)
         val open = PendingIntent.getActivity(
@@ -280,6 +284,7 @@ object Notifications {
             )
             .setContentIntent(open)
             .setAutoCancel(true)
+            .setLocalOnly(phoneOnly)
             .apply { actions.forEach(::addAction) }
             .build()
         try {
@@ -306,6 +311,7 @@ object Notifications {
                 NotificationActions.action(context, "+10 min", NotificationActions.snooze(context, time, id, 10)),
                 NotificationActions.action(context, "+30 min", NotificationActions.snooze(context, time, id, 30)),
             ),
+            onWatchToo = true,
         )
     }
 
@@ -333,6 +339,7 @@ object Notifications {
             context, CHANNEL_WATER, WATER_ID, "Un verre d'eau ? 💧",
             "${state.game.petName} a soif ! Tu en es à $glasses / ${water.goalGlasses} verres aujourd'hui.",
             actions = listOf(NotificationActions.action(context, "J'ai bu un verre", NotificationActions.water(context, WATER_ID))),
+            onWatchToo = true,
         )
     }
 
@@ -390,6 +397,7 @@ object Notifications {
                 NotificationActions.action(context, "J'ai changé ✓", NotificationActions.product(context, NotificationActions.ACTION_PRODUCT_CHANGED)),
                 NotificationActions.action(context, "J'ai retiré", NotificationActions.product(context, NotificationActions.ACTION_PRODUCT_REMOVED)),
             ),
+            onWatchToo = true,
         )
     }
 
@@ -432,6 +440,7 @@ object Notifications {
             .setColor(ACCENT)
             .setContentTitle(text)
             .setSilent(true)
+            .setLocalOnly(true)
             .setTimeoutAfter(5_000)
             .setAutoCancel(true)
             .build()
@@ -520,7 +529,9 @@ class ReminderReceiver : BroadcastReceiver() {
         if (state.settings.notificationsEnabled) {
             when (spec.kind) {
                 AlarmKind.DOSE -> Notifications.showDoses(context, state, spec.time, followUp = false)
-                AlarmKind.FOLLOW_UP -> Notifications.showDoses(context, state, spec.time, followUp = true)
+                AlarmKind.FOLLOW_UP -> Notifications.showDoses(
+                    context, state, runCatching { LocalDateTime.parse(spec.ref) }.getOrDefault(spec.time), followUp = true,
+                )
                 AlarmKind.APPOINTMENT -> Notifications.showAppointment(context, state, spec.ref)
                 AlarmKind.WATER -> Notifications.showWater(context, state, repo.now())
                 AlarmKind.STOCK -> Notifications.showStock(context, state)
@@ -539,8 +550,9 @@ class ReminderReceiver : BroadcastReceiver() {
             }
         }
         ReminderScheduler.reschedule(context, state, repo.now())
-        // Dose states changed with the time: refresh the home-screen widgets.
+        // Dose states changed with the time: refresh the home-screen widgets, and the watch.
         com.medipote.app.widget.Widgets.requestUpdate(context)
+        com.medipote.app.wear.WatchLink.publish(context)
     }
 }
 

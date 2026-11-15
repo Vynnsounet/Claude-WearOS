@@ -88,6 +88,11 @@ fun SettingsScreen(
     onOpenBackup: () -> Unit = {},
     onOpenAppearance: () -> Unit = {},
     onOpenHomeLayout: () -> Unit = {},
+    /** When the Wear OS app last got in touch (0 = never), and whether it rings the reminders itself. */
+    watchLastSeen: Long = 0L,
+    watchRings: Boolean = false,
+    nowMs: Long = System.currentTimeMillis(),
+    onSyncWatch: () -> Unit = {},
     lockEnabled: Boolean = false,
     onToggleLock: (Boolean) -> Unit = {},
     lastBackup: java.time.LocalDateTime? = null,
@@ -310,6 +315,38 @@ fun SettingsScreen(
                     colors = ListItemDefaults.colors(containerColor = Color.Transparent),
                     modifier = Modifier.clickable { renaming = true },
                 )
+            }
+
+            SectionTitle("Montre")
+            SettingsCard {
+                if (watchLastSeen == 0L) {
+                    Text("⌚ Aucune montre reliée", style = MaterialTheme.typography.bodyLarge)
+                    Text(
+                        "Installe MédiPote sur ta montre Wear OS puis ouvre-la une fois : elle se relie toute seule. " +
+                            "Tu pourras valider tes prises, noter ton eau et mesurer ton pouls au poignet.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                } else {
+                    val minutes = ((nowMs - watchLastSeen) / 60_000L).coerceAtLeast(0)
+                    val ago = when {
+                        minutes < 1 -> "à l'instant"
+                        minutes < 60 -> "il y a $minutes min"
+                        minutes < 48 * 60 -> "il y a ${minutes / 60} h"
+                        else -> "il y a ${minutes / (24 * 60)} jours"
+                    }
+                    Text("⌚ Montre reliée", style = MaterialTheme.typography.bodyLarge)
+                    Text(
+                        "Dernier contact $ago. " +
+                            if (watchRings) "Les rappels de prises et d'eau vibrent sur la montre."
+                            else "Autorise les notifications de MédiPote sur la montre pour qu'elle vibre aux rappels.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                androidx.compose.material3.FilledTonalButton(onClick = onSyncWatch, modifier = Modifier.fillMaxWidth()) {
+                    Text("Synchroniser la montre maintenant")
+                }
             }
 
             SectionTitle("Règles du jeu")

@@ -878,6 +878,12 @@ fun MediPoteApp(vm: AppViewModel) {
                         onOpenBackup = { nav.navigate("backup") },
                         onOpenAppearance = { nav.navigate("appearance") },
                         onOpenHomeLayout = { nav.navigate("home_layout") },
+                        watchLastSeen = com.medipote.app.wear.WatchLink.lastSeen(context),
+                        watchRings = com.medipote.app.wear.WatchLink.watchHandlesReminders(context),
+                        onSyncWatch = {
+                            com.medipote.app.wear.WatchLink.publish(context, force = true)
+                            vm.message("Envoyé à la montre, si elle est à portée")
+                        },
                         lockEnabled = state.settings.lockEnabled,
                         onToggleLock = { on ->
                             val activity = context.findActivity()

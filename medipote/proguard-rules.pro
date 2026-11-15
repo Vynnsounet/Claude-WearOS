@@ -24,3 +24,10 @@
 -keep class * extends androidx.work.ListenableWorker {
     <init>(android.content.Context, androidx.work.WorkerParameters);
 }
+
+# What the phone and the watch say to each other (module medipote-sync).
+-keepclassmembers @kotlinx.serialization.Serializable class com.medipote.sync.** {
+    *** Companion;
+    kotlinx.serialization.KSerializer serializer(...);
+}
+-keep class com.medipote.sync.**$$serializer { *; }

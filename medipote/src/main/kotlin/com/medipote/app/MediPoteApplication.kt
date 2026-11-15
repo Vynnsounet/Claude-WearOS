@@ -33,8 +33,13 @@ class MediPoteApplication : Application() {
         Notifications.createChannels(this)
         // Any change to the data (from the app, a notification or a widget) refreshes the widgets.
         appScope.launch {
-            repository.state.drop(1).debounce(300).collect { runCatching { Widgets.updateAll(this@MediPoteApplication) } }
+            repository.state.drop(1).debounce(300).collect {
+                runCatching { Widgets.updateAll(this@MediPoteApplication) }
+                // ...and the watch, when there is one.
+                com.medipote.app.wear.WatchLink.publish(this@MediPoteApplication)
+            }
         }
+        com.medipote.app.wear.WatchLink.drain(this)
     }
 }
 
