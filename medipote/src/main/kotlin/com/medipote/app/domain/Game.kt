@@ -60,8 +60,9 @@ object Game {
         return Challenges.weekStart(used) != Challenges.weekStart(today)
     }
 
+    /** First opening of the streak's day (which starts at 4:00, see [Rules.gameDay]). */
     fun checkIn(game: GameState, now: LocalDateTime): Pair<GameState, CheckInReward>? {
-        val today = now.toLocalDate()
+        val today = Rules.gameDay(now)
         if (game.lastCheckIn == today) return null
         val continues = game.lastCheckIn == today.minusDays(1)
         // One missed day a week is forgiven: the joker keeps the streak.

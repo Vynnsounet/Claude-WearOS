@@ -76,6 +76,12 @@ object Rules {
     const val SLEEP_BONUS = 3
     const val WATER_BONUS = 10
 
+    /** The streak's day starts at 4:00: opening the app at 1:00 doesn't use up the next morning's welcome. */
+    const val DAY_START_HOUR = 4L
+
+    /** The day the daily streak counts [now] in: before 4:00 it is still the day before. */
+    fun gameDay(now: java.time.LocalDateTime): java.time.LocalDate = now.minusHours(DAY_START_HOUR).toLocalDate()
+
     const val STREAK_POINTS_PER_DAY = 5
     const val STREAK_POINTS_CAP = 50
 

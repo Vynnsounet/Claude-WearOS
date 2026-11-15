@@ -373,7 +373,7 @@ fun SettingsScreen(
                 Rule("Défi de la semaine réussi", "+20 à +40 pts")
                 Rule("Joker de série", "1 jour oublié par semaine ne casse pas la série")
                 Rule("Premier câlin du jour (caresse ou appui long sur ton compagnon)", "+${Rules.CUDDLE_BONUS} pts")
-                Rule("Connexion quotidienne", "+${Rules.STREAK_POINTS_PER_DAY} pts × jours de série, jusqu'à +${Rules.STREAK_POINTS_CAP}")
+                Rule("Connexion quotidienne (le jour change à ${Rules.DAY_START_HOUR} h du matin)", "+${Rules.STREAK_POINTS_PER_DAY} pts × jours de série, jusqu'à +${Rules.STREAK_POINTS_CAP}")
                 Rule("Paliers de série", Rules.STREAK_MILESTONES.entries.joinToString(" · ") { "${it.key} j : +${it.value}" })
                 Text(
                     "Une prise se donne à partir de ${Rules.EARLY_WINDOW_MINUTES} min avant l'heure prévue (plus tôt, avec « Déjà pris ? »). Une prise oubliée affaiblit ton compagnon pendant deux jours, et un gros retard le rend malade.",

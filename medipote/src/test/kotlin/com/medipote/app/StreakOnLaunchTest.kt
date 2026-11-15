@@ -4,6 +4,7 @@ import androidx.test.core.app.ApplicationProvider
 import com.medipote.app.data.AppState
 import com.medipote.app.data.GameState
 import com.medipote.app.data.Profile
+import com.medipote.app.domain.Rules
 import com.medipote.app.ui.AppViewModel
 import com.medipote.app.ui.UiEvent
 import kotlinx.coroutines.flow.first
@@ -40,7 +41,7 @@ class StreakOnLaunchTest {
 
     @Test
     fun theFirstOpeningOfANewDayCountsTheStreakAndKeepsTheScreenForLater() {
-        seed(4, repo.now().toLocalDate().minusDays(1))
+        seed(4, Rules.gameDay(repo.now()).minusDays(1))
         val vm = AppViewModel(app)
         // The app comes to the foreground before any screen is listening: nothing may be lost.
         vm.onResume()
@@ -61,7 +62,7 @@ class StreakOnLaunchTest {
 
     @Test
     fun theScreenCanBeSeenAgainOnDemandWithoutCountingAnything() {
-        seed(4, repo.now().toLocalDate())
+        seed(4, Rules.gameDay(repo.now()))
         val vm = AppViewModel(app)
         vm.onResume()
         assertNull(vm.checkIn.value)
@@ -73,11 +74,32 @@ class StreakOnLaunchTest {
 
     @Test
     fun eventsSentBeforeAScreenListensAreDeliveredOnceInOrder() = runBlocking {
-        seed(1, repo.now().toLocalDate())
+        seed(1, Rules.gameDay(repo.now()))
         val vm = AppViewModel(app)
         vm.message("premier")
         vm.message("second")
         assertEquals("premier", (vm.events.first() as UiEvent.Message).text)
         assertEquals("second", (vm.events.first() as UiEvent.Message).text)
+    }
+
+    @Test
+    fun theStreakDayStartsAtFourInTheMorning() {
+        val day = java.time.LocalDate.of(2026, 11, 12)
+        fun at(h: Int, m: Int = 0, d: java.time.LocalDate = day) = d.atTime(h, m)
+        assertEquals(day.minusDays(1), Rules.gameDay(at(0, 30)))
+        assertEquals(day.minusDays(1), Rules.gameDay(at(3, 59)))
+        assertEquals(day, Rules.gameDay(at(4, 0)))
+        assertEquals(day, Rules.gameDay(at(23, 59)))
+
+        // Opened at 1:00 after the day before's check-in: still the same day, nothing to celebrate.
+        val opened = GameState(streak = 4, bestStreak = 4, lastCheckIn = day.minusDays(1))
+        assertNull(com.medipote.app.domain.Game.checkIn(opened, at(1, 0)))
+        // From 4:00 it is a new day: the streak goes on.
+        val (after, reward) = com.medipote.app.domain.Game.checkIn(opened, at(4, 0))!!
+        assertEquals(5, reward.streak)
+        assertEquals(day, after.lastCheckIn)
+        // Opened at 1:00 the night after: still counts as the day before, so no day is skipped.
+        assertNull(com.medipote.app.domain.Game.checkIn(after, at(1, 0, day.plusDays(1))))
+        assertEquals(6, com.medipote.app.domain.Game.checkIn(after, at(8, 0, day.plusDays(1)))!!.second.streak)
     }
 }

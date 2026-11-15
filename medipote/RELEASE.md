@@ -66,6 +66,13 @@ L'optimiseur de R8 reste désactivé (`-dontoptimize`) : APK de 3,8 Mo au lieu d
 le dex livré peut être reconverti et exécuté hors appareil pour vérification (voir plus bas),
 ce que l'optimiseur empêche. Il pourra être réactivé après des essais sur téléphone.
 
+### 1.11.2
+
+- Série quotidienne : le jour change à **4 h du matin** (avant, à minuit). Ouvrir l'appli à 1 h
+  ne compte plus le nouveau jour et ne gâche plus l'écran de la série du matin : il s'affiche à
+  la première ouverture à partir de 4 h. Seule la série est concernée (prises, journal, eau…
+  restent sur la journée normale).
+
 ### 1.11.1
 
 - Écran de la série : conservé côté appli jusqu'à ce qu'on le ferme (plus de risque de le perdre

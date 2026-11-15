@@ -915,7 +915,7 @@ fun MediPoteApp(vm: AppViewModel) {
 
         checkIn?.let { event ->
             if (state.settings.look.celebrations) {
-                com.medipote.app.ui.home.StreakCelebration(event.reward, pet, today) { vm.checkInShown() }
+                com.medipote.app.ui.home.StreakCelebration(event.reward, pet, com.medipote.app.domain.Rules.gameDay(now)) { vm.checkInShown() }
             } else {
                 CheckInDialog(event, pet) { vm.checkInShown() }
             }

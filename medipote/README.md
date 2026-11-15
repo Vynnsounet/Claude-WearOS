@@ -238,7 +238,8 @@ montrent l'essentiel, le reste sous « Plus d'options ».
   (prises, nuits, humeur, meilleur jour, réussites) et un mot du compagnon.
 - **Compagnon plus vivant** : il réagit à ta nuit (« Nuit difficile… on y va
   doucement ») et à ton journal.
-- **Série quotidienne** : à la première ouverture du jour, une animation
+- **Série quotidienne** : à la première ouverture du jour (qui commence à 4 h du
+  matin, pas à minuit), une animation
   (flamme qui grandit, compteur de jours, les 7 derniers jours, confettis,
   points gagnés, prochain palier). Après une interruption : « Nouveau départ »,
   avec le rappel du record, sans culpabiliser.
