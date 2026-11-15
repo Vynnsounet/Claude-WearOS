@@ -66,6 +66,14 @@ L'optimiseur de R8 reste désactivé (`-dontoptimize`) : APK de 3,8 Mo au lieu d
 le dex livré peut être reconverti et exécuté hors appareil pour vérification (voir plus bas),
 ce que l'optimiseur empêche. Il pourra être réactivé après des essais sur téléphone.
 
+### 1.11.1
+
+- Écran de la série : conservé côté appli jusqu'à ce qu'on le ferme (plus de risque de le perdre
+  si l'appli n'écoutait pas encore au moment de l'ouverture ou si l'écran pivote), et les autres
+  messages envoyés trop tôt (badges…) attendent aussi leur tour.
+- Personnaliser › « 🔥 Revoir l'animation de la série » : revoir l'écran à la demande, sans rien
+  compter ni gagner.
+
 ### 1.11.0 — compagnon Wear OS
 
 - Nouvelle appli montre (`medipote-wear`, même identifiant et même signature que le téléphone) :

@@ -201,7 +201,7 @@ fun MediPoteApp(vm: AppViewModel) {
         var pointsSignal by remember { mutableIntStateOf(0) }
         var askedThisSession by rememberSaveable { mutableStateOf(false) }
         var batteryRestricted by remember { mutableStateOf(isBatteryRestricted(context)) }
-        var checkIn by remember { mutableStateOf<UiEvent.CheckedIn?>(null) }
+        val checkIn by vm.checkIn.collectAsStateWithLifecycle()
         val badgeQueue = remember { androidx.compose.runtime.mutableStateListOf<com.medipote.app.domain.Badge>() }
         var notificationsAllowed by remember { mutableStateOf(Notifications.canPost(context)) }
         var quietChannels by remember { mutableStateOf(Notifications.quietChannels(context)) }
@@ -279,7 +279,7 @@ fun MediPoteApp(vm: AppViewModel) {
                         snackbar.currentSnackbarData?.dismiss()
                         snackbar.showSnackbar(base + bonus)
                     }
-                    is UiEvent.CheckedIn -> checkIn = e
+                    is UiEvent.CheckedIn -> Unit // shown from vm.checkIn
                     is UiEvent.BadgeEarned -> badgeQueue.add(e.badge)
                     is UiEvent.Bought -> {
                         snackbar.currentSnackbarData?.dismiss()
@@ -741,6 +741,7 @@ fun MediPoteApp(vm: AppViewModel) {
                         state.settings, state.profile?.name.orEmpty(), Build.VERSION.SDK_INT >= 31,
                         onChange = vm::updateSettings,
                         onBack = { nav.popBackStack() },
+                        onPreviewStreak = { vm.previewStreak() },
                         onOpenHomeLayout = { nav.navigate("home_layout") },
                     )
                 }
@@ -914,9 +915,9 @@ fun MediPoteApp(vm: AppViewModel) {
 
         checkIn?.let { event ->
             if (state.settings.look.celebrations) {
-                com.medipote.app.ui.home.StreakCelebration(event.reward, pet, today) { checkIn = null }
+                com.medipote.app.ui.home.StreakCelebration(event.reward, pet, today) { vm.checkInShown() }
             } else {
-                CheckInDialog(event, pet) { checkIn = null }
+                CheckInDialog(event, pet) { vm.checkInShown() }
             }
         }
 

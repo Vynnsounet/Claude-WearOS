@@ -26,11 +26,9 @@ import com.medipote.app.repository
 import java.time.LocalDate
 import java.time.LocalDateTime
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
@@ -55,8 +53,24 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     /** Current time, refreshed every 20 seconds so dose states and the pet's mood stay live. */
     val now: StateFlow<LocalDateTime> = _now.asStateFlow()
 
-    private val _events = MutableSharedFlow<UiEvent>(extraBufferCapacity = 8)
-    val events: SharedFlow<UiEvent> = _events.asSharedFlow()
+    // A channel, not a shared flow: an event sent before the screen starts listening (the app's
+    // first frame, when the daily check-in happens) waits for it instead of being lost.
+    private val _events = kotlinx.coroutines.channels.Channel<UiEvent>(kotlinx.coroutines.channels.Channel.BUFFERED)
+    val events: kotlinx.coroutines.flow.Flow<UiEvent> = _events.receiveAsFlow()
+
+    /** The daily streak screen waiting to be shown; kept here so a rotation doesn't lose it. */
+    private val _checkIn = MutableStateFlow<UiEvent.CheckedIn?>(null)
+    val checkIn: StateFlow<UiEvent.CheckedIn?> = _checkIn.asStateFlow()
+    fun checkInShown() {
+        _checkIn.value = null
+    }
+
+    /** Shows the streak screen again, with the current streak: nothing is counted or won. */
+    fun previewStreak() {
+        val g = state.value.game
+        val streak = g.streak.coerceAtLeast(1)
+        _checkIn.value = UiEvent.CheckedIn(CheckInReward(streak, com.medipote.app.domain.Rules.streakReward(streak), 0, 0, maxOf(g.bestStreak, streak)))
+    }
 
     init {
         viewModelScope.launch {
@@ -77,7 +91,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             reward = result.second
             s.copy(game = result.first)
         }
-        reward?.let { _events.tryEmit(UiEvent.CheckedIn(it)) }
+        reward?.let { _checkIn.value = UiEvent.CheckedIn(it) }
         reschedule()
         checkAchievements()
     }
@@ -99,7 +113,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         }
         fed?.let {
             _now.value = now
-            _events.tryEmit(it)
+            _events.trySend(it)
             val ctx = getApplication<Application>()
             val time = item.occurrence.scheduled
             val logs = state.value.doseLogs.mapTo(HashSet()) { l -> l.key }
@@ -110,7 +124,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         // Emitted after the "fed" message so it shows next instead of being replaced by it.
         val stageAfter = com.medipote.app.domain.Evolution.growth(state.value).stage
         if (stageAfter.ordinal > stageBefore.ordinal) {
-            _events.tryEmit(UiEvent.Message("✨ ${state.value.game.petName} a grandi : ${stageAfter.label.lowercase()} ! (${stageAfter.description})"))
+            _events.trySend(UiEvent.Message("✨ ${state.value.game.petName} a grandi : ${stageAfter.label.lowercase()} ! (${stageAfter.description})"))
         }
         if (fed != null) checkAchievements()
     }
@@ -147,7 +161,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             bought = true
             s.copy(game = game)
         }
-        if (bought) _events.tryEmit(UiEvent.Bought(item))
+        if (bought) _events.trySend(UiEvent.Bought(item))
         checkAchievements()
     }
 
@@ -197,7 +211,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             }
             updated
         }
-        _events.tryEmit(UiEvent.Message(if (bonus > 0) "Journal enregistré : +$bonus pts" else "Journal enregistré"))
+        _events.trySend(UiEvent.Message(if (bonus > 0) "Journal enregistré : +$bonus pts" else "Journal enregistré"))
         checkAchievements()
     }
 
@@ -209,10 +223,10 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             updated
         }
         val r = reward ?: return
-        if (r.total > 0) _events.tryEmit(UiEvent.Points(r.total))
+        if (r.total > 0) _events.trySend(UiEvent.Points(r.total))
         if (r.goalBonus > 0) {
             Notifications.cancelWater(getApplication())
-            _events.tryEmit(UiEvent.Message("Objectif d'hydratation atteint : +${r.goalBonus} pts bonus 💧"))
+            _events.trySend(UiEvent.Message("Objectif d'hydratation atteint : +${r.goalBonus} pts bonus 💧"))
         }
         checkAchievements()
     }
@@ -253,7 +267,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         }
         if (lowStock != null) Notifications.showStock(getApplication(), state.value)
         _now.value = repo.now()
-        _events.tryEmit(UiEvent.Message("Prise notée : +$points pts · ${state.value.game.petName} va mieux 💚"))
+        _events.trySend(UiEvent.Message("Prise notée : +$points pts · ${state.value.game.petName} va mieux 💚"))
         reschedule()
         checkAchievements()
     }
@@ -261,7 +275,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     fun undoDose(key: String) {
         repo.update { Game.undo(it, key, repo.now()) }
         _now.value = repo.now()
-        _events.tryEmit(UiEvent.Message("Prise annulée"))
+        _events.trySend(UiEvent.Message("Prise annulée"))
         reschedule()
     }
 
@@ -289,7 +303,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     fun saveMeasurement(m: com.medipote.app.data.Measurement) {
         repo.update { com.medipote.app.domain.Measures.save(it, m) }
-        _events.tryEmit(UiEvent.Message("Mesure enregistrée"))
+        _events.trySend(UiEvent.Message("Mesure enregistrée"))
         checkAchievements()
     }
 
@@ -303,8 +317,8 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         var bonus = 0
         repo.update { s -> com.medipote.app.domain.Sleep.save(s, night, repo.now()).let { (u, b) -> bonus = b; u } }
         if (night.date == repo.now().toLocalDate()) Notifications.cancelSleep(getApplication())
-        _events.tryEmit(UiEvent.Message(if (bonus > 0) "Nuit enregistrée : +$bonus pts" else "Nuit enregistrée"))
-        if (bonus > 0) _events.tryEmit(UiEvent.Points(bonus))
+        _events.trySend(UiEvent.Message(if (bonus > 0) "Nuit enregistrée : +$bonus pts" else "Nuit enregistrée"))
+        if (bonus > 0) _events.trySend(UiEvent.Points(bonus))
         reschedule()
         checkAchievements()
     }
@@ -329,7 +343,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     fun cuddle() {
         var bonus = 0
         repo.update { s -> Game.cuddle(s, repo.now()).let { (u, b) -> bonus = b; u } }
-        if (bonus > 0) _events.tryEmit(UiEvent.Points(bonus))
+        if (bonus > 0) _events.trySend(UiEvent.Points(bonus))
         if (bonus > 0) checkAchievements()
     }
 
@@ -365,7 +379,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                 if (t.id == treatmentId && t.packSize != null) t.copy(stock = (t.stock ?: 0.0) + t.packSize) else t
             })
         }
-        _events.tryEmit(UiEvent.Message("Stock mis à jour"))
+        _events.trySend(UiEvent.Message("Stock mis à jour"))
         reschedule()
     }
 
@@ -390,8 +404,8 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             badges = earned
             afterBadges
         }
-        challenges.forEach { _events.tryEmit(UiEvent.Message("🎯 Défi réussi : ${it.title.lowercase()} · +${it.points} pts")) }
-        badges.forEach { _events.tryEmit(UiEvent.BadgeEarned(it)) }
+        challenges.forEach { _events.trySend(UiEvent.Message("🎯 Défi réussi : ${it.title.lowercase()} · +${it.points} pts")) }
+        badges.forEach { _events.trySend(UiEvent.BadgeEarned(it)) }
     }
 
     /** Home: today's mood in one tap. */
@@ -412,7 +426,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     fun productChanged() {
         repo.update { com.medipote.app.domain.PeriodCare.change(it, repo.now()) }
         Notifications.cancelProduct(getApplication())
-        _events.tryEmit(UiEvent.Message("Protection changée, minuteur relancé"))
+        _events.trySend(UiEvent.Message("Protection changée, minuteur relancé"))
         reschedule()
     }
 
@@ -446,7 +460,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             startDate = repo.now().toLocalDate(), asNeeded = true, createdAt = repo.now(), forPeriod = true,
         )
         repo.update { it.copy(treatments = it.treatments + t) }
-        _events.tryEmit(UiEvent.Message("${t.displayName} ajouté à tes médicaments pour les règles"))
+        _events.trySend(UiEvent.Message("${t.displayName} ajouté à tes médicaments pour les règles"))
         return t.id
     }
 
@@ -459,7 +473,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     fun completeRitual(kind: com.medipote.app.domain.RitualKind) {
         var bonus = 0
         repo.update { s -> com.medipote.app.domain.Rituals.complete(s, kind, repo.now()).let { (u, b) -> bonus = b; u } }
-        if (bonus > 0) _events.tryEmit(UiEvent.Points(bonus))
+        if (bonus > 0) _events.trySend(UiEvent.Points(bonus))
         checkAchievements()
     }
 
@@ -468,7 +482,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun message(text: String) {
-        _events.tryEmit(UiEvent.Message(text))
+        _events.trySend(UiEvent.Message(text))
     }
 
     fun reschedule() {
