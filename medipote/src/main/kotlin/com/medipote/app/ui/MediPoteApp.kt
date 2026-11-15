@@ -416,6 +416,7 @@ fun MediPoteApp(vm: AppViewModel) {
                         onOpenHomeLayout = { nav.navigate("home_layout") },
                         onNapWake = wakeNap,
                         onNapCancel = vm::cancelNap,
+                        onOpenSupport = { nav.navigate("support") },
                         quickAdd = com.medipote.app.ui.home.QuickAddActions(
                             onLogPrn = { nav.navigate("prn_log/${it.id}") },
                             onAddPrnTreatment = { nav.navigate("search") },
@@ -424,6 +425,7 @@ fun MediPoteApp(vm: AppViewModel) {
                             onNapStart = vm::startNap,
                             onNapWake = wakeNap,
                             onNapLog = { nav.navigate("nap_log") },
+                            onSupport = { nav.navigate("support") },
                             onWater = { vm.addWater(1) },
                             onProduct = vm::startProduct,
                             onProductChanged = vm::productChanged,
@@ -699,6 +701,47 @@ fun MediPoteApp(vm: AppViewModel) {
                         onNight = { nav.navigate("sleep_log") { popUpTo("nap_log?id={id}&start={start}&minutes={minutes}") { inclusive = true } } },
                     )
                 }
+                // ── "Ça ne va pas" ──
+                composable("support") {
+                    LaunchedEffect(Unit) { vm.supportOpened() }
+                    com.medipote.app.ui.support.SupportScreen(
+                        state, now,
+                        com.medipote.app.ui.support.SupportActions(
+                            onBack = { nav.popBackStack() },
+                            onBreathe = { nav.navigate("support_breathe") },
+                            onGround = { nav.navigate("support_ground") },
+                            onThoughts = { nav.navigate("support_thoughts") },
+                            onComfort = { nav.navigate("support_comfort") },
+                            onPlan = { nav.navigate("support_plan") },
+                            onSettings = { nav.navigate("support_settings") },
+                            onCall = { com.medipote.app.ui.support.dial(context, it) },
+                            onMessage = { com.medipote.app.ui.support.sendHelpMessage(context, it) },
+                            onMood = vm::setMood,
+                            onAskAgain = vm::askAgainLater,
+                        ),
+                    )
+                }
+                composable("support_breathe") {
+                    com.medipote.app.ui.support.BreathingScreen(state.settings.support.vibrate, onBack = { nav.popBackStack() })
+                }
+                composable("support_ground") {
+                    com.medipote.app.ui.support.GroundingScreen(
+                        onBack = { nav.popBackStack() },
+                        onBreathe = { nav.navigate("support_breathe") { popUpTo("support_ground") { inclusive = true } } },
+                    )
+                }
+                composable("support_thoughts") {
+                    com.medipote.app.ui.support.ThoughtsScreen(state.support, onKeep = vm::keepThought, onDelete = vm::deleteThought, onBack = { nav.popBackStack() })
+                }
+                composable("support_comfort") {
+                    com.medipote.app.ui.support.ComfortScreen(state.support, onChange = vm::updateSupport, onBack = { nav.popBackStack() })
+                }
+                composable("support_plan") {
+                    com.medipote.app.ui.support.PlanScreen(state, onChange = vm::updateSupport, onContacts = { nav.navigate("support_settings") }, onBack = { nav.popBackStack() })
+                }
+                composable("support_settings") {
+                    com.medipote.app.ui.support.SupportSettingsScreen(state.settings.support, onChange = vm::updateSupportSettings, onBack = { nav.popBackStack() })
+                }
                 composable("measure/{type}") { entry ->
                     val type = entry.arguments?.getString("type")?.let { runCatching { com.medipote.app.data.MeasureType.valueOf(it) }.getOrNull() }
                     if (type == null) LaunchedEffect(Unit) { nav.popBackStack() } else {
@@ -915,6 +958,7 @@ fun MediPoteApp(vm: AppViewModel) {
                         onOpenBackup = { nav.navigate("backup") },
                         onOpenAppearance = { nav.navigate("appearance") },
                         onOpenHomeLayout = { nav.navigate("home_layout") },
+                        onOpenSupport = { nav.navigate("support_settings") },
                         watchLastSeen = com.medipote.app.wear.WatchLink.lastSeen(context),
                         watchRings = com.medipote.app.wear.WatchLink.watchHandlesReminders(context),
                         onSyncWatch = {

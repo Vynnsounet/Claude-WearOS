@@ -31,6 +31,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material.icons.outlined.AccountCircle
+import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.Inventory2
 import androidx.compose.material.icons.outlined.Restaurant
 import androidx.compose.material.icons.rounded.Remove
@@ -145,6 +146,7 @@ fun HomeScreen(
     onOpenHomeLayout: () -> Unit = {},
     onNapWake: () -> Unit = {},
     onNapCancel: () -> Unit = {},
+    onOpenSupport: () -> Unit = {},
     quickAdd: QuickAddActions? = null,
 ) {
     val logs = remember(state.doseLogs) { state.doseLogs.associateBy { it.key } }
@@ -211,7 +213,11 @@ fun HomeScreen(
                 PillTray(items = giveable, petBounds = petBounds, onHover = { dragHover = it }, onDrop = onGive)
             }
         } }
-        HomeSection.MOOD -> { { com.medipote.app.ui.motivation.MoodCard(state.entryFor(date), onMood, foldWhenDone = true) } }
+        HomeSection.MOOD -> { {
+            com.medipote.app.ui.motivation.MoodCard(state.entryFor(date), onMood, foldWhenDone = true)
+            // A very bad mood: support is offered, gently, once and quietly.
+            if (com.medipote.app.domain.Support.nudge(state, date)) SupportNudge(onOpenSupport)
+        } }
         HomeSection.RITUAL -> com.medipote.app.domain.Rituals.current(now)
             ?.takeIf { !com.medipote.app.domain.Rituals.done(state.game, now, it) }
             ?.let { kind -> { com.medipote.app.ui.motivation.RitualCard(kind) { onRitual(kind) } } }
@@ -351,6 +357,9 @@ fun HomeScreen(
                     }
                 },
                 actions = {
+                    if (state.settings.support.homeButton) {
+                        IconButton(onClick = onOpenSupport) { Icon(Icons.Outlined.FavoriteBorder, "Ça ne va pas : soutien") }
+                    }
                     IconButton(onClick = onOpenProfile) { Icon(Icons.Outlined.AccountCircle, "Profil médical") }
                     IconButton(onClick = onOpenSettings) { Icon(Icons.Outlined.Settings, "Paramètres") }
                 },
@@ -845,6 +854,22 @@ private fun JournalPrompt(pet: String, onOpen: () -> Unit) {
                     style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onTertiaryContainer,
                 )
             }
+        }
+    }
+}
+
+/** After a very bad mood: a calm, optional offer. Never red, never urgent-looking. */
+@Composable
+private fun SupportNudge(onOpen: () -> Unit) {
+    Surface(onClick = onOpen, color = MaterialTheme.colorScheme.surfaceContainerHigh, shape = MaterialTheme.shapes.large, modifier = Modifier.fillMaxWidth()) {
+        Row(Modifier.padding(horizontal = 16.dp, vertical = 14.dp), verticalAlignment = Alignment.CenterVertically) {
+            Text("🤗", style = MaterialTheme.typography.headlineSmall)
+            Spacer(Modifier.width(12.dp))
+            Column(Modifier.weight(1f)) {
+                Text("Ça a l'air dur.", style = MaterialTheme.typography.titleSmall)
+                Text("Un peu de soutien, si tu veux.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }

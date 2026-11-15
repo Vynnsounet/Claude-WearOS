@@ -323,6 +323,42 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         checkAchievements()
     }
 
+    // ── Support ("Ça ne va pas") ──
+
+    fun updateSupport(transform: (com.medipote.app.data.SupportBox) -> com.medipote.app.data.SupportBox) {
+        repo.update { it.copy(support = transform(it.support)) }
+    }
+
+    fun updateSupportSettings(transform: (com.medipote.app.data.SupportSettings) -> com.medipote.app.data.SupportSettings) {
+        repo.update { it.copy(settings = it.settings.copy(support = transform(it.settings.support))) }
+    }
+
+    /** Written down and kept, privately (a thought not kept is simply never saved). */
+    fun keepThought(text: String) {
+        val clean = text.trim()
+        if (clean.isEmpty()) return
+        updateSupport { box ->
+            box.copy(thoughts = (listOf(com.medipote.app.data.ThoughtNote(java.util.UUID.randomUUID().toString(), repo.now(), clean)) + box.thoughts).take(200))
+        }
+        _events.trySend(UiEvent.Message("Gardé, rien que pour toi"))
+    }
+
+    fun deleteThought(id: String) = updateSupport { box -> box.copy(thoughts = box.thoughts.filterNot { it.id == id }) }
+
+    /** "Ask me again in a while": one gentle notification, in two hours. */
+    fun askAgainLater() {
+        repo.update { com.medipote.app.domain.Support.askAgain(it, repo.now()) }
+        reschedule()
+        _events.trySend(UiEvent.Message("D'accord, je te redemande dans 2 h 🤗"))
+    }
+
+    /** Opening the support screen answers the follow-up. */
+    fun supportOpened() {
+        if (state.value.supportFollowUp == null) return
+        repo.update { com.medipote.app.domain.Support.clearFollowUp(it) }
+        reschedule()
+    }
+
     // ── Naps ──
 
     fun startNap() {

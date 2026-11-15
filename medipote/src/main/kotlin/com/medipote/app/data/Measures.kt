@@ -20,7 +20,7 @@ enum class MeasureType(
     GLUCOSE("Glycémie", "g/L", 2, 0.2, 6.0, "🩸"),
     WEIGHT("Poids", "kg", 1, 2.0, 400.0, "⚖️"),
     TEMPERATURE("Température", "°C", 1, 33.0, 43.0, "🌡️"),
-    OXYGEN("Saturation en oxygène", "%", 0, 50.0, 100.0, "🫁");
+    OXYGEN("Saturation en oxygène", "%", 0, 50.0, 100.0, "💨");
 
     fun format(v: Double): String = "%.${decimals}f".format(java.util.Locale.FRANCE, v)
 }

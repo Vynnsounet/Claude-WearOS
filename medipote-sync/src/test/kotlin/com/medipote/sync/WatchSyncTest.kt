@@ -106,6 +106,20 @@ class WatchSyncTest {
     }
 
     @Test
+    fun calmBreathingBreathesOutLongerThanIn() {
+        assertTrue(Calm.EXHALE_MS > Calm.INHALE_MS)
+        assertTrue(Calm.at(0).inhale)
+        assertEquals(4, Calm.at(0).secondsLeft)
+        assertTrue(Calm.at(3_999).inhale)
+        assertFalse(Calm.at(4_000).inhale)
+        assertEquals(6, Calm.at(4_000).secondsLeft)
+        assertTrue(Calm.at(10_000).inhale)
+        assertEquals(0.5f, Calm.fill(Calm.at(0)), 0.001f)
+        assertEquals(1f, Calm.fill(Calm.at(4_000)), 0.001f)
+        assertEquals("3114", Calm.HELP_NUMBER)
+    }
+
+    @Test
     fun heartRateWaitsForSteadyReadings() {
         assertNull(HeartRate.steady(listOf(70f, 71f, 72f)))
         assertNull(HeartRate.steady(listOf(0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f)))

@@ -88,6 +88,7 @@ fun SettingsScreen(
     onOpenBackup: () -> Unit = {},
     onOpenAppearance: () -> Unit = {},
     onOpenHomeLayout: () -> Unit = {},
+    onOpenSupport: () -> Unit = {},
     /** When the Wear OS app last got in touch (0 = never), and whether it rings the reminders itself. */
     watchLastSeen: Long = 0L,
     watchRings: Boolean = false,
@@ -319,6 +320,18 @@ fun SettingsScreen(
                     colors = ListItemDefaults.colors(containerColor = Color.Transparent),
                     modifier = Modifier.clickable { renaming = true },
                 )
+            }
+
+            SectionTitle("Soutien")
+            SettingsCard {
+                Text(
+                    "Les personnes à prévenir, ton médecin ou ton psy, et ce que propose « Ça ne va pas ».",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                androidx.compose.material3.FilledTonalButton(onClick = onOpenSupport, modifier = Modifier.fillMaxWidth()) {
+                    Text("🤗  Mes personnes de confiance et réglages")
+                }
             }
 
             SectionTitle("Montre")

@@ -220,6 +220,49 @@ data class SleepNight(
     val efficiency: Float get() = if (inBedMinutes == 0) 0f else asleepMinutes.toFloat() / inBedMinutes
 }
 
+// ─────────────────────────── Support ("Ça ne va pas") ───────────────────────────
+
+/** Someone to reach when things are hard, chosen in a calm moment. */
+@Serializable
+data class TrustedContact(val name: String, val phone: String)
+
+@Serializable
+data class SupportSettings(
+    val contacts: List<TrustedContact> = emptyList(),
+    /** The user's doctor or therapist, if they want their number at hand. */
+    val professionalName: String = "",
+    val professionalPhone: String = "",
+    /** A small heart in the top bar of the home screen. */
+    val homeButton: Boolean = true,
+    /** After a "very bad" mood, offer support, gently. */
+    val suggestOnLowMood: Boolean = true,
+    /** Slow vibrations guiding the breathing. */
+    val vibrate: Boolean = true,
+)
+
+@Serializable
+data class ThoughtNote(
+    val id: String,
+    @Serializable(with = LocalDateTimeSerializer::class) val at: LocalDateTime,
+    val text: String,
+)
+
+/** What the user prepared for the hard days: all private, on the device. */
+@Serializable
+data class SupportBox(
+    /** A message to oneself, written on a good day. */
+    val messageToSelf: String = "",
+    /** What helps: a song, a place, an activity. */
+    val comfort: List<String> = emptyList(),
+    // The safety plan.
+    val signs: List<String> = emptyList(),
+    val helps: List<String> = emptyList(),
+    /** What matters to me. */
+    val matters: String = "",
+    /** Thoughts written down and kept (the others are erased). */
+    val thoughts: List<ThoughtNote> = emptyList(),
+)
+
 /** How a nap left one feeling. */
 @Serializable
 enum class NapFeeling(val emoji: String, val label: String) {

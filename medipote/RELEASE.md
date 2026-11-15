@@ -66,6 +66,27 @@ L'optimiseur de R8 reste désactivé (`-dontoptimize`) : APK de 3,8 Mo au lieu d
 le dex livré peut être reconverti et exécuté hors appareil pour vérification (voir plus bas),
 ce que l'optimiseur empêche. Il pourra être réactivé après des essais sur téléphone.
 
+### 1.14.0 — « Ça ne va pas »
+
+- Un écran de soutien pour les moments très difficiles, sans points ni fête, accessible en deux
+  gestes : petit cœur en haut de l'accueil (masquable), « 🤗 Ça ne va pas » dans « + Noter », et
+  une proposition douce quand on note l'humeur « très mal » (désactivable).
+- Dedans : **le 3114** en haut (appel en un geste, jour et nuit, gratuit) puis le 15, le 112 et
+  le numéro de son médecin ou psy ; **Respirer** (cercle guidé, expiration plus longue, trois
+  rythmes, vibration douce facultative) ; **Me poser** (5-4-3-2-1) ; **Vider ma tête** (écrire sans
+  filtre, rien n'est gardé si on ne le demande pas) ; **Ma boîte à réconfort** (un message à soi, ce
+  qui fait du bien) ; **Mon plan** (signes, ce qui aide, qui appeler, ce qui compte) ; « Gorge
+  nouée ? » (mâchoire, épaules, eau) ; jusqu'à trois personnes de confiance avec appel et message
+  tout prêt ; « Comment tu te sens ? » et « Me redemander dans 2 h » (une notification douce).
+- Les appels ouvrent le numéroteur avec le numéro prêt : rien n'est composé sans appui sur
+  « appeler ». Aucun accès Internet, tout reste sur le téléphone (permission ajoutée : VIBRATE).
+- Le compagnon ne parle plus de séries ni de points les jours d'humeur « très mal » : juste de
+  la compagnie. « Gorge nouée » ajouté aux symptômes du journal.
+- Réglages : Paramètres › Soutien (personnes de confiance, médecin ou psy, cœur, proposition,
+  vibrations).
+- Montre : « 🤗 Ça ne va pas » : cercle de respiration lent avec un petit tic au poignet, et le 3114.
+- Les emojis récents (🫁, 🫂, 🛟) sont remplacés par des plus anciens, lisibles sur tous les téléphones.
+
 ### 1.13.0 — les siestes
 
 - Suivi › Sommeil : « 😴 Je m'endors » (chronomètre) ou « Noter une sieste ». Le chronomètre

@@ -13,6 +13,14 @@ quelles données l'application utilise et ce qu'elle en fait.
   appareil, inaccessible aux autres applications.
 - Tu peux tout effacer à tout moment.
 
+## « Ça ne va pas » et tes notes personnelles
+
+Ce que tu écris dans « Ça ne va pas » (pensées gardées, message à toi-même, plan, personnes de
+confiance et leurs numéros) reste dans l'espace privé de l'application, comme le reste, et
+n'est partagé avec personne. Les appels et messages passent par les applications Téléphone et
+Messages de ton téléphone, seulement quand tu appuies sur « appeler » ou « envoyer » là-bas.
+MédiPote n'envoie rien et n'a pas accès à Internet.
+
 ## Si tu utilises la montre Wear OS
 
 L'appli compagnon pour montre est facultative. Si tu l'installes, le téléphone envoie à **ta**

@@ -100,9 +100,11 @@ class NotificationsTest {
         manager.createNotificationChannel(android.app.NotificationChannel("dose_reminders", "old", NotificationManager.IMPORTANCE_LOW))
         com.medipote.app.notifications.Notifications.createChannels(context)
         assertEquals(null, manager.getNotificationChannel("dose_reminders"))
+        // Reminders are loud pop-ups; the gentle "how are you now?" of the support screen is softer on purpose.
         for (id in com.medipote.app.notifications.Notifications.ALL_CHANNELS) {
             val c = manager.getNotificationChannel(id)
-            assertEquals(id, NotificationManager.IMPORTANCE_HIGH, c.importance)
+            val expected = if (id == com.medipote.app.notifications.Notifications.CHANNEL_SUPPORT) NotificationManager.IMPORTANCE_DEFAULT else NotificationManager.IMPORTANCE_HIGH
+            assertEquals(id, expected, c.importance)
             assertTrue(id, c.sound != null)
             assertTrue(id, c.shouldVibrate())
         }

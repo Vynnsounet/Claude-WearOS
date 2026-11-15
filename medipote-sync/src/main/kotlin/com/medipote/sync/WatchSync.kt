@@ -272,3 +272,22 @@ object NapTimer {
         else -> "${minutes / 60} h ${"%02d".format(minutes % 60)}"
     }
 }
+
+/** Calm breathing on the watch: in for 4 seconds, out for 6 (the longer breath out is what soothes). */
+object Calm {
+    const val INHALE_MS = 4_000L
+    const val EXHALE_MS = 6_000L
+    const val CYCLE_MS = INHALE_MS + EXHALE_MS
+    const val HELP_NUMBER = "3114"
+
+    data class State(val inhale: Boolean, val progress: Float, val secondsLeft: Int)
+
+    fun at(elapsedMillis: Long): State {
+        val t = Math.floorMod(elapsedMillis, CYCLE_MS)
+        return if (t < INHALE_MS) State(true, t.toFloat() / INHALE_MS, ((INHALE_MS - t + 999) / 1000).toInt())
+        else (t - INHALE_MS).let { State(false, it.toFloat() / EXHALE_MS, ((EXHALE_MS - it + 999) / 1000).toInt()) }
+    }
+
+    /** 0.5 when empty, 1 when full. */
+    fun fill(state: State): Float = if (state.inhale) 0.5f + 0.5f * state.progress else 1f - 0.5f * state.progress
+}

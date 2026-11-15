@@ -74,6 +74,7 @@ class WearScreensTest {
         compose.onNodeWithText("97 % · il y a 2 h").assertExists()
         compose.onNodeWithText("😴 Sieste").assertExists()
         compose.onNodeWithText("Aujourd'hui : 25 min").assertExists()
+        compose.onNodeWithText("🤗 Ça ne va pas").assertExists()
         compose.onNodeWithText("💧 4 / 8 verres").performClick()
         assertEquals(1, water)
     }
@@ -124,6 +125,16 @@ class WearScreensTest {
         compose.onNodeWithText("20").assertExists()
         compose.onNodeWithText("Je me réveille").performClick()
         assertEquals(1, stopped)
+    }
+
+    @Test
+    fun calmScreenShowsTheCircleAndTheHelpNumber() {
+        var done = 0
+        render("wear_calm") { com.medipote.wear.ui.CalmScreen(onDone = { done++ }, animate = false) }
+        compose.onNodeWithText("Inspire").assertExists()
+        compose.onNodeWithText("appelle le 3114", substring = true).assertExists()
+        compose.onNodeWithText("Ça va un peu mieux").performClick()
+        assertEquals(1, done)
     }
 
     @Test

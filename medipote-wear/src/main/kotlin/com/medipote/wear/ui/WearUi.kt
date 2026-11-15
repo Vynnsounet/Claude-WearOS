@@ -23,6 +23,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
+import androidx.compose.foundation.background
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
@@ -44,6 +46,7 @@ import androidx.wear.compose.material3.Text
 import androidx.wear.compose.navigation.SwipeDismissableNavHost
 import androidx.wear.compose.navigation.composable
 import androidx.wear.compose.navigation.rememberSwipeDismissableNavController
+import com.medipote.sync.Calm
 import com.medipote.sync.HeartRate
 import com.medipote.sync.NapTimer
 import com.medipote.sync.Oxygen
@@ -120,7 +123,11 @@ fun MediPoteWearApp() {
                         onOpenHeartRate = { nav.navigate("pulse") },
                         onOpenOxygen = { nav.navigate("oxygen") },
                         onOpenNap = { nav.navigate("nap") },
+                        onOpenCalm = { nav.navigate("calm") },
                     )
+                }
+                composable("calm") {
+                    CalmScreen(onDone = { nav.popBackStack() })
                 }
                 composable("nap") {
                     NapScreen(state.snapshot, now, actions, onDone = { nav.popBackStack() })
@@ -152,6 +159,7 @@ fun HomeScreen(
     onOpenHeartRate: () -> Unit,
     onOpenOxygen: () -> Unit = {},
     onOpenNap: () -> Unit = {},
+    onOpenCalm: () -> Unit = {},
 ) {
     val snapshot = state.snapshot
     val listState = rememberTransformingLazyColumnState()
@@ -298,6 +306,15 @@ fun HomeScreen(
                         val at = snapshot.lastOxygenAt
                         Text(if (last != null && at != null) "$last % · ${WatchPlanner.ago(LocalDateTime.parse(at), now)}" else "Envoyée au téléphone")
                     },
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+
+            item {
+                OutlinedButton(
+                    onClick = onOpenCalm,
+                    label = { Text("🤗 Ça ne va pas") },
+                    secondaryLabel = { Text("Respirer doucement") },
                     modifier = Modifier.fillMaxWidth(),
                 )
             }
@@ -451,6 +468,48 @@ fun PulseContent(
                     item { Info("Reste immobile, le bras posé, quelques secondes.") }
                 }
             }
+        }
+    }
+}
+
+/** "Ça ne va pas": a slow circle, a soft tick at each breath, and the number to call if it is too heavy. */
+@Composable
+fun CalmScreen(onDone: () -> Unit, animate: Boolean = true) {
+    val context = LocalContext.current
+    var elapsed by remember { mutableStateOf(0L) }
+    LaunchedEffect(animate) {
+        if (!animate) return@LaunchedEffect
+        var last = 0L
+        while (true) {
+            androidx.compose.runtime.withFrameMillis { t ->
+                if (last == 0L) last = t
+                elapsed += t - last
+                last = t
+            }
+        }
+    }
+    val state = Calm.at(elapsed)
+    LaunchedEffect(state.inhale, animate) {
+        if (!animate) return@LaunchedEffect
+        runCatching { context.getSystemService(android.os.Vibrator::class.java)?.vibrate(android.os.VibrationEffect.createOneShot(40, 60)) }
+    }
+    val listState = rememberTransformingLazyColumnState()
+    ScreenScaffold(scrollState = listState) { contentPadding ->
+        TransformingLazyColumn(state = listState, contentPadding = contentPadding) {
+            item {
+                androidx.compose.foundation.layout.Box(Modifier.fillMaxWidth().height(120.dp), contentAlignment = Alignment.Center) {
+                    androidx.compose.foundation.layout.Box(
+                        Modifier
+                            .size(100.dp)
+                            .scale(Calm.fill(state))
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.primaryContainer),
+                    )
+                    Text(if (state.inhale) "Inspire" else "Expire", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onPrimaryContainer)
+                }
+            }
+            item { Info("Suis le cercle, à ton rythme. Si c'est trop lourd : appelle le ${Calm.HELP_NUMBER}, jour et nuit, gratuit.") }
+            item { Button(onClick = onDone, label = { Text("Ça va un peu mieux") }, modifier = Modifier.fillMaxWidth()) }
         }
     }
 }

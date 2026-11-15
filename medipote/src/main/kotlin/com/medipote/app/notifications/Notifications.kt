@@ -28,7 +28,7 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
-enum class AlarmKind { DOSE, FOLLOW_UP, APPOINTMENT, WATER, STOCK, TEST, PRN_CHECK, SLEEP, SNOOZE, RENEWAL, RITUAL, RECAP, PRODUCT }
+enum class AlarmKind { DOSE, FOLLOW_UP, APPOINTMENT, WATER, STOCK, TEST, PRN_CHECK, SLEEP, SNOOZE, RENEWAL, RITUAL, RECAP, PRODUCT, SUPPORT }
 
 /** One planned alarm. [ref] identifies what it is about (an appointment id, for instance). */
 data class AlarmSpec(val kind: AlarmKind, val time: LocalDateTime, val ref: String = "") {
@@ -114,6 +114,9 @@ object ReminderPlanner {
             if (max.isAfter(now) && max.isAfter(change)) alarms += AlarmSpec(AlarmKind.PRODUCT, max, "max")
         }
 
+        // "Ask me again in a while", when the user asked for it.
+        state.supportFollowUp?.let { if (it.isAfter(now)) alarms += AlarmSpec(AlarmKind.SUPPORT, it) }
+
         // Morning and evening rituals, while not done that day.
         val rituals = state.settings.rituals
         for (d in 0..1) {
@@ -162,9 +165,10 @@ object Notifications {
     const val CHANNEL_SLEEP = "sleep_v2"
     const val CHANNEL_RITUALS = "rituals_v2"
     const val CHANNEL_PERIOD = "period_v2"
+    const val CHANNEL_SUPPORT = "support_v1"
     const val PRODUCT_ID = 2010
     private val OLD_CHANNELS = listOf("dose_reminders", "appointments", "water", "stock", "sleep")
-    val ALL_CHANNELS = listOf(CHANNEL_DOSES, CHANNEL_APPOINTMENTS, CHANNEL_WATER, CHANNEL_STOCK, CHANNEL_SLEEP, CHANNEL_RITUALS, CHANNEL_PERIOD)
+    val ALL_CHANNELS = listOf(CHANNEL_DOSES, CHANNEL_APPOINTMENTS, CHANNEL_WATER, CHANNEL_STOCK, CHANNEL_SLEEP, CHANNEL_RITUALS, CHANNEL_PERIOD, CHANNEL_SUPPORT)
     private const val SLEEP_ID = 2004
     private const val WATER_ID = 2001
     private const val STOCK_ID = 2002
@@ -177,8 +181,8 @@ object Notifications {
             .setUsage(android.media.AudioAttributes.USAGE_NOTIFICATION_EVENT)
             .setContentType(android.media.AudioAttributes.CONTENT_TYPE_SONIFICATION)
             .build()
-        fun channel(id: String, name: String, desc: String) =
-            NotificationChannel(id, name, NotificationManager.IMPORTANCE_HIGH).apply {
+        fun channel(id: String, name: String, desc: String, importance: Int = NotificationManager.IMPORTANCE_HIGH) =
+            NotificationChannel(id, name, importance).apply {
                 description = desc
                 setSound(sound, audio)
                 enableVibration(true)
@@ -195,6 +199,8 @@ object Notifications {
             channel(CHANNEL_SLEEP, "Sommeil", "Rappel du matin pour noter sa nuit"),
             channel(CHANNEL_RITUALS, "Rituels et récap", "Rituels du matin et du soir, récap de la semaine"),
             channel(CHANNEL_PERIOD, "Protections périodiques", "Quand changer sa serviette, son tampon, sa coupe…"),
+            // Gentle: a soft sound, no pop-up over what one is doing.
+            channel(CHANNEL_SUPPORT, "Soutien", "Un petit mot « comment ça va ? » quand tu l'as demandé", NotificationManager.IMPORTANCE_DEFAULT),
         ).forEach(manager::createNotificationChannel)
     }
 
@@ -207,7 +213,8 @@ object Notifications {
      */
     fun quietChannels(context: Context): List<String> {
         val manager = NotificationManagerCompat.from(context)
-        return ALL_CHANNELS.filter { id ->
+        // The support follow-up is meant to be gentle: its softer importance is not a problem.
+        return ALL_CHANNELS.filter { it != CHANNEL_SUPPORT }.filter { id ->
             val importance = manager.getNotificationChannel(id)?.importance ?: return@filter false
             importance != NotificationManager.IMPORTANCE_NONE && importance < NotificationManager.IMPORTANCE_HIGH
         }
@@ -401,6 +408,15 @@ object Notifications {
         )
     }
 
+    /** The "how are you now?" the user asked for after a hard moment. */
+    fun showSupportFollowUp(context: Context, state: AppState) {
+        post(
+            context, CHANNEL_SUPPORT, 2020, "Je pense à toi 🤗",
+            "Comment ça va depuis tout à l'heure ? Un petit mot pour toi, si tu veux.",
+            route = "support",
+        )
+    }
+
     fun showRitual(context: Context, state: AppState, kindName: String, now: LocalDateTime) {
         val kind = runCatching { com.medipote.app.domain.RitualKind.valueOf(kindName) }.getOrNull() ?: return
         if (com.medipote.app.domain.Rituals.done(state.game, now, kind)) return
@@ -542,6 +558,10 @@ class ReminderReceiver : BroadcastReceiver() {
                 AlarmKind.RITUAL -> Notifications.showRitual(context, state, spec.ref, repo.now())
                 AlarmKind.RECAP -> Notifications.showRecap(context, state, repo.now())
                 AlarmKind.PRODUCT -> Notifications.showProduct(context, state, spec.ref, repo.now())
+                AlarmKind.SUPPORT -> {
+                    Notifications.showSupportFollowUp(context, state)
+                    repo.update { com.medipote.app.domain.Support.clearFollowUp(it) }
+                }
                 AlarmKind.SNOOZE -> {
                     val time = LocalDateTime.parse(spec.ref)
                     repo.update { s -> s.copy(snoozes = s.snoozes.filterNot { it.doseTime == time && !it.until.isAfter(spec.time) }) }

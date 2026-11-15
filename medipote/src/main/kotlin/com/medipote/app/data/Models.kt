@@ -27,6 +27,10 @@ data class AppState(
     val prnIntakes: List<PrnIntake> = emptyList(),
     /** Logged nights, newest first, at most one per date. */
     val sleep: List<SleepNight> = emptyList(),
+    /** What the user prepared for hard days (comfort box, safety plan, kept thoughts). */
+    val support: SupportBox = SupportBox(),
+    /** A gentle "how are you now?" notification the user asked for. */
+    @Serializable(with = LocalDateTimeSerializer::class) val supportFollowUp: LocalDateTime? = null,
     /** Naps, newest first. */
     val naps: List<Nap> = emptyList(),
     /** A nap being timed: when "I'm falling asleep" was pressed. */
@@ -294,6 +298,7 @@ data class Settings(
     val measures: Set<MeasureType> = emptySet(),
     val backup: BackupSettings = BackupSettings(),
     val look: Look = Look(),
+    val support: SupportSettings = SupportSettings(),
     val rituals: RitualSettings = RitualSettings(),
     /** Reminder to change each period product, in minutes, when the user changed the default. */
     val productReminders: Map<PeriodProduct, Int> = emptyMap(),

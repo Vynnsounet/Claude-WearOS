@@ -76,7 +76,7 @@ import java.time.LocalDate
 
 val PHYSICAL_SYMPTOMS = listOf(
     "Fatigue", "Maux de tête", "Fièvre", "Toux", "Nez qui coule", "Mal de gorge", "Nausées", "Maux de ventre",
-    "Douleurs musculaires", "Douleurs articulaires", "Vertiges", "Troubles du sommeil", "Perte d'appétit",
+    "Douleurs musculaires", "Douleurs articulaires", "Vertiges", "Troubles du sommeil", "Perte d'appétit", "Gorge nouée",
 )
 val MENTAL_SYMPTOMS = listOf(
     "Calme", "Motivation", "Stress", "Anxiété", "Tristesse", "Irritabilité", "Fatigue mentale",

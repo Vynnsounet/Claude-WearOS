@@ -683,6 +683,120 @@ class ScreensTest {
         compose.onNodeWithText("Noter une sieste déjà faite").assertExists()
     }
 
+    private fun supportState() = sampleState().copy(
+        settings = sampleState().settings.copy(
+            support = com.medipote.app.data.SupportSettings(
+                contacts = listOf(com.medipote.app.data.TrustedContact("Camille", "06 12 34 56 78"), com.medipote.app.data.TrustedContact("Maman", "01 23 45 67 89")),
+                professionalName = "Dr Martin", professionalPhone = "04 11 22 33 44",
+            ),
+        ),
+        support = com.medipote.app.data.SupportBox(
+            messageToSelf = "Ça finit toujours par passer. Tu as déjà traversé pire.",
+            comfort = listOf("Ma playlist douce", "Une marche au bord de l'eau", "Un thé et un plaid"),
+            signs = listOf("Je ne dors plus", "Je ne réponds plus aux messages"),
+            helps = listOf("Respirer", "Appeler Camille"),
+            matters = "Mes proches, mon chat, mes projets.",
+            thoughts = listOf(com.medipote.app.data.ThoughtNote("t1", today.atTime(9, 5), "Je me sens dépassé, tout est lourd.")),
+        ),
+    )
+
+    @Test
+    @Config(qualifiers = "w400dp-h2400dp-xhdpi")
+    fun supportScreen() {
+        var called: String? = null
+        var mood: Int? = null
+        render("support") {
+            com.medipote.app.ui.support.SupportScreen(
+                supportState(), now,
+                com.medipote.app.ui.support.SupportActions(onCall = { called = it }, onMood = { mood = it }),
+            )
+        }
+        compose.onNodeWithText("Je suis là.").assertExists()
+        // The national line is always one tap away, at the top.
+        compose.onNodeWithText("📞 Appeler le 3114").performClick()
+        org.junit.Assert.assertEquals("3114", called)
+        compose.onNodeWithText("Camille").assertExists()
+        compose.onNodeWithText("Respirer").assertExists()
+        compose.onNodeWithText("Gorge nouée ?").assertExists()
+        compose.onNodeWithText("Autres numéros").performScrollTo().performClick()
+        compose.onNodeWithText("15 · SAMU").assertExists()
+        compose.onNodeWithText("Dr Martin").assertExists()
+    }
+
+    @Test
+    @Config(qualifiers = "w400dp-h1100dp-xhdpi")
+    fun breathingScreen() {
+        render("support_breathe") { com.medipote.app.ui.support.BreathingScreen(vibrate = false, onBack = {}, animate = false) }
+        compose.onNodeWithText("Inspire").assertExists()
+        compose.onNodeWithText("Apaisante").assertExists()
+    }
+
+    @Test
+    @Config(qualifiers = "w400dp-h900dp-xhdpi")
+    fun groundingScreen() {
+        var breathe = 0
+        render("support_ground") { com.medipote.app.ui.support.GroundingScreen(onBack = {}, onBreathe = { breathe++ }) }
+        compose.onNodeWithText("choses que tu vois").assertExists()
+        repeat(4) { compose.onNodeWithText("Suivant").performClick() }
+        compose.onNodeWithText("J'ai fini").performClick()
+        compose.onNodeWithText("Bravo.").assertExists()
+        compose.onNodeWithText("🌬️ Respirer un peu").performClick()
+        org.junit.Assert.assertEquals(1, breathe)
+    }
+
+    @Test
+    @Config(qualifiers = "w400dp-h1300dp-xhdpi")
+    fun thoughtsScreen() {
+        render("support_thoughts") { com.medipote.app.ui.support.ThoughtsScreen(supportState().support, onKeep = {}, onDelete = {}, onBack = {}) }
+        compose.onNodeWithText("Garder en privé").assertExists()
+        compose.onNodeWithText("Ce que j'ai gardé").assertExists()
+    }
+
+    @Test
+    @Config(qualifiers = "w400dp-h1300dp-xhdpi")
+    fun comfortScreen() {
+        render("support_comfort") { com.medipote.app.ui.support.ComfortScreen(supportState().support, onChange = {}, onBack = {}) }
+        compose.onNodeWithText("Ma playlist douce").assertExists()
+    }
+
+    @Test
+    @Config(qualifiers = "w400dp-h1900dp-xhdpi")
+    fun planScreen() {
+        render("support_plan") { com.medipote.app.ui.support.PlanScreen(supportState(), onChange = {}, onContacts = {}, onBack = {}) }
+        compose.onNodeWithText("Je ne dors plus").assertExists()
+        compose.onNodeWithText("Camille, Maman").assertExists()
+    }
+
+    @Test
+    @Config(qualifiers = "w400dp-h1500dp-xhdpi")
+    fun supportSettingsScreen() {
+        render("support_settings") { com.medipote.app.ui.support.SupportSettingsScreen(supportState().settings.support, onChange = {}, onBack = {}) }
+        compose.onNodeWithText("Mes personnes de confiance").assertExists()
+    }
+
+    @Test
+    @Config(qualifiers = "w400dp-h2000dp-xhdpi")
+    fun aVeryBadMoodOffersSupportGentlyOnHome() {
+        val state = sampleState().let { it.copy(journal = it.journal.filterNot { e -> e.date == today } + com.medipote.app.data.DayEntry(today, mental = 1)) }
+        var opened = 0
+        render("home_support_nudge") { HomeScreen(state, now, 0, 0, {}, {}, {}, {}, animate = false, onOpenSupport = { opened++ }) }
+        compose.onNodeWithText("Ça a l'air dur.").performClick()
+        org.junit.Assert.assertEquals(1, opened)
+        // The heart in the top bar, too.
+        compose.onNodeWithContentDescription("Ça ne va pas : soutien").performClick()
+        org.junit.Assert.assertEquals(2, opened)
+    }
+
+    @Test
+    @Config(qualifiers = "w400dp-h2000dp-xhdpi")
+    fun supportEntryPointsCanBeTurnedOff() {
+        val base = sampleState().let { it.copy(journal = it.journal.filterNot { e -> e.date == today } + com.medipote.app.data.DayEntry(today, mental = 1)) }
+        val off = base.copy(settings = base.settings.copy(support = base.settings.support.copy(suggestOnLowMood = false, homeButton = false)))
+        render("home_support_off") { HomeScreen(off, now, 0, 0, {}, {}, {}, {}, animate = false) }
+        compose.onNodeWithText("Ça a l'air dur.").assertDoesNotExist()
+        compose.onNodeWithContentDescription("Ça ne va pas : soutien").assertDoesNotExist()
+    }
+
     @Test
     @Config(qualifiers = "w400dp-h1000dp-xhdpi")
     fun napEditor() {

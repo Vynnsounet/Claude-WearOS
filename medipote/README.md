@@ -293,6 +293,19 @@ Les données (y compris de santé et les documents) restent sur le téléphone, 
 le stockage privé de l'app, exclu de la sauvegarde cloud. Elles n'en sortent que
 par une action de la personne : sauvegarde, rapport PDF ou document partagé.
 
+## « Ça ne va pas »
+
+Un écran de soutien pour les moments très difficiles (tristesse, gorge nouée, angoisse) : le
+**3114** en un geste (jour et nuit, gratuit), puis de quoi se calmer, **respirer** (cercle guidé,
+expiration longue, vibration douce), **se poser** (5-4-3-2-1), **vider sa tête** (rien n'est gardé si
+on ne le demande pas), une **boîte à réconfort**, un **plan** (signes, ce qui aide, qui appeler),
+des **personnes de confiance** à appeler ou à prévenir d'un message tout prêt, et un
+« me redemander dans 2 h ». Accessible depuis le petit cœur de l'accueil, « + Noter » ou une
+proposition douce après une humeur « très mal ». Pas de points ni de fête. C'est un soutien, pas un
+soin : il ne remplace ni un médecin ni un psy.
+
+![](docs/support.png)
+
 ## Siestes
 
 Dans Suivi › Sommeil : **« 😴 Je m'endors »** lance un chronomètre (visible aussi sur l'accueil,

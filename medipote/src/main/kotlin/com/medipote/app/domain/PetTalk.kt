@@ -51,6 +51,7 @@ object PetTalk {
         val night = state.sleep.firstOrNull { it.date == today }
         val entry = state.entryFor(today)
         return when {
+            Support.lowMood(entry) -> "Je suis là, tout près de toi 💚"
             now.hour in 5..13 && night != null && ((night.rested ?: 3) <= 2 || night.asleepMinutes < state.settings.sleep.goalMinutes - 90) ->
                 "Nuit difficile… on y va doucement aujourd'hui 💛"
             now.hour in 5..13 && night != null && ((night.rested ?: 0) >= 4 || (night.quality ?: 0) >= 4) ->
@@ -74,6 +75,10 @@ object PetTalk {
 
     /** Something useful when there is something to say, otherwise a friendly word. */
     fun chatter(state: AppState, now: LocalDateTime, random: Random = Random.Default): String {
+        // On a very hard day: no series, no points, no jokes. Just company.
+        if (Support.lowMood(state.entryFor(now.toLocalDate()))) {
+            return listOf("Je suis là avec toi.", "Pas besoin de faire quoi que ce soit. Je reste tout près.", "Respire doucement. Je suis là 💚").random(random)
+        }
         dueLine(state, now)?.let { return it }
         val tips = buildList {
             val logs = state.doseLogs.associateBy { it.key }
