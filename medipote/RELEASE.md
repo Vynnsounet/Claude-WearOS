@@ -66,6 +66,11 @@ L'optimiseur de R8 reste désactivé (`-dontoptimize`) : APK de 3,8 Mo au lieu d
 le dex livré peut être reconverti et exécuté hors appareil pour vérification (voir plus bas),
 ce que l'optimiseur empêche. Il pourra être réactivé après des essais sur téléphone.
 
+### 1.15.1
+
+- La carte de santé du compagnon (nom, barre de santé, stade) passe en haut à droite de
+  l'illustration et devient plus petite, pour laisser voir la fenêtre de la chambre.
+
 ### 1.15.0 — saisons et fêtes
 
 - Le monde du compagnon change avec l'année : feuilles qui tombent à l'automne, neige l'hiver,

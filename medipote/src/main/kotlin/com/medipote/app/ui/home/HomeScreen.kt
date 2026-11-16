@@ -212,7 +212,7 @@ fun HomeScreen(
                         ambiance = ambiance,
                         modifier = Modifier.fillMaxSize(),
                     )
-                    HealthTag(state.game.petName, condition, growth, Modifier.align(Alignment.TopStart).padding(12.dp))
+                    HealthTag(state.game.petName, condition, growth, Modifier.align(Alignment.TopEnd).padding(8.dp))
                     FloatingPoints(pointsSignal, lastPoints, Modifier.align(Alignment.TopCenter).padding(top = 32.dp))
                 }
                 MoodMessage(condition)
@@ -418,33 +418,34 @@ private fun HealthTag(name: String, condition: PetCondition, growth: com.medipot
         else -> status.critical
     }
     Surface(
-        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.92f),
-        shape = RoundedCornerShape(16.dp),
+        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.88f),
+        shape = RoundedCornerShape(12.dp),
         modifier = modifier,
     ) {
-        Column(Modifier.padding(horizontal = 12.dp, vertical = 8.dp).width(120.dp)) {
-            Text(name, style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        Column(Modifier.padding(horizontal = 8.dp, vertical = 6.dp).width(98.dp)) {
+            Text(name, style = MaterialTheme.typography.labelLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
             Row(verticalAlignment = Alignment.CenterVertically) {
                 LinearProgressIndicator(
                     progress = { condition.health / 100f },
                     color = color,
                     trackColor = color.copy(alpha = 0.2f),
                     drawStopIndicator = {},
-                    modifier = Modifier.weight(1f).height(6.dp).clip(CircleShape),
+                    modifier = Modifier.weight(1f).height(5.dp).clip(CircleShape),
                 )
-                Spacer(Modifier.width(6.dp))
+                Spacer(Modifier.width(4.dp))
                 Text("${condition.health} %", style = MaterialTheme.typography.labelSmall)
             }
-            Text("Santé", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Spacer(Modifier.height(4.dp))
             Text(
                 "🌱 ${growth.stage.label}",
-                style = MaterialTheme.typography.labelMedium,
+                style = MaterialTheme.typography.labelSmall,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
             )
             Text(
-                growth.toNext?.let { "encore $it prise${if (it > 1) "s" else ""} à l'heure pour grandir" } ?: "taille adulte, en fleurs",
+                growth.toNext?.let { "encore $it prise${if (it > 1) "s" else ""}" } ?: "en fleurs",
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
             )
         }
     }
