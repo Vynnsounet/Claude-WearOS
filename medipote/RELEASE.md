@@ -66,6 +66,20 @@ L'optimiseur de R8 reste désactivé (`-dontoptimize`) : APK de 3,8 Mo au lieu d
 le dex livré peut être reconverti et exécuté hors appareil pour vérification (voir plus bas),
 ce que l'optimiseur empêche. Il pourra être réactivé après des essais sur téléphone.
 
+### 1.16.0 — journée douce, symptômes, onglets en cartes
+
+- Chaque onglet s'ouvre sur une page de cartes aérées avec un aperçu en direct. Onglets : Accueil,
+  Soins, Suivi, **Mieux-être** (nouveau) et **Moi** (Bilan et Compagnon réunis). « Mes cartes »
+  (Paramètres, ou en bas de chaque page) masque ce qu'on n'utilise pas ; rien n'est supprimé.
+- Nouveau, facultatif et masqué par défaut : « Ce qui m'accompagne » (conditions, symptômes à suivre,
+  missions perso), suivi des symptômes (1 à 5) avec conseils doux et quand consulter, « Journée
+  douce » (missions selon l'énergie, découpage de tâches en étapes, chrono de 5 minutes), carte
+  d'accueil les jours lourds, entrées dans « + Noter » et dans « Ça ne va pas ».
+- Points : gagnés seulement, jamais retirés ; trois petites victoires payent par jour ; aucun effet sur
+  les séries. Tout hors ligne, aucune permission ajoutée.
+- Migration : une sauvegarde ancienne se charge avec tout désactivé (testé).
+- Le contenu de santé (fiches, conseils) est à faire relire par un·e professionnel·le avant diffusion large.
+
 ### 1.15.1
 
 - La carte de santé du compagnon (nom, barre de santé, stade) passe en haut à droite de

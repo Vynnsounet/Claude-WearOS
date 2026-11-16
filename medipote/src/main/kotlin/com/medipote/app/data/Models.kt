@@ -43,6 +43,14 @@ data class AppState(
     val productLog: List<ProductUse> = emptyList(),
     /** Dose reminders put off from their notification ("in 10 minutes"). */
     val snoozes: List<Snooze> = emptyList(),
+    /** Symptoms felt, with their intensity, newest first. */
+    val symptomLog: List<SymptomNote> = emptyList(),
+    /** Small missions and steps done on hard days, newest first. */
+    val wins: List<SmallWin> = emptyList(),
+    /** Tasks cut into steps. */
+    val tasks: List<SplitTask> = emptyList(),
+    /** The energy announced today, if any. */
+    val energy: EnergyNote? = null,
 ) {
     fun entryFor(date: LocalDate): DayEntry = journal.firstOrNull { it.date == date } ?: DayEntry(date)
 }
@@ -301,6 +309,9 @@ data class Settings(
     val support: SupportSettings = SupportSettings(),
     val seasons: SeasonSettings = SeasonSettings(),
     val rituals: RitualSettings = RitualSettings(),
+    val wellbeing: WellbeingSettings = WellbeingSettings(),
+    /** Cards of the hub pages the user chose to hide, "suivi:Cycle". */
+    val hiddenCards: Set<String> = emptySet(),
     /** Reminder to change each period product, in minutes, when the user changed the default. */
     val productReminders: Map<PeriodProduct, Int> = emptyMap(),
     /** Ask for the phone's fingerprint, face or PIN to open the app. */

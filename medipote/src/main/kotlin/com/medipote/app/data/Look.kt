@@ -10,6 +10,7 @@ enum class HomeSection(val label: String, val emoji: String, val hint: String = 
     COMPANION("Compagnon", "🐾"),
     NEXT_DOSE("Prochaine prise, en grand", "⏰"),
     MOOD("Humeur du jour", "😊", "Se replie en une ligne une fois notée"),
+    SOFT_DAY("Journée douce", "💛", "Quand un symptôme est fort ou l'énergie basse"),
     RITUAL("Rituel du matin / du soir", "✨", "Le matin et le soir seulement"),
     PERIOD("Protection pendant les règles", "🩸", "Pendant les règles ou quand un minuteur tourne"),
     DOSES("Prises du jour", "💊"),

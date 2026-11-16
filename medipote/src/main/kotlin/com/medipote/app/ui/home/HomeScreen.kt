@@ -147,6 +147,7 @@ fun HomeScreen(
     onNapWake: () -> Unit = {},
     onNapCancel: () -> Unit = {},
     onOpenSupport: () -> Unit = {},
+    onOpenSoftDay: () -> Unit = {},
     quickAdd: QuickAddActions? = null,
 ) {
     val logs = remember(state.doseLogs) { state.doseLogs.associateBy { it.key } }
@@ -226,6 +227,8 @@ fun HomeScreen(
             // A very bad mood: support is offered, gently, once and quietly.
             if (com.medipote.app.domain.Support.nudge(state, date)) SupportNudge(onOpenSupport)
         } }
+        // A strong symptom or very little energy: gentleness is offered, once and quietly.
+        HomeSection.SOFT_DAY -> if (!com.medipote.app.domain.Wellbeing.heavyDay(state, date)) null else { { SoftDayCard(onOpenSoftDay) } }
         HomeSection.RITUAL -> com.medipote.app.domain.Rituals.current(now)
             ?.takeIf { !com.medipote.app.domain.Rituals.done(state.game, now, it) }
             ?.let { kind -> { com.medipote.app.ui.motivation.RitualCard(kind) { onRitual(kind) } } }
@@ -877,6 +880,21 @@ private fun SupportNudge(onOpen: () -> Unit) {
             Column(Modifier.weight(1f)) {
                 Text("Ça a l'air dur.", style = MaterialTheme.typography.titleSmall)
                 Text("Un peu de soutien, si tu veux.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+    }
+}
+
+@Composable
+private fun SoftDayCard(onOpen: () -> Unit) {
+    Surface(onClick = onOpen, color = MaterialTheme.colorScheme.surfaceContainerHigh, shape = MaterialTheme.shapes.large, modifier = Modifier.fillMaxWidth()) {
+        Row(Modifier.padding(horizontal = 16.dp, vertical = 14.dp), verticalAlignment = Alignment.CenterVertically) {
+            Text("💛", style = MaterialTheme.typography.headlineSmall)
+            Spacer(Modifier.width(12.dp))
+            Column(Modifier.weight(1f)) {
+                Text("Journée lourde ?", style = MaterialTheme.typography.titleSmall)
+                Text("De toutes petites missions, à ton rythme.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
         }

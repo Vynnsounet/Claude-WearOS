@@ -89,6 +89,8 @@ fun SettingsScreen(
     onOpenAppearance: () -> Unit = {},
     onOpenHomeLayout: () -> Unit = {},
     onOpenSupport: () -> Unit = {},
+    onOpenWellbeing: () -> Unit = {},
+    onOpenCards: () -> Unit = {},
     /** When the Wear OS app last got in touch (0 = never), and whether it rings the reminders itself. */
     watchLastSeen: Long = 0L,
     watchRings: Boolean = false,
@@ -130,6 +132,9 @@ fun SettingsScreen(
                 }
                 androidx.compose.material3.FilledTonalButton(onClick = onOpenHomeLayout, modifier = Modifier.fillMaxWidth()) {
                     Text("🏠  Mon accueil : ce qui s'affiche")
+                }
+                androidx.compose.material3.FilledTonalButton(onClick = onOpenCards, modifier = Modifier.fillMaxWidth()) {
+                    Text("🗂️  Mes cartes : ce qui s'affiche dans chaque onglet")
                 }
             }
 
@@ -320,6 +325,18 @@ fun SettingsScreen(
                     colors = ListItemDefaults.colors(containerColor = Color.Transparent),
                     modifier = Modifier.clickable { renaming = true },
                 )
+            }
+
+            SectionTitle("Ce qui m'accompagne")
+            SettingsCard {
+                Text(
+                    "Ce que tu vis, tes symptômes à suivre et tes petites missions pour les jours lourds.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                androidx.compose.material3.FilledTonalButton(onClick = onOpenWellbeing, modifier = Modifier.fillMaxWidth()) {
+                    Text("🌿  Mes conditions, symptômes et missions")
+                }
             }
 
             SectionTitle("Soutien")

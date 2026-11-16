@@ -53,6 +53,8 @@ data class QuickAddActions(
     val onMeasure: (MeasureType) -> Unit = {},
     val onJournal: () -> Unit = {},
     val onAppointment: () -> Unit = {},
+    val onSymptoms: () -> Unit = {},
+    val onSoftDay: () -> Unit = {},
 )
 
 enum class QuickPage { MAIN, PRN, PRODUCT, MEASURE, NAP }
@@ -116,6 +118,10 @@ fun QuickAddContent(state: AppState, now: LocalDateTime, actions: QuickAddAction
                     QuickRow("🩺", "Une mesure", measures.joinToString(", ") { it.label.lowercase() }, more = measures.size > 1) {
                         if (measures.size == 1) done { actions.onMeasure(measures.single()) } else page = QuickPage.MEASURE
                     }
+                }
+                if (com.medipote.app.domain.Wellbeing.enabled(state)) {
+                    QuickRow("🌡️", "Un symptôme", com.medipote.app.ui.HubPreviews.symptoms(state, now), onClick = { done(actions.onSymptoms) })
+                    QuickRow("💛", "Journée douce", "Missions et tâches en petites étapes", onClick = { done(actions.onSoftDay) })
                 }
                 QuickRow("📖", "Mon journal", "Forme, symptômes, notes", onClick = { done(actions.onJournal) })
                 QuickRow("📅", "Un rendez-vous", null, onClick = { done(actions.onAppointment) })

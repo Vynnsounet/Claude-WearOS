@@ -43,6 +43,10 @@ class AppFlowTest {
         compose.onNodeWithText("Voici ton compagnon", substring = true).assertExists()
         compose.onNodeWithText("Continuer").performClick()
 
+        // What accompanies the person: optional, skipped here
+        compose.onNodeWithText("Ce qui t'accompagne").assertExists()
+        compose.onNodeWithText("Passer pour l'instant").performScrollTo().performClick()
+
         // Treatments: search the guide and add one
         compose.onNodeWithText("Tes traitements en cours").assertExists()
         compose.onNode(hasClickAction() and hasAnyDescendant(hasText("Ajouter")), useUnmergedTree = true).performClick()
@@ -82,16 +86,22 @@ class AppFlowTest {
         }
 
         // Tabs are reachable
-        compose.onNodeWithText("Bilan").performClick()
+        // Each tab is a page of cards; a card opens its content under a back arrow.
+        compose.onNodeWithText("Moi").performClick()
+        compose.onNodeWithText("Statistiques").performClick()
         compose.onNodeWithText("14 derniers jours").assertExists()
         compose.onNodeWithText("Soins").performClick()
-        compose.onNodeWithContentDescription("Agenda").performClick() // sub-tabs are emojis, named for accessibility
+        compose.onNodeWithText("Agenda").performClick()
         compose.onNodeWithText("À venir").assertExists()
         compose.onNodeWithText("Suivi").performClick()
-        compose.onNodeWithContentDescription("Sommeil").performClick()
+        compose.onNodeWithText("Sommeil").performClick()
         compose.onNodeWithText("Comment as-tu dormi cette nuit ?").assertExists()
-        compose.onNodeWithText("Compagnon").performClick()
+        compose.onNodeWithText("Moi").performClick()
+        compose.onNodeWithContentDescription("Retour").performClick() // back from the statistics to the page of cards
+        compose.onNodeWithText("Boutique").performClick()
         compose.onNodeWithText("Touche un objet", substring = true).assertExists()
+        compose.onNodeWithText("Mieux-être").performClick()
+        compose.onNodeWithText("Ça ne va pas").assertExists()
         compose.onNodeWithText("Accueil").performClick()
         compose.onNodeWithContentDescription("Paramètres").performClick()
         compose.onNodeWithText("Sombre").performClick()

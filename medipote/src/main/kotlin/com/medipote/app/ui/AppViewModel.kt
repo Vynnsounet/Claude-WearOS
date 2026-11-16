@@ -333,6 +333,83 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         repo.update { it.copy(settings = it.settings.copy(seasons = transform(it.settings.seasons))) }
     }
 
+    // ── Hard days: symptoms, small missions, tasks cut into steps ──
+
+    fun updateWellbeing(transform: (com.medipote.app.data.WellbeingSettings) -> com.medipote.app.data.WellbeingSettings) {
+        repo.update { it.copy(settings = it.settings.copy(wellbeing = transform(it.settings.wellbeing))) }
+    }
+
+    fun setSymptom(symptom: String, intensity: Int?) {
+        val today = repo.now().toLocalDate()
+        repo.update { com.medipote.app.domain.Wellbeing.setIntensity(it, today, symptom, intensity) }
+    }
+
+    fun setSymptomNote(symptom: String, note: String) {
+        val today = repo.now().toLocalDate()
+        repo.update { com.medipote.app.domain.Wellbeing.setNote(it, today, symptom, note) }
+    }
+
+    fun setEnergy(level: Int) {
+        val today = repo.now().toLocalDate()
+        repo.update { com.medipote.app.domain.Wellbeing.setEnergy(it, today, level) }
+    }
+
+    private fun celebrate(result: com.medipote.app.domain.WinResult) {
+        if (result.already) return
+        if (result.points > 0) {
+            _events.trySend(UiEvent.Points(result.points))
+            _events.trySend(UiEvent.Message("Une petite victoire : +${result.points} pts 💛"))
+        } else {
+            _events.trySend(UiEvent.Message("Bravo, c'est noté 💛"))
+        }
+    }
+
+    /** A mission done: points are only ever added. */
+    fun doMission(mission: com.medipote.app.domain.Mission) {
+        var result: com.medipote.app.domain.WinResult? = null
+        repo.update { s ->
+            com.medipote.app.domain.Wellbeing.missionWin(s, mission, repo.now()).also { result = it }.state
+        }
+        result?.let(::celebrate)
+        checkAchievements()
+    }
+
+    /** Saves a task cut into steps; returns its id. */
+    fun saveTask(id: String?, title: String, steps: List<String>): String {
+        val taskId = id ?: java.util.UUID.randomUUID().toString()
+        repo.update { com.medipote.app.domain.Wellbeing.saveTask(it, taskId, title, steps, repo.now()) }
+        return taskId
+    }
+
+    fun deleteTask(id: String) {
+        repo.update { com.medipote.app.domain.Wellbeing.deleteTask(it, id) }
+    }
+
+    fun completeStep(taskId: String, index: Int) {
+        var result: com.medipote.app.domain.WinResult? = null
+        repo.update { s ->
+            com.medipote.app.domain.Wellbeing.completeStep(s, taskId, index, repo.now()).also { result = it }.state
+        }
+        val r = result ?: return
+        celebrate(r)
+        if (!r.already && state.value.tasks.firstOrNull { it.id == taskId }?.finished == true) {
+            _events.trySend(UiEvent.Message("Tout est fait, bravo ! 🎉"))
+        }
+        checkAchievements()
+    }
+
+    fun showAllCards() {
+        repo.update { it.copy(settings = it.settings.copy(hiddenCards = emptySet())) }
+    }
+
+    /** Shows or hides a card of a hub page. */
+    fun setCardHidden(key: String, hidden: Boolean) {
+        repo.update { s ->
+            val cards = if (hidden) s.settings.hiddenCards + key else s.settings.hiddenCards - key
+            s.copy(settings = s.settings.copy(hiddenCards = cards))
+        }
+    }
+
     // ── Support ("Ça ne va pas") ──
 
     fun updateSupport(transform: (com.medipote.app.data.SupportBox) -> com.medipote.app.data.SupportBox) {

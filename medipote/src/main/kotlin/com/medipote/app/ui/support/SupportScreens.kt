@@ -117,6 +117,8 @@ data class SupportActions(
     val onMessage: (TrustedContact) -> Unit = {},
     val onMood: (Int?) -> Unit = {},
     val onAskAgain: () -> Unit = {},
+    /** Opens the gentle day (missions, small steps); only offered once the user turned it on. */
+    val onSoftDay: (() -> Unit)? = null,
 )
 
 /** "Ça ne va pas": a few big, quiet ways to get through a hard moment. */
@@ -159,6 +161,9 @@ fun SupportScreen(state: AppState, now: LocalDateTime, a: SupportActions) {
             ToolRow("✍️", "Vider ma tête", "Écrire sans filtre, rien que pour moi", a.onThoughts)
             ToolRow("🧸", "Ma boîte à réconfort", "Ce que je sais qui me fait du bien", a.onComfort)
             ToolRow("📝", "Mon plan", "Mes signes, ce qui m'aide, qui appeler", a.onPlan)
+            if (a.onSoftDay != null && com.medipote.app.domain.Wellbeing.enabled(state)) {
+                ToolRow("💛", "Journée douce", "De toutes petites missions, à mon rythme", a.onSoftDay)
+            }
         }
 
         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {

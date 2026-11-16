@@ -36,8 +36,8 @@ import com.medipote.app.ui.journal.DayEntryScreen
 import com.medipote.app.ui.journal.JournalScreen
 import com.medipote.app.ui.pill.PillScreen
 import com.medipote.app.ui.pill.PillSetupScreen
-import com.medipote.app.ui.Hub
-import com.medipote.app.ui.HubTab
+import com.medipote.app.ui.CardHub
+import com.medipote.app.ui.HubCard
 import com.medipote.app.data.CycleInfo
 import com.medipote.app.data.DoseLog
 import com.medipote.app.data.DoseTime
@@ -286,19 +286,22 @@ class ScreensTest {
 
     @Test
     fun journal() {
-        // Five tabs, as with sleep, measurements and cycle on: the labels must not be cut.
+        // The Suivi page is a list of airy cards, each with a live line; a card opens in place.
         render("journal") {
-            Hub(
+            CardHub(
                 "Suivi",
-                listOf(HubTab("📖", "Journal"), HubTab("🌙", "Sommeil"), HubTab("🩺", "Mesures"), HubTab("🩸", "Cycle")),
-                0, {}, {},
+                listOf(
+                    HubCard("suivi:journal", "📖", "Journal", "Noté aujourd'hui"), HubCard("suivi:sleep", "🌙", "Sommeil", "Cette nuit : 7 h 30"),
+                    HubCard("suivi:measures", "🩺", "Mesures", "tension"), HubCard("suivi:cycle", "🩸", "Cycle", "Règles, cycle et protections"),
+                ),
+                emptySet(), {}, {}, {},
             ) { JournalScreen(sampleState().journal, today, onOpenDay = {}) }
         }
+        compose.onNodeWithText("Sommeil").assertExists()
+        compose.onNodeWithText("Cette nuit : 7 h 30").assertExists()
+        compose.onNodeWithText("Mesures").assertExists()
+        compose.onNodeWithText("Journal").performClick()
         compose.onNodeWithText("Mes 14 derniers jours").assertExists()
-        // Emoji tabs, each with its name for screen readers; the open one is written under the title.
-        compose.onNodeWithContentDescription("Sommeil").assertExists()
-        compose.onNodeWithContentDescription("Mesures").assertExists()
-        compose.onNodeWithText("Journal").assertExists()
     }
 
     @Test
@@ -310,8 +313,9 @@ class ScreensTest {
     @Test
     fun agenda() {
         render("agenda") {
-            Hub("Soins", listOf(HubTab("💊", "Traitements"), HubTab("📅", "Agenda"), HubTab("📂", "Carnet de santé", "Carnet")), 1, {}, {}) { AgendaScreen(sampleState().appointments, now, {}, {}) }
+            CardHub("Soins", listOf(HubCard("soins:treatments", "💊", "Traitements"), HubCard("soins:agenda", "📅", "Agenda")), emptySet(), {}, {}, {}) { AgendaScreen(sampleState().appointments, now, {}, {}) }
         }
+        compose.onNodeWithText("Agenda").performClick()
         compose.onNodeWithText("Dentiste").assertExists()
     }
 
@@ -323,7 +327,8 @@ class ScreensTest {
 
     @Test
     fun documentsEmpty() {
-        render("documents") { Hub("Soins", listOf(HubTab("💊", "Traitements"), HubTab("📅", "Agenda"), HubTab("📂", "Carnet de santé", "Carnet")), 2, {}, {}) { DocumentsScreen(emptyList(), {}, {}, {}) } }
+        render("documents") { CardHub("Soins", listOf(HubCard("soins:agenda", "📅", "Agenda"), HubCard("soins:docs", "📂", "Carnet de santé")), emptySet(), {}, {}, {}) { DocumentsScreen(emptyList(), {}, {}, {}) } }
+        compose.onNodeWithText("Carnet de santé").performClick()
         compose.onNodeWithText("Ton carnet de santé numérique").assertExists()
     }
 
@@ -345,8 +350,9 @@ class ScreensTest {
     fun pillTab() {
         val state = withPill(pill)
         render("pill") {
-            Hub("Soins", listOf(HubTab("💊", "Traitements"), HubTab("🔁", "Pilule"), HubTab("📅", "Agenda"), HubTab("📂", "Carnet de santé", "Carnet")), 1, {}, {}) { PillScreen(state, now, {}, {}, {}, animate = false) }
+            CardHub("Soins", listOf(HubCard("soins:treatments", "💊", "Traitements"), HubCard("soins:pill", "🔁", "Pilule"), HubCard("soins:agenda", "📅", "Agenda"), HubCard("soins:docs", "📂", "Carnet de santé")), emptySet(), {}, {}, {}) { PillScreen(state, now, {}, {}, {}, animate = false) }
         }
+        compose.onNodeWithText("Pilule").performClick()
         compose.onNodeWithText("Comprimé 11 sur 21").assertExists()
     }
 
@@ -355,8 +361,9 @@ class ScreensTest {
         val onBreak = pill.copy(pill = pill.pill!!.copy(packStart = today.minusDays(23)))
         val state = withPill(onBreak)
         render("pill_break", ThemeMode.DARK) {
-            Hub("Soins", listOf(HubTab("💊", "Traitements"), HubTab("🔁", "Pilule"), HubTab("📅", "Agenda"), HubTab("📂", "Carnet de santé", "Carnet")), 1, {}, {}) { PillScreen(state, now, {}, {}, {}, animate = false) }
+            CardHub("Soins", listOf(HubCard("soins:treatments", "💊", "Traitements"), HubCard("soins:pill", "🔁", "Pilule"), HubCard("soins:agenda", "📅", "Agenda"), HubCard("soins:docs", "📂", "Carnet de santé")), emptySet(), {}, {}, {}) { PillScreen(state, now, {}, {}, {}, animate = false) }
         }
+        compose.onNodeWithText("Pilule").performClick()
         compose.onNodeWithText("Semaine de pause 🌙").assertExists()
     }
 
@@ -1354,12 +1361,13 @@ class ScreensTest {
     fun companionSpace() {
         val state = motivationState()
         render("hub_companion") {
-            Hub("Pilou", listOf(HubTab("🛍️", "Boutique"), HubTab("🏅", "Badges et défis", "Badges")), 1, {}, {}) {
+            CardHub("Moi", listOf(HubCard("moi:shop", "🛍️", "Boutique"), HubCard("moi:badges", "🏅", "Badges et défis")), emptySet(), {}, {}, {}) {
                 com.medipote.app.ui.motivation.BadgesScreen(state, today, onBack = {}, embedded = true)
             }
         }
-        // Tabs: an emoji with a short word under it; earned badges first, the rest folded.
-        compose.onNodeWithText("Badges").assertExists()
+        // A page of cards; opening one shows its content under a back arrow. Earned badges first, the rest folded.
+        compose.onNodeWithText("Boutique").assertExists()
+        compose.onNodeWithText("Badges et défis").performClick()
         compose.onNodeWithText("Ma collection").assertExists()
         compose.onNodeWithText("à débloquer", substring = true).assertExists()
     }
@@ -1369,11 +1377,13 @@ class ScreensTest {
     fun bilanSpace() {
         val state = motivationState()
         render("hub_bilan") {
-            Hub("Bilan", listOf(HubTab("📊", "Statistiques"), HubTab("📋", "Jour par jour", "Par jour"), HubTab("📆", "Mon année", "Année")), 1, {}, {}) {
+            CardHub("Moi", listOf(HubCard("moi:stats", "📊", "Statistiques"), HubCard("moi:day", "📋", "Jour par jour")), emptySet(), {}, {}, {}) {
                 com.medipote.app.ui.motivation.MyDayScreen(state, today.minusDays(1), now, {}, {}, {}, {}, {}, embedded = true)
             }
         }
-        compose.onNodeWithText("Par jour").assertExists()
+        compose.onNodeWithText("Jour par jour").assertExists()
+        compose.onNodeWithText("Jour par jour").performClick()
+        compose.onNodeWithContentDescription("Retour").assertExists()
     }
 
     @Test
@@ -1436,6 +1446,242 @@ class ScreensTest {
     fun periodCareNotStarted() {
         render("period_care_start") { com.medipote.app.ui.cycle.PeriodCareCard(sampleState(), now, {}, {}, {}, { _, _ -> }) }
         compose.onNodeWithText("🩲 Culotte de règles").assertExists()
+    }
+
+    // ───────────── Symptoms, the gentle day, tasks cut into steps ─────────────
+
+    private fun wellState(heavy: Boolean = true): AppState {
+        var s = sampleState()
+        s = s.copy(settings = s.settings.copy(wellbeing = com.medipote.app.data.WellbeingSettings(
+            enabled = true,
+            conditions = listOf(com.medipote.app.data.MyCondition("Hashimoto / hypothyroïdie", "hashimoto")),
+            symptoms = listOf("fatigue", "anxiety", "body"),
+            customMissions = listOf("Prendre un bain"),
+        )))
+        val w = com.medipote.app.domain.Wellbeing
+        for (back in 1..6) s = w.setIntensity(s, today.minusDays(back.toLong()), "fatigue", if (back % 2 == 0) 4 else 2)
+        s = w.setIntensity(s, today, "fatigue", if (heavy) 4 else 2)
+        s = w.setIntensity(s, today, "anxiety", 2)
+        return s
+    }
+
+    @Test
+    @Config(qualifiers = "w400dp-h1500dp-xhdpi")
+    fun symptomsScreen() {
+        val state = wellState()
+        val set = mutableListOf<Pair<String, Int?>>()
+        var advice: String? = null
+        render("symptoms") {
+            com.medipote.app.ui.wellbeing.SymptomsScreen(state, now, { id, v -> set += id to v }, { advice = it }, {}, {})
+        }
+        compose.onNodeWithText("Qu'est-ce que tu ressens aujourd'hui ?").assertExists()
+        compose.onNodeWithText("Fatigue").assertExists()
+        compose.onNodeWithText("fort").assertExists()
+        // A strong symptom offers what can help; the same number touched again removes it.
+        compose.onNodeWithText("💛  Voir ce qui peut aider").performClick()
+        org.junit.Assert.assertEquals("fatigue", advice)
+        compose.onNodeWithContentDescription("Fatigue, intensité 4 sur 5").performClick()
+        compose.onNodeWithContentDescription("Anxiété, intensité 5 sur 5").performClick()
+        org.junit.Assert.assertEquals(listOf("fatigue" to null, "anxiety" to 5), set)
+    }
+
+    @Test
+    @Config(qualifiers = "w400dp-h1300dp-xhdpi")
+    fun symptomAdvice() {
+        var soft = 0
+        render("symptom_advice") { com.medipote.app.ui.wellbeing.SymptomAdviceScreen("fatigue", { soft++ }, {}, {}) }
+        compose.onNodeWithText("Quand en parler à un médecin").assertExists()
+        compose.onAllNodesWithText("appelle le 15", substring = true).onFirst().assertExists()
+        compose.onNodeWithText("💛  Des petites missions pour aujourd'hui").performClick()
+        org.junit.Assert.assertEquals(1, soft)
+    }
+
+    @Test
+    @Config(qualifiers = "w400dp-h1500dp-xhdpi")
+    fun symptomAdviceAboutTheBody() {
+        var support = 0
+        render("symptom_body") { com.medipote.app.ui.wellbeing.SymptomAdviceScreen("body", {}, { support++ }, {}) }
+        compose.onNodeWithText("Ce que je te souhaite d'entendre d'abord :").assertExists()
+        compose.onNodeWithText("ce n'est pas un manque de volonté", substring = true).assertExists()
+        compose.onNodeWithText("🤗  Ça ne va pas : respirer, se poser").performClick()
+        org.junit.Assert.assertEquals(1, support)
+    }
+
+    @Test
+    @Config(qualifiers = "w400dp-h2300dp-xhdpi")
+    fun softDay() {
+        var state = wellState()
+        state = com.medipote.app.domain.Wellbeing.setEnergy(state, today, 1)
+        state = com.medipote.app.domain.Wellbeing.win(state, "tea", "Me préparer une boisson chaude", 5, now).state
+        state = com.medipote.app.domain.Wellbeing.saveTask(state, "t1", "Faire ma lessive", listOf("Ramasser le linge", "Lancer la machine", "Étendre"), now)
+        val done = mutableListOf<String>()
+        var energy = 0
+        var newTask = 0
+        render("soft_day") {
+            com.medipote.app.ui.wellbeing.SoftDayScreen(state, now, { energy = it }, { done += it.id }, { newTask++ }, {}, {}, {})
+        }
+        compose.onNodeWithText("Une journée à ton rythme").assertExists()
+        compose.onNodeWithText("💛  1 petite victoire aujourd'hui").assertExists()
+        compose.onNodeWithText("Mes missions").assertExists()
+        compose.onNodeWithText("Prendre un bain").assertExists()
+        compose.onNodeWithText("Faire ma lessive").assertExists()
+        // Nothing reads as a failure: no "x sur y missions" counter, no list of what was not done.
+        compose.onAllNodesWithText(" sur ", substring = true).assertCountEquals(0)
+        compose.onAllNodesWithText("manqu", substring = true).assertCountEquals(0)
+        compose.onAllNodesWithText("Fait")[0].performClick()
+        org.junit.Assert.assertEquals(1, done.size)
+        compose.onNodeWithText("⚡  Presque comme d'habitude").performClick()
+        org.junit.Assert.assertEquals(3, energy)
+        compose.onNodeWithText("🧩  La découper en petites étapes").performClick()
+        org.junit.Assert.assertEquals(1, newTask)
+    }
+
+    @Test
+    @Config(qualifiers = "w400dp-h1900dp-xhdpi")
+    fun taskEditor() {
+        var saved: Pair<String, List<String>>? = null
+        render("task_edit") { com.medipote.app.ui.wellbeing.TaskEditScreen({ t, steps -> saved = t to steps }, {}) }
+        compose.onNodeWithText("Enregistrer · 0 étape").assertExists()
+        compose.onNode(androidx.compose.ui.test.hasSetTextAction() and androidx.compose.ui.test.hasText("Par exemple : faire ma lessive")).performTextInput("Faire ma lessive")
+        compose.onNodeWithText("🧺  Ménage, rangement, lessive").performClick()
+        compose.onNodeWithText("Ça me semble trop gros").performClick()
+        compose.waitForIdle()
+        // The blocker's step comes first, then the kind's steps; the first ones are already ticked.
+        compose.onNodeWithText("Choisir un tout petit morceau et ne faire que lui aujourd'hui").assertExists()
+        compose.onNodeWithText("Mettre un minuteur de 5 minutes").assertExists()
+        compose.onNodeWithText("Enregistrer · 4 étapes").performScrollTo().performClick()
+        org.junit.Assert.assertEquals("Faire ma lessive", saved?.first)
+        org.junit.Assert.assertEquals("Choisir un tout petit morceau et ne faire que lui aujourd'hui", saved?.second?.first())
+        org.junit.Assert.assertEquals(4, saved?.second?.size)
+    }
+
+    @Test
+    @Config(qualifiers = "w400dp-h1300dp-xhdpi")
+    fun taskScreen() {
+        val task = com.medipote.app.data.SplitTask(
+            "t1", "Faire ma lessive",
+            listOf(com.medipote.app.data.SplitStep("Ramasser le linge", true), com.medipote.app.data.SplitStep("Lancer la machine"), com.medipote.app.data.SplitStep("Étendre")),
+            now,
+        )
+        var ticked = -1
+        render("task") { com.medipote.app.ui.wellbeing.TaskScreen(task, { ticked = it }, {}, {}, animate = false) }
+        compose.onNodeWithText("1 sur 3 étapes").assertExists()
+        compose.onNodeWithText("Prochaine étape").assertExists()
+        compose.onNodeWithText("⏱️  Cinq minutes seulement").assertExists()
+        compose.onAllNodesWithText("Fait")[0].performClick()
+        org.junit.Assert.assertEquals(1, ticked)
+    }
+
+    @Test
+    @Config(qualifiers = "w400dp-h2500dp-xhdpi")
+    fun conditionsScreen() {
+        var settings = com.medipote.app.data.WellbeingSettings()
+        render("conditions") {
+            com.medipote.app.ui.wellbeing.ConditionsScreen(settings, { t -> settings = t(settings) }, {})
+        }
+        compose.onNodeWithText("Ce que je vis").assertExists()
+        compose.onNodeWithText("🦋  Hashimoto / hypothyroïdie").performScrollTo().performClick()
+        // Choosing one turns the tracking on and follows its usual symptoms.
+        org.junit.Assert.assertTrue(settings.enabled)
+        org.junit.Assert.assertEquals("hashimoto", settings.conditions.single().presetId)
+        org.junit.Assert.assertTrue("fatigue" in settings.symptoms && "body" in settings.symptoms)
+    }
+
+    @Test
+    @Config(qualifiers = "w400dp-h1100dp-xhdpi")
+    fun conditionsOnboardingCanBeSkipped() {
+        var back = 0
+        render("conditions_onboarding") {
+            com.medipote.app.ui.wellbeing.ConditionsScreen(com.medipote.app.data.WellbeingSettings(), {}, { back++ }, onboarding = true)
+        }
+        compose.onNodeWithText("Ce qui t'accompagne").assertExists()
+        compose.onNodeWithText("Passer pour l'instant").performScrollTo().performClick()
+        org.junit.Assert.assertEquals(1, back)
+    }
+
+    @Test
+    @Config(qualifiers = "w400dp-h1000dp-xhdpi")
+    fun wellBeingPageOfCards() {
+        val state = wellState()
+        var support = 0
+        render("hub_mieux") {
+            CardHub(
+                "Mieux-être",
+                listOf(
+                    HubCard("mieux:softday", "💛", "Journée douce", com.medipote.app.ui.HubPreviews.softDay(state, now)),
+                    HubCard("mieux:support", "🤗", "Ça ne va pas", "Respirer, se poser, appeler quelqu'un") { support++ },
+                    HubCard("mieux:me", "🌿", "Ce qui m'accompagne", com.medipote.app.ui.HubPreviews.me(state)),
+                ),
+                emptySet(), {}, {}, {},
+            ) { androidx.compose.material3.Text("contenu") }
+        }
+        compose.onNodeWithText("Hashimoto / hypothyroïdie").assertExists()
+        compose.onNodeWithText("Ça ne va pas").performClick()
+        org.junit.Assert.assertEquals(1, support)
+        // A card that opens another screen doesn't open in place.
+        compose.onNodeWithText("contenu").assertDoesNotExist()
+        compose.onNodeWithText("Journée douce").performClick()
+        compose.onNodeWithText("contenu").assertExists()
+    }
+
+    @Test
+    fun hiddenCardsAreNotListed() {
+        render("hub_hidden") {
+            CardHub(
+                "Soins",
+                listOf(HubCard("soins:treatments", "💊", "Traitements"), HubCard("soins:agenda", "📅", "Agenda")),
+                setOf("soins:agenda"), {}, {}, {},
+            ) {}
+        }
+        compose.onNodeWithText("Traitements").assertExists()
+        compose.onNodeWithText("Agenda").assertDoesNotExist()
+        compose.onNodeWithText("✏️  Choisir mes cartes").assertExists()
+    }
+
+    @Test
+    @Config(qualifiers = "w400dp-h1300dp-xhdpi")
+    fun cardsSettings() {
+        val state = wellState()
+        val toggled = mutableListOf<Pair<String, Boolean>>()
+        render("cards_layout") { com.medipote.app.ui.settings.CardsScreen(state, { k, h -> toggled += k to h }, {}, {}) }
+        compose.onNodeWithText("Symptômes").assertExists()
+        compose.onNodeWithContentDescription("Afficher Agenda").performClick()
+        org.junit.Assert.assertEquals(listOf("soins:agenda" to true), toggled)
+    }
+
+    @Test
+    @Config(qualifiers = "w400dp-h2200dp-xhdpi")
+    fun homeOffersTheGentleDayOnHardDaysOnly() {
+        var opened = 0
+        render("home_soft_day") { HomeScreen(wellState(), now, 0, 0, {}, {}, {}, {}, animate = false, onOpenSoftDay = { opened++ }) }
+        compose.onNodeWithText("Journée lourde ?").performScrollTo().performClick()
+        org.junit.Assert.assertEquals(1, opened)
+    }
+
+    @Test
+    @Config(qualifiers = "w400dp-h2200dp-xhdpi")
+    fun homeStaysQuietOnAnEasyDay() {
+        render("home_soft_day_off") { HomeScreen(wellState(heavy = false), now, 0, 0, {}, {}, {}, {}, animate = false) }
+        compose.onNodeWithText("Journée lourde ?").assertDoesNotExist()
+    }
+
+    @Test
+    @Config(qualifiers = "w400dp-h1600dp-xhdpi")
+    fun quickAddOffersSymptomsOnlyWhenTurnedOn() {
+        var symptoms = 0
+        render("quick_add_symptoms") {
+            com.medipote.app.ui.home.QuickAddContent(wellState(), now, com.medipote.app.ui.home.QuickAddActions(onSymptoms = { symptoms++ }), onDone = {})
+        }
+        compose.onNodeWithText("Journée douce").assertExists()
+        compose.onNodeWithText("Un symptôme").performClick()
+        org.junit.Assert.assertEquals(1, symptoms)
+    }
+
+    @Test
+    @Config(qualifiers = "w400dp-h1600dp-xhdpi")
+    fun quickAddWithoutWellbeing() {
+        render("quick_add_plain") { com.medipote.app.ui.home.QuickAddContent(sampleState(), now, com.medipote.app.ui.home.QuickAddActions(), onDone = {}) }
+        compose.onNodeWithText("Un symptôme").assertDoesNotExist()
     }
 
     private fun save(name: String, bitmap: Bitmap) {

@@ -39,25 +39,28 @@ Le compagnon grandit avec la régularité (graine, pousse, bouton, fleur, florai
 
 ## Navigation
 
-Cinq espaces en bas de l'écran ; dans chacun, des sous-onglets : un emoji avec
-un petit mot en dessous (et le nom complet pour les lecteurs d'écran).
+Cinq espaces en bas de l'écran. Chacun s'ouvre sur une **page de cartes** bien aérées, avec une
+ligne en direct sous chaque nom (« Cette nuit : 7 h 30 », « Dentiste · dans 2 jours »…) ; une carte
+s'ouvre avec une flèche pour revenir à la page.
 
-| Espace | Sous-onglets |
+| Espace | Cartes |
 |---|---|
 | **Accueil** | Prochaine prise en grand, compagnon, humeur, rituel, protection, prises du jour, si besoin, mesures, eau, rendez-vous : chaque bloc seulement quand il sert, ordre et affichage au choix (Paramètres › Mon accueil). Bouton « + Noter » pour tout noter en deux gestes. |
-| **Soins** | 💊 Traitements · 🔁 Pilule (si concernée) · 📅 Agenda · 📂 Carnet (de santé) |
-| **Suivi** | 📖 Journal · 🌙 Sommeil · 🩺 Mesures (si activées) · 🩸 Cycle (si activé) |
-| **Bilan** | 📊 Stats · 📋 Par jour · 📆 Année |
-| **Compagnon** | 🛍️ Boutique · 🏅 Badges (et défis) |
+| **Soins** | 💊 Traitements · 🔁 Pilule (si concernée) · 📅 Agenda · 📂 Carnet de santé |
+| **Suivi** | 📖 Journal · 🌙 Sommeil · 🩺 Mesures (si activées) · 🩸 Cycle (si activé) · 🌡️ Symptômes (si activés) |
+| **Mieux-être** | 💛 Journée douce (si activée) · 🤗 Ça ne va pas · 🌬️ Respirer · ✨ Rituels · 🌿 Ce qui m'accompagne |
+| **Moi** | 📊 Statistiques · 📋 Jour par jour · 📆 Mon année · 🛍️ Boutique · 🏅 Badges et défis |
+
+Chacun choisit ses cartes : **Paramètres › Mes cartes** (ou « ✏️ Choisir mes cartes » en bas de chaque
+page) masque celles qu'on n'utilise pas. Rien n'est supprimé : une carte masquée revient avec son
+interrupteur.
+
+![](docs/hub_mieux.png)
 
 Les écrans restent aérés : cartes de traitements et jours du journal compacts
 (le détail s'ouvre au toucher), sommeil avec l'essentiel d'abord (« Plus de
 détails », « Voir mes nuits précédentes »), cartes protection et médicaments en
 haut du cycle pendant les règles, badges gagnés d'abord et les autres repliés.
-
-| Suivi | Bilan | Compagnon |
-|---|---|---|
-| ![](docs/hub_suivi.png) | ![](docs/hub_bilan.png) | ![](docs/hub_companion.png) |
 
 Profil médical et paramètres sont accessibles en haut à droite.
 
@@ -292,6 +295,42 @@ montrent l'essentiel, le reste sous « Plus d'options ».
 Les données (y compris de santé et les documents) restent sur le téléphone, dans
 le stockage privé de l'app, exclu de la sauvegarde cloud. Elles n'en sortent que
 par une action de la personne : sauvegarde, rapport PDF ou document partagé.
+
+## Journée douce, symptômes et « ce qui m'accompagne »
+
+Pour les jours où la maladie pèse. Tout est **facultatif et masqué tant qu'on ne l'a pas activé** :
+une étape à la création du profil (« Ce qui t'accompagne », qu'on peut passer), ou plus tard dans
+Mieux-être › Ce qui m'accompagne / Paramètres.
+
+- **Ce qui m'accompagne** : on choisit ses conditions dans une liste (Hashimoto, diabète, asthme,
+  endométriose, SOPK, migraine, anxiété chronique, dépression, fibromyalgie, hypertension, Crohn, arthrite,
+  fatigue chronique, sclérose en plaques) ou on écrit la sienne. Une fiche courte explique, donne quelques
+  repères et ce qui doit faire consulter. Choisir une condition ajoute ses symptômes habituels.
+- **Symptômes** (Suivi) : un geste par jour, de 1 (un peu) à 5 (très fort), avec les sept derniers
+  jours. Au-delà de 3 : « Voir ce qui peut aider » (conseils doux et **quand en parler à un médecin**,
+  appelle le 15 ou le 3114 selon le cas). Des liens calculés sur place (par exemple « après une nuit de
+  moins de 6 h, la fatigue est plus forte »), avec assez de jours des deux côtés, présentés comme des
+  observations à montrer au médecin, jamais comme un diagnostic.
+- **Journée douce** : on dit son énergie (très peu, un peu, presque comme d'habitude) et l'appli propose
+  quelques toutes petites missions adaptées (se poser 5 minutes, respirer, boire, se mettre sous un
+  plaid…), avec les missions écrites par la personne. Se reposer compte.
+- **Points** : une mission faite rapporte quelques points (5), **jamais l'inverse** : ne pas en faire ne
+  retire rien, n'est affiché nulle part, et n'a aucun effet sur les séries ni les badges. Les points
+  s'arrêtent après trois petites victoires par jour (les suivantes sont fêtées sans points).
+- **Découper une tâche** : on écrit la tâche, on choisit son genre (ménage, papiers, appel, message,
+  courses, soin, travail) et ce qui bloque, puis on garde les étapes qui aident et on ajoute les
+  siennes. La première étape, la plus dure, rapporte un peu plus (10 points, puis 3). Un chrono de cinq
+  minutes facultatif aide à commencer.
+- Le corps : la fiche « Mal avec mon corps » ne propose ni régime ni objectif chiffré, et dit que la
+  difficulté à perdre du poids avec une maladie (thyroïde, SOPK…) n'est pas un manque de volonté.
+
+Tout est écrit une fois dans l'appli et fonctionne **hors ligne** : rien ne part sur internet.
+Ces repères généraux de bien-être sont à faire relire par un·e professionnel·le de santé avant tout
+usage large ; ils ne posent aucun diagnostic et ne touchent jamais à un traitement.
+
+| Symptômes | Journée douce |
+|---|---|
+| ![](docs/symptoms.png) | ![](docs/soft_day.png) |
 
 ## Saisons et fêtes
 

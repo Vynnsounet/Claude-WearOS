@@ -11,12 +11,16 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.AccountCircle
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.Home
-import androidx.compose.material.icons.outlined.Insights
+import androidx.compose.material.icons.outlined.Face
+import androidx.compose.material.icons.outlined.SelfImprovement
+import androidx.compose.material.icons.rounded.Face
+import androidx.compose.material.icons.rounded.SelfImprovement
 import androidx.compose.material.icons.outlined.Medication
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.ui.unit.dp
@@ -26,8 +30,6 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.draw.alpha
-import androidx.compose.material.icons.rounded.Pets
-import androidx.compose.material.icons.outlined.Pets
 import androidx.compose.material.icons.automirrored.rounded.MenuBook
 import androidx.compose.material.icons.automirrored.outlined.MenuBook
 import androidx.compose.foundation.layout.size
@@ -35,7 +37,6 @@ import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material.icons.outlined.Storefront
 import androidx.compose.material.icons.rounded.Favorite
 import androidx.compose.material.icons.rounded.Home
-import androidx.compose.material.icons.rounded.Insights
 import androidx.compose.material.icons.rounded.LocalFireDepartment
 import androidx.compose.material.icons.rounded.Medication
 import androidx.compose.material.icons.rounded.Storefront
@@ -123,72 +124,9 @@ private val TABS = listOf(
     Tab("home", "Accueil", Icons.Outlined.Home, Icons.Rounded.Home),
     Tab("treatments", "Soins", Icons.Outlined.Medication, Icons.Rounded.Medication),
     Tab("suivi", "Suivi", Icons.AutoMirrored.Outlined.MenuBook, Icons.AutoMirrored.Rounded.MenuBook),
-    Tab("bilan", "Bilan", Icons.Outlined.Insights, Icons.Rounded.Insights),
-    Tab("compagnon", "Compagnon", Icons.Outlined.Pets, Icons.Rounded.Pets),
+    Tab("mieux", "Mieux-être", Icons.Outlined.SelfImprovement, Icons.Rounded.SelfImprovement),
+    Tab("moi", "Moi", Icons.Outlined.Face, Icons.Rounded.Face),
 )
-
-/** A sub-tab of a hub: an emoji in the tab row, its name under the hub's title. */
-/** A sub-tab: an emoji with a short word under it; [label] is its full name (title, screen readers). */
-data class HubTab(val emoji: String, val label: String, val short: String = label)
-
-/**
- * A top-level space split into sub-tabs shown as emojis (always fit, even five of them), the
- * name of the open one written under the title.
- */
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun Hub(
-    title: String,
-    tabs: List<HubTab>,
-    initial: Int,
-    onOpenProfile: () -> Unit,
-    onOpenSettings: () -> Unit,
-    content: @Composable (Int) -> Unit,
-) {
-    var selected by rememberSaveable(tabs.size) { mutableIntStateOf(initial.coerceIn(0, tabs.lastIndex)) }
-    Scaffold(
-        topBar = {
-            Column {
-                TopAppBar(
-                    title = {
-                        Text(title)
-                    },
-                    actions = {
-                        IconButton(onClick = onOpenProfile) { Icon(Icons.Outlined.AccountCircle, "Profil médical") }
-                        IconButton(onClick = onOpenSettings) { Icon(Icons.Outlined.Settings, "Paramètres") }
-                    },
-                    colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background),
-                )
-                if (tabs.size > 1) {
-                    PrimaryTabRow(selectedTabIndex = selected, containerColor = MaterialTheme.colorScheme.background) {
-                        tabs.forEachIndexed { i, tab ->
-                            Tab(
-                                selected = selected == i,
-                                onClick = { selected = i },
-                                modifier = Modifier.height(64.dp).semantics(mergeDescendants = true) { contentDescription = tab.label },
-                            ) {
-                                Column(
-                                    horizontalAlignment = Alignment.CenterHorizontally,
-                                    modifier = Modifier.alpha(if (selected == i) 1f else 0.6f),
-                                ) {
-                                    Text(tab.emoji, fontSize = 22.sp)
-                                    Text(
-                                        tab.short,
-                                        style = MaterialTheme.typography.labelMedium,
-                                        color = if (selected == i) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                                        maxLines = 1,
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        },
-    ) { padding ->
-        Box(Modifier.fillMaxSize().padding(padding).consumeWindowInsets(padding)) { content(selected) }
-    }
-}
 
 @Composable
 fun MediPoteApp(vm: AppViewModel) {
@@ -361,8 +299,14 @@ fun MediPoteApp(vm: AppViewModel) {
                 composable("setup_pet") {
                     PetNamingScreen(pet, onBack = { nav.popBackStack() }) {
                         vm.namePet(it)
-                        nav.navigate("setup_treatments")
+                        nav.navigate("setup_wellbeing")
                     }
+                }
+                composable("setup_wellbeing") {
+                    com.medipote.app.ui.wellbeing.ConditionsScreen(
+                        state.settings.wellbeing, onChange = vm::updateWellbeing, onboarding = true,
+                        onBack = { nav.navigate("setup_treatments") },
+                    )
                 }
                 composable("setup_treatments") {
                     TreatmentsScreen(
@@ -420,6 +364,7 @@ fun MediPoteApp(vm: AppViewModel) {
                         onNapWake = wakeNap,
                         onNapCancel = vm::cancelNap,
                         onOpenSupport = { nav.navigate("support") },
+                        onOpenSoftDay = { nav.navigate("softday") },
                         quickAdd = com.medipote.app.ui.home.QuickAddActions(
                             onLogPrn = { nav.navigate("prn_log/${it.id}") },
                             onAddPrnTreatment = { nav.navigate("search") },
@@ -435,20 +380,22 @@ fun MediPoteApp(vm: AppViewModel) {
                             onMeasure = { nav.navigate("measure_log/${it.name}") },
                             onJournal = { nav.navigate("day/$today") },
                             onAppointment = { nav.navigate("appointment?date=$today") },
+                            onSymptoms = { nav.navigate("symptoms") },
+                            onSoftDay = { nav.navigate("softday") },
                         ),
                     )
                 }
                 composable("treatments") {
                     // Soins: everything about care, medication first.
-                    val tabs = listOfNotNull(
-                        HubTab("💊", "Traitements"),
-                        HubTab("🔁", "Pilule").takeIf { menstruating || hasPill },
-                        HubTab("📅", "Agenda"),
-                        HubTab("📂", "Carnet de santé", "Carnet"),
+                    val cards = listOfNotNull(
+                        HubCard("soins:treatments", "💊", "Traitements", HubPreviews.treatments(state, now)),
+                        HubCard("soins:pill", "🔁", "Pilule", "Plaquette, pauses et rappels").takeIf { menstruating || hasPill },
+                        HubCard("soins:agenda", "📅", "Agenda", HubPreviews.agenda(state, now)),
+                        HubCard("soins:docs", "📂", "Carnet de santé", HubPreviews.documents(state)),
                     )
-                    Hub("Soins", tabs, 0, openProfile, openSettings) { i ->
-                        when (tabs[i].label) {
-                            "Traitements" -> TreatmentsScreen(
+                    CardHub("Soins", cards, state.settings.hiddenCards, openProfile, openSettings, { nav.navigate("cards_layout") }) { key ->
+                        when (key) {
+                            "soins:treatments" -> TreatmentsScreen(
                                 state.treatments, today,
                                 onAdd = { nav.navigate("search") },
                                 onEdit = { nav.navigate(if (it.pill != null) "pill_setup" else "editor?treatment=${it.id}") },
@@ -459,14 +406,14 @@ fun MediPoteApp(vm: AppViewModel) {
                                 onLogPrn = { nav.navigate("prn_log/${it.id}") },
                                 onPrnStats = { nav.navigate("prn_stats/${it.id}") },
                             )
-                            "Pilule" -> PillScreen(
+                            "soins:pill" -> PillScreen(
                                 state, now,
                                 onSetup = { nav.navigate("pill_setup") },
                                 onTake = vm::give,
                                 onNewPack = { date -> state.treatments.firstOrNull { it.pill != null }?.let { vm.startNewPillPack(it.id, date) } },
                                 onTakeEarly = vm::giveEarly,
                             )
-                            "Agenda" -> AgendaScreen(
+                            "soins:agenda" -> AgendaScreen(
                                 state.appointments, now,
                                 onNew = { date -> nav.navigate("appointment?date=${date ?: today}") },
                                 onOpen = { nav.navigate("appointment?id=${it.id}") },
@@ -486,26 +433,27 @@ fun MediPoteApp(vm: AppViewModel) {
                 }
                 composable("suivi") {
                     // Suivi: what's noted day after day.
-                    val tabs = listOfNotNull(
-                        HubTab("📖", "Journal"),
-                        HubTab("🌙", "Sommeil"),
-                        HubTab("🩺", "Mesures").takeIf { state.settings.measures.isNotEmpty() },
-                        HubTab("🩸", "Cycle").takeIf { menstruating },
+                    val cards = listOfNotNull(
+                        HubCard("suivi:journal", "📖", "Journal", HubPreviews.journal(state, now)),
+                        HubCard("suivi:sleep", "🌙", "Sommeil", HubPreviews.sleep(state, now)),
+                        HubCard("suivi:measures", "🩺", "Mesures", HubPreviews.measures(state)).takeIf { state.settings.measures.isNotEmpty() },
+                        HubCard("suivi:cycle", "🩸", "Cycle", "Règles, cycle et protections").takeIf { menstruating },
+                        HubCard("suivi:symptoms", "🌡️", "Symptômes", HubPreviews.symptoms(state, now)).takeIf { com.medipote.app.domain.Wellbeing.enabled(state) },
                     )
-                    Hub("Suivi", tabs, 0, openProfile, openSettings) { i ->
-                        when (tabs[i].label) {
-                            "Journal" -> JournalScreen(
+                    CardHub("Suivi", cards, state.settings.hiddenCards, openProfile, openSettings, { nav.navigate("cards_layout") }) { key ->
+                        when (key) {
+                            "suivi:journal" -> JournalScreen(
                                 state.journal, today,
                                 onOpenDay = { nav.navigate("day/$it") },
                                 onOpenMyDay = { nav.navigate("myday/$it") },
                             )
-                            "Mesures" -> com.medipote.app.ui.measures.MeasuresScreen(
+                            "suivi:measures" -> com.medipote.app.ui.measures.MeasuresScreen(
                                 state, now,
                                 onAdd = { nav.navigate("measure_log/${it.name}") },
                                 onOpen = { nav.navigate("measure/${it.name}") },
                                 onSettings = openSettings,
                             )
-                            "Sommeil" -> SleepScreen(
+                            "suivi:sleep" -> SleepScreen(
                                 state, now,
                                 onLog = { nav.navigate(if (state.sleep.any { it.date == today }) "sleep_log?new=true" else "sleep_log") },
                                 onOpen = { nav.navigate("sleep_log?date=${it.date}") },
@@ -514,6 +462,13 @@ fun MediPoteApp(vm: AppViewModel) {
                                 onNapCancel = vm::cancelNap,
                                 onNapLog = { nav.navigate("nap_log") },
                                 onOpenNap = { nav.navigate("nap_log?id=${it.id}") },
+                            )
+                            "suivi:symptoms" -> com.medipote.app.ui.wellbeing.SymptomsScreen(
+                                state, now,
+                                onSet = vm::setSymptom,
+                                onAdvice = { nav.navigate("symptom/${Uri.encode(it)}") },
+                                onManage = { nav.navigate("wellbeing_me") },
+                                onSoftDay = { nav.navigate("softday") },
                             )
                             else -> {
                                 // During the period, protection and medication come first; the rest of the month, after the cycle.
@@ -545,14 +500,64 @@ fun MediPoteApp(vm: AppViewModel) {
                         }
                     }
                 }
-                composable("bilan") {
-                    // Bilan: looking back.
-                    val tabs = listOf(HubTab("📊", "Statistiques", "Stats"), HubTab("📋", "Jour par jour", "Par jour"), HubTab("📆", "Mon année", "Année"))
+                composable("mieux") {
+                    // Mieux-être: body and mind together, what helps on a hard day.
+                    val wellbeing = com.medipote.app.domain.Wellbeing.enabled(state)
+                    val cards = listOfNotNull(
+                        HubCard("mieux:softday", "💛", "Journée douce", HubPreviews.softDay(state, now)).takeIf { wellbeing },
+                        HubCard("mieux:support", "🤗", "Ça ne va pas", "Respirer, se poser, appeler quelqu'un") { nav.navigate("support") },
+                        HubCard("mieux:breathe", "🌬️", "Respirer", "Un cercle pour caler ton souffle") { nav.navigate("support_breathe") },
+                        HubCard("mieux:rituals", "✨", "Rituels du matin et du soir", "Deux petits moments pour commencer et finir la journée") {
+                            nav.navigate("ritual/${(com.medipote.app.domain.Rituals.current(now) ?: com.medipote.app.domain.RitualKind.MORNING).name}")
+                        },
+                        HubCard("mieux:me", "🌿", "Ce qui m'accompagne", HubPreviews.me(state)) { nav.navigate("wellbeing_me") },
+                    )
+                    CardHub(
+                        "Mieux-être", cards, state.settings.hiddenCards, openProfile, openSettings, { nav.navigate("cards_layout") },
+                        intro = if (wellbeing) null else {
+                            {
+                                androidx.compose.material3.Surface(
+                                    onClick = { nav.navigate("wellbeing_me") },
+                                    color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                                    shape = MaterialTheme.shapes.large,
+                                    modifier = Modifier.fillMaxWidth(),
+                                ) {
+                                    Column(Modifier.padding(20.dp), verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(4.dp)) {
+                                        Text("💛  Pour les jours où ça pèse", style = MaterialTheme.typography.titleMedium)
+                                        Text(
+                                            "Ajoute ce que tu vis : tu auras le suivi de tes symptômes, des petites missions et des conseils adaptés à toi.",
+                                            style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        )
+                                    }
+                                }
+                            }
+                        },
+                    ) { key ->
+                        com.medipote.app.ui.wellbeing.SoftDayScreen(
+                            state, now,
+                            onEnergy = vm::setEnergy,
+                            onDo = vm::doMission,
+                            onNewTask = { nav.navigate("task_new") },
+                            onOpenTask = { nav.navigate("task/$it") },
+                            onSupport = { nav.navigate("support") },
+                            onMine = { nav.navigate("wellbeing_me") },
+                        )
+                    }
+                }
+                composable("moi") {
+                    // Moi: looking back, and the companion's side.
+                    val cards = listOf(
+                        HubCard("moi:stats", "📊", "Statistiques", "${state.game.streak} jour${if (state.game.streak > 1) "s" else ""} de suite · prises, nuits, humeur"),
+                        HubCard("moi:day", "📋", "Jour par jour", "Revoir une journée en entier"),
+                        HubCard("moi:year", "📆", "Mon année", "Ton année en couleurs"),
+                        HubCard("moi:shop", "🛍️", "Boutique", "${state.game.points} pts à dépenser pour $pet"),
+                        HubCard("moi:badges", "🏅", "Badges et défis", "${state.game.badges.size} badge${if (state.game.badges.size > 1) "s" else ""} gagné${if (state.game.badges.size > 1) "s" else ""}"),
+                    )
                     var day by rememberSaveable { mutableStateOf(today) }
-                    Hub("Bilan", tabs, 0, openProfile, openSettings) { i ->
-                        when (i) {
-                            0 -> StatsScreen(state, now, embedded = true, onOpenPrn = { nav.navigate("prn_stats/$it") }, onReport = { nav.navigate("report") })
-                            1 -> com.medipote.app.ui.motivation.MyDayScreen(
+                    CardHub("Moi", cards, state.settings.hiddenCards, openProfile, openSettings, { nav.navigate("cards_layout") }) { key ->
+                        when (key) {
+                            "moi:stats" -> StatsScreen(state, now, embedded = true, onOpenPrn = { nav.navigate("prn_stats/$it") }, onReport = { nav.navigate("report") })
+                            "moi:day" -> com.medipote.app.ui.motivation.MyDayScreen(
                                 state, day, now,
                                 onDate = { day = it },
                                 onEditJournal = { nav.navigate("day/$day") },
@@ -561,19 +566,69 @@ fun MediPoteApp(vm: AppViewModel) {
                                 onBack = {},
                                 embedded = true,
                             )
-                            else -> com.medipote.app.ui.motivation.YearScreen(state, now, onOpenDay = { nav.navigate("myday/$it") }, onBack = {}, embedded = true)
-                        }
-                    }
-                }
-                composable("compagnon") {
-                    // Compagnon: the game side.
-                    val tabs = listOf(HubTab("🛍️", "Boutique"), HubTab("🏅", "Badges et défis", "Badges"))
-                    Hub(state.game.petName, tabs, 0, openProfile, openSettings) { i ->
-                        when (i) {
-                            0 -> ShopScreen(state.game, vm::buy, vm::equip, embedded = true)
+                            "moi:year" -> com.medipote.app.ui.motivation.YearScreen(state, now, onOpenDay = { nav.navigate("myday/$it") }, onBack = {}, embedded = true)
+                            "moi:shop" -> ShopScreen(state.game, vm::buy, vm::equip, embedded = true)
                             else -> com.medipote.app.ui.motivation.BadgesScreen(state, today, onBack = {}, embedded = true)
                         }
                     }
+                }
+
+                // ── Hard days: symptoms, small missions, tasks cut into steps ──
+                composable("symptoms") {
+                    com.medipote.app.ui.wellbeing.SymptomsScreen(
+                        state, now,
+                        onSet = vm::setSymptom,
+                        onAdvice = { nav.navigate("symptom/${Uri.encode(it)}") },
+                        onManage = { nav.navigate("wellbeing_me") },
+                        onSoftDay = { nav.navigate("softday") },
+                        embedded = false,
+                        onBack = { nav.popBackStack() },
+                    )
+                }
+                composable("symptom/{id}") { entry ->
+                    com.medipote.app.ui.wellbeing.SymptomAdviceScreen(
+                        entry.arguments?.getString("id").orEmpty(),
+                        onSoftDay = { nav.navigate("softday") },
+                        onSupport = { nav.navigate("support") },
+                        onBack = { nav.popBackStack() },
+                    )
+                }
+                composable("softday") {
+                    com.medipote.app.ui.wellbeing.SoftDayScreen(
+                        state, now,
+                        onEnergy = vm::setEnergy,
+                        onDo = vm::doMission,
+                        onNewTask = { nav.navigate("task_new") },
+                        onOpenTask = { nav.navigate("task/$it") },
+                        onSupport = { nav.navigate("support") },
+                        onMine = { nav.navigate("wellbeing_me") },
+                        embedded = false,
+                        onBack = { nav.popBackStack() },
+                    )
+                }
+                composable("task_new") {
+                    com.medipote.app.ui.wellbeing.TaskEditScreen(
+                        onSave = { title, steps ->
+                            val id = vm.saveTask(null, title, steps)
+                            nav.navigate("task/$id") { popUpTo("task_new") { inclusive = true } }
+                        },
+                        onBack = { nav.popBackStack() },
+                    )
+                }
+                composable("task/{id}") { entry ->
+                    val id = entry.arguments?.getString("id")
+                    com.medipote.app.ui.wellbeing.TaskScreen(
+                        state.tasks.firstOrNull { it.id == id },
+                        onTick = { index -> id?.let { vm.completeStep(it, index) } },
+                        onDelete = { id?.let(vm::deleteTask); nav.popBackStack() },
+                        onBack = { nav.popBackStack() },
+                    )
+                }
+                composable("wellbeing_me") {
+                    com.medipote.app.ui.wellbeing.ConditionsScreen(state.settings.wellbeing, onChange = vm::updateWellbeing, onBack = { nav.popBackStack() })
+                }
+                composable("cards_layout") {
+                    com.medipote.app.ui.settings.CardsScreen(state, onToggle = vm::setCardHidden, onReset = vm::showAllCards, onBack = { nav.popBackStack() })
                 }
 
                 // ── Treatments flow ──
@@ -721,6 +776,7 @@ fun MediPoteApp(vm: AppViewModel) {
                             onMessage = { com.medipote.app.ui.support.sendHelpMessage(context, it) },
                             onMood = vm::setMood,
                             onAskAgain = vm::askAgainLater,
+                            onSoftDay = { nav.navigate("softday") },
                         ),
                     )
                 }
@@ -969,6 +1025,8 @@ fun MediPoteApp(vm: AppViewModel) {
                         onOpenAppearance = { nav.navigate("appearance") },
                         onOpenHomeLayout = { nav.navigate("home_layout") },
                         onOpenSupport = { nav.navigate("support_settings") },
+                        onOpenWellbeing = { nav.navigate("wellbeing_me") },
+                        onOpenCards = { nav.navigate("cards_layout") },
                         watchLastSeen = com.medipote.app.wear.WatchLink.lastSeen(context),
                         watchRings = com.medipote.app.wear.WatchLink.watchHandlesReminders(context),
                         onSyncWatch = {
@@ -1018,7 +1076,7 @@ fun MediPoteApp(vm: AppViewModel) {
                 onOpenShop = {
                     com.medipote.app.domain.Badges.reward(badge.id)?.let(vm::equip)
                     badgeQueue.removeAt(0)
-                    nav.navigate("compagnon") { launchSingleTop = true }
+                    nav.navigate("moi") { launchSingleTop = true }
                 },
             )
         }
