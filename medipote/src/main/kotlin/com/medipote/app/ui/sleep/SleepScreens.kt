@@ -861,6 +861,44 @@ private fun AwakeningCard(a: AwakeningDraft, onTime: () -> Unit, onChange: (Awak
     }
 }
 
+/** The Sommeil sub-tab of the statistics: the essentials and the chart; the detail stays in Suivi › Sommeil. */
+@Composable
+fun SleepStatsTab(state: AppState, today: LocalDate, days: Int, periodLabel: String) {
+    val r = remember(state.sleep, state.naps, state.settings.sleep, today, days) { Sleep.report(state, today, days) }
+    if (r.count == 0) {
+        StatCard("Sommeil") {
+            Text(
+                "Note quelques nuits pour voir ici ta durée de sommeil, tes horaires et tes réveils.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        return
+    }
+    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        StatTile(
+            "Sommeil moyen", r.averageAsleep?.let(Sleep::format) ?: "—",
+            "objectif ${Sleep.format(r.goalMinutes)} · ${r.goalNights}/${r.count} nuits", Modifier.weight(1f),
+        )
+        StatTile(
+            "Réveils / nuit", r.averageAwakenings?.let { decimal(it) } ?: "—",
+            "${r.calmNights} nuit${if (r.calmNights > 1) "s" else ""} sans réveil", Modifier.weight(1f),
+        )
+    }
+    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        StatTile("Coucher habituel", r.typicalBedtime?.let(Reports::formatTime) ?: "—", r.bedtimeSpread?.let { "écart moyen : $it min" }, Modifier.weight(1f))
+        StatTile("Ressenti", r.averageQuality?.let { "${decimal(it)}/5" } ?: "—", "qualité des nuits", Modifier.weight(1f))
+    }
+    DurationChart(r, today)
+    NapsCard(r)
+    com.medipote.app.ui.stats.InsightsCard(r.insights)
+    Text(
+        "Sur $periodLabel · le détail (réveils, causes, nuits une à une) est dans Suivi › Sommeil.",
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+}
+
 /** Short summary for the Stats tab. */
 @Composable
 fun SleepSummaryCard(state: AppState, today: LocalDate, days: Int, periodLabel: String) {

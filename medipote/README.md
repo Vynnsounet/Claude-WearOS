@@ -49,7 +49,7 @@ s'ouvre avec une flèche pour revenir à la page.
 | **Soins** | 💊 Traitements · 🔁 Pilule (si concernée) · 📅 Agenda · 📂 Carnet de santé |
 | **Suivi** | 📖 Journal · 🌙 Sommeil · 🩺 Mesures (si activées) · 🩸 Cycle (si activé) · 🌡️ Symptômes (si activés) |
 | **Mieux-être** | 💛 Journée douce (si activée) · 🤗 Ça ne va pas · 🌬️ Respirer · ✨ Rituels · 🌿 Ce qui m'accompagne |
-| **Moi** | 📊 Statistiques · 📋 Jour par jour · 📆 Mon année · 🛍️ Boutique · 🏅 Badges et défis |
+| **Moi** | 📊 Statistiques (sous-onglets, voir plus bas) · 📋 Jour par jour · 📆 Mon année · 🛍️ Boutique · 🏅 Badges et défis |
 
 Chacun choisit ses cartes : **Paramètres › Mes cartes** (ou « ✏️ Choisir mes cartes » en bas de chaque
 page) masque celles qu'on n'utilise pas. Rien n'est supprimé : une carte masquée revient avec son
@@ -295,6 +295,24 @@ montrent l'essentiel, le reste sous « Plus d'options ».
 Les données (y compris de santé et les documents) restent sur le téléphone, dans
 le stockage privé de l'app, exclu de la sauvegarde cloud. Elles n'en sortent que
 par une action de la personne : sauvegarde, rapport PDF ou document partagé.
+
+## Statistiques
+
+Une page par sujet, pour mieux comprendre : des puces en haut (📊 Vue d'ensemble · 💊 Traitements · 🌙 Sommeil ·
+🌡️ Symptômes si activés · 😊 Bien-être) et une période commune (7, 30 ou 90 jours).
+
+- **Vue d'ensemble** : une tuile par sujet (traitements, série, sommeil, moral, jours difficiles, petites
+  victoires), « Ce qu'on remarque » (y compris les liens entre symptômes et sommeil), le rapport PDF pour le
+  médecin et les points.
+- **Traitements** : observance, ponctualité, évolution sur 12 semaines, calendrier, par moment, par jour, par
+  traitement, et les médicaments « si besoin ».
+- **Sommeil** : durée moyenne et objectif, réveils, coucher habituel, ressenti, durée nuit par nuit, siestes.
+- **Symptômes** : pour chacun, force moyenne, jours notés, jours forts, comparaison avec la période
+  précédente et courbe jour par jour (par semaine sur 90 jours).
+- **Bien-être** : moral au fil du temps, eau, forme, et les petites victoires (missions et étapes faites),
+  présentées sans aucun « manque ».
+
+![](docs/stats_symptoms_tab.png)
 
 ## Journée douce, symptômes et « ce qui m'accompagne »
 

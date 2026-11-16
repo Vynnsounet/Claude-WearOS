@@ -187,6 +187,48 @@ class WellbeingTest {
     }
 
     @Test
+    fun aSymptomOverAPeriodComparesWithThePeriodBefore() {
+        var s = on("fatigue")
+        // This week (7 days): 4 days at 4 or 5. The week before: 3 days at 2.
+        listOf(0 to 4, 1 to 5, 3 to 4, 5 to 4).forEach { (back, v) -> s = Wellbeing.setIntensity(s, day.minusDays(back.toLong()), "fatigue", v) }
+        listOf(8, 9, 11).forEach { back -> s = Wellbeing.setIntensity(s, day.minusDays(back.toLong()), "fatigue", 2) }
+        val p = Wellbeing.period(s, "fatigue", day, 7)
+        assertEquals(4, p.noted)
+        assertEquals(4.25, p.average!!, 0.001)
+        assertEquals(4, p.strongDays)
+        assertEquals(2.0, p.previousAverage!!, 0.001)
+        assertEquals(7, p.bars.size)
+        assertEquals(4f, p.bars.last(), 0.001f)
+        assertEquals(0f, p.bars[2], 0.001f) // not noted: nothing, never counted as zero strength in the average
+        // Beyond 30 days the bars are weeks.
+        val q = Wellbeing.period(s, "fatigue", day, 90)
+        assertEquals(13, q.bars.size)
+        assertEquals(7, q.noted)
+        // Too few days before: no comparison is claimed.
+        assertNull(Wellbeing.period(on("fatigue"), "fatigue", day, 7).previousAverage)
+    }
+
+    @Test
+    fun theSmallWinsOfAPeriodAreCountedWithoutGaps() {
+        var s = on()
+        s = Wellbeing.win(s, "tea", "Boisson chaude", 5, at(9)).state
+        s = Wellbeing.win(s, "tea", "Boisson chaude", 5, at(9, d = day.minusDays(1))).state
+        s = Wellbeing.win(s, "breath", "Respirer", 5, at(9, d = day.minusDays(2))).state
+        s = Wellbeing.saveTask(s, "t", "Ma tâche", listOf("a", "b"), at(8))
+        s = Wellbeing.completeStep(s, "t", 0, at(10)).state
+        s = Wellbeing.completeStep(s, "t", 1, at(10, 5)).state
+        val r = Wellbeing.winsReport(s, day, 7)
+        assertEquals(5, r.wins)
+        assertEquals(3, r.daysWithWins)
+        assertEquals(2, r.stepsDone)
+        assertEquals(1, r.tasksFinished)
+        assertEquals("Boisson chaude" to 2, r.top.first())
+        // A short period only sees its own days.
+        assertEquals(3, Wellbeing.winsReport(s, day, 1).wins)
+        assertEquals(0, Wellbeing.winsReport(s, day.minusDays(30), 7).wins)
+    }
+
+    @Test
     fun theLibraryIsConsistentAndSafe() {
         val symptomIds = WellbeingLibrary.SYMPTOMS.map { it.id }
         assertEquals(symptomIds.size, symptomIds.toSet().size)

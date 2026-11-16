@@ -3,6 +3,7 @@ package com.medipote.app.ui.stats
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -19,6 +20,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Card
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -53,6 +55,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.medipote.app.data.AppState
 import com.medipote.app.domain.DayStats
+import com.medipote.app.domain.Insight
+import com.medipote.app.domain.Sleep
+import com.medipote.app.domain.Wellbeing
 import com.medipote.app.domain.Prn
 import com.medipote.app.domain.PrnReport
 import com.medipote.app.domain.Reports
@@ -82,17 +87,31 @@ private fun signedMinutes(m: Int) = when {
     else -> (if (m > 0) "+" else "−") + "${abs(m)} min"
 }
 
+/** The sub-tabs of the statistics: one subject each, so each page stays short and clear. */
+private enum class StatsTab(val emoji: String, val label: String) {
+    OVERVIEW("📊", "Vue d'ensemble"),
+    TREATMENTS("💊", "Traitements"),
+    SLEEP("🌙", "Sommeil"),
+    SYMPTOMS("🌡️", "Symptômes"),
+    WELLBEING("😊", "Bien-être"),
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun StatsScreen(state: AppState, now: LocalDateTime, embedded: Boolean = false, onOpenPrn: (String) -> Unit = {}, onReport: () -> Unit = {}) {
+fun StatsScreen(
+    state: AppState,
+    now: LocalDateTime,
+    embedded: Boolean = false,
+    onOpenPrn: (String) -> Unit = {},
+    onReport: () -> Unit = {},
+    onManageSymptoms: () -> Unit = {},
+) {
     var period by rememberSaveable { mutableStateOf(Period.MONTH) }
-    val report = remember(state, now.toLocalDate(), now.hour, period) { Reports.adherence(state, now, period.days) }
-    val prn = state.treatments.filter { it.asNeeded }
-    val prnReports = remember(state, now.toLocalDate(), now.hour, period) {
-        prn.map { Reports.prn(state, it.id, now, period.days) }
-    }
-    val status = AppTheme.status
-    val hasRegular = state.treatments.any { !it.asNeeded }
+    var tab by rememberSaveable { mutableStateOf(StatsTab.OVERVIEW) }
+    val wellbeing = Wellbeing.enabled(state)
+    val tabs = StatsTab.entries.filter { it != StatsTab.SYMPTOMS || wellbeing }
+    val today = now.toLocalDate()
+    val shown = if (tab in tabs) tab else StatsTab.OVERVIEW
 
     Scaffold(
         contentWindowInsets = if (embedded) WindowInsets(0) else ScaffoldDefaults.contentWindowInsets,
@@ -107,128 +126,358 @@ fun StatsScreen(state: AppState, now: LocalDateTime, embedded: Boolean = false, 
             Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).padding(horizontal = 16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
+            // One subject at a time; the period is shared by all of them.
+            Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                tabs.forEach { t ->
+                    FilterChip(selected = shown == t, onClick = { tab = t }, label = { Text("${t.emoji}  ${t.label}", maxLines = 1) })
+                }
+            }
             PeriodSelector(Period.entries.map { it to it.label }, period, { period = it })
-            androidx.compose.material3.OutlinedButton(onClick = onReport, modifier = Modifier.fillMaxWidth()) {
-                Icon(androidx.compose.material.icons.Icons.Outlined.PictureAsPdf, null, Modifier.size(18.dp))
-                Spacer(Modifier.width(8.dp))
-                Text("Rapport pour le médecin (PDF)")
-            }
 
-            val rate = report.rate.value
-            val before = report.previousRate.value
-            val delta = if (rate != null && before != null && report.previousRate.decided >= 3) ((rate - before) * 100).roundToInt() else null
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                StatTile(
-                    "Observance",
-                    pct(rate),
-                    when {
-                        delta == null -> if (report.rate.decided == 0) "pas encore de données" else "${report.rate.taken}/${report.rate.decided} prises"
-                        delta > 0 -> "▲ $delta pts vs période préc."
-                        delta < 0 -> "▼ ${-delta} pts vs période préc."
-                        else -> "= période précédente"
-                    },
-                    Modifier.weight(1f),
-                    captionColor = when {
-                        delta == null || delta == 0 -> null
-                        delta > 0 -> status.good
-                        else -> status.critical
-                    },
-                )
-                StatTile("Série", "${state.game.streak} j", "record : ${state.game.bestStreak} j", Modifier.weight(1f))
+            when (shown) {
+                StatsTab.OVERVIEW -> OverviewTab(state, now, period, onReport)
+                StatsTab.TREATMENTS -> TreatmentsTab(state, now, period, onOpenPrn)
+                StatsTab.SLEEP -> com.medipote.app.ui.sleep.SleepStatsTab(state, today, period.days, period.label)
+                StatsTab.SYMPTOMS -> SymptomsTab(state, today, period, onManageSymptoms)
+                StatsTab.WELLBEING -> WellbeingTab(state, today, period)
             }
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                StatTile("Ponctualité", pct(report.punctuality), "prises à l'heure", Modifier.weight(1f))
-                StatTile(
-                    "Écart moyen",
-                    report.averageDelayMinutes?.let(::signedMinutes) ?: "—",
-                    when {
-                        report.averageDelayMinutes == null -> "avec l'heure prévue"
-                        report.averageDelayMinutes > 0 -> "après l'heure prévue"
-                        report.averageDelayMinutes < 0 -> "avant l'heure prévue"
-                        else -> "pile à l'heure"
-                    },
-                    Modifier.weight(1f),
-                )
-            }
+            Spacer(Modifier.height(8.dp))
+        }
+    }
+}
 
-            InsightsCard(report.insights + prnReports.flatMap { r -> r.insights.filter { it.tone == Tone.WARN }.map { it.copy(text = "${r.name} : ${it.text.replaceFirstChar { c -> c.lowercase() }}") } })
+/** A glance at everything: one tile per subject, what stands out, and the points. */
+@Composable
+private fun OverviewTab(state: AppState, now: LocalDateTime, period: Period, onReport: () -> Unit) {
+    val status = AppTheme.status
+    val today = now.toLocalDate()
+    val report = remember(state, today, now.hour, period) { Reports.adherence(state, now, period.days) }
+    val sleep = remember(state.sleep, state.settings.sleep, today, period) { Sleep.report(state, today, period.days) }
+    val wellbeing = Wellbeing.enabled(state)
+    val prnInsights = remember(state, today, now.hour, period) {
+        state.treatments.filter { it.asNeeded }.map { Reports.prn(state, it.id, now, period.days) }
+            .flatMap { r -> r.insights.filter { it.tone == Tone.WARN }.map { it.copy(text = "${r.name} : ${it.text.replaceFirstChar { c -> c.lowercase() }}") } }
+    }
 
-            if (hasRegular) {
-                ChartCard(report.heatmap.takeLast(14))
-                StatCard("Évolution sur 12 semaines", subtitle = "Part des prises faites, semaine par semaine") {
-                    val weeks = report.weekly
-                    BarChart(
-                        values = weeks.map { it.second.value ?: 0f },
-                        axisLabels = mapOf(0 to weeks.first().first.format(dayMonth), 6 to weeks[6].first.format(dayMonth), 11 to "Cette sem."),
-                        describe = { i ->
-                            val (start, r) = weeks[i]
-                            "Semaine du ${start.format(dayMonth)} · " + if (r.decided == 0) "aucune prise prévue" else "${pct(r.value)} (${r.taken}/${r.decided})"
-                        },
-                        maxValue = 1f,
-                        gridLabel = { "${(it * 100).roundToInt()} %" },
-                    )
-                }
-                StatCard("Calendrier", subtitle = "12 dernières semaines · touche un jour pour le détail") {
-                    AdherenceHeatmap(report.heatmap)
-                }
-                BreakdownCard(report.onTime, report.offTime, report.missed, period.label)
-                StatCard("Selon le moment", subtitle = "Part des prises faites sur ${period.label}") {
-                    RateRows(report.bySlot.filter { it.value.decided > 0 }.map { it.key.label to it.value })
-                    if (report.bySlot.all { it.value.decided == 0 }) EmptyText()
-                }
-                StatCard("Selon le jour de la semaine") {
-                    if (report.byWeekday.all { it.value.decided == 0 }) EmptyText()
-                    else RateRows(report.byWeekday.map { it.key.getDisplayName(TextStyle.FULL, Locale.FRANCE).capitalized() to it.value })
-                }
-                if (report.perTreatment.isNotEmpty()) {
-                    StatCard("Par traitement", subtitle = "Sur ${period.label}") {
-                        report.perTreatment.forEach { t ->
-                            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                                Row {
-                                    Text(t.name, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis)
-                                    Text(
-                                        if (t.rate.decided == 0) "—" else "${t.rate.taken}/${t.rate.decided} · ${pct(t.rate.value)}",
-                                        style = MaterialTheme.typography.labelLarge,
-                                    )
-                                }
-                                Meter(t.rate.value ?: 0f, MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.surfaceContainerHighest)
-                                t.averageDelayMinutes?.let {
-                                    Text(
-                                        "Écart moyen : ${signedMinutes(it)}",
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    )
-                                }
-                            }
+    val rate = report.rate.value
+    val before = report.previousRate.value
+    val delta = if (rate != null && before != null && report.previousRate.decided >= 3) ((rate - before) * 100).roundToInt() else null
+    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        StatTile(
+            "Traitements",
+            pct(rate),
+            when {
+                delta == null -> if (report.rate.decided == 0) "pas encore de données" else "${report.rate.taken}/${report.rate.decided} prises"
+                delta > 0 -> "▲ $delta pts vs période préc."
+                delta < 0 -> "▼ ${-delta} pts vs période préc."
+                else -> "= période précédente"
+            },
+            Modifier.weight(1f),
+            captionColor = when {
+                delta == null || delta == 0 -> null
+                delta > 0 -> status.good
+                else -> status.critical
+            },
+        )
+        StatTile("Série", "${state.game.streak} j", "record : ${state.game.bestStreak} j", Modifier.weight(1f))
+    }
+    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        StatTile(
+            "Sommeil", sleep.averageAsleep?.let(Sleep::format) ?: "—",
+            if (sleep.count == 0) "pas encore de nuit" else "par nuit · ${sleep.count} nuit${if (sleep.count > 1) "s" else ""}",
+            Modifier.weight(1f),
+        )
+        StatTile(
+            "Moral", report.mentalAverage?.let { "${decimal(it)}/5" } ?: "—",
+            if (report.mentalAverage == null) "pas encore noté" else "humeur moyenne", Modifier.weight(1f),
+        )
+    }
+    if (wellbeing) {
+        val tracked = Wellbeing.tracked(state)
+        val from = today.minusDays(period.days - 1L)
+        val hardDays = state.symptomLog
+            .filter { it.symptom in tracked && it.intensity >= Wellbeing.HEAVY && !it.date.isBefore(from) && !it.date.isAfter(today) }
+            .map { it.date }.distinct().size
+        val wins = remember(state.wins, state.tasks, today, period) { Wellbeing.winsReport(state, today, period.days) }
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            StatTile(
+                "Jours difficiles", if (tracked.isEmpty()) "—" else "$hardDays",
+                if (tracked.isEmpty()) "aucun symptôme suivi" else "symptôme fort (4 ou 5)", Modifier.weight(1f),
+            )
+            StatTile("Petites victoires", "${wins.wins}", if (wins.wins == 0) "à ton rythme" else "sur ${wins.daysWithWins} jour${if (wins.daysWithWins > 1) "s" else ""} · +${wins.points} pts", Modifier.weight(1f))
+        }
+    }
+
+    val notes = report.insights +
+        prnInsights +
+        sleep.insights.filter { it.tone != Tone.INFO }.map { it.copy(text = "Sommeil : ${it.text.replaceFirstChar { c -> c.lowercase() }}") } +
+        (if (wellbeing) Wellbeing.insights(state, today).map { Insight(it, Tone.INFO) } else emptyList())
+    InsightsCard(notes)
+
+    androidx.compose.material3.OutlinedButton(onClick = onReport, modifier = Modifier.fillMaxWidth()) {
+        Icon(androidx.compose.material.icons.Icons.Outlined.PictureAsPdf, null, Modifier.size(18.dp))
+        Spacer(Modifier.width(8.dp))
+        Text("Rapport pour le médecin (PDF)")
+    }
+    PointsCard(state)
+}
+
+/** Doses taken, on time or not, by moment, by day and by treatment; as-needed medications. */
+@Composable
+private fun TreatmentsTab(state: AppState, now: LocalDateTime, period: Period, onOpenPrn: (String) -> Unit) {
+    val status = AppTheme.status
+    val report = remember(state, now.toLocalDate(), now.hour, period) { Reports.adherence(state, now, period.days) }
+    val prn = state.treatments.filter { it.asNeeded }
+    val prnReports = remember(state, now.toLocalDate(), now.hour, period) { prn.map { Reports.prn(state, it.id, now, period.days) } }
+    val hasRegular = state.treatments.any { !it.asNeeded }
+    if (!hasRegular && prn.isEmpty()) {
+        StatCard("Traitements") { EmptyText() }
+        return
+    }
+
+    if (hasRegular) {
+        val rate = report.rate.value
+        val before = report.previousRate.value
+        val delta = if (rate != null && before != null && report.previousRate.decided >= 3) ((rate - before) * 100).roundToInt() else null
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            StatTile(
+                "Observance",
+                pct(rate),
+                when {
+                    delta == null -> if (report.rate.decided == 0) "pas encore de données" else "${report.rate.taken}/${report.rate.decided} prises"
+                    delta > 0 -> "▲ $delta pts vs période préc."
+                    delta < 0 -> "▼ ${-delta} pts vs période préc."
+                    else -> "= période précédente"
+                },
+                Modifier.weight(1f),
+                captionColor = when {
+                    delta == null || delta == 0 -> null
+                    delta > 0 -> status.good
+                    else -> status.critical
+                },
+            )
+            StatTile("Ponctualité", pct(report.punctuality), "prises à l'heure", Modifier.weight(1f))
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            StatTile(
+                "Écart moyen",
+                report.averageDelayMinutes?.let(::signedMinutes) ?: "—",
+                when {
+                    report.averageDelayMinutes == null -> "avec l'heure prévue"
+                    report.averageDelayMinutes > 0 -> "après l'heure prévue"
+                    report.averageDelayMinutes < 0 -> "avant l'heure prévue"
+                    else -> "pile à l'heure"
+                },
+                Modifier.weight(1f),
+            )
+            StatTile("Série", "${state.game.streak} j", "record : ${state.game.bestStreak} j", Modifier.weight(1f))
+        }
+
+        InsightsCard(report.insights + prnReports.flatMap { r -> r.insights.filter { it.tone == Tone.WARN }.map { it.copy(text = "${r.name} : ${it.text.replaceFirstChar { c -> c.lowercase() }}") } })
+
+        ChartCard(report.heatmap.takeLast(14))
+        StatCard("Évolution sur 12 semaines", subtitle = "Part des prises faites, semaine par semaine") {
+            val weeks = report.weekly
+            BarChart(
+                values = weeks.map { it.second.value ?: 0f },
+                axisLabels = mapOf(0 to weeks.first().first.format(dayMonth), 6 to weeks[6].first.format(dayMonth), 11 to "Cette sem."),
+                describe = { i ->
+                    val (start, r) = weeks[i]
+                    "Semaine du ${start.format(dayMonth)} · " + if (r.decided == 0) "aucune prise prévue" else "${pct(r.value)} (${r.taken}/${r.decided})"
+                },
+                maxValue = 1f,
+                gridLabel = { "${(it * 100).roundToInt()} %" },
+            )
+        }
+        StatCard("Calendrier", subtitle = "12 dernières semaines · touche un jour pour le détail") {
+            AdherenceHeatmap(report.heatmap)
+        }
+        BreakdownCard(report.onTime, report.offTime, report.missed, period.label)
+        StatCard("Selon le moment", subtitle = "Part des prises faites sur ${period.label}") {
+            RateRows(report.bySlot.filter { it.value.decided > 0 }.map { it.key.label to it.value })
+            if (report.bySlot.all { it.value.decided == 0 }) EmptyText()
+        }
+        StatCard("Selon le jour de la semaine") {
+            if (report.byWeekday.all { it.value.decided == 0 }) EmptyText()
+            else RateRows(report.byWeekday.map { it.key.getDisplayName(TextStyle.FULL, Locale.FRANCE).capitalized() to it.value })
+        }
+        if (report.perTreatment.isNotEmpty()) {
+            StatCard("Par traitement", subtitle = "Sur ${period.label}") {
+                report.perTreatment.forEach { t ->
+                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Row {
+                            Text(t.name, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            Text(
+                                if (t.rate.decided == 0) "—" else "${t.rate.taken}/${t.rate.decided} · ${pct(t.rate.value)}",
+                                style = MaterialTheme.typography.labelLarge,
+                            )
+                        }
+                        Meter(t.rate.value ?: 0f, MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.surfaceContainerHighest)
+                        t.averageDelayMinutes?.let {
+                            Text(
+                                "Écart moyen : ${signedMinutes(it)}",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
                         }
                     }
                 }
             }
-
-            if (prn.isNotEmpty()) {
-                SectionTitle("Si besoin")
-                prnReports.forEach { r -> PrnSummaryCard(r, state, now, period.label) { onOpenPrn(r.treatmentId) } }
-            }
-
-            com.medipote.app.ui.sleep.SleepSummaryCard(state, now.toLocalDate(), period.days, period.label)
-
-            if (report.waterDays > 0 || report.physicalAverage != null || report.mentalAverage != null) {
-                StatCard("Bien-être et hydratation", subtitle = "Moyennes sur ${period.label}") {
-                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        MiniValue("Verres d'eau / jour", report.waterAverage?.let { decimal(it) } ?: "—", Modifier.weight(1f))
-                        MiniValue("Objectif atteint", if (report.waterDays == 0) "—" else "${report.waterGoalDays}/${report.waterDays} j", Modifier.weight(1f))
-                    }
-                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        MiniValue("Forme physique", report.physicalAverage?.let { "${decimal(it)}/5" } ?: "—", Modifier.weight(1f))
-                        MiniValue("Moral", report.mentalAverage?.let { "${decimal(it)}/5" } ?: "—", Modifier.weight(1f))
-                    }
-                }
-            }
-
-            PointsCard(state)
-            Spacer(Modifier.height(8.dp))
         }
     }
+
+    if (prn.isNotEmpty()) {
+        SectionTitle("Si besoin")
+        prnReports.forEach { r -> PrnSummaryCard(r, state, now, period.label) { onOpenPrn(r.treatmentId) } }
+    }
+}
+
+/** Each symptom followed: how strong, how often, better or worse than before, day by day. */
+@Composable
+private fun SymptomsTab(state: AppState, today: java.time.LocalDate, period: Period, onManage: () -> Unit) {
+    val tracked = Wellbeing.tracked(state)
+    if (tracked.isEmpty()) {
+        StatCard("Symptômes") {
+            Text(
+                "Choisis les symptômes à suivre et note-les chaque jour (Suivi › Symptômes) : leurs statistiques apparaîtront ici.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            androidx.compose.material3.OutlinedButton(onClick = onManage) { Text("Choisir mes symptômes") }
+        }
+        return
+    }
+    tracked.forEach { id ->
+        val p = remember(state.symptomLog, today, period, id) { Wellbeing.period(state, id, today, period.days) }
+        StatCard("${Wellbeing.emoji(id)}  ${Wellbeing.name(id)}", subtitle = "Sur ${period.label}") {
+            if (p.noted == 0) {
+                Text("Pas encore noté sur cette période.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                return@StatCard
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                MiniValue("force moyenne", p.average?.let { "${decimal(it.toFloat())}/5" } ?: "—", Modifier.weight(1f))
+                MiniValue("jours notés", "${p.noted}/${p.days}", Modifier.weight(1f))
+                MiniValue("jours forts", "${p.strongDays}", Modifier.weight(1f))
+            }
+            val avg = p.average
+            val prev = p.previousAverage
+            if (avg != null && prev != null) {
+                val diff = avg - prev
+                Text(
+                    when {
+                        diff >= 0.5 -> "▲ Plus fort que sur la période d'avant (${decimal(prev.toFloat())}/5)."
+                        diff <= -0.5 -> "▼ Moins fort que sur la période d'avant (${decimal(prev.toFloat())}/5)."
+                        else -> "= Comme sur la période d'avant (${decimal(prev.toFloat())}/5)."
+                    },
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = when {
+                        diff <= -0.5 -> AppTheme.status.good
+                        else -> MaterialTheme.colorScheme.onSurfaceVariant
+                    },
+                )
+            }
+            val last = p.bars.lastIndex
+            BarChart(
+                values = p.bars,
+                axisLabels = mapOf(0 to p.barDays.first().first.format(dayMonth), last / 2 to p.barDays[last / 2].first.format(dayMonth), last to if (period.days > 30) "Cette sem." else "Auj."),
+                describe = { i ->
+                    val (a, b) = p.barDays[i]
+                    val label = if (a == b) a.format(dayMonth) else "Semaine du ${a.format(dayMonth)}"
+                    label + " · " + if (p.bars[i] == 0f) "pas noté" else "force ${decimal(p.bars[i])}/5"
+                },
+                maxValue = 5f,
+                gridLabel = { "${it.roundToInt()}" },
+                initialSelected = p.bars.indexOfLast { it > 0f }.takeIf { it >= 0 } ?: last,
+            )
+        }
+    }
+    val links = remember(state.symptomLog, state.sleep, today) { Wellbeing.insights(state, today) }
+    InsightsCard(links.map { Insight(it, Tone.INFO) }, title = "Liens avec ton sommeil")
+    Text(
+        "Ce sont des observations de tes propres notes, pas un diagnostic : montre-les à ton médecin si tu veux.",
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+}
+
+/** Mood, physical shape, water and the small victories of hard days. */
+@Composable
+private fun WellbeingTab(state: AppState, today: java.time.LocalDate, period: Period) {
+    val report = remember(state, today, period) { Reports.adherence(state, LocalDateTime.of(today, java.time.LocalTime.of(23, 59)), period.days) }
+    var anything = false
+    if (report.waterDays > 0 || report.physicalAverage != null || report.mentalAverage != null) {
+        anything = true
+        StatCard("Bien-être et hydratation", subtitle = "Moyennes sur ${period.label}") {
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                MiniValue("Verres d'eau / jour", report.waterAverage?.let { decimal(it) } ?: "—", Modifier.weight(1f))
+                MiniValue("Objectif atteint", if (report.waterDays == 0) "—" else "${report.waterGoalDays}/${report.waterDays} j", Modifier.weight(1f))
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                MiniValue("Forme physique", report.physicalAverage?.let { "${decimal(it)}/5" } ?: "—", Modifier.weight(1f))
+                MiniValue("Moral", report.mentalAverage?.let { "${decimal(it)}/5" } ?: "—", Modifier.weight(1f))
+            }
+        }
+    }
+    val mood = remember(state.journal, today, period) { moodBars(state, today, period.days) }
+    if (mood.first.any { it > 0f }) {
+        anything = true
+        val (bars, ranges) = mood
+        StatCard("Moral au fil du temps", subtitle = if (period.days > 30) "Moyenne par semaine" else "Jour par jour") {
+            val last = bars.lastIndex
+            BarChart(
+                values = bars,
+                axisLabels = mapOf(0 to ranges.first().first.format(dayMonth), last / 2 to ranges[last / 2].first.format(dayMonth), last to if (period.days > 30) "Cette sem." else "Auj."),
+                describe = { i ->
+                    val (a, b) = ranges[i]
+                    (if (a == b) a.format(dayMonth) else "Semaine du ${a.format(dayMonth)}") + " · " + if (bars[i] == 0f) "pas noté" else "${decimal(bars[i])}/5"
+                },
+                maxValue = 5f,
+                gridLabel = { "${it.roundToInt()}" },
+                initialSelected = bars.indexOfLast { it > 0f }.takeIf { it >= 0 } ?: last,
+            )
+        }
+    }
+    if (Wellbeing.enabled(state)) {
+        anything = true
+        val wins = remember(state.wins, state.tasks, today, period) { Wellbeing.winsReport(state, today, period.days) }
+        StatCard("💛  Petites victoires", subtitle = "Sur ${period.label} · les missions et les étapes faites") {
+            if (wins.wins == 0) {
+                Text(
+                    "Pas encore de petite victoire sur cette période. Elles apparaîtront ici, sans pression.",
+                    style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            } else {
+                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    MiniValue("victoires", "${wins.wins}", Modifier.weight(1f))
+                    MiniValue("jours avec", "${wins.daysWithWins}", Modifier.weight(1f))
+                    MiniValue("points gagnés", "+${wins.points}", Modifier.weight(1f))
+                }
+                if (wins.stepsDone > 0 || wins.tasksFinished > 0) {
+                    Text(
+                        "${wins.stepsDone} étape${if (wins.stepsDone > 1) "s" else ""} de tâche" + if (wins.tasksFinished > 0) " · ${wins.tasksFinished} tâche${if (wins.tasksFinished > 1) "s" else ""} terminée${if (wins.tasksFinished > 1) "s" else ""}" else "",
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                }
+                if (wins.top.isNotEmpty()) {
+                    Text("Ce qui t'a le plus aidé", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    wins.top.forEach { (label, n) -> Text("•  $label" + if (n > 1) "  ×$n" else "", style = MaterialTheme.typography.bodyMedium) }
+                }
+            }
+        }
+    }
+    if (!anything) StatCard("Bien-être") { Text("Note ton humeur, ton eau ou ta forme : les statistiques apparaîtront ici.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+}
+
+/** Mood per day (per week beyond 30 days): 0 when not noted. */
+private fun moodBars(state: AppState, today: java.time.LocalDate, days: Int): Pair<List<Float>, List<Pair<java.time.LocalDate, java.time.LocalDate>>> {
+    val ranges = if (days <= 30) (days - 1 downTo 0).map { today.minusDays(it.toLong()).let { d -> d to d } }
+    else (12 downTo 0).map { w -> today.minusDays(w * 7L + 6) to today.minusDays(w * 7L) }
+    val byDate = state.journal.filter { it.mental != null }.associate { it.date to it.mental!! }
+    val bars = ranges.map { (a, b) ->
+        val values = generateSequence(a) { it.plusDays(1) }.takeWhile { !it.isAfter(b) }.mapNotNull { byDate[it] }.toList()
+        if (values.isEmpty()) 0f else values.average().toFloat()
+    }
+    return bars to ranges
 }
 
 @Composable

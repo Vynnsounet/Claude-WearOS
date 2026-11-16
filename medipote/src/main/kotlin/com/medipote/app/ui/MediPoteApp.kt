@@ -556,7 +556,7 @@ fun MediPoteApp(vm: AppViewModel) {
                     var day by rememberSaveable { mutableStateOf(today) }
                     CardHub("Moi", cards, state.settings.hiddenCards, openProfile, openSettings, { nav.navigate("cards_layout") }) { key ->
                         when (key) {
-                            "moi:stats" -> StatsScreen(state, now, embedded = true, onOpenPrn = { nav.navigate("prn_stats/$it") }, onReport = { nav.navigate("report") })
+                            "moi:stats" -> StatsScreen(state, now, embedded = true, onOpenPrn = { nav.navigate("prn_stats/$it") }, onReport = { nav.navigate("report") }, onManageSymptoms = { nav.navigate("wellbeing_me") })
                             "moi:day" -> com.medipote.app.ui.motivation.MyDayScreen(
                                 state, day, now,
                                 onDate = { day = it },

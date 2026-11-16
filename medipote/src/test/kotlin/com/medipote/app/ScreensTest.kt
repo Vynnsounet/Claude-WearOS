@@ -244,10 +244,78 @@ class ScreensTest {
         compose.onNodeWithText("Nœud").assertExists()
     }
 
+    private fun shot(name: String) = save(name, compose.onRoot().captureToImage().asAndroidBitmap())
+
     @Test
+    @Config(qualifiers = "w400dp-h2600dp-xhdpi")
     fun stats() {
+        // One subject per sub-tab, the overview first; the period is shared.
         render("stats") { StatsScreen(sampleState(), now) }
+        compose.onNodeWithText("📊  Vue d'ensemble").assertExists()
+        compose.onNodeWithText("💊  Traitements").assertExists()
+        compose.onNodeWithText("🌙  Sommeil").assertExists()
+        compose.onNodeWithText("😊  Bien-être").assertExists()
+        // No symptom tab until the symptoms are turned on.
+        compose.onNodeWithText("🌡️  Symptômes").assertDoesNotExist()
+        compose.onNodeWithText("Sommeil").assertExists()
+        compose.onNodeWithText("Moral").assertExists()
+        compose.onNodeWithText("14 derniers jours").assertDoesNotExist() // that is the treatments page
+        compose.onNodeWithText("💊  Traitements").performScrollTo().performClick()
         compose.onNodeWithText("14 derniers jours").assertExists()
+        shot("stats_treatments")
+        compose.onNodeWithText("🌙  Sommeil").performScrollTo().performClick()
+        shot("stats_sleep")
+        compose.onNodeWithText("😊  Bien-être").performScrollTo().performClick()
+        shot("stats_wellbeing")
+    }
+
+    @Test
+    @Config(qualifiers = "w400dp-h3000dp-xhdpi")
+    fun statsSymptomsTab() {
+        val state = wellState().let { s ->
+            // A little sleep to compare with: short nights go with strong fatigue.
+            val nights = (1..8).map { back ->
+                val d = today.minusDays(back.toLong())
+                com.medipote.app.data.SleepNight(d, d.minusDays(1).atTime(23, 0), 0, d.minusDays(1).atTime(23, 0).plusHours(if (back % 2 == 0) 5 else 8))
+            }
+            s.copy(sleep = nights)
+        }
+        var manage = 0
+        render("stats_symptoms") { StatsScreen(state, now, onManageSymptoms = { manage++ }) }
+        compose.onNodeWithText("Jours difficiles").assertExists()
+        compose.onNodeWithText("Petites victoires").assertExists()
+        compose.onNodeWithText("🌡️  Symptômes").performScrollTo().performClick()
+        compose.onNodeWithText("😴  Fatigue").assertExists()
+        compose.onAllNodesWithText("force moyenne").onFirst().assertExists()
+        compose.onNodeWithText("Liens avec ton sommeil").assertExists()
+        compose.onNodeWithText("moins de 6 h", substring = true).assertExists()
+        shot("stats_symptoms_tab")
+    }
+
+    @Test
+    @Config(qualifiers = "w400dp-h900dp-xhdpi")
+    fun statsSymptomsTabWithNothingFollowed() {
+        val on = sampleState().let { it.copy(settings = it.settings.copy(wellbeing = com.medipote.app.data.WellbeingSettings(enabled = true))) }
+        var manage = 0
+        render("stats_symptoms_none") { StatsScreen(on, now, onManageSymptoms = { manage++ }) }
+        compose.onNodeWithText("🌡️  Symptômes").performScrollTo().performClick()
+        compose.onNodeWithText("Choisir mes symptômes").performClick()
+        org.junit.Assert.assertEquals(1, manage)
+    }
+
+    @Test
+    @Config(qualifiers = "w400dp-h1800dp-xhdpi")
+    fun statsWellbeingShowsSmallWinsWithoutPressure() {
+        var s = wellState()
+        s = com.medipote.app.domain.Wellbeing.win(s, "tea", "Me préparer une boisson chaude", 5, now).state
+        s = com.medipote.app.domain.Wellbeing.win(s, "breath", "Faire 5 respirations lentes", 5, now.minusDays(2)).state
+        render("stats_wins") { StatsScreen(s, now) }
+        compose.onNodeWithText("😊  Bien-être").performScrollTo().performClick()
+        compose.onNodeWithText("💛  Petites victoires").assertExists()
+        compose.onNodeWithText("•  Me préparer une boisson chaude").assertExists()
+        // Nothing shown as missing.
+        compose.onAllNodesWithText("manqu", substring = true).assertCountEquals(0)
+        compose.onAllNodesWithText("objectif non atteint", substring = true, ignoreCase = true).assertCountEquals(0)
     }
 
     @Test
@@ -559,6 +627,7 @@ class ScreensTest {
     @Config(qualifiers = "w400dp-h3600dp-xhdpi")
     fun statsFull() {
         render("stats_full") { StatsScreen(prnState(), now) }
+        compose.onNodeWithText("💊  Traitements").performScrollTo().performClick()
         compose.onNodeWithText("Calendrier").assertExists()
         compose.onNodeWithText("Selon le moment").assertExists()
     }

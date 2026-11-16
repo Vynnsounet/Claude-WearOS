@@ -89,6 +89,7 @@ class AppFlowTest {
         // Each tab is a page of cards; a card opens its content under a back arrow.
         compose.onNodeWithText("Moi").performClick()
         compose.onNodeWithText("Statistiques").performClick()
+        compose.onNodeWithText("💊  Traitements").performScrollTo().performClick()
         compose.onNodeWithText("14 derniers jours").assertExists()
         compose.onNodeWithText("Soins").performClick()
         compose.onNodeWithText("Agenda").performClick()

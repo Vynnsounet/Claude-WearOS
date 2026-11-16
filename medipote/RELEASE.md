@@ -66,6 +66,14 @@ L'optimiseur de R8 reste désactivé (`-dontoptimize`) : APK de 3,8 Mo au lieu d
 le dex livré peut être reconverti et exécuté hors appareil pour vérification (voir plus bas),
 ce que l'optimiseur empêche. Il pourra être réactivé après des essais sur téléphone.
 
+### 1.17.0 — des statistiques par sujet
+
+- Statistiques en sous-onglets : Vue d'ensemble, Traitements, Sommeil, Symptômes (si activés), Bien-être.
+  Même période (7, 30, 90 jours) pour tous. Nouveau : statistiques de chaque symptôme (force, jours,
+  comparaison avec avant, courbe), onglet Sommeil (durée nuit par nuit, siestes), moral au fil du temps,
+  petites victoires. Les liens symptômes / sommeil restent des observations, jamais un diagnostic.
+- Aucune permission ajoutée, tout reste sur le téléphone.
+
 ### 1.16.0 — journée douce, symptômes, onglets en cartes
 
 - Chaque onglet s'ouvre sur une page de cartes aérées avec un aperçu en direct. Onglets : Accueil,

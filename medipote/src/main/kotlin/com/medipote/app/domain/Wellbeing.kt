@@ -22,6 +22,36 @@ data class SymptomSummary(
     val week: List<Int?>,
 )
 
+/** One symptom over a period, for the statistics. */
+data class SymptomPeriod(
+    val id: String,
+    val days: Int,
+    /** Days of the period the symptom was noted. */
+    val noted: Int,
+    /** Average strength on the days it was noted, 1 to 5. */
+    val average: Double?,
+    val strongDays: Int,
+    /** The same figures over the period before, to say whether it is better or worse. */
+    val previousAverage: Double?,
+    val previousNoted: Int,
+    /** Strength per bar (a day, or a week beyond 30 days): 0 when not noted. */
+    val bars: List<Float>,
+    /** What each bar is: its first day and last day. */
+    val barDays: List<Pair<LocalDate, LocalDate>>,
+)
+
+/** What the small missions gave over a period. */
+data class WinsReport(
+    val days: Int,
+    val wins: Int,
+    val daysWithWins: Int,
+    val points: Int,
+    /** The missions done most, with how many times. */
+    val top: List<Pair<String, Int>>,
+    val stepsDone: Int,
+    val tasksFinished: Int,
+)
+
 /**
  * Hard days: symptoms noted with their strength, small missions to pick by the energy left, tasks
  * cut into steps. Points are only ever added: not doing a mission costs nothing and shows nowhere.
@@ -167,6 +197,40 @@ object Wellbeing {
             if (notes.isEmpty()) 0.0 else notes.sumOf { it.intensity }.toDouble() / notes.size,
             notes.count { it.intensity >= HEAVY },
             (6 downTo 0).map { back -> intensityOn(state, today.minusDays(back.toLong()), id) },
+        )
+    }
+
+    /** A symptom over the last [days] days (bars by day, or by week beyond 30 days). */
+    fun period(state: AppState, id: String, today: LocalDate, days: Int): SymptomPeriod {
+        val from = today.minusDays(days - 1L)
+        val notes = state.symptomLog.filter { it.symptom == id && !it.date.isBefore(from) && !it.date.isAfter(today) }
+        val before = state.symptomLog.filter { it.symptom == id && it.date.isBefore(from) && !it.date.isBefore(from.minusDays(days.toLong())) }
+        val byDate = notes.associateBy { it.date }
+        val ranges: List<Pair<LocalDate, LocalDate>> =
+            if (days <= 30) (days - 1 downTo 0).map { today.minusDays(it.toLong()).let { d -> d to d } }
+            else (12 downTo 0).map { w -> today.minusDays(w * 7L + 6) to today.minusDays(w * 7L) }
+        val bars = ranges.map { (a, b) ->
+            val inRange = notes.filter { !it.date.isBefore(a) && !it.date.isAfter(b) }
+            if (inRange.isEmpty()) 0f else inRange.map { it.intensity }.average().toFloat()
+        }
+        return SymptomPeriod(
+            id, days, byDate.size,
+            notes.takeIf { it.isNotEmpty() }?.map { it.intensity }?.average(),
+            notes.count { it.intensity >= HEAVY },
+            before.takeIf { it.size >= 3 }?.map { it.intensity }?.average(),
+            before.size, bars, ranges,
+        )
+    }
+
+    fun winsReport(state: AppState, today: LocalDate, days: Int): WinsReport {
+        val from = today.minusDays(days - 1L)
+        val wins = state.wins.filter { !it.date.isBefore(from) && !it.date.isAfter(today) }
+        val top = wins.filter { !it.key.startsWith("step:") }.groupingBy { it.label }.eachCount().entries
+            .sortedWith(compareByDescending<Map.Entry<String, Int>> { it.value }.thenBy { it.key }).take(3).map { it.key to it.value }
+        val finished = state.tasks.count { t -> t.finished && wins.any { it.key.startsWith("step:${t.id}:") } }
+        return WinsReport(
+            days, wins.size, wins.map { it.date }.distinct().size, wins.sumOf { it.points }, top,
+            wins.count { it.key.startsWith("step:") }, finished,
         )
     }
 
