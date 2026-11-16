@@ -299,7 +299,7 @@ par une action de la personne : sauvegarde, rapport PDF ou document partagé.
 ## Statistiques
 
 Une page par sujet, pour mieux comprendre : des puces en haut (📊 Vue d'ensemble · 💊 Traitements · 🌙 Sommeil ·
-🌡️ Symptômes si activés · 😊 Bien-être) et une période commune (7, 30 ou 90 jours).
+🩸 Cycle si activé · 🌡️ Symptômes si activés · 😊 Bien-être) et une période commune (7, 30 ou 90 jours).
 
 - **Vue d'ensemble** : une tuile par sujet (traitements, série, sommeil, moral, jours difficiles, petites
   victoires), « Ce qu'on remarque » (y compris les liens entre symptômes et sommeil), le rapport PDF pour le
@@ -307,6 +307,13 @@ Une page par sujet, pour mieux comprendre : des puces en haut (📊 Vue d'ensemb
 - **Traitements** : observance, ponctualité, évolution sur 12 semaines, calendrier, par moment, par jour, par
   traitement, et les médicaments « si besoin ».
 - **Sommeil** : durée moyenne et objectif, réveils, coucher habituel, ressenti, durée nuit par nuit, siestes.
+- **Cycle** : sur tes derniers cycles (pas sur un nombre de jours) : durée moyenne, durée des règles
+  (d'après le flux noté), écart entre le cycle le plus court et le plus long, courbe de la durée de chaque
+  cycle, flux, symptômes qui reviennent, **moral et forme selon la phase** (phases estimées par la méthode
+  du calendrier), protections et médicaments. Elle remarque aussi, sur tes propres notes, un moral plus bas
+  ou un symptôme suivi plus fort dans une phase (par exemple l'anxiété avant les règles), et rappelle de
+  parler à un médecin quand des cycles sortent de 21 à 35 jours de façon répétée. Indicatif : ni avis
+  médical ni contraception.
 - **Symptômes** : pour chacun, force moyenne, jours notés, jours forts, comparaison avec la période
   précédente et courbe jour par jour (par semaine sur 90 jours).
 - **Bien-être** : moral au fil du temps, eau, forme, et les petites victoires (missions et étapes faites),

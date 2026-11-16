@@ -293,6 +293,39 @@ class ScreensTest {
     }
 
     @Test
+    @Config(qualifiers = "w400dp-h3200dp-xhdpi")
+    fun statsCycleTab() {
+        val starts = listOf(LocalDate.of(2026, 6, 20), LocalDate.of(2026, 7, 18), LocalDate.of(2026, 8, 17), LocalDate.of(2026, 9, 13), LocalDate.of(2026, 10, 18))
+        val info = CycleInfo(starts, 28, 5)
+        var state = sampleState().copy(profile = profile.copy(cycle = info))
+        // Flow for five days at each start; the moral drops in the luteal phase; a few cycle symptoms.
+        val extra = starts.flatMap { s -> (0 until 5).map { com.medipote.app.data.DayEntry(s.plusDays(it.toLong()), flow = if (it < 2) com.medipote.app.data.Flow.HEAVY else com.medipote.app.data.Flow.LIGHT, cycleSymptoms = if (it == 0) listOf("Crampes", "Fatigue") else emptyList()) } }
+        val moods = generateSequence(starts.first()) { it.plusDays(1) }.takeWhile { it <= today }.mapNotNull { d ->
+            val phase = com.medipote.app.domain.CycleStats.phaseOn(info, d) ?: return@mapNotNull null
+            if (extra.any { it.date == d }) null else com.medipote.app.data.DayEntry(d, mental = if (phase == com.medipote.app.domain.CyclePhase.LUTEAL) 2 else 4, physical = 3)
+        }.toList()
+        state = state.copy(journal = (extra + moods).sortedByDescending { it.date })
+        render("stats_cycle") { StatsScreen(state, now) }
+        // The overview carries the cycle too; the cycle page ignores the period selector.
+        compose.onNodeWithText("Cycle moyen").assertExists()
+        compose.onNodeWithText("🩸  Cycle").performScrollTo().performClick()
+        compose.onNodeWithText("Durée de tes cycles").assertExists()
+        compose.onNodeWithText("Selon la phase").assertExists()
+        compose.onNodeWithText("Flux").assertExists()
+        compose.onNodeWithText("7 j").assertDoesNotExist()
+        compose.onNodeWithText("Indicatif", substring = true).assertExists()
+        shot("stats_cycle_tab")
+    }
+
+    @Test
+    @Config(qualifiers = "w400dp-h900dp-xhdpi")
+    fun statsHasNoCycleTabWithoutACycle() {
+        val s = sampleState().let { it.copy(profile = it.profile!!.copy(menstruating = false)) }
+        render("stats_no_cycle") { StatsScreen(s, now) }
+        compose.onNodeWithText("🩸  Cycle").assertDoesNotExist()
+    }
+
+    @Test
     @Config(qualifiers = "w400dp-h900dp-xhdpi")
     fun statsSymptomsTabWithNothingFollowed() {
         val on = sampleState().let { it.copy(settings = it.settings.copy(wellbeing = com.medipote.app.data.WellbeingSettings(enabled = true))) }

@@ -54,6 +54,8 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.medipote.app.data.AppState
+import com.medipote.app.domain.CyclePhase
+import com.medipote.app.domain.CycleStats
 import com.medipote.app.domain.DayStats
 import com.medipote.app.domain.Insight
 import com.medipote.app.domain.Sleep
@@ -92,6 +94,7 @@ private enum class StatsTab(val emoji: String, val label: String) {
     OVERVIEW("📊", "Vue d'ensemble"),
     TREATMENTS("💊", "Traitements"),
     SLEEP("🌙", "Sommeil"),
+    CYCLE("🩸", "Cycle"),
     SYMPTOMS("🌡️", "Symptômes"),
     WELLBEING("😊", "Bien-être"),
 }
@@ -109,7 +112,7 @@ fun StatsScreen(
     var period by rememberSaveable { mutableStateOf(Period.MONTH) }
     var tab by rememberSaveable { mutableStateOf(StatsTab.OVERVIEW) }
     val wellbeing = Wellbeing.enabled(state)
-    val tabs = StatsTab.entries.filter { it != StatsTab.SYMPTOMS || wellbeing }
+    val tabs = StatsTab.entries.filter { (it != StatsTab.SYMPTOMS || wellbeing) && (it != StatsTab.CYCLE || CycleStats.enabled(state)) }
     val today = now.toLocalDate()
     val shown = if (tab in tabs) tab else StatsTab.OVERVIEW
 
@@ -132,12 +135,14 @@ fun StatsScreen(
                     FilterChip(selected = shown == t, onClick = { tab = t }, label = { Text("${t.emoji}  ${t.label}", maxLines = 1) })
                 }
             }
-            PeriodSelector(Period.entries.map { it to it.label }, period, { period = it })
+            // Cycles are long: the cycle page looks at the last cycles, not at a number of days.
+            if (shown != StatsTab.CYCLE) PeriodSelector(Period.entries.map { it to it.label }, period, { period = it })
 
             when (shown) {
                 StatsTab.OVERVIEW -> OverviewTab(state, now, period, onReport)
                 StatsTab.TREATMENTS -> TreatmentsTab(state, now, period, onOpenPrn)
                 StatsTab.SLEEP -> com.medipote.app.ui.sleep.SleepStatsTab(state, today, period.days, period.label)
+                StatsTab.CYCLE -> CycleTab(state, today)
                 StatsTab.SYMPTOMS -> SymptomsTab(state, today, period, onManageSymptoms)
                 StatsTab.WELLBEING -> WellbeingTab(state, today, period)
             }
@@ -191,6 +196,22 @@ private fun OverviewTab(state: AppState, now: LocalDateTime, period: Period, onR
             "Moral", report.mentalAverage?.let { "${decimal(it)}/5" } ?: "—",
             if (report.mentalAverage == null) "pas encore noté" else "humeur moyenne", Modifier.weight(1f),
         )
+    }
+    if (CycleStats.enabled(state)) {
+        val cycle = remember(state.profile, state.journal, today) { CycleStats.report(state, today) }
+        val status = state.profile?.cycle?.let { com.medipote.app.domain.Cycle.status(it, today) }
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            StatTile(
+                "Cycle", status?.let { "Jour ${it.dayOfCycle}" } ?: "—",
+                status?.let { it.phase.label + if (it.lateDays > 0) " · en retard" else " · règles dans ${it.daysUntilNextPeriod} j" } ?: "pas encore de règles notées",
+                Modifier.weight(1f),
+            )
+            StatTile(
+                "Cycle moyen", cycle?.averageLength?.let { "${it.roundToInt()} j" } ?: "—",
+                cycle?.takeIf { it.lengths.isNotEmpty() }?.let { "sur ${it.lengths.size} cycle${if (it.lengths.size > 1) "s" else ""}" } ?: "à partir de 2 règles notées",
+                Modifier.weight(1f),
+            )
+        }
     }
     if (wellbeing) {
         val tracked = Wellbeing.tracked(state)
@@ -330,6 +351,128 @@ private fun TreatmentsTab(state: AppState, now: LocalDateTime, period: Period, o
         SectionTitle("Si besoin")
         prnReports.forEach { r -> PrnSummaryCard(r, state, now, period.label) { onOpenPrn(r.treatmentId) } }
     }
+}
+
+/** The cycle: how long, how regular, how heavy, what comes with it, and how the phases feel. */
+@Composable
+private fun CycleTab(state: AppState, today: java.time.LocalDate) {
+    val r = remember(state.profile, state.journal, state.productLog, state.prnIntakes, state.symptomLog, today) { CycleStats.report(state, today) }
+    if (r == null) {
+        StatCard("Cycle") {
+            Text(
+                "Note le début de tes règles (Suivi › Cycle) : les statistiques de ton cycle apparaîtront ici.",
+                style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        return
+    }
+    val status = state.profile?.cycle?.let { com.medipote.app.domain.Cycle.status(it, today) }
+    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        StatTile(
+            "Cycle moyen", r.averageLength?.let { "${it.roundToInt()} j" } ?: "—",
+            if (r.lengths.isEmpty()) "à partir de 2 règles notées" else "sur ${r.lengths.size} cycle${if (r.lengths.size > 1) "s" else ""}",
+            Modifier.weight(1f),
+        )
+        StatTile(
+            "Règles", r.averagePeriodDays?.let { "${it.roundToInt()} j" } ?: "—",
+            if (r.averagePeriodDays == null) "note le flux plusieurs jours" else "durée moyenne",
+            Modifier.weight(1f),
+        )
+    }
+    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        StatTile(
+            "Écart", r.spread?.let { "$it j" } ?: "—",
+            r.shortest?.let { "du plus court (${it} j) au plus long (${r.longest} j)" } ?: "entre ton cycle le plus court et le plus long",
+            Modifier.weight(1f),
+        )
+        StatTile(
+            "Cycle en cours", status?.let { "Jour ${it.dayOfCycle}" } ?: "—",
+            status?.let { it.phase.label + if (it.lateDays > 0) " · ${it.lateDays} j de retard" else " · règles dans ${it.daysUntilNextPeriod} j" },
+            Modifier.weight(1f),
+        )
+    }
+
+    InsightsCard(r.insights)
+
+    val bars = CycleStats.lengthBars(r)
+    if (bars.isNotEmpty()) {
+        StatCard("Durée de tes cycles", subtitle = "Jours entre deux débuts de règles · pointillés : ta moyenne") {
+            val last = bars.lastIndex
+            BarChart(
+                values = bars.map { it.second.toFloat() },
+                axisLabels = if (bars.size == 1) mapOf(0 to bars[0].first.format(dayMonth)) else mapOf(0 to bars.first().first.format(dayMonth), last to bars.last().first.format(dayMonth)),
+                describe = { i -> "Cycle du ${bars[i].first.format(dayMonth)} · ${bars[i].second} jours" },
+                maxValue = (maxOf(bars.maxOf { it.second }, 35) / 7 * 7 + 7).toFloat(),
+                gridLabel = { "${it.roundToInt()} j" },
+                reference = r.averageLength?.toFloat(),
+            )
+        }
+    }
+
+    if (r.flowDays.isNotEmpty()) {
+        val total = r.flowDays.sumOf { it.second }
+        StatCard("Flux", subtitle = "Jours notés sur tes derniers cycles") {
+            r.flowDays.forEach { (flow, n) ->
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Row {
+                        Text(flow.label, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
+                        Text("$n jour${if (n > 1) "s" else ""}", style = MaterialTheme.typography.labelLarge)
+                    }
+                    Meter(n / total.toFloat(), MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.surfaceContainerHighest)
+                }
+            }
+        }
+    }
+
+    if (r.symptoms.isNotEmpty()) {
+        StatCard("Ce qui revient le plus", subtitle = "Symptômes du cycle notés dans ton journal") {
+            r.symptoms.forEach { (name, n) ->
+                Row {
+                    Text(name, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
+                    Text("$n jour${if (n > 1) "s" else ""}", style = MaterialTheme.typography.labelLarge)
+                }
+            }
+        }
+    }
+
+    if (r.byPhase.any { it.daysWithMood > 0 || it.daysWithSymptoms > 0 }) {
+        StatCard("Selon la phase", subtitle = "Phases estimées d'après tes dates de règles") {
+            r.byPhase.filter { it.days > 0 }.forEach { p ->
+                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    Text(p.phase.label, style = MaterialTheme.typography.titleSmall)
+                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        MiniValue("moral", p.averageMood?.let { "${decimal(it.toFloat())}/5" } ?: "—", Modifier.weight(1f))
+                        MiniValue("forme", p.averagePhysical?.let { "${decimal(it.toFloat())}/5" } ?: "—", Modifier.weight(1f))
+                        MiniValue("jours avec symptômes", "${p.daysWithSymptoms}", Modifier.weight(1f))
+                    }
+                }
+            }
+        }
+    }
+
+    if (r.products.isNotEmpty() || r.periodMedIntakes > 0) {
+        StatCard("Protections et médicaments", subtitle = "Sur tes derniers cycles") {
+            r.products.forEach { (product, n) ->
+                Row {
+                    Text("${product.emoji}  ${product.label}", style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
+                    Text("$n changement${if (n > 1) "s" else ""}", style = MaterialTheme.typography.labelLarge)
+                }
+            }
+            if (r.periodMedIntakes > 0) {
+                Row {
+                    Text("💊  Médicaments contre la douleur", style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
+                    Text("${r.periodMedIntakes} prise${if (r.periodMedIntakes > 1) "s" else ""}", style = MaterialTheme.typography.labelLarge)
+                }
+            }
+        }
+    }
+
+    Text(
+        "Indicatif : les phases sont estimées par la méthode du calendrier. Ce n'est ni un avis médical ni une contraception. " +
+            "Des cycles de moins de ${CycleStats.USUAL_MIN} ou plus de ${CycleStats.USUAL_MAX} jours, des règles très abondantes ou très douloureuses : parles-en à ton médecin.",
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
 }
 
 /** Each symptom followed: how strong, how often, better or worse than before, day by day. */

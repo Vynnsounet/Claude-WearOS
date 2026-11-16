@@ -66,6 +66,15 @@ L'optimiseur de R8 reste désactivé (`-dontoptimize`) : APK de 3,8 Mo au lieu d
 le dex livré peut être reconverti et exécuté hors appareil pour vérification (voir plus bas),
 ce que l'optimiseur empêche. Il pourra être réactivé après des essais sur téléphone.
 
+### 1.18.0 — les statistiques du cycle
+
+- Nouvel onglet « 🩸 Cycle » dans les statistiques (si le cycle est activé) : durée moyenne et écart entre
+  les cycles, durée des règles, courbe des cycles, flux, symptômes fréquents, moral et forme par phase,
+  protections et médicaments, et ce que l'appli remarque (moral plus bas ou symptôme plus fort dans une
+  phase). Les cycles hors de 21 à 35 jours, répétés, invitent à en parler à un médecin. Le cycle en cours
+  et le cycle moyen figurent aussi dans la vue d'ensemble.
+- Calculs sur le téléphone, aucune permission ajoutée.
+
 ### 1.17.0 — des statistiques par sujet
 
 - Statistiques en sous-onglets : Vue d'ensemble, Traitements, Sommeil, Symptômes (si activés), Bien-être.
