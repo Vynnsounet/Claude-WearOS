@@ -66,6 +66,21 @@ L'optimiseur de R8 reste désactivé (`-dontoptimize`) : APK de 3,8 Mo au lieu d
 le dex livré peut être reconverti et exécuté hors appareil pour vérification (voir plus bas),
 ce que l'optimiseur empêche. Il pourra être réactivé après des essais sur téléphone.
 
+### 1.15.0 — saisons et fêtes
+
+- Le monde du compagnon change avec l'année : feuilles qui tombent à l'automne, neige l'hiver,
+  pétales au printemps, lumière dorée et lucioles l'été, par-dessus le fond et l'heure (dans la
+  chambre, on voit la saison par la fenêtre). Sur le widget et sur la montre aussi (l'image du
+  compagnon est la même).
+- Une phrase du jour sur trois suit la saison ; une très légère teinte de saison sur les fonds de
+  l'appli (jamais la couleur d'accent, contraste du texte testé).
+- Fêtes (à cocher) : Nouvel An, Saint-Valentin, Pâques, Halloween, Noël, anniversaire du compagnon
+  (le premier jour d'utilisation) et le tien (date facultative, jour et mois seulement). Petit
+  décor, et le compagnon te souhaite la fête. Pas de fête des mères ni des pères.
+- Jamais de décor ni de vœux de fête les jours où tu notes une humeur « très mal ».
+- Paramètres › Personnaliser › « Saisons et fêtes » : interrupteur général, teinte, hémisphère sud,
+  choix des fêtes, date d'anniversaire.
+
 ### 1.14.0 — « Ça ne va pas »
 
 - Un écran de soutien pour les moments très difficiles, sans points ni fête, accessible en deux

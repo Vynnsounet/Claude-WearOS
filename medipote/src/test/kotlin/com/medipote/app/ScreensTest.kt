@@ -55,6 +55,9 @@ import com.medipote.app.domain.Schedule
 import com.medipote.app.domain.Shop
 import androidx.compose.foundation.layout.size
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.graphics.luminance
+import com.medipote.app.ui.theme.withSeasonTint
+import com.medipote.app.data.Season
 import androidx.compose.foundation.layout.padding
 import com.medipote.app.ui.cycle.CycleScreen
 import com.medipote.app.ui.home.HomeScreen
@@ -991,14 +994,14 @@ class ScreensTest {
     @Config(qualifiers = "w400dp-h2400dp-xhdpi")
     fun homeCompanionUnderThePhrase() {
         render("home_order") { HomeScreen(motivationState(), today.atTime(15, 0), 0, 0, {}, {}, {}, {}, animate = false) }
-        compose.onNodeWithText(com.medipote.app.domain.DailyPhrases.of(today), substring = true).assertExists()
+        compose.onNodeWithText(com.medipote.app.domain.DailyPhrases.of(today, Season.AUTUMN), substring = true).assertExists()
     }
 
     @Test
     @Config(qualifiers = "w400dp-h1400dp-xhdpi")
     fun homeAtNight() {
         render("home_night") { HomeScreen(motivationState(), today.atTime(21, 30), 0, 0, {}, {}, {}, {}, animate = false) }
-        compose.onNodeWithText(com.medipote.app.domain.DailyPhrases.of(today), substring = true).assertExists()
+        compose.onNodeWithText(com.medipote.app.domain.DailyPhrases.of(today, Season.AUTUMN), substring = true).assertExists()
     }
 
     @Test
@@ -1023,6 +1026,72 @@ class ScreensTest {
             best = maxOf(best, (android.graphics.Color.red(c) + android.graphics.Color.green(c) + android.graphics.Color.blue(c)) / (3f * 255f))
         }
         org.junit.Assert.assertTrue("title too dark: $best", best > 0.8f)
+    }
+
+    /** One picture of the companion for each season and festival, on the meadow and on the room. */
+    private fun ambianceSheet(name: String, background: String?, items: List<com.medipote.app.domain.Ambiance>, time: com.medipote.app.domain.TimeOfDay = com.medipote.app.domain.TimeOfDay.DAY) {
+        val size = 260
+        val bitmap = Bitmap.createBitmap(size * 4, size * ((items.size + 3) / 4), Bitmap.Config.ARGB_8888)
+        items.forEachIndexed { i, a ->
+            val equipped = mapOf("COLOR" to "color_mint") + (background?.let { mapOf("BACKGROUND" to it) } ?: emptyMap())
+            val one = com.medipote.app.widget.renderPet(com.medipote.app.domain.PetMood.HAPPY, equipped, size, size, com.medipote.app.domain.Stage.BUD, a, time)
+            android.graphics.Canvas(bitmap).drawBitmap(one, ((i % 4) * size).toFloat(), ((i / 4) * size).toFloat(), null)
+        }
+        save(name, bitmap)
+    }
+
+    @Test
+    fun seasonsOnTheMeadow() {
+        ambianceSheet("seasons_meadow", "bg_meadow", Season.entries.map { com.medipote.app.domain.Ambiance(it) })
+    }
+
+    @Test
+    fun festivalsAtNight() {
+        ambianceSheet("festivals_night", "bg_meadow", com.medipote.app.data.Festival.entries.map { com.medipote.app.domain.Ambiance(Season.WINTER, it) }, com.medipote.app.domain.TimeOfDay.NIGHT)
+    }
+
+    @Test
+    fun seasonsInTheRoom() {
+        ambianceSheet("seasons_room", null, Season.entries.map { com.medipote.app.domain.Ambiance(it) })
+    }
+
+    @Test
+    fun festivalsOnTheMeadow() {
+        ambianceSheet("festivals_meadow", "bg_meadow", com.medipote.app.data.Festival.entries.map { com.medipote.app.domain.Ambiance(Season.WINTER, it) })
+    }
+
+    @Test
+    fun festivalsInTheRoom() {
+        ambianceSheet("festivals_room", null, com.medipote.app.data.Festival.entries.map { com.medipote.app.domain.Ambiance(Season.AUTUMN, it) })
+    }
+
+    @Test
+    fun theSeasonalTintStaysFaintAndKeepsTheTextReadable() {
+        for (dark in listOf(false, true)) for (season in Season.entries) {
+            val base = com.medipote.app.ui.theme.appColorScheme(Accent.MINT, com.medipote.app.data.Look(), dark)
+            val tinted = with(base) { withSeasonTint(season, dark) }
+            // The backgrounds move by a few percent at most…
+            org.junit.Assert.assertTrue(com.medipote.app.ui.sleep.colorDistance(base.background, tinted.background) < 40f)
+            // …and the text on them keeps its contrast.
+            org.junit.Assert.assertTrue("$season dark=$dark", contrast(tinted.onSurface, tinted.surface) >= 7f)
+            org.junit.Assert.assertTrue("$season dark=$dark", contrast(tinted.onSurfaceVariant, tinted.surfaceContainerLow) >= 4.5f)
+            org.junit.Assert.assertTrue("$season dark=$dark", contrast(tinted.onBackground, tinted.background) >= 7f)
+        }
+    }
+
+    private fun contrast(a: androidx.compose.ui.graphics.Color, b: androidx.compose.ui.graphics.Color): Float {
+        val la = a.luminance(); val lb = b.luminance()
+        return (maxOf(la, lb) + 0.05f) / (minOf(la, lb) + 0.05f)
+    }
+
+    @Test
+    @Config(qualifiers = "w400dp-h1300dp-xhdpi")
+    fun seasonsSettingsScreen() {
+        val settings = com.medipote.app.data.SeasonSettings(birthday = LocalDate.of(1990, 5, 20), petBirthday = LocalDate.of(2025, 3, 3))
+        render("seasons_settings") { com.medipote.app.ui.settings.SeasonsScreen(settings, "Pilou", LocalDate.of(2025, 3, 3), today, {}, {}) }
+        compose.onAllNodesWithText("Saisons et fêtes").assertCountEquals(2)
+        compose.onNodeWithText("Noël").assertExists()
+        compose.onNodeWithText("Le 3 mars, le jour où vous vous êtes rencontrés").assertExists()
     }
 
     @Test
@@ -1091,7 +1160,7 @@ class ScreensTest {
         compose.onNodeWithText("Bonjour Alex 🌸").assertExists()
         // The old personal motto is replaced by the phrase of the day.
         compose.onNodeWithText("Un jour après l'autre, en douceur", substring = true).assertDoesNotExist()
-        compose.onNodeWithText(com.medipote.app.domain.DailyPhrases.of(today), substring = true).assertExists()
+        compose.onNodeWithText(com.medipote.app.domain.DailyPhrases.of(today, Season.AUTUMN), substring = true).assertExists()
         compose.onNodeWithText("Hier : ", substring = true).assertExists()
     }
 
@@ -1184,7 +1253,7 @@ class ScreensTest {
         compose.onNodeWithText("Noter", useUnmergedTree = true).assertExists()
         // Mood noted: folded into one line; the phrase of the day instead of a question.
         compose.onNodeWithText("Humeur du jour :", substring = true).assertExists()
-        compose.onNodeWithText(com.medipote.app.domain.DailyPhrases.of(today), substring = true).assertExists()
+        compose.onNodeWithText(com.medipote.app.domain.DailyPhrases.of(today, Season.AUTUMN), substring = true).assertExists()
         compose.onNodeWithText("Rituel du matin").assertExists()
         // Challenges and garden live in the companion space; home keeps a chip.
         compose.onNodeWithText("🎯 ", substring = true).assertExists()

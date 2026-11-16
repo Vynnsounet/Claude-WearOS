@@ -220,6 +220,40 @@ data class SleepNight(
     val efficiency: Float get() = if (inBedMinutes == 0) 0f else asleepMinutes.toFloat() / inBedMinutes
 }
 
+// ─────────────────────────── Seasons and festivals ───────────────────────────
+
+@Serializable
+enum class Season(val label: String, val emoji: String) {
+    SPRING("Printemps", "🌸"), SUMMER("Été", "☀️"), AUTUMN("Automne", "🍂"), WINTER("Hiver", "❄️"),
+}
+
+/** A day the companion marks, quietly. Mother's and father's days are left out on purpose. */
+@Serializable
+enum class Festival(val label: String, val emoji: String) {
+    NEW_YEAR("Nouvel An", "🎆"),
+    VALENTINE("Saint-Valentin", "💝"),
+    EASTER("Pâques", "🥚"),
+    HALLOWEEN("Halloween", "🎃"),
+    CHRISTMAS("Noël", "🎄"),
+    PET_BIRTHDAY("Anniversaire du compagnon", "🎂"),
+    USER_BIRTHDAY("Mon anniversaire", "🎈"),
+}
+
+@Serializable
+data class SeasonSettings(
+    /** The master switch: off means no seasonal decor, tint, phrases or festivals at all. */
+    val enabled: Boolean = true,
+    /** A very light tint of the app's backgrounds (the colour accent never changes). */
+    val tint: Boolean = true,
+    val festivals: Set<Festival> = Festival.entries.toSet(),
+    /** The seasons of the southern hemisphere are the other way round. */
+    val southern: Boolean = false,
+    /** Day and month only matter; the year is ignored. */
+    @Serializable(with = LocalDateSerializer::class) val birthday: LocalDate? = null,
+    /** When the companion "was born": the first day of use, kept once known. */
+    @Serializable(with = LocalDateSerializer::class) val petBirthday: LocalDate? = null,
+)
+
 // ─────────────────────────── Support ("Ça ne va pas") ───────────────────────────
 
 /** Someone to reach when things are hard, chosen in a calm moment. */

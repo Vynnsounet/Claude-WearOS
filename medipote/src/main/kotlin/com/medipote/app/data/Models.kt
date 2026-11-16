@@ -299,6 +299,7 @@ data class Settings(
     val backup: BackupSettings = BackupSettings(),
     val look: Look = Look(),
     val support: SupportSettings = SupportSettings(),
+    val seasons: SeasonSettings = SeasonSettings(),
     val rituals: RitualSettings = RitualSettings(),
     /** Reminder to change each period product, in minutes, when the user changed the default. */
     val productReminders: Map<PeriodProduct, Int> = emptyMap(),

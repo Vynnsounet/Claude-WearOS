@@ -80,7 +80,7 @@ object WatchLink {
                 val condition = Game.petCondition(state, now)
                 val fingerprint = WatchSync.encode(snapshot.copy(generatedAt = "")) + condition.mood + state.game.equipped
                 if (!force && fingerprint == lastSent) return@runCatching
-                val pet = renderPet(condition.mood, state.game.equipped, PET_PX, PET_PX, Evolution.growth(state).stage)
+                val pet = renderPet(condition.mood, state.game.equipped, PET_PX, PET_PX, Evolution.growth(state).stage, com.medipote.app.domain.Seasons.ambiance(state, now))
                 val request = PutDataMapRequest.create(WatchSync.PATH_SNAPSHOT).apply {
                     dataMap.putString(WatchSync.KEY_JSON, WatchSync.encode(snapshot))
                     dataMap.putAsset(WatchSync.KEY_PET, Asset.createFromBytes(png(pet)))

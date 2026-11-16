@@ -293,6 +293,17 @@ Les données (y compris de santé et les documents) restent sur le téléphone, 
 le stockage privé de l'app, exclu de la sauvegarde cloud. Elles n'en sortent que
 par une action de la personne : sauvegarde, rapport PDF ou document partagé.
 
+## Saisons et fêtes
+
+Le compagnon vit avec l'année : **feuilles** à l'automne, **neige** l'hiver, **pétales** au
+printemps, **lumière** et lucioles l'été, qui se combinent avec l'aube, le jour, le coucher de soleil
+et la nuit. Une phrase du jour sur trois suit la saison, et une très légère teinte colore les fonds
+de l'appli. Quelques **fêtes** (Nouvel An, Saint-Valentin, Pâques, Halloween, Noël, anniversaire du
+compagnon et le tien) ont leur petit décor et un mot du compagnon, à cocher une par une. Jamais les
+jours d'humeur « très mal ». Paramètres › Personnaliser › « Saisons et fêtes ».
+
+![](docs/seasons.png)
+
 ## « Ça ne va pas »
 
 Un écran de soutien pour les moments très difficiles (tristesse, gorge nouée, angoisse) : le

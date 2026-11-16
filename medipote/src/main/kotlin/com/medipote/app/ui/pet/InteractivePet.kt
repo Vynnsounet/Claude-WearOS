@@ -74,6 +74,7 @@ fun InteractivePet(
     onCuddle: () -> Unit = {},
     stage: com.medipote.app.domain.Stage = com.medipote.app.domain.Stage.BUD,
     time: com.medipote.app.domain.TimeOfDay = com.medipote.app.domain.TimeOfDay.DAY,
+    ambiance: com.medipote.app.domain.Ambiance? = null,
 ) {
     var reaction by remember { mutableStateOf(PetReaction.NONE) }
     var signal by remember { mutableIntStateOf(0) }
@@ -196,6 +197,7 @@ fun InteractivePet(
             look = look.value,
             stage = stage,
             time = time,
+            ambiance = ambiance,
             modifier = Modifier.fillMaxSize(),
         )
         AnimatedVisibility(

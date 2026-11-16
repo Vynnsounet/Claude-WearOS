@@ -163,6 +163,7 @@ fun HomeScreen(
     val date = now.toLocalDate()
     val yesterday = date.minusDays(1)
     val forgotten = remember(state.doseLogs, state.treatments, yesterday) { forgottenDoses(state, yesterday, now) }
+    val ambiance = remember(state, now.toLocalDate()) { com.medipote.app.domain.Seasons.ambiance(state, now) }
     val sections = look.visibleSections
     val hero = if (HomeSection.NEXT_DOSE in sections) com.medipote.app.domain.HomeRules.nextDose(today, now) else null
     val todayOnly = today.filter { it.occurrence.date == date }
@@ -170,7 +171,13 @@ fun HomeScreen(
     // Each block decides here whether it has something useful to say; null = not shown.
     fun block(section: HomeSection): (@Composable () -> Unit)? = when (section) {
         HomeSection.STATUS -> { { StatusRow(state, now, onOpenBadges) } }
-        HomeSection.PHRASE -> { { DailyPhrase(com.medipote.app.domain.DailyPhrases.of(date)) } }
+        HomeSection.PHRASE -> { {
+            // On a festival the companion says a few words; otherwise the phrase of the day, with a seasonal one now and then.
+            DailyPhrase(
+                ambiance?.festival?.let { com.medipote.app.domain.Seasons.greeting(it, state.profile?.name.orEmpty()) }
+                    ?: com.medipote.app.domain.DailyPhrases.of(date, ambiance?.season),
+            )
+        } }
         HomeSection.NEXT_DOSE -> when {
             hero != null -> { { HeroDose(hero, now, state.game.petName, onGive, onGiveEarly) } }
             todayOnly.isNotEmpty() && todayOnly.all { it.state == DoseState.TAKEN } -> { { AllDone(todayOnly.size, state.game.petName) } }
@@ -202,6 +209,7 @@ fun HomeScreen(
                         onCuddle = onCuddle,
                         stage = growth.stage,
                         time = com.medipote.app.domain.TimeOfDay.of(now),
+                        ambiance = ambiance,
                         modifier = Modifier.fillMaxSize(),
                     )
                     HealthTag(state.game.petName, condition, growth, Modifier.align(Alignment.TopStart).padding(12.dp))

@@ -45,7 +45,7 @@ Uniquement ce que tu saisis toi-même :
 - mesures de santé que tu choisis de suivre (tension, poids, glycémie…) ;
 - rendez-vous médicaux ;
 - photos et fichiers ajoutés au carnet de santé (ordonnances, analyses…) ;
-- progression du jeu (points, accessoires) et réglages.
+- progression du jeu (points, accessoires) et réglages, dont ta date d'anniversaire si tu choisis de la donner (pour les vœux du compagnon).
 
 Ces informations servent seulement au fonctionnement de l'application : rappels,
 statistiques, prévisions du cycle, état du compagnon.

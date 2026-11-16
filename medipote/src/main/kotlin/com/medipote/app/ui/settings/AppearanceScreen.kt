@@ -93,6 +93,7 @@ fun AppearanceScreen(
     onChange: ((Settings) -> Settings) -> Unit,
     onBack: () -> Unit,
     onOpenHomeLayout: () -> Unit = {},
+    onOpenSeasons: () -> Unit = {},
     onPreviewStreak: () -> Unit = {},
 ) {
     val look = settings.look
@@ -248,6 +249,12 @@ fun AppearanceScreen(
                     supporting = "La série du jour à la première ouverture, et les petites fêtes",
                 ) { v -> updateLook { it.copy(celebrations = v) } }
                 androidx.compose.material3.TextButton(onClick = onPreviewStreak) { Text("🔥 Revoir l'animation de la série") }
+            }
+
+            // ── Seasons and festivals: its own page ──
+            SectionTitle("Saisons et fêtes")
+            FilledTonalButton(onClick = onOpenSeasons, modifier = Modifier.fillMaxWidth()) {
+                Text("🍂  Décor de saison, fêtes, anniversaire")
             }
 
             // ── Home screen: its own page ──

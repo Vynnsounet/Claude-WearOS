@@ -194,7 +194,10 @@ fun Hub(
 fun MediPoteApp(vm: AppViewModel) {
     val state by vm.state.collectAsStateWithLifecycle()
     val now by vm.now.collectAsStateWithLifecycle()
-    MediPoteTheme(state.settings.themeMode, state.settings.dynamicColor, state.settings.accent, state.settings.look) {
+    MediPoteTheme(
+        state.settings.themeMode, state.settings.dynamicColor, state.settings.accent, state.settings.look,
+        season = state.settings.seasons.takeIf { it.enabled && it.tint }?.let { com.medipote.app.domain.Seasons.of(now.toLocalDate(), it.southern) },
+    ) {
         val context = LocalContext.current
         val nav = rememberNavController()
         val snackbar = remember { SnackbarHostState() }
@@ -822,6 +825,13 @@ fun MediPoteApp(vm: AppViewModel) {
                         onBack = { nav.popBackStack() },
                         onPreviewStreak = { vm.previewStreak() },
                         onOpenHomeLayout = { nav.navigate("home_layout") },
+                        onOpenSeasons = { nav.navigate("seasons") },
+                    )
+                }
+                composable("seasons") {
+                    com.medipote.app.ui.settings.SeasonsScreen(
+                        state.settings.seasons, pet, com.medipote.app.domain.Seasons.petBirthday(state, today), today,
+                        onChange = vm::updateSeasons, onBack = { nav.popBackStack() },
                     )
                 }
                 composable("home_layout") {

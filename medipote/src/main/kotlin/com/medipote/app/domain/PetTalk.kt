@@ -35,6 +35,8 @@ enum class PetReaction(val durationMs: Int) {
 object PetTalk {
 
     fun greeting(state: AppState, now: LocalDateTime): String {
+        // On a festival (never on a very hard day, see Seasons.ambiance) the companion says so.
+        Seasons.ambiance(state, now)?.festival?.let { return Seasons.greeting(it, state.profile?.name.orEmpty()) }
         val user = state.profile?.name?.takeIf { it.isNotBlank() }?.let { " $it" }.orEmpty()
         val hello = when (now.hour) {
             in 5..11 -> "Bonjour$user ! ☀️"

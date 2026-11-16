@@ -92,6 +92,12 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             s.copy(game = result.first)
         }
         reward?.let { _checkIn.value = UiEvent.CheckedIn(it) }
+        // The companion's birthday is the first day of use: noted once, so it never moves.
+        if (state.value.settings.seasons.petBirthday == null) {
+            repo.update { s ->
+                s.copy(settings = s.settings.copy(seasons = s.settings.seasons.copy(petBirthday = com.medipote.app.domain.Seasons.petBirthday(s, repo.now().toLocalDate()))))
+            }
+        }
         reschedule()
         checkAchievements()
     }
@@ -321,6 +327,10 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         if (bonus > 0) _events.trySend(UiEvent.Points(bonus))
         reschedule()
         checkAchievements()
+    }
+
+    fun updateSeasons(transform: (com.medipote.app.data.SeasonSettings) -> com.medipote.app.data.SeasonSettings) {
+        repo.update { it.copy(settings = it.settings.copy(seasons = transform(it.settings.seasons))) }
     }
 
     // ── Support ("Ça ne va pas") ──

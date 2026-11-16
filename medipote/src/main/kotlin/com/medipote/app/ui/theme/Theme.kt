@@ -303,6 +303,7 @@ fun MediPoteTheme(
     dynamicColor: Boolean = false,
     accent: Accent = Accent.MINT,
     look: Look = Look(),
+    season: com.medipote.app.data.Season? = null,
     content: @Composable () -> Unit,
 ) {
     val dark = isDark(themeMode)
@@ -314,7 +315,7 @@ fun MediPoteTheme(
             }
         }
         else -> appColorScheme(accent, look, dark)
-    }
+    }.let { scheme -> if (season == null || (dark && look.pureBlack)) scheme else scheme.withSeasonTint(season, dark) }
     val density = LocalDensity.current
     androidx.compose.runtime.CompositionLocalProvider(
         LocalStatusColors provides if (dark) DarkStatus else LightStatus,
@@ -322,6 +323,25 @@ fun MediPoteTheme(
     ) {
         MaterialTheme(colorScheme = colors, typography = typography(look.headingFont), shapes = shapes(look.corners), content = content)
     }
+}
+
+/** A seasonal breath on the backgrounds, no more than a few percent: text keeps its contrast. */
+internal fun seasonTint(season: com.medipote.app.data.Season): Color = when (season) {
+    com.medipote.app.data.Season.SPRING -> Color(0xFFA5D6A7)
+    com.medipote.app.data.Season.SUMMER -> Color(0xFFFFE082)
+    com.medipote.app.data.Season.AUTUMN -> Color(0xFFFFAB40)
+    com.medipote.app.data.Season.WINTER -> Color(0xFF90CAF9)
+}
+
+internal fun ColorScheme.withSeasonTint(season: com.medipote.app.data.Season, dark: Boolean): ColorScheme {
+    val tint = seasonTint(season)
+    val amount = if (dark) 0.04f else 0.05f
+    fun mix(c: Color) = androidx.compose.ui.graphics.lerp(c, tint, amount)
+    return copy(
+        background = mix(background), surface = mix(surface), surfaceContainerLowest = mix(surfaceContainerLowest),
+        surfaceContainerLow = mix(surfaceContainerLow), surfaceContainer = mix(surfaceContainer),
+        surfaceContainerHigh = mix(surfaceContainerHigh), surfaceContainerHighest = mix(surfaceContainerHighest),
+    )
 }
 
 object AppTheme {

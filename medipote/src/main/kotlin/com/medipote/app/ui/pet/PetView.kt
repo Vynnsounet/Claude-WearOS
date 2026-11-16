@@ -78,6 +78,7 @@ fun PetView(
     look: Offset = Offset.Zero,
     stage: Stage = Stage.BUD,
     time: com.medipote.app.domain.TimeOfDay = com.medipote.app.domain.TimeOfDay.DAY,
+    ambiance: com.medipote.app.domain.Ambiance? = null,
 ) {
     val transition = rememberInfiniteTransition(label = "pet")
     val breathe by if (animate) transition.animateFloat(
@@ -99,6 +100,11 @@ fun PetView(
         0f, 1f, infiniteRepeatable(tween(2200, easing = LinearEasing)), label = "loop",
     ) else remember { mutableFloat(0.3f) }
 
+    // The slow loop of falling leaves, snow and confetti.
+    val fall by if (animate && ambiance != null) transition.animateFloat(
+        0f, 1f, infiniteRepeatable(tween(16000, easing = LinearEasing)), label = "fall",
+    ) else remember { mutableFloat(0.3f) }
+
     val feed = remember { Animatable(1f) }
     LaunchedEffect(feedSignal) {
         if (feedSignal != 0) {
@@ -116,7 +122,10 @@ fun PetView(
     }
 
     Canvas(modifier.semantics { if (description.isNotEmpty()) contentDescription = description }) {
-        if (showBackground) drawBackground(equipped["BACKGROUND"], time)
+        if (showBackground) {
+            drawBackground(equipped["BACKGROUND"], time)
+            ambiance?.let { drawSeasonDecor(it, equipped["BACKGROUND"], time, fall) }
+        }
         drawPet(mood, equipped, breathe, blink, loop, feed.value, reaction, react.value, look, stage)
     }
 }
@@ -398,7 +407,7 @@ private fun DrawScope.drawFlower(c: Offset, r: Float) {
     drawCircle(Color(0xFFFFC107), r * 0.7f, c)
 }
 
-private fun DrawScope.drawStar(c: Offset, r: Float, color: Color, points: Int, inner: Float) {
+internal fun DrawScope.drawStar(c: Offset, r: Float, color: Color, points: Int, inner: Float) {
     val path = Path()
     for (i in 0 until points * 2) {
         val rr = if (i % 2 == 0) r else r * inner
@@ -410,7 +419,7 @@ private fun DrawScope.drawStar(c: Offset, r: Float, color: Color, points: Int, i
     drawPath(path, color)
 }
 
-private fun DrawScope.drawHeart(c: Offset, r: Float, color: Color) {
+internal fun DrawScope.drawHeart(c: Offset, r: Float, color: Color) {
     val path = Path().apply {
         moveTo(c.x, c.y + r)
         cubicTo(c.x - r * 1.6f, c.y - r * 0.1f, c.x - r * 0.9f, c.y - r * 1.4f, c.x, c.y - r * 0.5f)

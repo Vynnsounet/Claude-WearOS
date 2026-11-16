@@ -74,6 +74,7 @@ import com.medipote.app.notifications.Notifications
 import com.medipote.app.notifications.ReminderScheduler
 import com.medipote.app.repository
 import com.medipote.app.ui.pet.drawBackground
+import com.medipote.app.ui.pet.drawSeasonDecor
 import com.medipote.app.ui.pet.drawPet
 import com.medipote.app.ui.theme.appColorScheme
 import java.time.LocalDateTime
@@ -103,13 +104,22 @@ object Widgets {
 }
 
 /** The pet drawn into a bitmap with rounded corners, since widgets can't run Compose drawing. */
-fun renderPet(mood: PetMood, equipped: Map<String, String>, widthPx: Int, heightPx: Int, stage: com.medipote.app.domain.Stage = com.medipote.app.domain.Stage.BUD): Bitmap {
+fun renderPet(
+    mood: PetMood,
+    equipped: Map<String, String>,
+    widthPx: Int,
+    heightPx: Int,
+    stage: com.medipote.app.domain.Stage = com.medipote.app.domain.Stage.BUD,
+    ambiance: com.medipote.app.domain.Ambiance? = null,
+    time: com.medipote.app.domain.TimeOfDay = com.medipote.app.domain.TimeOfDay.of(java.time.LocalTime.now().hour),
+): Bitmap {
     val image = ImageBitmap(widthPx, heightPx)
     val size = Size(widthPx.toFloat(), heightPx.toFloat())
     CanvasDrawScope().draw(Density(1f), LayoutDirection.Ltr, Canvas(image), size) {
         val clip = Path().apply { addRoundRect(RoundRect(0f, 0f, size.width, size.height, CornerRadius(size.minDimension * 0.12f))) }
         clipPath(clip) {
-            drawBackground(equipped["BACKGROUND"], com.medipote.app.domain.TimeOfDay.of(java.time.LocalTime.now().hour))
+            drawBackground(equipped["BACKGROUND"], time)
+            ambiance?.let { drawSeasonDecor(it, equipped["BACKGROUND"], time, 0.3f) }
             drawPet(mood, equipped, 0.5f, 0f, 0.3f, 1f, stage = stage)
         }
     }
@@ -216,7 +226,7 @@ fun PetContent(state: AppState, now: LocalDateTime) {
     val due = items.filter { it.canGive }
     val next = items.firstOrNull { it.state == DoseState.UPCOMING }
     val stage = com.medipote.app.domain.Evolution.growth(state).stage
-    val pet = remember(condition.mood, state.game.equipped, stage) { renderPet(condition.mood, state.game.equipped, 300, 240, stage) }
+    val pet = remember(condition.mood, state.game.equipped, stage) { renderPet(condition.mood, state.game.equipped, 300, 240, stage, com.medipote.app.domain.Seasons.ambiance(state, java.time.LocalDateTime.now())) }
     val giveButton: @Composable () -> Unit = {
         if (due.isNotEmpty()) {
             Button(

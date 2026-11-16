@@ -1,6 +1,7 @@
 package com.medipote.app.domain
 
 import com.medipote.app.data.AppState
+import com.medipote.app.data.Season
 import com.medipote.app.data.GameState
 import com.medipote.app.data.TakeStatus
 import java.time.DayOfWeek
@@ -230,7 +231,38 @@ object DailyPhrases {
         "Tout petit pas compte, vraiment tout.",
     )
 
-    fun of(date: LocalDate): String = all[Math.floorMod(date.toEpochDay(), all.size.toLong()).toInt()]
+    private val seasonal = mapOf(
+        Season.SPRING to listOf(
+            "Les premières fleurs rappellent que tout recommence.", "Ouvre la fenêtre : le printemps a un air de renouveau.",
+            "Comme les bourgeons, tu as le droit d'y aller doucement.", "Un rayon de soleil sur le visage, c'est déjà beaucoup.",
+            "Les jours rallongent, et toi aussi tu respires mieux.", "Un petit tour dehors, pour voir ce qui pousse.",
+        ),
+        Season.SUMMER to listOf(
+            "Un verre d'eau fraîche, un coin d'ombre : l'été se savoure.", "Ralentir quand il fait chaud, c'est de la sagesse.",
+            "Une longue soirée douce, et rien d'autre à faire.", "Le soleil est là : pense à t'hydrater et à te protéger.",
+            "Les journées sont longues, profite de chaque petit moment.", "Une glace, un livre, et le temps qui s'étire.",
+        ),
+        Season.AUTUMN to listOf(
+            "Une boisson chaude et un plaid : l'automne a du charme.", "Les feuilles tombent doucement : toi aussi, tu peux lâcher prise.",
+            "Le temps ralentit, c'est une belle saison pour se recentrer.", "Une soupe, un pull moelleux : le confort, ça soigne.",
+            "Les jours raccourcissent, c'est le moment de se faire un cocon.", "Une balade dans les feuilles, ça réchauffe le cœur.",
+        ),
+        Season.WINTER to listOf(
+            "Un plaid, un thé, et rien de plus à prouver.", "L'hiver est fait pour ralentir et se ménager.",
+            "Même les jours courts ont leur lumière.", "Au chaud, tu prends soin de toi : c'est déjà beaucoup.",
+            "La nature se repose, tu en as le droit aussi.", "Une bougie, une couverture, et le monde peut attendre.",
+        ),
+    )
+
+    /** One phrase per day: every third day follows the season (when seasons are on), the others stay general. */
+    fun of(date: LocalDate, season: Season? = null): String {
+        val day = date.toEpochDay()
+        if (season != null && Math.floorMod(day, 3L) == 0L) {
+            val list = seasonal.getValue(season)
+            return list[Math.floorMod(day / 3, list.size.toLong()).toInt()]
+        }
+        return all[Math.floorMod(day, all.size.toLong()).toInt()]
+    }
 }
 
 // ─────────────────────────── Rituals ───────────────────────────
