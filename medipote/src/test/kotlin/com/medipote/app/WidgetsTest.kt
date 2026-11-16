@@ -18,6 +18,7 @@ import com.medipote.app.data.Treatment
 import com.medipote.app.data.WaterSettings
 import com.medipote.app.domain.Schedule
 import com.medipote.app.widget.DosesWidget
+import com.medipote.app.widget.MoodWidget
 import com.medipote.app.widget.PetWidget
 import com.medipote.app.widget.SleepWidget
 import com.medipote.app.widget.WaterWidget
@@ -121,6 +122,25 @@ class WidgetsTest {
         val t = texts(render(WaterWidget(), "water", 130, 130))
         assertTrue(t.toString(), t.contains("5 / 8"))
         render(WaterWidget(), "water_wide", 250, 130)
+    }
+
+    @Test
+    fun moodWidgetShowsFacesAndNotesTheMoodWithOneTap() = runBlocking {
+        val t = texts(render(MoodWidget(), "mood", 300, 130))
+        assertTrue(t.toString(), t.contains("😄") && t.contains("😣"))
+        assertTrue(t.toString(), t.any { it.contains("Comment je me sens") })
+        assertTrue(t.toString(), t.any { it.contains("Ça ne va pas") })
+        // The symptom shortcut only appears once symptoms are turned on.
+        assertTrue(t.toString(), t.none { it.contains("Symptôme") })
+        context.repository.update { it.copy(settings = it.settings.copy(wellbeing = com.medipote.app.data.WellbeingSettings(enabled = true))) }
+        assertTrue(texts(render(MoodWidget(), "mood_symptoms", 300, 130)).any { it.contains("Symptôme") })
+        // One tap on a face notes today's mood, and the widget says it.
+        WidgetActions.mood(context, 4)
+        assertEquals(4, context.repository.state.value.entryFor(now.toLocalDate()).mental)
+        assertTrue(texts(render(MoodWidget(), "mood_done", 300, 130)).any { it.contains("Bien aujourd'hui") })
+        // A small version keeps the faces.
+        render(MoodWidget(), "mood_small", 250, 70)
+        Unit
     }
 
     @Test

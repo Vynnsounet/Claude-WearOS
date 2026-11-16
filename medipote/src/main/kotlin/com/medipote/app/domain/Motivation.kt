@@ -316,6 +316,14 @@ data class WeeklyRecap(
     val challenges: Int,
     val pointsEarned: Int,
     val petMessage: String,
+    /** Hard days: days with a symptom noted, those with a strong one, and the one that weighed most. */
+    val symptomDays: Int = 0,
+    val strongSymptomDays: Int = 0,
+    val topSymptom: Pair<String, Double>? = null,
+    /** Small victories of the week, the days they happened on, and the points they paid. */
+    val wins: Int = 0,
+    val winDays: Int = 0,
+    val winPoints: Int = 0,
 ) {
     val rate: Float? get() = if (dosesPlanned == 0) null else dosesTaken.toFloat() / dosesPlanned
 }
@@ -347,7 +355,12 @@ object Recaps {
         val points = state.game.history.filter { inWeek(it.at.toLocalDate()) && it.amount > 0 }.sumOf { it.amount }
         val rate = if (planned == 0) null else taken.toFloat() / planned
         val pet = state.game.petName
+        val symptoms = if (Wellbeing.enabled(state)) state.symptomLog.filter { inWeek(it.date) } else emptyList()
+        val weekWins = if (Wellbeing.enabled(state)) state.wins.filter { inWeek(it.date) } else emptyList()
+        val strongDays = symptoms.filter { it.intensity >= Wellbeing.HEAVY }.map { it.date }.distinct().size
         val message = when {
+            weekWins.size >= 3 -> "Tes petites victoires m'ont fait chaud au cœur cette semaine 💛"
+            strongDays >= 3 -> "Certains jours ont été lourds. Tu as pris soin de toi comme tu pouvais, et c'est déjà beaucoup 💛"
             rate != null && rate >= 0.95f -> "Quelle semaine ! Grâce à toi je me sens au top. Merci 💚"
             nights.size >= 5 -> "Tu as pris soin de tes nuits cette semaine, ça me fait plaisir 🌙"
             entries.count { it.hasJournal } >= 4 -> "J'ai adoré lire ton journal cette semaine 📖"
@@ -369,6 +382,12 @@ object Recaps {
             challenges = state.game.challengesDone.count { LocalDate.parse(it.substringBefore(':')) == from },
             pointsEarned = points,
             petMessage = "$pet : « $message »",
+            symptomDays = symptoms.map { it.date }.distinct().size,
+            strongSymptomDays = strongDays,
+            topSymptom = symptoms.groupBy { it.symptom }.maxByOrNull { (_, v) -> v.sumOf { it.intensity } }?.let { (id, v) -> id to v.map { it.intensity }.average() },
+            wins = weekWins.size,
+            winDays = weekWins.map { it.date }.distinct().size,
+            winPoints = weekWins.sumOf { it.points },
         )
     }
 

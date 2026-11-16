@@ -50,6 +50,14 @@ data class WatchPrn(val id: String, val name: String, val quantity: String, val 
 @Serializable
 data class WatchProduct(val label: String, val emoji: String, val since: String, val changeAt: String, val maxAt: String)
 
+/** A symptom the person follows, with today's strength (0 = not noted). */
+@Serializable
+data class WatchSymptom(val id: String, val emoji: String, val name: String, val intensity: Int = 0)
+
+/** A small mission for a hard day, to tick on the watch. */
+@Serializable
+data class WatchMission(val id: String, val emoji: String, val text: String)
+
 /** Everything the watch needs, sent by the phone each time something changes. */
 @Serializable
 data class WatchSnapshot(
@@ -77,6 +85,12 @@ data class WatchSnapshot(
     val napSince: String? = null,
     /** Minutes of nap noted today, to show at a glance. */
     val napMinutesToday: Int = 0,
+    /** The symptoms followed (empty until the person turns them on). */
+    val symptoms: List<WatchSymptom> = emptyList(),
+    /** A few gentle missions for today (empty when the gentle day is off). */
+    val missions: List<WatchMission> = emptyList(),
+    /** Small victories noted today. */
+    val winsToday: Int = 0,
 ) {
     val generated: LocalDateTime get() = LocalDateTime.parse(generatedAt)
 }
@@ -109,6 +123,12 @@ data class WatchAction(
         const val NAP_STOP = "NAP_STOP"
         const val NAP_CANCEL = "NAP_CANCEL"
         const val PRODUCT_CHANGED = "PRODUCT_CHANGED"
+
+        /** A symptom's strength for today: [treatmentId] is the symptom, [value] 1 to 5 (0 removes it). */
+        const val SYMPTOM = "SYMPTOM"
+
+        /** A mission done: [treatmentId] is the mission. */
+        const val MISSION = "MISSION"
     }
 }
 

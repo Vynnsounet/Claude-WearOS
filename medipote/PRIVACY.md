@@ -1,6 +1,6 @@
 # Politique de confidentialité de MédiPote
 
-*Dernière mise à jour : 17 novembre 2026*
+*Dernière mise à jour : 18 novembre 2026*
 
 MédiPote est une application d'aide à la prise de traitements. Cette politique explique
 quelles données l'application utilise et ce qu'elle en fait.
@@ -39,7 +39,7 @@ mail…), comme pour le rapport PDF. MédiPote n'envoie rien.
 L'appli compagnon pour montre est facultative. Si tu l'installes, le téléphone envoie à **ta**
 montre ce dont elle a besoin pour t'aider : tes prises d'aujourd'hui et de demain (nom et
 quantité des médicaments), tes rappels, ton compteur d'eau, tes médicaments « si besoin », le
-minuteur de protection et ta dernière mesure de pouls. La montre renvoie ce que tu y fais
+minuteur de protection, ta dernière mesure de pouls et, si tu as activé le suivi des symptômes, leurs noms avec la force notée aujourd'hui et quelques petites missions. La montre renvoie ce que tu y fais
 (prise validée, verre d'eau, pouls mesuré).
 
 Ces échanges passent par la liaison montre-téléphone d'Android (les services Google Play, en

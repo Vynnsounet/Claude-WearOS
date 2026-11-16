@@ -6,6 +6,8 @@ import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.isDialog
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
@@ -141,6 +143,65 @@ class WearScreensTest {
     fun pulseMeasuring() {
         render("wear_pulse_measuring") { PulseContent(available = true, allowed = true, live = null, steady = null, timedOut = false, onAllow = {}, onRetry = {}, onSave = {}) }
         compose.onNodeWithText("Reste immobile, le bras posé, quelques secondes.").assertExists()
+    }
+
+    private val hardDay = snapshot.copy(
+        symptoms = listOf(
+            com.medipote.sync.WatchSymptom("fatigue", "😴", "Fatigue", 4),
+            com.medipote.sync.WatchSymptom("anxiety", "😰", "Anxiété", 0),
+        ),
+        missions = listOf(
+            com.medipote.sync.WatchMission("tea", "🍵", "Me préparer une boisson chaude"),
+            com.medipote.sync.WatchMission("breath", "🌬️", "Faire 5 respirations lentes"),
+        ),
+        winsToday = 1,
+    )
+
+    @Test
+    @Config(sdk = [35], qualifiers = "w225dp-h900dp-round-watch-xhdpi-keyshidden-nonav")
+    fun homeOffersSymptomsAndTheGentleDayOnlyWhenTheyAreOn() {
+        var symptoms = 0
+        var missions = 0
+        render("wear_home_hard_day") {
+            HomeScreen(WearState(hardDay), at(8, 5), null, WearActions(), onOpenHeartRate = {}, onOpenSymptoms = { symptoms++ }, onOpenMissions = { missions++ })
+        }
+        compose.onNodeWithText("🌡️ Symptômes").performScrollTo().performClick()
+        compose.onNodeWithText("💛 Journée douce").performScrollTo().performClick()
+        compose.onNodeWithText("fatigue 4/5").assertExists()
+        compose.onNodeWithText("1 petite victoire").assertExists()
+        assertEquals(1, symptoms)
+        assertEquals(1, missions)
+    }
+
+    @Test
+    @Config(sdk = [35], qualifiers = "w225dp-h900dp-round-watch-xhdpi-keyshidden-nonav")
+    fun homeHasNoSymptomsNorMissionsByDefault() {
+        render("wear_home_plain") { HomeScreen(WearState(snapshot), at(8, 5), null, WearActions(), onOpenHeartRate = {}) }
+        compose.onAllNodesWithText("🌡️ Symptômes").assertCountEquals(0)
+        compose.onAllNodesWithText("💛 Journée douce").assertCountEquals(0)
+    }
+
+    @Test
+    fun aSymptomIsNotedWithPlusAndMinus() {
+        var saved: Int? = null
+        render("wear_symptom") { com.medipote.wear.ui.SymptomScreen(hardDay.symptoms[1], onSave = { saved = it }) }
+        compose.onNodeWithText("pas aujourd'hui").assertExists()
+        compose.onNodeWithText("+").performClick()
+        compose.onNodeWithText("+").performClick()
+        compose.onNodeWithText("léger").assertExists()
+        compose.onNodeWithText("Enregistrer").performScrollTo().performClick()
+        assertEquals(2, saved)
+    }
+
+    @Test
+    fun missionsAreTickedOnceAndNeverShowAsMissing() {
+        val done = mutableListOf<String>()
+        render("wear_missions") { com.medipote.wear.ui.MissionsScreen(hardDay, WearActions(onMission = { done += it }), {}) }
+        compose.onNodeWithText("🍵 Me préparer une boisson chaude").performClick()
+        compose.onNodeWithText("🍵 Me préparer une boisson chaude").performClick() // a second tap sends nothing more
+        assertEquals(listOf("tea"), done)
+        compose.onNodeWithText("Fait ✓ bravo").assertExists()
+        compose.onNodeWithText("Se reposer compte aussi", substring = true).performScrollTo().assertExists()
     }
 
     private fun render(name: String, content: @Composable () -> Unit) {

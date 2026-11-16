@@ -11,4 +11,6 @@
     <string name="widget_water_desc">Ton compteur de verres d\'eau, avec un bouton +1</string>
     <string name="widget_sleep">Sommeil</string>
     <string name="widget_sleep_desc">Ta dernière nuit et ta moyenne sur 7 jours, avec un raccourci pour la noter</string>
+    <string name="widget_mood">Comment je me sens</string>
+    <string name="widget_mood_desc">Cinq visages pour noter ton humeur d\'un geste, et des raccourcis pour un symptôme ou « Ça ne va pas »</string>
 </resources>

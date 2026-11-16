@@ -89,6 +89,7 @@ object Widgets {
         DosesWidget().updateAll(context)
         WaterWidget().updateAll(context)
         SleepWidget().updateAll(context)
+        MoodWidget().updateAll(context)
     }
 
     fun requestUpdate(context: Context) {
@@ -163,7 +164,26 @@ class AddWaterAction : ActionCallback {
     }
 }
 
+val MoodValue = ActionParameters.Key<Int>("mood")
+
+/** One tap on a face: today's mood is noted. */
+class SetMoodAction : ActionCallback {
+    override suspend fun onAction(context: Context, glanceId: GlanceId, parameters: ActionParameters) {
+        WidgetActions.mood(context, parameters[MoodValue])
+    }
+}
+
 object WidgetActions {
+    suspend fun mood(context: Context, value: Int?) {
+        val repo = context.repository
+        val now = repo.now()
+        repo.update { s ->
+            val entry = s.entryFor(now.toLocalDate()).copy(mental = value)
+            Game.saveEntry(s, entry, now).first
+        }
+        Widgets.updateAll(context)
+    }
+
     suspend fun give(context: Context, key: String?) {
         val repo = context.repository
         val now = repo.now()
@@ -497,4 +517,79 @@ fun SleepContent(state: AppState, now: LocalDateTime) {
 
 class SleepWidgetReceiver : GlanceAppWidgetReceiver() {
     override val glanceAppWidget: GlanceAppWidget = SleepWidget()
+}
+
+// ─────────────────────────── 5. How I feel ───────────────────────────
+
+class MoodWidget : GlanceAppWidget() {
+    override val sizeMode = SizeMode.Exact
+
+    override suspend fun provideGlance(context: Context, id: GlanceId) {
+        val repo = context.repository
+        provideContent {
+            val state by repo.state.collectAsState()
+            WidgetTheme(state.settings.accent, state.settings.look) { MoodContent(state, repo.now()) }
+        }
+    }
+}
+
+private val MOOD_FACES = listOf("😣", "🙁", "😐", "🙂", "😄")
+private val MOOD_WORDS = listOf("Très mal", "Pas bien", "Moyen", "Bien", "Très bien")
+
+/** "Comment je me sens ?": five faces to tap, and a shortcut to note a symptom once they are followed. */
+@Composable
+fun MoodContent(state: AppState, now: LocalDateTime) {
+    val context = androidx.glance.LocalContext.current
+    val compact = LocalSize.current.height < 120.dp
+    val mood = state.entryFor(now.toLocalDate()).mental
+    val wellbeing = com.medipote.app.domain.Wellbeing.enabled(state)
+    val open = { route: String ->
+        androidx.glance.appwidget.action.actionStartActivity(
+            android.content.Intent(context, MainActivity::class.java)
+                .setFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK or android.content.Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                .putExtra(com.medipote.app.notifications.Notifications.EXTRA_ROUTE, route),
+        )
+    }
+    Card {
+        Column(GlanceModifier.fillMaxSize().padding(12.dp)) {
+            Text(
+                if (mood == null) "😊 Comment je me sens ?" else "😊 ${MOOD_WORDS[mood - 1]} aujourd'hui",
+                style = muted, maxLines = 1,
+            )
+            Spacer(GlanceModifier.height(6.dp))
+            Row(GlanceModifier.fillMaxWidth()) {
+                MOOD_FACES.forEachIndexed { i, face ->
+                    Button(
+                        face, actionRunCallback<SetMoodAction>(actionParametersOf(MoodValue to (i + 1))),
+                        modifier = GlanceModifier.defaultWeight(),
+                        colors = if (mood == i + 1) ButtonDefaults.buttonColors(GlanceTheme.colors.primaryContainer, GlanceTheme.colors.onPrimaryContainer)
+                        else ButtonDefaults.buttonColors(GlanceTheme.colors.surfaceVariant, GlanceTheme.colors.onSurfaceVariant),
+                    )
+                    if (i < MOOD_FACES.lastIndex) Spacer(GlanceModifier.width(4.dp))
+                }
+            }
+            if (!compact) {
+                Spacer(GlanceModifier.defaultWeight())
+                Row(GlanceModifier.fillMaxWidth()) {
+                    if (wellbeing) {
+                        Button(
+                            "🌡️ Symptôme", open("symptoms"),
+                            modifier = GlanceModifier.defaultWeight(),
+                            colors = ButtonDefaults.buttonColors(GlanceTheme.colors.secondaryContainer, GlanceTheme.colors.onSecondaryContainer),
+                        )
+                        Spacer(GlanceModifier.width(8.dp))
+                    }
+                    Button(
+                        "🤗 Ça ne va pas", open("support"),
+                        modifier = GlanceModifier.defaultWeight(),
+                        colors = ButtonDefaults.buttonColors(GlanceTheme.colors.secondaryContainer, GlanceTheme.colors.onSecondaryContainer),
+                    )
+                }
+            }
+        }
+    }
+}
+
+class MoodWidgetReceiver : GlanceAppWidgetReceiver() {
+    override val glanceAppWidget: GlanceAppWidget = MoodWidget()
 }

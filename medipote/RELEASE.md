@@ -66,6 +66,16 @@ L'optimiseur de R8 reste désactivé (`-dontoptimize`) : APK de 3,8 Mo au lieu d
 le dex livré peut être reconverti et exécuté hors appareil pour vérification (voir plus bas),
 ce que l'optimiseur empêche. Il pourra être réactivé après des essais sur téléphone.
 
+### 1.20.0 (téléphone) · 1.15.0 (montre) — widget, récap, montre
+
+- Widget « Comment je me sens » : cinq visages pour noter l'humeur d'un geste, raccourcis « Ça ne va pas » et
+  « Un symptôme ».
+- Récap de la semaine : cartes « Tes symptômes » et « Tes petites victoires », mot du compagnon adapté.
+- Montre 1.15.0 : « 🌡️ Symptômes » et « 💛 Journée douce » (visibles seulement si activés sur le téléphone).
+  Le protocole phone ↔ montre garde ses anciens champs : un téléphone plus ancien ou une montre plus
+  ancienne fonctionnent toujours (testé). Installer la montre après le téléphone : voir plus bas.
+- Aucune permission ajoutée, ni sur le téléphone ni sur la montre.
+
 ### 1.19.0 — rendez-vous, journal relié aux symptômes, heures calmes
 
 - « Préparer mon rendez-vous » : questions à l'avance + résumé des 30 derniers jours (copier, partager,

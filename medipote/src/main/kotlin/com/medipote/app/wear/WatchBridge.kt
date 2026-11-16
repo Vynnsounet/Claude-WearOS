@@ -12,10 +12,14 @@ import com.medipote.app.domain.Naps
 import com.medipote.app.domain.PeriodCare
 import com.medipote.app.domain.Prn
 import com.medipote.app.domain.Schedule
+import com.medipote.app.domain.Wellbeing
+import com.medipote.app.domain.WellbeingLibrary
 import com.medipote.app.notifications.AlarmKind
 import com.medipote.app.notifications.ReminderPlanner
 import com.medipote.sync.WatchAction
 import com.medipote.sync.WatchDose
+import com.medipote.sync.WatchMission
+import com.medipote.sync.WatchSymptom
 import com.medipote.sync.WatchPrn
 import com.medipote.sync.WatchProduct
 import com.medipote.sync.WatchReminder
@@ -25,6 +29,8 @@ import java.time.LocalDateTime
 /** What the watch is told, and what its actions change: pure, so it can be tested without a watch. */
 object WatchBridge {
     const val FROM_WATCH = "Depuis la montre"
+    private const val MAX_SYMPTOMS = 6
+    private const val MAX_MISSIONS = 3
 
     /** Everything the watch needs for today and tomorrow. */
     fun snapshot(state: AppState, now: LocalDateTime): WatchSnapshot {
@@ -92,6 +98,15 @@ object WatchBridge {
             lastOxygenAt = oxygen?.at?.toString(),
             napSince = Naps.running(state, now)?.toString(),
             napMinutesToday = Naps.minutesOn(state, today),
+            symptoms = if (!Wellbeing.enabled(state)) emptyList() else Wellbeing.tracked(state).take(MAX_SYMPTOMS).map { id ->
+                WatchSymptom(id, Wellbeing.emoji(id), Wellbeing.name(id), Wellbeing.intensityOn(state, today, id) ?: 0)
+            },
+            missions = if (!Wellbeing.enabled(state)) emptyList() else {
+                val own = Wellbeing.custom(state).filter { !Wellbeing.done(state, today, it.id) }.take(1)
+                (own + Wellbeing.suggest(state, today, Wellbeing.energyOn(state, today) ?: 2, count = MAX_MISSIONS)).take(MAX_MISSIONS)
+                    .map { WatchMission(it.id, it.emoji, it.text) }
+            },
+            winsToday = if (Wellbeing.enabled(state)) Wellbeing.winsOn(state, today).size else 0,
         )
     }
 
@@ -152,6 +167,17 @@ object WatchBridge {
                 is NapStop.TooLong -> r.state
             }
             WatchAction.PRODUCT_CHANGED -> PeriodCare.change(state, at)
+            // Hard days: a symptom's strength, and a mission done (only for a followed symptom / when turned on).
+            WatchAction.SYMPTOM -> {
+                val id = action.treatmentId
+                if (!Wellbeing.enabled(state) || id !in Wellbeing.tracked(state)) return state
+                Wellbeing.setIntensity(state, at.toLocalDate(), id, action.value.toInt().takeIf { it in 1..5 })
+            }
+            WatchAction.MISSION -> {
+                if (!Wellbeing.enabled(state)) return state
+                val mission = WellbeingLibrary.mission(action.treatmentId) ?: Wellbeing.custom(state).firstOrNull { it.id == action.treatmentId } ?: return state
+                Wellbeing.missionWin(state, mission, at).state
+            }
             else -> state
         }
     }

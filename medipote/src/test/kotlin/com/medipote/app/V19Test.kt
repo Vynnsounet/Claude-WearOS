@@ -161,4 +161,31 @@ class V19Test {
         assertEquals(listOf("Fatigue", "10/30", "4,0/5", "10"), table.rows.first().take(4))
         assertTrue(section.blocks.filterIsInstance<ReportBlock.Paragraph>().any { it.text.contains("pas un diagnostic") })
     }
+
+    // ── Weekly recap ──
+
+    @Test
+    fun theWeeklyRecapTellsTheHardDaysAndTheSmallWinsGently() {
+        val monday = LocalDate.of(2026, 11, 9)
+        var s = wellState("fatigue", "anxiety")
+        listOf(0 to 4, 1 to 5, 3 to 4).forEach { (d, v) -> s = Wellbeing.setIntensity(s, monday.plusDays(d.toLong()), "fatigue", v) }
+        s = Wellbeing.setIntensity(s, monday.plusDays(2), "anxiety", 2)
+        s = s.copy(journal = listOf(DayEntry(monday, mental = 3)))
+        s = Wellbeing.win(s, "tea", "Boisson chaude", 5, at(9, d = monday)).state
+        s = Wellbeing.win(s, "breath", "Respirer", 5, at(10, d = monday.plusDays(1))).state
+        s = Wellbeing.win(s, "rest", "Se poser", 5, at(11, d = monday.plusDays(2))).state
+        val r = com.medipote.app.domain.Recaps.build(s, monday, at(20, d = monday.plusDays(6)))
+        assertEquals(4, r.symptomDays)
+        assertEquals(3, r.strongSymptomDays)
+        assertEquals("fatigue", r.topSymptom!!.first)
+        assertEquals(3, r.wins)
+        assertEquals(3, r.winDays)
+        assertEquals(15, r.winPoints)
+        // The companion's word is warm, whichever way the week went.
+        assertTrue(r.petMessage.contains("petites victoires"))
+        // Not turned on: nothing about it in the recap.
+        val off = com.medipote.app.domain.Recaps.build(s.copy(settings = Settings()), monday, at(20, d = monday.plusDays(6)))
+        assertEquals(0, off.symptomDays)
+        assertEquals(0, off.wins)
+    }
 }

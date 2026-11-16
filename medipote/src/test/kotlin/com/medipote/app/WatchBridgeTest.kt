@@ -117,4 +117,46 @@ class WatchBridgeTest {
         assertEquals(null, s.napSince)
         assertEquals(70, WatchBridge.snapshot(s, at(17)).napMinutesToday)
     }
+
+    // ── Symptoms and missions on the watch ──
+
+    private fun well(vararg symptoms: String) = state.copy(
+        settings = state.settings.copy(wellbeing = com.medipote.app.data.WellbeingSettings(enabled = true, symptoms = symptoms.toList(), customMissions = listOf("Prendre un bain"))),
+    )
+
+    @Test
+    fun theWatchOnlyHearsOfSymptomsAndMissionsOnceTheyAreOn() {
+        val off = WatchBridge.snapshot(state, at(9))
+        assertTrue(off.symptoms.isEmpty() && off.missions.isEmpty())
+        assertEquals(0, off.winsToday)
+        val noted = com.medipote.app.domain.Wellbeing.setIntensity(well("fatigue", "anxiety"), day, "fatigue", 4)
+        val on = WatchBridge.snapshot(noted, at(9))
+        assertEquals(listOf("fatigue" to 4, "anxiety" to 0), on.symptoms.map { it.id to it.intensity })
+        assertEquals("Fatigue", on.symptoms.first().name)
+        // A few gentle missions, the person's own first.
+        assertTrue(on.missions.size in 1..3)
+        assertEquals("my:Prendre un bain", on.missions.first().id)
+        assertEquals(on, WatchSync.decodeSnapshot(WatchSync.encode(on)))
+    }
+
+    @Test
+    fun aSymptomAndAMissionDoneOnTheWatchAreRecordedAtTheTimeTheyWereDone() {
+        var s = well("fatigue")
+        s = WatchBridge.apply(s, WatchAction("a", WatchAction.SYMPTOM, at(8).toString(), treatmentId = "fatigue", value = 3.0), at(9))
+        assertEquals(3, com.medipote.app.domain.Wellbeing.intensityOn(s, day, "fatigue"))
+        // 0 removes it; a symptom not followed is ignored.
+        val cleared = WatchBridge.apply(s, WatchAction("b", WatchAction.SYMPTOM, at(8).toString(), treatmentId = "fatigue", value = 0.0), at(9))
+        assertEquals(null, com.medipote.app.domain.Wellbeing.intensityOn(cleared, day, "fatigue"))
+        assertEquals(s, WatchBridge.apply(s, WatchAction("c", WatchAction.SYMPTOM, at(8).toString(), treatmentId = "pain", value = 3.0), at(9)))
+        // A mission pays its points once; the same one again changes nothing.
+        val done = WatchBridge.apply(s, WatchAction("d", WatchAction.MISSION, at(8, 30).toString(), treatmentId = "tea"), at(9))
+        assertEquals(s.game.points + com.medipote.app.domain.Wellbeing.MISSION_POINTS, done.game.points)
+        assertEquals(done, WatchBridge.apply(done, WatchAction("e", WatchAction.MISSION, at(8, 40).toString(), treatmentId = "tea"), at(9)))
+        // The person's own mission works too, and an unknown one is ignored.
+        val own = WatchBridge.apply(s, WatchAction("f", WatchAction.MISSION, at(8, 30).toString(), treatmentId = "my:Prendre un bain"), at(9))
+        assertEquals(1, com.medipote.app.domain.Wellbeing.winsOn(own, day).size)
+        assertEquals(s, WatchBridge.apply(s, WatchAction("g", WatchAction.MISSION, at(8).toString(), treatmentId = "nope"), at(9)))
+        // Turned off on the phone: the watch cannot turn it on.
+        assertEquals(state, WatchBridge.apply(state, WatchAction("h", WatchAction.SYMPTOM, at(8).toString(), treatmentId = "fatigue", value = 3.0), at(9)))
+    }
 }

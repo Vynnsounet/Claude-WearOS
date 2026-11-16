@@ -80,6 +80,9 @@ data class WearActions(
     val onNapStop: () -> Unit = {},
     val onNapCancel: () -> Unit = {},
     val onRetry: () -> Unit = {},
+    /** A symptom's strength for today (0 removes it). */
+    val onSymptom: (String, Int) -> Unit = { _, _ -> },
+    val onMission: (String) -> Unit = {},
 )
 
 @Composable
@@ -112,6 +115,8 @@ fun MediPoteWearApp() {
         onNapStart = { send(WatchAction.NAP_START) },
         onNapStop = { send(WatchAction.NAP_STOP) },
         onNapCancel = { send(WatchAction.NAP_CANCEL) },
+        onSymptom = { id, level -> send(WatchAction.SYMPTOM, treatmentId = id, value = level.toDouble()) },
+        onMission = { id -> send(WatchAction.MISSION, treatmentId = id) },
         onRetry = { WearLink.hello(context) },
     )
     MediPoteWearTheme {
@@ -124,7 +129,22 @@ fun MediPoteWearApp() {
                         onOpenOxygen = { nav.navigate("oxygen") },
                         onOpenNap = { nav.navigate("nap") },
                         onOpenCalm = { nav.navigate("calm") },
+                        onOpenSymptoms = { nav.navigate("symptoms") },
+                        onOpenMissions = { nav.navigate("missions") },
                     )
+                }
+                composable("symptoms") {
+                    SymptomsScreen(state.snapshot, onPick = { nav.navigate("symptom/${android.net.Uri.encode(it)}") })
+                }
+                composable("symptom/{id}") { entry ->
+                    val id = entry.arguments?.getString("id").orEmpty()
+                    SymptomScreen(
+                        state.snapshot?.symptoms?.firstOrNull { it.id == id },
+                        onSave = { level -> actions.onSymptom(id, level); nav.popBackStack() },
+                    )
+                }
+                composable("missions") {
+                    MissionsScreen(state.snapshot, actions, onDone = { nav.popBackStack() })
                 }
                 composable("calm") {
                     CalmScreen(onDone = { nav.popBackStack() })
@@ -160,6 +180,8 @@ fun HomeScreen(
     onOpenOxygen: () -> Unit = {},
     onOpenNap: () -> Unit = {},
     onOpenCalm: () -> Unit = {},
+    onOpenSymptoms: () -> Unit = {},
+    onOpenMissions: () -> Unit = {},
 ) {
     val snapshot = state.snapshot
     val listState = rememberTransformingLazyColumnState()
@@ -252,6 +274,35 @@ fun HomeScreen(
                     },
                     modifier = Modifier.fillMaxWidth(),
                 )
+            }
+
+            if (snapshot.symptoms.isNotEmpty()) {
+                item {
+                    val noted = snapshot.symptoms.filter { it.intensity > 0 }
+                    FilledTonalButton(
+                        onClick = onOpenSymptoms,
+                        label = { Text("🌡️ Symptômes") },
+                        secondaryLabel = {
+                            Text(
+                                if (noted.isEmpty()) "Noter comment je me sens" else noted.take(2).joinToString(" · ") { "${it.name.lowercase()} ${it.intensity}/5" },
+                                maxLines = 1, overflow = TextOverflow.Ellipsis,
+                            )
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+            }
+            if (snapshot.missions.isNotEmpty() || snapshot.winsToday > 0) {
+                item {
+                    FilledTonalButton(
+                        onClick = onOpenMissions,
+                        label = { Text("💛 Journée douce") },
+                        secondaryLabel = {
+                            Text(if (snapshot.winsToday > 0) "${snapshot.winsToday} petite${if (snapshot.winsToday > 1) "s" else ""} victoire${if (snapshot.winsToday > 1) "s" else ""}" else "De toutes petites missions")
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
             }
 
             snapshot.product?.let { p ->
@@ -564,6 +615,78 @@ fun OxygenScreen(initial: Int?, onSave: (Int) -> Unit) {
             Oxygen.advice(value)?.let { advice -> item { Info(advice) } }
             item { Button(onClick = { onSave(value) }, label = { Text("Enregistrer") }, secondaryLabel = { Text("Envoyée au téléphone") }, modifier = Modifier.fillMaxWidth()) }
             item { Info("Lis la valeur sur ton oxymètre ou dans l'appli santé de ta montre.") }
+        }
+    }
+}
+
+/** The symptoms followed; touch one to say how strong it is today. */
+@Composable
+fun SymptomsScreen(snapshot: WatchSnapshot?, onPick: (String) -> Unit) {
+    val listState = rememberTransformingLazyColumnState()
+    ScreenScaffold(scrollState = listState) { contentPadding ->
+        TransformingLazyColumn(state = listState, contentPadding = contentPadding) {
+            item { ListHeader { Text("🌡️ Symptômes") } }
+            val list = snapshot?.symptoms.orEmpty()
+            if (list.isEmpty()) item { Info("Choisis tes symptômes dans l'appli, sur le téléphone.") }
+            list.forEach { sym ->
+                item {
+                    FilledTonalButton(
+                        onClick = { onPick(sym.id) },
+                        label = { Text("${sym.emoji} ${sym.name}", maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                        secondaryLabel = { Text(if (sym.intensity > 0) "${sym.intensity} / 5" else "Pas aujourd'hui") },
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+            }
+        }
+    }
+}
+
+/** One symptom's strength for today, from 1 (a little) to 5 (very strongly); 0 removes it. */
+@Composable
+fun SymptomScreen(symptom: com.medipote.sync.WatchSymptom?, onSave: (Int) -> Unit) {
+    var level by remember { mutableStateOf(symptom?.intensity ?: 0) }
+    val listState = rememberTransformingLazyColumnState()
+    ScreenScaffold(scrollState = listState) { contentPadding ->
+        TransformingLazyColumn(state = listState, contentPadding = contentPadding) {
+            item { ListHeader { Text("${symptom?.emoji.orEmpty()} ${symptom?.name.orEmpty()}", maxLines = 1, overflow = TextOverflow.Ellipsis) } }
+            item { Big(if (level == 0) "—" else "$level", if (level == 0) "pas aujourd'hui" else listOf("un peu", "léger", "modéré", "fort", "très fort")[level - 1]) }
+            item {
+                androidx.compose.foundation.layout.Row(
+                    Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
+                ) {
+                    FilledTonalButton(onClick = { level = (level - 1).coerceAtLeast(0) }, label = { Text("−", style = MaterialTheme.typography.titleLarge, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth()) }, modifier = Modifier.weight(1f))
+                    FilledTonalButton(onClick = { level = (level + 1).coerceAtMost(5) }, label = { Text("+", style = MaterialTheme.typography.titleLarge, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth()) }, modifier = Modifier.weight(1f))
+                }
+            }
+            item { Button(onClick = { onSave(level) }, label = { Text("Enregistrer") }, secondaryLabel = { Text("Envoyé au téléphone") }, modifier = Modifier.fillMaxWidth()) }
+        }
+    }
+}
+
+/** A few tiny missions for a hard day; ticked ones stay ticked until the phone sends the next ones. */
+@Composable
+fun MissionsScreen(snapshot: WatchSnapshot?, actions: WearActions, onDone: () -> Unit) {
+    val listState = rememberTransformingLazyColumnState()
+    var done by remember { mutableStateOf(setOf<String>()) }
+    ScreenScaffold(scrollState = listState) { contentPadding ->
+        TransformingLazyColumn(state = listState, contentPadding = contentPadding) {
+            item { ListHeader { Text("💛 Journée douce") } }
+            val missions = snapshot?.missions.orEmpty()
+            if (missions.isEmpty()) item { Info("Pas de mission pour le moment. Ouvre l'appli pour en voir d'autres.") }
+            missions.forEach { m ->
+                item {
+                    val ticked = m.id in done
+                    FilledTonalButton(
+                        onClick = { if (!ticked) { done = done + m.id; actions.onMission(m.id) } },
+                        label = { Text("${m.emoji} ${m.text}", maxLines = 3, overflow = TextOverflow.Ellipsis) },
+                        secondaryLabel = { Text(if (ticked) "Fait ✓ bravo" else "Toucher quand c'est fait") },
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+            }
+            item { Info("Se reposer compte aussi. Rien n'est jamais en retard.") }
         }
     }
 }

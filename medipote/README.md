@@ -296,6 +296,19 @@ Les données (y compris de santé et les documents) restent sur le téléphone, 
 le stockage privé de l'app, exclu de la sauvegarde cloud. Elles n'en sortent que
 par une action de la personne : sauvegarde, rapport PDF ou document partagé.
 
+## Widget, récap et montre pour les jours lourds
+
+- **Widget « Comment je me sens »** : cinq visages pour noter l'humeur d'un geste depuis l'écran d'accueil du
+  téléphone, avec des raccourcis vers « Ça ne va pas » et (si activé) « Un symptôme ».
+- **Récap de la semaine** : deux cartes en plus quand elles ont un sens : « Tes symptômes » (jours notés, le plus
+  présent, jours plus difficiles) et « Tes petites victoires ». Le mot du compagnon reste doux, y compris après
+  une semaine lourde.
+- **Montre** (1.15.0, si symptômes et journée douce sont activés sur le téléphone) : « 🌡️ Symptômes » (− et +
+  de 1 à 5, envoyé au téléphone) et « 💛 Journée douce » (trois missions à toucher quand c'est fait, les
+  siennes d'abord). Une montre plus ancienne continue de fonctionner, sans ces deux entrées.
+
+![](docs/widget_mood.png)
+
 ## Préparer un rendez-vous, rapport, heures calmes
 
 - **Préparer mon rendez-vous** (depuis un rendez-vous de l'agenda) : tes questions d'abord (tu les écris à

@@ -100,6 +100,32 @@ private fun cards(r: WeeklyRecap): List<RecapCard> = buildList {
             ),
         )
     }
+    if (r.symptomDays > 0) {
+        add(
+            RecapCard(
+                "🌡️", "Tes symptômes", "${r.symptomDays} jour${if (r.symptomDays > 1) "s" else ""} noté${if (r.symptomDays > 1) "s" else ""}",
+                listOfNotNull(
+                    r.topSymptom?.let { (id, avg) -> "Le plus présent : ${com.medipote.app.domain.Wellbeing.name(id).lowercase()} (force moyenne ${"%.1f".format(java.util.Locale.FRANCE, avg)}/5)" },
+                    if (r.strongSymptomDays > 0) "${r.strongSymptomDays} jour${if (r.strongSymptomDays > 1) "s" else ""} plus difficile${if (r.strongSymptomDays > 1) "s" else ""}" else "Pas de jour très difficile 🌿",
+                    "Le détail est dans Moi › Statistiques",
+                ),
+                listOf(Color(0xFF00796B), Color(0xFF4DB6AC)),
+            ),
+        )
+    }
+    if (r.wins > 0) {
+        add(
+            RecapCard(
+                "💛", "Tes petites victoires", "${r.wins}",
+                listOfNotNull(
+                    "sur ${r.winDays} jour${if (r.winDays > 1) "s" else ""}",
+                    if (r.winPoints > 0) "+${r.winPoints} points" else null,
+                    "Chacune compte, même les toutes petites.",
+                ),
+                listOf(Color(0xFF8F5400), Color(0xFFB87100)),
+            ),
+        )
+    }
     add(
         RecapCard(
             "🏅", "Tes réussites",

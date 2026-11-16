@@ -127,4 +127,17 @@ class WatchSyncTest {
         // Still moving around: not yet.
         assertNull(HeartRate.steady(listOf(60f, 65f, 70f, 75f, 80f, 85f, 90f, 95f)))
     }
+
+    @Test
+    fun anOlderSnapshotWithoutSymptomsStillLoads() {
+        // A phone from before 1.20 sends no symptoms, missions or wins: they default to nothing.
+        val old = """{"version":1,"generatedAt":"2026-11-12T08:00:00","petName":"Pilou"}"""
+        val s = WatchSync.decodeSnapshot(old)!!
+        assertTrue(s.symptoms.isEmpty() && s.missions.isEmpty())
+        assertEquals(0, s.winsToday)
+        val withThem = s.copy(symptoms = listOf(WatchSymptom("fatigue", "😴", "Fatigue", 3)), missions = listOf(WatchMission("tea", "🍵", "Boire")), winsToday = 2)
+        assertEquals(withThem, WatchSync.decodeSnapshot(WatchSync.encode(withThem)))
+        val action = WatchAction("x", WatchAction.SYMPTOM, "2026-11-12T08:00:00", treatmentId = "fatigue", value = 4.0)
+        assertEquals(action, WatchSync.decodeAction(WatchSync.encode(action)))
+    }
 }
