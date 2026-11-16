@@ -1786,6 +1786,109 @@ class ScreensTest {
         compose.onNodeWithText("Un symptôme").assertDoesNotExist()
     }
 
+    // ───────────── 1.19: journal + symptoms, simple home, quiet hours, appointment prep ─────────────
+
+    @Test
+    @Config(qualifiers = "w400dp-h1500dp-xhdpi")
+    fun journalEntryShowsTheFollowedSymptomsWithTheirStrength() {
+        val got = mutableListOf<Pair<String, Int?>>()
+        render("day_entry_symptoms") {
+            DayEntryScreen(
+                sampleState().entryFor(today), showCycle = false, onSave = {}, onBack = {},
+                trackedSymptoms = listOf("fatigue", "anxiety"), intensities = mapOf("fatigue" to 3),
+                onSymptom = { id, v -> got += id to v },
+            )
+        }
+        compose.onNodeWithText("Mes symptômes suivis").assertExists()
+        compose.onNodeWithContentDescription("Fatigue, intensité 3 sur 5").performClick() // the chosen one again removes it
+        compose.onNodeWithContentDescription("Anxiété, intensité 4 sur 5").performClick()
+        org.junit.Assert.assertEquals(listOf("fatigue" to null, "anxiety" to 4), got)
+    }
+
+    @Test
+    @Config(qualifiers = "w400dp-h1500dp-xhdpi")
+    fun journalEntryWithoutFollowedSymptomsHasNoSuchCard() {
+        render("day_entry_plain") { DayEntryScreen(sampleState().entryFor(today), showCycle = false, onSave = {}, onBack = {}) }
+        compose.onNodeWithText("Mes symptômes suivis").assertDoesNotExist()
+    }
+
+    @Test
+    @Config(qualifiers = "w400dp-h1300dp-xhdpi")
+    fun symptomsScreenSaysWhatTheJournalAlreadyMentions() {
+        var s = wellState()
+        s = s.copy(journal = s.journal + com.medipote.app.data.DayEntry(today.minusDays(0), mentalSymptoms = listOf("Stress")))
+        s = com.medipote.app.domain.Wellbeing.setIntensity(s, today, "anxiety", null)
+        render("symptoms_journal") { com.medipote.app.ui.wellbeing.SymptomsScreen(s, now, { _, _ -> }, {}, {}, {}) }
+        compose.onNodeWithText("📖  Noté dans ton journal : choisis la force.").assertExists()
+    }
+
+    @Test
+    @Config(qualifiers = "w400dp-h1100dp-xhdpi")
+    fun homeLayoutOffersSimpleAndComplete() {
+        var settings = Settings()
+        render("home_layout_presets") { com.medipote.app.ui.settings.HomeLayoutScreen(settings, { t -> settings = t(settings) }, {}) }
+        compose.onNodeWithText("🌿  Accueil simple").performClick()
+        org.junit.Assert.assertTrue(settings.look.isSimple)
+        org.junit.Assert.assertFalse(settings.look.hiddenSections.isEmpty())
+        compose.onNodeWithText("🧰  Accueil complet").performClick()
+        org.junit.Assert.assertTrue(settings.look.isComplete)
+    }
+
+    @Test
+    @Config(qualifiers = "w400dp-h2600dp-xhdpi")
+    fun settingsHaveQuietHours() {
+        // Off: only the switch. On: the two hours appear.
+        render("settings_quiet") {
+            SettingsScreen(
+                Settings(quiet = com.medipote.app.data.QuietHours(enabled = true)), "Pilou", notificationsAllowed = true, exactAlarmsAllowed = true, dynamicColorAvailable = false,
+                onBack = {}, onChange = {}, onRequestNotifications = {}, onRequestExactAlarms = {},
+                onRenamePet = {}, onOpenProfile = {}, onReset = {},
+            )
+        }
+        compose.onNodeWithText("Heures calmes").performScrollTo().assertExists()
+        compose.onNodeWithText("Pas de rappel doux la nuit").performScrollTo().assertExists()
+        compose.onNodeWithText("À partir de").performScrollTo().assertExists()
+        compose.onNodeWithText("Jusqu'à").performScrollTo().assertExists()
+    }
+
+    @Test
+    @Config(qualifiers = "w400dp-h2000dp-xhdpi")
+    fun appointmentPrepPage() {
+        var s = wellState()
+        s = s.copy(journal = (0..5).map { com.medipote.app.data.DayEntry(today.minusDays(it.toLong()), mental = 3, physical = 4) } + s.journal)
+        val appointment = Appointment("a", "Endocrinologue", "Dr Martin", dateTime = today.plusDays(5).atTime(14, 30), questions = listOf("Ajuster mon traitement ?"))
+        val prep = com.medipote.app.domain.AppointmentPrepper.build(s, appointment, now)
+        val shared = mutableListOf<String>()
+        var questions: List<String>? = null
+        render("appointment_prep") {
+            com.medipote.app.ui.agenda.AppointmentPrepScreen(prep, "samedi 17 novembre · 14:30", { questions = it }, {}, { shared += it }, {}, {})
+        }
+        compose.onNodeWithText("Endocrinologue · Dr Martin").assertExists()
+        compose.onNodeWithText("•  Ajuster mon traitement ?").assertExists()
+        compose.onNodeWithText("Mes symptômes").assertExists()
+        compose.onNodeWithText("📤  Partager ce résumé").performScrollTo().performClick()
+        org.junit.Assert.assertTrue(shared.single().contains("Mes questions :"))
+        compose.onNodeWithContentDescription("Retirer « Ajuster mon traitement ? »").performClick()
+        org.junit.Assert.assertEquals(emptyList<String>(), questions)
+    }
+
+    @Test
+    @Config(qualifiers = "w400dp-h1300dp-xhdpi")
+    fun appointmentEditorOffersThePrepOnlyOnceItExists() {
+        var prepared = 0
+        val existing = sampleState().appointments.first()
+        render("appointment_editor_prep") { AppointmentEditorScreen(existing, today, {}, {}, {}, onPrepare = { prepared++ }) }
+        compose.onNodeWithText("🩺  Préparer ce rendez-vous").performClick()
+        org.junit.Assert.assertEquals(1, prepared)
+    }
+
+    @Test
+    @Config(qualifiers = "w400dp-h900dp-xhdpi")
+    fun newAppointmentHasNoPrepYet() {
+        render("appointment_editor_new") { AppointmentEditorScreen(null, today, {}, {}, {}, onPrepare = {}) }
+        compose.onNodeWithText("🩺  Préparer ce rendez-vous").assertDoesNotExist()
+    }
+
     private fun save(name: String, bitmap: Bitmap) {
         val dir = File("build/screenshots").apply { mkdirs() }
         File(dir, "$name.png").outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }

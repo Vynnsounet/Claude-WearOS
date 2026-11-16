@@ -210,6 +210,20 @@ fun SettingsScreen(
                 }
             }
 
+            SectionTitle("Heures calmes")
+            SettingsCard {
+                val q = settings.quiet
+                fun update(f: (com.medipote.app.data.QuietHours) -> com.medipote.app.data.QuietHours) = onChange { it.copy(quiet = f(it.quiet)) }
+                SwitchRow(
+                    "Pas de rappel doux la nuit", q.enabled,
+                    supporting = "L'eau, le stock, les rituels, le récap et « bien dormi ? » attendent le matin. Les prises et les rendez-vous sonnent toujours.",
+                ) { v -> update { it.copy(enabled = v) } }
+                if (q.enabled) {
+                    com.medipote.app.ui.components.NumberStepper("À partir de", q.startHour, { v -> update { it.copy(startHour = v) } }, 18..23, suffix = " h")
+                    com.medipote.app.ui.components.NumberStepper("Jusqu'à", q.endHour, { v -> update { it.copy(endHour = v) } }, 4..11, suffix = " h")
+                }
+            }
+
             SectionTitle("Hydratation")
             SettingsCard {
                 val w = settings.water

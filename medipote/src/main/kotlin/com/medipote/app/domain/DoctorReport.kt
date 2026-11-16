@@ -20,6 +20,7 @@ enum class ReportPart(val label: String) {
     SLEEP("Sommeil"),
     JOURNAL("Journal : forme et symptômes"),
     CYCLE("Cycle menstruel"),
+    SYMPTOMS("Symptômes suivis"),
 }
 
 sealed interface ReportBlock {
@@ -53,6 +54,7 @@ object DoctorReports {
             ReportPart.MEASURES -> state.measurements.isNotEmpty()
             ReportPart.SLEEP -> state.sleep.isNotEmpty() || state.naps.isNotEmpty()
             ReportPart.JOURNAL -> state.journal.any { e -> e.hasJournal }
+            ReportPart.SYMPTOMS -> state.symptomLog.isNotEmpty()
             ReportPart.CYCLE -> state.profile?.menstruating == true && state.profile.cycle?.periodStarts?.isNotEmpty() == true
             else -> true
         }
@@ -70,6 +72,7 @@ object DoctorReports {
             if (ReportPart.MEASURES in parts) measures(state, today, days)?.let(::add)
             if (ReportPart.SLEEP in parts) sleep(state, today, days)?.let(::add)
             if (ReportPart.JOURNAL in parts) journal(state, start, today)?.let(::add)
+            if (ReportPart.SYMPTOMS in parts) symptoms(state, today, days)?.let(::add)
             if (ReportPart.CYCLE in parts) cycle(state, today)?.let(::add)
         }
         return DoctorReport(
@@ -268,6 +271,36 @@ object DoctorReports {
         return ReportSection(ReportPart.JOURNAL.label, listOf(ReportBlock.Facts(facts)))
     }
 
+    /** What the person noted, symptom by symptom (strength from 1 to 5): figures only, no diagnosis. */
+    private fun symptoms(state: AppState, today: LocalDate, days: Int): ReportSection? {
+        val ids = state.symptomLog.map { it.symptom }.distinct()
+            .filter { id -> Wellbeing.period(state, id, today, days).noted > 0 }
+        if (ids.isEmpty()) return null
+        val blocks = mutableListOf<ReportBlock>()
+        val rows = ids.map { id ->
+            val p = Wellbeing.period(state, id, today, days)
+            val trend = if (p.average != null && p.previousAverage != null) {
+                val diff = p.average - p.previousAverage
+                when {
+                    diff >= 0.5 -> "plus fort qu'avant (${dec(p.previousAverage.toFloat())})"
+                    diff <= -0.5 -> "moins fort qu'avant (${dec(p.previousAverage.toFloat())})"
+                    else -> "stable"
+                }
+            } else "—"
+            listOf(Wellbeing.name(id), "${p.noted}/${p.days}", p.average?.let { "${dec(it.toFloat())}/5" } ?: "—", "${p.strongDays}", trend)
+        }
+        blocks += ReportBlock.Table(
+            listOf("Symptôme", "Jours notés", "Force moyenne", "Jours forts (4-5)", "Évolution"), rows,
+            listOf(0.24f, 0.14f, 0.16f, 0.18f, 0.28f),
+        )
+        Wellbeing.insights(state, today).forEach { blocks += ReportBlock.Paragraph("• $it") }
+        blocks += ReportBlock.Paragraph(
+            "Force notée par la personne de 1 (un peu) à 5 (très fort). Ce sont des observations, pas un diagnostic.",
+            muted = true,
+        )
+        return ReportSection(ReportPart.SYMPTOMS.label, blocks)
+    }
+
     private fun cycle(state: AppState, today: LocalDate): ReportSection? {
         val info = state.profile?.cycle?.takeIf { state.profile.menstruating && it.periodStarts.isNotEmpty() } ?: return null
         val starts = info.periodStarts.sorted().takeLast(6)
@@ -280,6 +313,19 @@ object DoctorReports {
             status?.takeIf { it.lateDays > 0 }?.let { "Retard" to "${it.lateDays} jours" },
             starts.zipWithNext { a, b -> ChronoUnit.DAYS.between(a, b).toInt() }.takeIf { it.size >= 2 }?.let { "Cycles récents" to it.joinToString(", ") { d -> "$d j" } },
         )
-        return ReportSection(ReportPart.CYCLE.label, listOf(ReportBlock.Facts(facts)))
+        val stats = CycleStats.report(state, today)
+        val blocks = mutableListOf<ReportBlock>(ReportBlock.Facts(facts))
+        if (stats != null) {
+            val extra = listOfNotNull(
+                stats.spread?.takeIf { stats.lengths.size >= 3 }?.let { "Écart entre le cycle le plus court et le plus long" to "$it jours (${stats.shortest} à ${stats.longest} jours)" },
+                stats.averagePeriodDays?.let { "Durée des règles notée au journal" to "${dec(it.toFloat())} jours en moyenne" },
+                stats.flowDays.takeIf { it.isNotEmpty() }?.let { "Flux noté" to it.joinToString(", ") { (f, n) -> "${f.label.lowercase()} ($n j)" } },
+                stats.symptoms.takeIf { it.isNotEmpty() }?.let { "Symptômes du cycle" to it.joinToString(", ") { (k, n) -> "${k.lowercase()} ($n)" } },
+                stats.periodMedIntakes.takeIf { it > 0 }?.let { "Médicaments contre la douleur pendant les règles" to "$it prises" },
+            )
+            if (extra.isNotEmpty()) blocks += ReportBlock.Facts(extra)
+            stats.insights.filter { it.tone == Tone.WARN }.forEach { blocks += ReportBlock.Paragraph("• ${it.text}") }
+        }
+        return ReportSection(ReportPart.CYCLE.label, blocks)
     }
 }

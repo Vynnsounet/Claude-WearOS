@@ -153,6 +153,15 @@ fun MyDayScreen(
                 }
             }
 
+            val symptomNotes = com.medipote.app.domain.Wellbeing.notesOn(state, date)
+            if (symptomNotes.isNotEmpty()) {
+                Section("🌡️ Symptômes") {
+                    symptomNotes.forEach { n ->
+                        Text("${com.medipote.app.domain.Wellbeing.emoji(n.symptom)} ${com.medipote.app.domain.Wellbeing.name(n.symptom)} · ${n.intensity}/5", style = MaterialTheme.typography.bodyMedium)
+                    }
+                }
+            }
+
             Section("🌙 Nuit", if (night == null) "Noter" else "Modifier", onEditSleep) {
                 com.medipote.app.domain.Naps.on(state, date).forEach { nap ->
                     Text(

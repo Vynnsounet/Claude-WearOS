@@ -104,6 +104,7 @@ fun SymptomsScreen(
 ) {
     val today = now.toLocalDate()
     val tracked = Wellbeing.tracked(state)
+    val mentioned = Wellbeing.mentionedInJournal(state, today)
     val insights = androidx.compose.runtime.remember(state.symptomLog, state.sleep, today) { Wellbeing.insights(state, today) }
     WbPage("Symptômes", embedded, onBack) {
         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -142,12 +143,9 @@ fun SymptomsScreen(
                             )
                         }
                     }
-                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                        (1..5).forEach { level ->
-                            IntensityDot(level, selected = value == level, label = "${Wellbeing.name(id)}, intensité $level sur 5") {
-                                onSet(id, if (value == level) null else level)
-                            }
-                        }
+                    SymptomPicker(id, value) { onSet(id, it) }
+                    if (id in mentioned) {
+                        Text("📖  Noté dans ton journal : choisis la force.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
                     }
                     if (week.any { it != null }) WeekDots(week)
                     if ((value ?: 0) >= 3) {
@@ -190,6 +188,18 @@ fun SymptomsScreen(
         }
 
         Disclaimer("Ces infos sont là pour t'accompagner : elles ne remplacent pas ton médecin. Tout reste sur ton téléphone.")
+    }
+}
+
+/** Five dots from "a little" to "very strongly"; touching the chosen one again removes it. */
+@Composable
+fun SymptomPicker(symptom: String, value: Int?, onSet: (Int?) -> Unit) {
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+        (1..5).forEach { level ->
+            IntensityDot(level, selected = value == level, label = "${Wellbeing.name(symptom)}, intensité $level sur 5") {
+                onSet(if (value == level) null else level)
+            }
+        }
     }
 }
 

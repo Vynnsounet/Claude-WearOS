@@ -60,6 +60,17 @@ fun HomeLayoutScreen(settings: Settings, onChange: ((Settings) -> Settings) -> U
             Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).padding(horizontal = 16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
+            // Two ways in one tap: the essentials, or everything. The detailed choices stay below.
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                androidx.compose.material3.FilterChip(
+                    selected = look.isSimple, onClick = { updateLook { it.simple() } },
+                    label = { Text("🌿  Accueil simple") },
+                )
+                androidx.compose.material3.FilterChip(
+                    selected = look.isComplete, onClick = { updateLook { it.complete() } },
+                    label = { Text("🧰  Accueil complet") },
+                )
+            }
             Text(
                 "$shown bloc${if (shown > 1) "s" else ""} affiché${if (shown > 1) "s" else ""}. Un bloc masqué reste dans son onglet : rien n'est perdu.",
                 style = MaterialTheme.typography.bodyMedium,

@@ -83,8 +83,23 @@ data class Look(
     val visibleSections: List<HomeSection>
         get() = fullOrder.filter { it !in hiddenSections }
 
+    /** "Accueil simple": only the essentials; the other blocks are hidden, not lost. */
+    fun simple(): Look = copy(hiddenSections = HomeSection.entries.filter { it !in ESSENTIALS }.toSet())
+
+    /** Every block shown again, in the user's order. */
+    fun complete(): Look = copy(hiddenSections = emptySet())
+
+    val isSimple: Boolean get() = HomeSection.entries.filter { it !in ESSENTIALS }.all { it in hiddenSections }
+    val isComplete: Boolean get() = hiddenSections.isEmpty()
+
     companion object {
         const val LAYOUT_VERSION = 1
+
+        /** What "Accueil simple" keeps: the companion, the next dose, today's doses, the mood, the gentle day. */
+        val ESSENTIALS = setOf(
+            HomeSection.STATUS, HomeSection.PHRASE, HomeSection.COMPANION, HomeSection.NEXT_DOSE,
+            HomeSection.DOSES, HomeSection.MOOD, HomeSection.SOFT_DAY,
+        )
         val AVATARS = listOf(
             "👋", "😊", "🌸", "🌻", "🌿", "🍀", "🌈", "⭐", "🌙", "☀️", "🔥", "💜",
             "🐱", "🐶", "🦊", "🐼", "🐸", "🦄", "🐝", "🦋", "🍓", "🍵", "🎧", "🎨",

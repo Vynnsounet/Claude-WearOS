@@ -104,6 +104,24 @@ object Wellbeing {
     fun strongToday(state: AppState, date: LocalDate, from: Int = 3): List<String> =
         notesOn(state, date).filter { it.intensity >= from }.sortedByDescending { it.intensity }.map { it.symptom }
 
+    /** Journal tags that mean the same as a symptom followed (the journal has no strength; the symptom does). */
+    private val TAGS: Map<String, List<String>> = mapOf(
+        "fatigue" to listOf("Fatigue"), "anxiety" to listOf("Anxiété", "Stress"), "headache" to listOf("Maux de tête"),
+        "nausea" to listOf("Nausées"), "fog" to listOf("Difficultés de concentration", "Fatigue mentale"),
+        "lowmood" to listOf("Tristesse"), "sleep" to listOf("Troubles du sommeil"), "dizzy" to listOf("Vertiges"),
+        "joints" to listOf("Douleurs articulaires"), "pain" to listOf("Douleurs musculaires"),
+        "digestion" to listOf("Maux de ventre"), "irritability" to listOf("Irritabilité"),
+    )
+
+    /** The followed symptoms the journal of [date] already mentions, with no strength noted yet. */
+    fun mentionedInJournal(state: AppState, date: LocalDate): List<String> {
+        val tags = state.entryFor(date).let { it.physicalSymptoms + it.mentalSymptoms + it.cycleSymptoms }.map { it.lowercase() }.toSet()
+        return tracked(state).filter { id ->
+            intensityOn(state, date, id) == null &&
+                (TAGS[id].orEmpty().any { it.lowercase() in tags } || name(id).lowercase() in tags)
+        }
+    }
+
     // ── Energy and heavy days ──
 
     fun energyOn(state: AppState, date: LocalDate): Int? = state.energy?.takeIf { it.date == date }?.level

@@ -1,6 +1,6 @@
 # Politique de confidentialité de MédiPote
 
-*Dernière mise à jour : 16 novembre 2026*
+*Dernière mise à jour : 17 novembre 2026*
 
 MédiPote est une application d'aide à la prise de traitements. Cette politique explique
 quelles données l'application utilise et ce qu'elle en fait.
@@ -27,6 +27,12 @@ Les conditions que tu choisis, les symptômes que tu notes, tes missions et tes 
 restent dans l'espace privé de l'application. Les fiches et les conseils sont écrits dans
 l'application : rien n'est cherché sur Internet, et rien de ce que tu notes n'est envoyé. Les liens
 que l'appli remarque entre tes notes sont calculés sur ton téléphone.
+
+## Le résumé de rendez-vous
+
+« Préparer mon rendez-vous » calcule un résumé sur ton téléphone. Il n'est copié ou partagé que si tu
+appuies sur « Copier » ou « Partager » : le texte passe alors par l'application que tu choisis (messages,
+mail…), comme pour le rapport PDF. MédiPote n'envoie rien.
 
 ## Si tu utilises la montre Wear OS
 

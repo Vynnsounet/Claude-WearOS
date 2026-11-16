@@ -259,6 +259,10 @@ fun DayEntryScreen(
     showCycle: Boolean,
     onSave: (DayEntry) -> Unit,
     onBack: () -> Unit,
+    /** The symptoms followed, with their strength on this day, and how to change it (noted at once). */
+    trackedSymptoms: List<String> = emptyList(),
+    intensities: Map<String, Int> = emptyMap(),
+    onSymptom: (String, Int?) -> Unit = { _, _ -> },
 ) {
     var physical by remember { mutableStateOf(entry.physical) }
     var mental by remember { mutableStateOf(entry.mental) }
@@ -315,6 +319,17 @@ fun DayEntryScreen(
                 FaceSelector(mental) { mental = it }
                 Fold("Ressentis", mentalSymptoms.size) {
                     TagPicker(MENTAL_SYMPTOMS, mentalSymptoms, { mentalSymptoms = it }, "Autre ressenti")
+                }
+            }
+            if (trackedSymptoms.isNotEmpty()) {
+                SectionCard("Mes symptômes suivis") {
+                    Text("Touche un chiffre : 1 = un peu, 5 = très fort. C'est noté tout de suite.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    trackedSymptoms.forEach { id ->
+                        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                            Text("${com.medipote.app.domain.Wellbeing.emoji(id)}  ${com.medipote.app.domain.Wellbeing.name(id)}", style = MaterialTheme.typography.titleSmall)
+                            com.medipote.app.ui.wellbeing.SymptomPicker(id, intensities[id]) { onSymptom(id, it) }
+                        }
+                    }
                 }
             }
             SectionCard("Notes") {

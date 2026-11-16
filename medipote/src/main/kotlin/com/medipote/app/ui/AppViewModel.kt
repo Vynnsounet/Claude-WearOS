@@ -344,6 +344,11 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         repo.update { com.medipote.app.domain.Wellbeing.setIntensity(it, today, symptom, intensity) }
     }
 
+    /** A symptom's strength on any day (from the journal of that day). */
+    fun setSymptomOn(date: java.time.LocalDate, symptom: String, intensity: Int?) {
+        repo.update { com.medipote.app.domain.Wellbeing.setIntensity(it, date, symptom, intensity) }
+    }
+
     fun setSymptomNote(symptom: String, note: String) {
         val today = repo.now().toLocalDate()
         repo.update { com.medipote.app.domain.Wellbeing.setNote(it, today, symptom, note) }

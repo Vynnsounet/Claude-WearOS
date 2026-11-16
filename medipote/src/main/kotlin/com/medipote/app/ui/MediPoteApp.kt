@@ -244,9 +244,12 @@ fun MediPoteApp(vm: AppViewModel) {
         LaunchedEffect(requestedRoute, state.onboarded) {
             val r = requestedRoute ?: return@LaunchedEffect
             if (!state.onboarded) return@LaunchedEffect
-            nav.navigate(r) { launchSingleTop = true }
+            // "journal_today" comes from a launcher shortcut: the day it means is today's.
+            nav.navigate(if (r == "journal_today") "day/${Rules.gameDay(vm.now.value)}" else r) { launchSingleTop = true }
             vm.routeHandled()
         }
+        // The long-press shortcuts follow what is turned on.
+        LaunchedEffect(state.settings.wellbeing.enabled) { com.medipote.app.Shortcuts.update(context, state.settings.wellbeing.enabled) }
 
         val backStack by nav.currentBackStackEntryAsState()
         val route = backStack?.destination?.route?.substringBefore('?')
@@ -922,6 +925,9 @@ fun MediPoteApp(vm: AppViewModel) {
                         showCycle = menstruating,
                         onSave = { vm.saveEntry(it); nav.popBackStack() },
                         onBack = { nav.popBackStack() },
+                        trackedSymptoms = if (com.medipote.app.domain.Wellbeing.enabled(state)) com.medipote.app.domain.Wellbeing.tracked(state) else emptyList(),
+                        intensities = state.symptomLog.filter { it.date == date }.associate { it.symptom to it.intensity },
+                        onSymptom = { id, v -> vm.setSymptomOn(date, id, v) },
                     )
                 }
 
@@ -940,7 +946,29 @@ fun MediPoteApp(vm: AppViewModel) {
                         onSave = { vm.saveAppointment(it); nav.popBackStack() },
                         onDelete = { existing?.let { vm.deleteAppointment(it.id) }; nav.popBackStack() },
                         onBack = { nav.popBackStack() },
+                        onPrepare = existing?.let { a -> { nav.navigate("appointment_prep/${a.id}") } },
                     )
+                }
+                composable("appointment_prep/{id}") { entry ->
+                    val a = state.appointments.firstOrNull { it.id == entry.arguments?.getString("id") }
+                    if (a == null) LaunchedEffect(Unit) { nav.popBackStack() } else {
+                        val prep = com.medipote.app.domain.AppointmentPrepper.build(state, a, now)
+                        com.medipote.app.ui.agenda.AppointmentPrepScreen(
+                            prep, a.dateTime.format(java.time.format.DateTimeFormatter.ofPattern("EEEE d MMMM · HH:mm", java.util.Locale.FRANCE)),
+                            onQuestions = { vm.saveAppointment(a.copy(questions = it)) },
+                            onCopy = { text ->
+                                val clipboard = context.getSystemService(android.content.ClipboardManager::class.java)
+                                clipboard.setPrimaryClip(android.content.ClipData.newPlainText("Rendez-vous", text))
+                                vm.message("Texte copié")
+                            },
+                            onShare = { text ->
+                                val send = Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, text)
+                                context.startActivity(Intent.createChooser(send, "Partager mon résumé"))
+                            },
+                            onReport = { nav.navigate("report") },
+                            onBack = { nav.popBackStack() },
+                        )
+                    }
                 }
 
                 // ── Health record ──

@@ -251,6 +251,8 @@ fun AppointmentEditorScreen(
     onSave: (Appointment) -> Unit,
     onDelete: () -> Unit,
     onBack: () -> Unit,
+    /** Opens "Préparer mon rendez-vous"; offered once the appointment exists. */
+    onPrepare: (() -> Unit)? = null,
 ) {
     var title by remember { mutableStateOf(existing?.title.orEmpty()) }
     var doctor by remember { mutableStateOf(existing?.doctor.orEmpty()) }
@@ -281,6 +283,7 @@ fun AppointmentEditorScreen(
                                 title = title.trim(), doctor = doctor.trim(), location = location.trim(),
                                 dateTime = date.atTime(minute / 60, minute % 60), notes = notes.trim(),
                                 reminderMinutes = reminders.sortedDescending(),
+                                questions = existing?.questions.orEmpty(),
                             ),
                         )
                     },
@@ -294,6 +297,9 @@ fun AppointmentEditorScreen(
             Modifier.fillMaxSize().padding(padding).imePadding().verticalScroll(rememberScrollState()).padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
+            if (existing != null && onPrepare != null) {
+                OutlinedButton(onClick = onPrepare, modifier = Modifier.fillMaxWidth().height(52.dp)) { Text("🩺  Préparer ce rendez-vous") }
+            }
             SectionTitle("Motif")
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 SPECIALTIES.forEach { s -> FilterChip(selected = title == s, onClick = { title = s }, label = { Text(s) }) }

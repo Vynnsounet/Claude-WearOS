@@ -117,6 +117,8 @@ data class Appointment(
     val notes: String = "",
     /** Reminders, in minutes before the appointment. */
     val reminderMinutes: List<Int> = listOf(24 * 60, 60),
+    /** What the person wants to ask or say at this appointment. */
+    val questions: List<String> = emptyList(),
 )
 
 // ─────────────────────────── Health documents ───────────────────────────

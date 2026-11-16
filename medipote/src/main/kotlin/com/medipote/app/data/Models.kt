@@ -310,6 +310,7 @@ data class Settings(
     val seasons: SeasonSettings = SeasonSettings(),
     val rituals: RitualSettings = RitualSettings(),
     val wellbeing: WellbeingSettings = WellbeingSettings(),
+    val quiet: QuietHours = QuietHours(),
     /** Cards of the hub pages the user chose to hide, "suivi:Cycle". */
     val hiddenCards: Set<String> = emptySet(),
     /** Reminder to change each period product, in minutes, when the user changed the default. */
@@ -320,6 +321,32 @@ data class Settings(
     /** Send a second notification when a dose is still not given 30 minutes after its time. */
     val followUpReminder: Boolean = true,
 )
+
+/**
+ * Quiet hours: gentle reminders (water, stock, rituals, recap, "how did you sleep") wait for the end of
+ * the night. Doses, appointments, snoozed reminders and the timers never wait.
+ */
+@Serializable
+data class QuietHours(
+    val enabled: Boolean = false,
+    val startHour: Int = 22,
+    val endHour: Int = 8,
+) {
+    /** Whether [time] falls in the quiet window (which can cross midnight). */
+    fun contains(time: LocalDateTime): Boolean {
+        if (!enabled) return false
+        val m = time.hour * 60 + time.minute
+        val start = startHour * 60
+        val end = endHour * 60
+        return if (start > end) m >= start || m < end else m in start until end
+    }
+
+    /** The moment the quiet window ends, for a [time] inside it. */
+    fun endAfter(time: LocalDateTime): LocalDateTime {
+        val end = time.toLocalDate().atTime(endHour, 0)
+        return if (end.isAfter(time)) end else end.plusDays(1)
+    }
+}
 
 object LocalDateSerializer : KSerializer<LocalDate> {
     override val descriptor = PrimitiveSerialDescriptor("LocalDate", PrimitiveKind.STRING)

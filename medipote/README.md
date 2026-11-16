@@ -296,6 +296,28 @@ Les données (y compris de santé et les documents) restent sur le téléphone, 
 le stockage privé de l'app, exclu de la sauvegarde cloud. Elles n'en sortent que
 par une action de la personne : sauvegarde, rapport PDF ou document partagé.
 
+## Préparer un rendez-vous, rapport, heures calmes
+
+- **Préparer mon rendez-vous** (depuis un rendez-vous de l'agenda) : tes questions d'abord (tu les écris à
+  l'avance, elles restent avec le rendez-vous), puis un résumé des 30 derniers jours calculé sur le
+  téléphone : prises et oublis, sommeil, symptômes (force, jours forts, évolution), moral et forme, cycle,
+  médicaments « si besoin », mesures, et ce que l'appli remarque. À copier ou partager en texte, ou ouvrir le
+  rapport PDF complet. Rien n'est envoyé tant que tu ne partages pas.
+- **Rapport PDF pour le médecin** : une partie « Symptômes suivis » (jours notés, force moyenne, jours forts,
+  évolution) et un cycle plus détaillé (écart entre cycles, durée des règles, flux, symptômes).
+- **Journal et symptômes ensemble** : dans le journal d'un jour (n'importe lequel), la carte « Mes symptômes
+  suivis » donne la force de chacun, notée tout de suite ; un symptôme coché au journal mais sans force est
+  rappelé dans Suivi › Symptômes ; « Ma journée » les affiche.
+- **Accueil simple / complet** (Paramètres › Mon accueil) : l'essentiel (compagnon, prochaine prise, prises du
+  jour, humeur, journée douce) ou tout ; les blocs masqués ne sont pas perdus.
+- **Heures calmes** (Paramètres) : l'eau, le stock, les rituels, le récap et « bien dormi ? » n'arrivent pas la
+  nuit (l'eau est sautée, les autres attendent le matin). Les prises, les rendez-vous, les rappels repoussés et
+  les minuteurs sonnent toujours.
+- **Raccourcis** (appui long sur l'icône) : Ça ne va pas, Mon journal, et, si activés, Noter un symptôme et
+  Journée douce.
+
+![](docs/appointment_prep.png)
+
 ## Statistiques
 
 Une page par sujet, pour mieux comprendre : des puces en haut (📊 Vue d'ensemble · 💊 Traitements · 🌙 Sommeil ·

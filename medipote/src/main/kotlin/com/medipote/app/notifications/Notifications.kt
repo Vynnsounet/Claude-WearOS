@@ -151,7 +151,24 @@ object ReminderPlanner {
             val today = now.toLocalDate().atTime(STOCK_CHECK)
             alarms += AlarmSpec(AlarmKind.STOCK, if (today.isAfter(now)) today else today.plusDays(1))
         }
-        return alarms
+        return quiet(state, alarms)
+    }
+
+    /**
+     * Quiet hours: gentle reminders don't ring at night. A water reminder is simply skipped; the others
+     * wait for the end of the night. Doses, appointments, snoozes and timers are never touched.
+     */
+    private fun quiet(state: AppState, alarms: List<AlarmSpec>): List<AlarmSpec> {
+        val q = state.settings.quiet
+        if (!q.enabled) return alarms
+        return alarms.mapNotNull { a ->
+            when {
+                !q.contains(a.time) -> a
+                a.kind == AlarmKind.WATER -> null
+                a.kind in setOf(AlarmKind.STOCK, AlarmKind.RENEWAL, AlarmKind.RITUAL, AlarmKind.RECAP, AlarmKind.SLEEP) -> a.copy(time = q.endAfter(a.time))
+                else -> a
+            }
+        }.distinctBy { it.key }
     }
 }
 

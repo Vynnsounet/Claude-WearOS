@@ -66,6 +66,18 @@ L'optimiseur de R8 reste désactivé (`-dontoptimize`) : APK de 3,8 Mo au lieu d
 le dex livré peut être reconverti et exécuté hors appareil pour vérification (voir plus bas),
 ce que l'optimiseur empêche. Il pourra être réactivé après des essais sur téléphone.
 
+### 1.19.0 — rendez-vous, journal relié aux symptômes, heures calmes
+
+- « Préparer mon rendez-vous » : questions à l'avance + résumé des 30 derniers jours (copier, partager,
+  ou rapport PDF). Rapport PDF : nouvelle partie « Symptômes suivis » et cycle plus détaillé.
+- Journal et symptômes reliés : la force des symptômes suivis se note aussi depuis le journal d'un jour, un
+  symptôme coché au journal est rappelé dans Suivi › Symptômes, « Ma journée » les montre.
+- Accueil simple / accueil complet en un geste (Paramètres › Mon accueil).
+- Heures calmes : rappels doux (eau, stock, rituels, récap, « bien dormi ? ») retenus la nuit ; les prises,
+  rendez-vous et minuteurs ne bougent jamais.
+- Raccourcis sur l'icône de l'appli (appui long).
+- Sauvegardes anciennes : chargées sans rien changer (champs ajoutés avec des valeurs par défaut, testé).
+
 ### 1.18.1 — mode sombre mieux accordé
 
 - Mode sombre : les couleurs d'accentuation « générées » (Forêt, Ciel, Indigo, Prune, Cerise, Mandarine,
