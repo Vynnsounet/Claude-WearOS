@@ -66,6 +66,15 @@ L'optimiseur de R8 reste désactivé (`-dontoptimize`) : APK de 3,8 Mo au lieu d
 le dex livré peut être reconverti et exécuté hors appareil pour vérification (voir plus bas),
 ce que l'optimiseur empêche. Il pourra être réactivé après des essais sur téléphone.
 
+### 1.18.1 — mode sombre mieux accordé
+
+- Mode sombre : les couleurs d'accentuation « générées » (Forêt, Ciel, Indigo, Prune, Cerise, Mandarine,
+  Tournesol, Lagon, Ardoise, Cacao, Bonbon, Olive et la couleur libre) étaient trop vives, presque
+  fluo : elles sont maintenant des pastels doux, comme Menthe ou Océan.
+- Les gris du fond penchent désormais vers la teinte de l'accent (au lieu de rester verdâtres pour
+  tous), et la troisième couleur n'est plus un violet fixe mais une voisine de l'accent.
+  Menthe, la couleur d'origine, ne change pas. Le mode clair non plus.
+
 ### 1.18.0 — les statistiques du cycle
 
 - Nouvel onglet « 🩸 Cycle » dans les statistiques (si le cycle est activé) : durée moyenne et écart entre

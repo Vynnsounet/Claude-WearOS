@@ -15,6 +15,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -188,13 +189,15 @@ private fun seedTones(seed: Long, dark: Boolean): AccentTones {
             secondary = hex(tone(s * 0.3f, 0.38f)), secondaryContainer = hex(tone(s * 0.45f, 0.89f)), onSecondaryContainer = hex(tone(s * 0.4f, 0.12f)),
         )
     } else {
+        // Soft, like the hand-tuned palettes: a pastel (light, moderately saturated) rather than a neon.
         val surface = 0xFF101413.toInt()
-        var l = 0.70f
-        while (l < 0.92f && ColorUtils.calculateContrast(tone(minOf(s, 0.75f), l), surface) < 7.0) l += 0.01f
+        val soft = minOf(s, 0.55f)
+        var l = 0.72f
+        while (l < 0.92f && ColorUtils.calculateContrast(tone(soft, l), surface) < 7.0) l += 0.01f
         AccentTones(
-            primary = hex(tone(minOf(s, 0.75f), l)), onPrimary = hex(tone(s, 0.15f)),
-            primaryContainer = hex(tone(s * 0.8f, 0.28f)), onPrimaryContainer = hex(tone(s, 0.9f)),
-            secondary = hex(tone(s * 0.3f, 0.76f)), secondaryContainer = hex(tone(s * 0.3f, 0.29f)), onSecondaryContainer = hex(tone(s * 0.4f, 0.9f)),
+            primary = hex(tone(soft, l)), onPrimary = hex(tone(s * 0.8f, 0.15f)),
+            primaryContainer = hex(tone(s * 0.5f, 0.26f)), onPrimaryContainer = hex(tone(s * 0.8f, 0.9f)),
+            secondary = hex(tone(s * 0.25f, 0.76f)), secondaryContainer = hex(tone(s * 0.25f, 0.29f)), onSecondaryContainer = hex(tone(s * 0.35f, 0.9f)),
         )
     }
 }
@@ -215,14 +218,45 @@ private fun tones(accent: Accent, dark: Boolean): AccentTones = when (accent) {
     else -> seedTones(accent.seed, dark)
 }
 
+/** The same colour with another hue (and at most this saturation), lightness kept. */
+private fun rehue(c: Color, hue: Float, maxSat: Float): Color {
+    val hsl = FloatArray(3)
+    ColorUtils.colorToHSL(c.toArgb(), hsl)
+    return Color(ColorUtils.HSLToColor(floatArrayOf(hue, minOf(hsl[1], maxSat), hsl[2])))
+}
+
+/**
+ * Dark theme: the greys lean toward the accent's hue (as Material's own dark schemes do) instead of
+ * staying greenish whatever the colour, and the third colour is a neighbour of the accent instead of
+ * a fixed violet. The mint default keeps its hand-tuned values.
+ */
+private fun ColorScheme.darkInTune(t: AccentTones, keepOriginal: Boolean): ColorScheme {
+    if (keepOriginal) return this
+    val hsl = FloatArray(3)
+    ColorUtils.colorToHSL(Color(t.primary).toArgb(), hsl)
+    val h = hsl[0]
+    fun n(c: Color) = rehue(c, h, 0.12f)
+    fun tert(sat: Float, l: Float) = Color(ColorUtils.HSLToColor(floatArrayOf((h + 55f) % 360f, sat, l)))
+    return copy(
+        background = n(background), surface = n(surface), onBackground = n(onBackground), onSurface = n(onSurface),
+        surfaceVariant = n(surfaceVariant), onSurfaceVariant = n(onSurfaceVariant),
+        surfaceContainerLowest = n(surfaceContainerLowest), surfaceContainerLow = n(surfaceContainerLow),
+        surfaceContainer = n(surfaceContainer), surfaceContainerHigh = n(surfaceContainerHigh),
+        surfaceContainerHighest = n(surfaceContainerHighest), outline = n(outline), outlineVariant = n(outlineVariant),
+        tertiary = tert(0.45f, 0.80f), onTertiary = tert(0.5f, 0.16f),
+        tertiaryContainer = tert(0.3f, 0.27f), onTertiaryContainer = tert(0.5f, 0.9f),
+    )
+}
+
 /** The app's colour scheme for an accent, also used by the home-screen widgets. */
 fun appColorScheme(accent: Accent, dark: Boolean): ColorScheme =
-    (if (dark) DarkColors else LightColors).withAccent(tones(accent, dark))
+    (if (dark) DarkColors else LightColors).withAccent(tones(accent, dark)).let { if (dark) it.darkInTune(tones(accent, true), accent == Accent.MINT) else it }
 
 /** The colour scheme with the user's look (custom colour, tinted background, pure black). */
 fun appColorScheme(accent: Accent, look: Look, dark: Boolean): ColorScheme {
     val t = look.customColor?.let { seedTones(it, dark) } ?: tones(accent, dark)
     var scheme = (if (dark) DarkColors else LightColors).withAccent(t)
+    if (dark) scheme = scheme.darkInTune(t, look.customColor == null && accent == Accent.MINT)
     if (look.backdrop == Backdrop.TINTED) {
         val p = Color(t.primary)
         fun tint(c: Color, f: Float) = lerp(c, p, f)
