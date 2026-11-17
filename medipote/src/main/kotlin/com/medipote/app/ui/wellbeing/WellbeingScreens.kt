@@ -242,6 +242,8 @@ fun SymptomAdviceScreen(
     onSoftDay: () -> Unit,
     onSupport: () -> Unit,
     onBack: () -> Unit,
+    tried: Boolean = false,
+    onTried: () -> Unit = {},
 ) {
     val info = WellbeingLibrary.symptom(symptom)
     WbPage("${Wellbeing.emoji(symptom)}  ${Wellbeing.name(symptom)}", embedded = false, onBack = onBack) {
@@ -263,6 +265,8 @@ fun SymptomAdviceScreen(
                 }
             }
         }
+        if (tried) Text("✓ Essayé, bravo 💛", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
+        else FilledTonalButton(onClick = onTried) { Text("✓ J'ai essayé un de ces conseils") }
         Button(onClick = onSoftDay, modifier = Modifier.fillMaxWidth().height(52.dp)) { Text("💛  Des petites missions pour aujourd'hui") }
         if (symptom in setOf("anxiety", "lowmood", "body")) {
             OutlinedButton(onClick = onSupport, modifier = Modifier.fillMaxWidth().height(52.dp)) { Text("🤗  Ça ne va pas : respirer, se poser") }

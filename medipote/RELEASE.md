@@ -66,6 +66,13 @@ L'optimiseur de R8 reste désactivé (`-dontoptimize`) : APK de 3,8 Mo au lieu d
 le dex livré peut être reconverti et exécuté hors appareil pour vérification (voir plus bas),
 ce que l'optimiseur empêche. Il pourra être réactivé après des essais sur téléphone.
 
+### 1.22.0 — essayer rapporte des points, écran plus léger
+
+- « Ce que je ressens » et les conseils d'un symptôme : un petit « ✓ J'ai essayé » par carte, qui rapporte
+  quelques points (5, trois petites victoires par jour au plus, partagées avec les missions). Jamais retirés,
+  rien ne montre ce qui n'a pas été essayé.
+- Écran allégé : trois cartes d'abord (une ouverte à la fois), deux idées par carte et « Plus d'idées ».
+
 ### 1.21.0 — « Ce que je ressens »
 
 - Dans « Ça ne va pas » : un guide des signes de l'anxiété, de l'angoisse et du moral bas, dans le corps et dans

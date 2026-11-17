@@ -386,6 +386,13 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         checkAchievements()
     }
 
+    /** "I tried it": a gesture for a sign ("feel") or a tip for a symptom ("advice"), noted as a small victory. */
+    fun tried(kind: String, id: String, label: String) {
+        var result: com.medipote.app.domain.WinResult? = null
+        repo.update { s -> com.medipote.app.domain.Wellbeing.tried(s, kind, id, label, repo.now()).also { result = it }.state }
+        result?.let(::celebrate)
+    }
+
     /** Saves a task cut into steps; returns its id. */
     fun saveTask(id: String?, title: String, steps: List<String>): String {
         val taskId = id ?: java.util.UUID.randomUUID().toString()

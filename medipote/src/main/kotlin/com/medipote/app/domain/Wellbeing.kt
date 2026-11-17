@@ -162,6 +162,17 @@ object Wellbeing {
         return WinResult(state.copy(game = game, wins = wins), points, already = false)
     }
 
+    /** The key under which trying something for a feeling or a symptom is noted (once a day). */
+    fun triedKey(kind: String, id: String) = "$kind:$id"
+
+    /** "I tried it": what the person did for a sign or a symptom counts as a small victory. */
+    fun tried(state: AppState, kind: String, id: String, label: String, now: LocalDateTime): WinResult =
+        win(state, triedKey(kind, id), label, MISSION_POINTS, now)
+
+    /** The ids tried today for [kind] ("feel" for a sign of "Ce que je ressens", "advice" for a symptom). */
+    fun triedToday(state: AppState, date: LocalDate, kind: String): Set<String> =
+        winsOn(state, date).map { it.key }.filter { it.startsWith("$kind:") }.map { it.removePrefix("$kind:") }.toSet()
+
     fun missionWin(state: AppState, mission: Mission, now: LocalDateTime): WinResult = win(state, mission.id, mission.text, MISSION_POINTS, now)
 
     // ── Missions ──

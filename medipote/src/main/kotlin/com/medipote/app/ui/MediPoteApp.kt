@@ -594,6 +594,11 @@ fun MediPoteApp(vm: AppViewModel) {
                         onSoftDay = { nav.navigate("softday") },
                         onSupport = { nav.navigate("support") },
                         onBack = { nav.popBackStack() },
+                        tried = entry.arguments?.getString("id").orEmpty() in com.medipote.app.domain.Wellbeing.triedToday(state, today, "advice"),
+                        onTried = {
+                            val id = entry.arguments?.getString("id").orEmpty()
+                            vm.tried("advice", id, "J'ai essayé un conseil : ${com.medipote.app.domain.Wellbeing.name(id).lowercase()}")
+                        },
                     )
                 }
                 composable("softday") {
@@ -801,7 +806,9 @@ fun MediPoteApp(vm: AppViewModel) {
                             },
                             onCall = { com.medipote.app.ui.support.dial(context, it) },
                             onNote = vm::noteFelt,
+                            onTried = { sign -> vm.tried("feel", sign.id, "J'ai essayé : ${sign.label.lowercase()}") },
                         ),
+                        tried = com.medipote.app.domain.Wellbeing.triedToday(state, today, "feel"),
                     )
                 }
                 composable("support_breathe") {

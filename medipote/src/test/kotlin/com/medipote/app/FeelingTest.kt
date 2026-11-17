@@ -86,4 +86,26 @@ class FeelingTest {
         assertEquals(start, Wellbeing.noteFelt(start, day, emptyList(), 3))
         assertEquals(listOf("lowmood", "fatigue"), Wellbeing.tracked(Wellbeing.noteFelt(noted, day, listOf("fatigue"), 2)))
     }
+
+    @Test
+    fun tryingSomethingForASignPaysOncePerDayAndNeverTakesAnythingAway() {
+        val now = day.atTime(10, 0)
+        val start = AppState()
+        val first = Wellbeing.tried(start, "feel", "heavy_chest", "J'ai essayé : poids dans la poitrine", now)
+        assertEquals(Wellbeing.MISSION_POINTS, first.points)
+        assertEquals(setOf("heavy_chest"), Wellbeing.triedToday(first.state, day, "feel"))
+        // Again, the same day: nothing more, nothing less.
+        val again = Wellbeing.tried(first.state, "feel", "heavy_chest", "x", now.plusHours(1))
+        assertTrue(again.already)
+        assertEquals(first.state.game.points, again.state.game.points)
+        // A tip tried for a symptom is another thing, and the daily points are shared with the missions.
+        var s = first.state
+        listOf("a" to "feel", "b" to "feel", "c" to "advice").forEach { (id, kind) -> s = Wellbeing.tried(s, kind, id, "t", now).state }
+        assertEquals(3 * Wellbeing.MISSION_POINTS, s.game.points) // the fourth win of the day pays nothing
+        assertEquals(4, Wellbeing.winsOn(s, day).size)
+        // Not trying costs nothing: no record of it, anywhere.
+        assertTrue(Wellbeing.triedToday(start, day, "feel").isEmpty())
+        // The next day it can be tried again.
+        assertEquals(Wellbeing.MISSION_POINTS, Wellbeing.tried(s, "feel", "heavy_chest", "t", now.plusDays(1)).points)
+    }
 }

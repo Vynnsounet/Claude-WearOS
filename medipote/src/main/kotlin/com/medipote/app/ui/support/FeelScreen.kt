@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -15,6 +16,7 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -35,6 +37,8 @@ data class FeelActions(
     val onCall: (String) -> Unit = {},
     /** Notes the symptoms of the chosen signs for today, with a strength from 1 to 5. */
     val onNote: (List<String>, Int) -> Unit = { _, _ -> },
+    /** "I tried it" for a sign: a small victory, never a duty. */
+    val onTried: (com.medipote.app.domain.Sign) -> Unit = {},
 )
 
 /**
@@ -44,9 +48,12 @@ data class FeelActions(
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun FeelScreen(a: FeelActions, initial: List<String> = emptyList()) {
+fun FeelScreen(a: FeelActions, initial: List<String> = emptyList(), tried: Set<String> = emptySet()) {
     var chosen by rememberSaveable(stateSaver = listSaver(save = { it }, restore = { it })) { mutableStateOf(initial) }
     var strength by rememberSaveable { mutableIntStateOf(3) }
+    var openFeeling by rememberSaveable { mutableStateOf(initial.firstNotNullOfOrNull { FeelingGuide.sign(it)?.feeling }) }
+    // Two ideas at a time keep the page light; the others are one touch away.
+    var more by rememberSaveable(stateSaver = listSaver(save = { it }, restore = { it })) { mutableStateOf(emptyList<String>()) }
     val signs = chosen.mapNotNull(FeelingGuide::sign)
     val urgent = signs.any { it.urgent }
     val tools = signs.flatMap { it.tools }.distinct()
@@ -65,17 +72,31 @@ fun FeelScreen(a: FeelActions, initial: List<String> = emptyList()) {
             )
         }
 
+        // Three calm cards; one opens at a time to show its signs, so the page starts light.
         FeelingGuide.FEELINGS.forEach { f ->
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("${f.emoji}  ${f.label}", style = MaterialTheme.typography.titleMedium)
-                Text(f.intro, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    FeelingGuide.signsOf(f.id).forEach { s ->
-                        FilterChip(
-                            selected = s.id in chosen,
-                            onClick = { chosen = if (s.id in chosen) chosen - s.id else chosen + s.id },
-                            label = { Text("${s.emoji}  ${s.label}") },
-                        )
+            val open = openFeeling == f.id
+            val count = chosen.count { FeelingGuide.sign(it)?.feeling == f.id }
+            Card(
+                onClick = { openFeeling = if (open) null else f.id },
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Column(Modifier.padding(horizontal = 20.dp, vertical = 16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                        Text("${f.emoji}  ${f.label}", style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
+                        if (count > 0) Text("$count choisi${if (count > 1) "s" else ""}", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
+                    }
+                    Text(f.intro, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    if (open) {
+                        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            FeelingGuide.signsOf(f.id).forEach { s ->
+                                FilterChip(
+                                    selected = s.id in chosen,
+                                    onClick = { chosen = if (s.id in chosen) chosen - s.id else chosen + s.id },
+                                    label = { Text("${s.emoji}  ${s.label}") },
+                                )
+                            }
+                        }
                     }
                 }
             }
@@ -83,7 +104,7 @@ fun FeelScreen(a: FeelActions, initial: List<String> = emptyList()) {
 
         if (chosen.isEmpty()) {
             Text(
-                "Choisis une ou plusieurs choses : tu verras ce qui peut aider, tout de suite.",
+                "Ouvre une carte, puis choisis une ou plusieurs choses : tu verras ce qui peut aider, tout de suite.",
                 style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             return@SupportFrame
@@ -106,7 +127,16 @@ fun FeelScreen(a: FeelActions, initial: List<String> = emptyList()) {
                 Column(Modifier.padding(horizontal = 20.dp, vertical = 16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text("${s.emoji}  ${s.label}", style = MaterialTheme.typography.titleSmall)
                     Text(s.why, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    s.tryNow.forEach { Text("•  $it", style = MaterialTheme.typography.bodyLarge) }
+                    val open = s.id in more
+                    (if (open) s.tryNow else s.tryNow.take(2)).forEach { Text("•  $it", style = MaterialTheme.typography.bodyLarge) }
+                    if (s.tryNow.size > 2) {
+                        TextButton(onClick = { more = if (open) more - s.id else more + s.id }) { Text(if (open) "Moins d'idées" else "Plus d'idées") }
+                    }
+                    if (s.id in tried) {
+                        Text("✓ Essayé, bravo 💛", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
+                    } else {
+                        FilledTonalButton(onClick = { a.onTried(s) }) { Text("✓ J'ai essayé") }
+                    }
                 }
             }
         }
@@ -150,6 +180,11 @@ fun FeelScreen(a: FeelActions, initial: List<String> = emptyList()) {
             }
         }
 
+        Text(
+            "Chaque essai rapporte quelques points. Ne rien essayer ne coûte rien.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
         Disclaimer(
             "MédiPote est un soutien, pas un soin : il ne pose aucun diagnostic et ne remplace ni un médecin ni un psy. Si tu penses à te faire du mal, appelle le 3114 ou le 15 maintenant.",
             important = true,

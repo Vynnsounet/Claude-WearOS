@@ -429,7 +429,7 @@ des boutons vers les outils qui aident (respirer, me poser, vider ma tête, boî
 **quand en parler**. Une sensation dans la poitrine, le cœur ou le souffle rappelle toujours quand appeler le 15 ;
 les idées noires mettent le 3114 en premier ; le moral bas et l'anxiété rappellent qu'une cause physique (thyroïde,
 carence, anémie…) peut jouer et mérite un point avec le médecin. Aucun diagnostic, aucune maladie nommée, aucun
-traitement touché. Un bouton « Les noter dans mes symptômes » (force de 1 à 5) les ajoute au suivi, donc aux
+traitement touché. L'écran reste léger : trois cartes d'abord (on en ouvre une à la fois), deux idées par carte et « Plus d'idées » pour le reste. Chaque carte a un petit **« ✓ J'ai essayé »** : essayer rapporte quelques points (les mêmes que les petites missions, trois par jour au plus, jamais retirés), ne rien essayer ne coûte rien et ne se voit nulle part ; c'est pareil pour les conseils d'un symptôme. Un bouton « Les noter dans mes symptômes » (force de 1 à 5) les ajoute au suivi, donc aux
 statistiques et au rapport pour le médecin. Tout est hors ligne et à faire relire par un·e professionnel·le.
 
 ![](docs/feel_low.png)

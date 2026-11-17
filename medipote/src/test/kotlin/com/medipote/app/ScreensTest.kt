@@ -1899,12 +1899,15 @@ class ScreensTest {
         compose.onNodeWithText("😰  Anxiété").assertExists()
         compose.onNodeWithText("😨  Angoisse").assertExists()
         compose.onNodeWithText("😔  Moral bas").assertExists()
+        // The page starts light: three cards, signs only once one is opened.
+        compose.onNodeWithText("💔  Poids dans la poitrine").assertDoesNotExist()
+        compose.onNodeWithText("😔  Moral bas").performClick()
         // The person's own words are there.
         compose.onNodeWithText("💔  Poids dans la poitrine").assertExists()
         compose.onNodeWithText("🔋  Fatigue extrême").assertExists()
         compose.onNodeWithText("🛏️  Du mal à se lever du lit").assertExists()
         compose.onNodeWithText("😶  Envie de rien faire").assertExists()
-        compose.onNodeWithText("Choisis une ou plusieurs choses", substring = true).assertExists()
+        compose.onNodeWithText("choisis une ou plusieurs choses", substring = true).assertExists()
         compose.onNodeWithText("Ce qui peut aider maintenant").assertDoesNotExist()
     }
 
@@ -1965,6 +1968,39 @@ class ScreensTest {
         org.junit.Assert.assertEquals(listOf(com.medipote.app.domain.SupportTool.GROUND, com.medipote.app.domain.SupportTool.THOUGHTS), tools)
         // The anxiety feeling mentions the thyroid among possible causes.
         compose.onNodeWithText("la thyroïde", substring = true).assertExists()
+    }
+
+    @Test
+    @Config(qualifiers = "w400dp-h1800dp-xhdpi")
+    fun feelCardsStayLightAndEncourageWithoutPressure() {
+        val tried = mutableListOf<String>()
+        render("feel_light") {
+            com.medipote.app.ui.support.FeelScreen(
+                com.medipote.app.ui.support.FeelActions(onTried = { tried += it.id }),
+                initial = listOf("heavy_chest", "cant_get_up"), tried = setOf("cant_get_up"),
+            )
+        }
+        // Two ideas at a time; the others are one touch away.
+        compose.onNodeWithText("•  Pose une main sur ta poitrine, respire doucement et dis-toi une phrase gentille.").assertExists()
+        compose.onNodeWithText("•  Dis à quelqu'un que ça pèse, même par un simple message.").assertDoesNotExist()
+        compose.onAllNodesWithText("Plus d'idées")[0].performScrollTo().performClick()
+        compose.onNodeWithText("•  Dis à quelqu'un que ça pèse, même par un simple message.").assertExists()
+        compose.onNodeWithText("Moins d'idées").assertExists()
+        // One button per card; what was tried shows as done, and nothing shows what was not.
+        compose.onNodeWithText("✓ J'ai essayé").performScrollTo().performClick()
+        org.junit.Assert.assertEquals(listOf("heavy_chest"), tried)
+        compose.onNodeWithText("✓ Essayé, bravo 💛").assertExists()
+        compose.onNodeWithText("Chaque essai rapporte quelques points. Ne rien essayer ne coûte rien.").assertExists()
+        compose.onAllNodesWithText("pas fait", substring = true, ignoreCase = true).assertCountEquals(0)
+    }
+
+    @Test
+    @Config(qualifiers = "w400dp-h1300dp-xhdpi")
+    fun symptomAdviceCanBeTriedToo() {
+        var tried = 0
+        render("symptom_advice_tried") { com.medipote.app.ui.wellbeing.SymptomAdviceScreen("fatigue", {}, {}, {}, onTried = { tried++ }) }
+        compose.onNodeWithText("✓ J'ai essayé un de ces conseils").performClick()
+        org.junit.Assert.assertEquals(1, tried)
     }
 
     @Test
