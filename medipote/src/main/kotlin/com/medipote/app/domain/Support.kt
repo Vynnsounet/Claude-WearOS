@@ -54,13 +54,6 @@ object Support {
         GroundingStep(1, "chose que tu goûtes", "Une gorgée d'eau, ou le goût dans ta bouche."),
     )
 
-    val THROAT_TIPS = listOf(
-        "Laisse tomber ta mâchoire : dents écartées, langue molle.",
-        "Baisse les épaules, puis soupire longuement par la bouche.",
-        "Bois une petite gorgée d'eau, lentement.",
-        "Pose une main sur ta gorge ou ta poitrine : sens-la bouger quand tu respires.",
-    )
-
     const val ASK_FOR_HELP = "Ça ne va pas, tu peux m'appeler ? J'ai besoin de parler."
 
     /** Digits and a leading "+", for the dialer. */

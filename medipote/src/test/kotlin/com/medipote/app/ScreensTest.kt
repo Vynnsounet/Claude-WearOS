@@ -829,7 +829,8 @@ class ScreensTest {
         org.junit.Assert.assertEquals("3114", called)
         compose.onNodeWithText("Camille").assertExists()
         compose.onNodeWithText("Respirer").assertExists()
-        compose.onNodeWithText("Gorge nouée ?").assertExists()
+        // The "gorge nouée" tips live with the feelings now, not on this screen.
+        compose.onNodeWithText("Gorge nouée ?").assertDoesNotExist()
         compose.onNodeWithText("Autres numéros").performScrollTo().performClick()
         compose.onNodeWithText("15 · SAMU").assertExists()
         compose.onNodeWithText("Dr Martin").assertExists()

@@ -190,15 +190,6 @@ fun SupportScreen(state: AppState, now: LocalDateTime, a: SupportActions) {
             }
         }
 
-        MoreOptions("mâchoire, épaules, eau", label = "Gorge nouée ?") {
-            Support.THROAT_TIPS.forEach { tip ->
-                Row(verticalAlignment = Alignment.Top) {
-                    Text("•  ", style = MaterialTheme.typography.bodyLarge)
-                    Text(tip, style = MaterialTheme.typography.bodyLarge)
-                }
-            }
-        }
-
         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Text("Et maintenant ?", style = MaterialTheme.typography.titleMedium)
             Text("Comment tu te sens ?", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)

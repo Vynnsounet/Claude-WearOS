@@ -108,4 +108,15 @@ class FeelingTest {
         // The next day it can be tried again.
         assertEquals(Wellbeing.MISSION_POINTS, Wellbeing.tried(s, "feel", "heavy_chest", "t", now.plusDays(1)).points)
     }
+
+    @Test
+    fun theKnottedThroatLivesWithTheFeelingsAndKeepsAllItsTips() {
+        val lump = FeelingGuide.sign("lump")!!
+        assertEquals("low", lump.feeling)
+        val text = lump.tryNow.joinToString(" ")
+        // What the old card said: jaw, shoulders, sips of water, a hand on the throat.
+        assertTrue(text.contains("mâchoire") && text.contains("épaules"))
+        assertTrue(text.contains("petites gorgées d'eau"))
+        assertTrue(text.contains("main sur ta gorge"))
+    }
 }

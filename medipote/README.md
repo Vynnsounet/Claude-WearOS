@@ -410,8 +410,8 @@ Un écran de soutien pour les moments très difficiles (tristesse, gorge nouée,
 expiration longue, vibration douce), **se poser** (5-4-3-2-1), **vider sa tête** (rien n'est gardé si
 on ne le demande pas), une **boîte à réconfort**, un **plan** (signes, ce qui aide, qui appeler),
 des **personnes de confiance** à appeler ou à prévenir d'un message tout prêt, et un
-« me redemander dans 2 h ». Accessible depuis le petit cœur de l'accueil, « + Noter » ou une
-proposition douce après une humeur « très mal ». Pas de points ni de fête. C'est un soutien, pas un
+« me redemander dans 2 h ». La gorge nouée a sa place dans « Ce que je ressens » (moral bas), avec tous ses conseils. Accessible depuis le petit cœur de l'accueil, « + Noter » ou une
+proposition douce après une humeur « très mal ». Pas de points ni de fête sur l'écran lui-même (seul « ✓ J'ai essayé » de « Ce que je ressens » en rapporte). C'est un soutien, pas un
 soin : il ne remplace ni un médecin ni un psy.
 
 ![](docs/support.png)

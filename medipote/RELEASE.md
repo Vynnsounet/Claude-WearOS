@@ -66,6 +66,12 @@ L'optimiseur de R8 reste désactivé (`-dontoptimize`) : APK de 3,8 Mo au lieu d
 le dex livré peut être reconverti et exécuté hors appareil pour vérification (voir plus bas),
 ce que l'optimiseur empêche. Il pourra être réactivé après des essais sur téléphone.
 
+### 1.22.1
+
+- L'écran « Ça ne va pas » n'a plus la carte « Gorge nouée ? » : ses conseils (mâchoire, épaules, petites
+  gorgées d'eau, une main sur la gorge) sont dans « Ce que je ressens » › Moral bas › « Gorge nouée, envie de
+  pleurer ».
+
 ### 1.22.0 — essayer rapporte des points, écran plus léger
 
 - « Ce que je ressens » et les conseils d'un symptôme : un petit « ✓ J'ai essayé » par carte, qui rapporte

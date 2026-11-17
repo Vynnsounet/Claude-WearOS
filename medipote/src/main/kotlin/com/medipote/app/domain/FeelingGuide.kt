@@ -276,8 +276,9 @@ object FeelingGuide {
             "lump", LOW, "🥺", "Gorge nouée, envie de pleurer",
             "Les émotions serrent la gorge : c'est une réaction normale du corps.",
             listOf(
-                "Laisse tomber la mâchoire, baisse les épaules, soupire longuement.",
+                "Laisse tomber la mâchoire : dents écartées, langue molle. Baisse les épaules, soupire longuement.",
                 "Bois de petites gorgées d'eau, lentement.",
+                "Pose une main sur ta gorge ou ta poitrine : sens-la bouger quand tu respires.",
                 "Pleure si ça vient : ça relâche la tension.",
             ),
             setOf(SupportTool.BREATHE, SupportTool.COMFORT), "lowmood",
