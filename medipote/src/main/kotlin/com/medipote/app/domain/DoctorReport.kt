@@ -91,6 +91,10 @@ object DoctorReports {
             p?.weightKg?.let { add("Poids" to "${"%.1f".format(FR, it)} kg") }
             p?.heightCm?.let { add("Taille" to "$it cm") }
             add("Antécédents" to (p?.medicalHistory?.takeIf { it.isNotEmpty() }?.joinToString(", ") ?: "aucun renseigné"))
+            // What the person said they live with, in the app's "Ce qui m'accompagne".
+            state.settings.wellbeing.takeIf { it.enabled && it.conditions.isNotEmpty() }?.let { w ->
+                add("Conditions suivies dans l'appli" to w.conditions.joinToString(", ") { it.name })
+            }
             add("Allergies" to (p?.allergies?.takeIf { it.isNotEmpty() }?.joinToString(", ") ?: "aucune renseignée"))
         }
         return ReportSection(ReportPart.PROFILE.label, listOf(ReportBlock.Facts(facts)))

@@ -52,7 +52,7 @@ fun FeelScreen(a: FeelActions, initial: List<String> = emptyList(), tried: Set<S
     var chosen by rememberSaveable(stateSaver = listSaver(save = { it }, restore = { it })) { mutableStateOf(initial) }
     var strength by rememberSaveable { mutableIntStateOf(3) }
     var openFeeling by rememberSaveable { mutableStateOf(initial.firstNotNullOfOrNull { FeelingGuide.sign(it)?.feeling }) }
-    // Two ideas at a time keep the page light; the others are one touch away.
+    // Three ideas at a time keep the page light; the others are one touch away.
     var more by rememberSaveable(stateSaver = listSaver(save = { it }, restore = { it })) { mutableStateOf(emptyList<String>()) }
     val signs = chosen.mapNotNull(FeelingGuide::sign)
     val urgent = signs.any { it.urgent }
@@ -128,8 +128,8 @@ fun FeelScreen(a: FeelActions, initial: List<String> = emptyList(), tried: Set<S
                     Text("${s.emoji}  ${s.label}", style = MaterialTheme.typography.titleSmall)
                     Text(s.why, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     val open = s.id in more
-                    (if (open) s.tryNow else s.tryNow.take(2)).forEach { Text("•  $it", style = MaterialTheme.typography.bodyLarge) }
-                    if (s.tryNow.size > 2) {
+                    (if (open) s.tryNow else s.tryNow.take(3)).forEach { Text("•  $it", style = MaterialTheme.typography.bodyLarge) }
+                    if (s.tryNow.size > 3) {
                         TextButton(onClick = { more = if (open) more - s.id else more + s.id }) { Text(if (open) "Moins d'idées" else "Plus d'idées") }
                     }
                     if (s.id in tried) {

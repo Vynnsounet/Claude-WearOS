@@ -93,6 +93,7 @@ object WellbeingLibrary {
                 "Bois un verre d'eau et repose-toi au calme, dans une lumière douce.",
                 "Les repas sautés, le manque de sommeil et les écrans sont des déclencheurs fréquents : note ce qui précède.",
                 "Une pause sans écran de quelques minutes peut aider.",
+                "Un linge frais sur le front ou la nuque peut soulager.",
             ),
             consult = listOf(
                 "Mal de tête soudain et très violent, avec nuque raide, fièvre, faiblesse, trouble de la parole ou de la vue : appelle le 15 tout de suite.",
@@ -143,6 +144,7 @@ object WellbeingLibrary {
                 "Garde une heure de lever régulière, même après une mauvaise nuit.",
                 "Pose les écrans une heure avant de dormir, dans une chambre sombre et fraîche.",
                 "Si tu ne dors pas, lève-toi un moment dans une lumière douce plutôt que d'attendre des heures au lit.",
+                "Évite le café et les repas lourds en fin de journée.",
             ),
             consult = listOf(
                 "Un sommeil perturbé depuis plusieurs semaines : parles-en à ton médecin.",
@@ -155,6 +157,7 @@ object WellbeingLibrary {
                 "Assieds-toi, relâche les épaules, desserre ce qui serre.",
                 "Respire lentement par le nez, souffle doucement par la bouche.",
                 "Si tu as un plan d'action ou un traitement de secours, suis-les.",
+                "Ne parle pas, laisse le souffle ralentir avant de reprendre une activité.",
             ),
             consult = listOf(
                 "Essoufflement soudain, qui ne passe pas, avec douleur dans la poitrine, lèvres bleutées ou difficulté à parler : appelle le 15 ou le 112.",
@@ -166,6 +169,7 @@ object WellbeingLibrary {
                 "Assieds-toi ou allonge-toi dès que ça tourne.",
                 "Bois un verre d'eau et lève-toi lentement.",
                 "Évite les escaliers et la conduite tant que ça tourne.",
+                "Mange quelque chose si tu n'as rien pris depuis longtemps.",
             ),
             consult = listOf(
                 "Vertige avec perte de connaissance, douleur dans la poitrine, trouble de la parole ou de la vue, faiblesse d'un côté : appelle le 15.",
@@ -178,6 +182,7 @@ object WellbeingLibrary {
                 "Des mouvements doux et réguliers valent mieux qu'un grand effort ou une immobilité longue.",
                 "La chaleur détend, le froid apaise parfois une articulation gonflée.",
                 "Alterne repos et activité, et fractionne les tâches.",
+                "Un peu de mouvement doux au réveil aide à se dérouiller.",
             ),
             consult = listOf(
                 "Une articulation rouge, chaude, très gonflée, ou avec de la fièvre : consulte rapidement.",
@@ -189,6 +194,7 @@ object WellbeingLibrary {
                 "De petits repas, mangés lentement.",
                 "Bois par petites gorgées et marche doucement après le repas.",
                 "Note ce que tu as mangé quand ça va mal : ça aide à repérer ce qui gêne.",
+                "Évite les repas très gras ou très copieux, et mange sans te presser.",
             ),
             consult = listOf(
                 "Du sang dans les selles, une perte de poids sans raison, une forte douleur au ventre ou de la fièvre : consulte.",
@@ -199,6 +205,8 @@ object WellbeingLibrary {
             tips = listOf(
                 "Habille-toi en couches, garde les pieds et les mains au chaud.",
                 "Une boisson chaude, une bouillotte, un petit mouvement pour te réchauffer.",
+                "Mets des chaussettes, un gilet et un bonnet : on perd beaucoup de chaleur par la tête et les pieds.",
+                "Mange ou bois quelque chose de chaud, puis bouge cinq minutes : ça relance la chaleur du corps.",
             ),
             consult = listOf(
                 "Une frilosité nouvelle, avec fatigue, peau sèche ou prise de poids, peut être liée à la thyroïde : parles-en à ton médecin.",
@@ -210,6 +218,7 @@ object WellbeingLibrary {
                 "Si tu peux, fais une pause avant de répondre : trois respirations lentes.",
                 "Dis à tes proches que c'est un jour difficile, ce n'est pas contre eux.",
                 "Bouger un peu aide à relâcher la tension.",
+                "Si tu as faim ou sommeil, règle d'abord ça : l'irritabilité s'en nourrit.",
             ),
             consult = listOf(
                 "Si c'est fréquent ou que ça abîme tes relations : parles-en à ton médecin.",
@@ -221,6 +230,7 @@ object WellbeingLibrary {
                 "Assieds-toi, respire lentement et pose une main sur ta poitrine.",
                 "Un verre d'eau, et moins de café ou d'excitants ce jour-là.",
                 "Note quand ça arrive : c'est utile pour ton médecin.",
+                "Évite le café, le tabac et les boissons énergisantes.",
             ),
             consult = listOf(
                 "Palpitations avec douleur dans la poitrine, malaise, essoufflement ou perte de connaissance : appelle le 15.",

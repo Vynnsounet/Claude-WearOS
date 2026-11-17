@@ -1981,8 +1981,10 @@ class ScreensTest {
                 initial = listOf("heavy_chest", "cant_get_up"), tried = setOf("cant_get_up"),
             )
         }
-        // Two ideas at a time; the others are one touch away.
+        // Three ideas at a time; the others are one touch away.
         compose.onNodeWithText("•  Pose une main sur ta poitrine, respire doucement et dis-toi une phrase gentille.").assertExists()
+        compose.onNodeWithText("•  Une boisson chaude, un plaid, une bouillotte sur la poitrine ou le ventre.").assertExists()
+        compose.onNodeWithText("•  Si les larmes viennent, laisse-les venir : pleurer soulage.").assertExists()
         compose.onNodeWithText("•  Dis à quelqu'un que ça pèse, même par un simple message.").assertDoesNotExist()
         compose.onAllNodesWithText("Plus d'idées")[0].performScrollTo().performClick()
         compose.onNodeWithText("•  Dis à quelqu'un que ça pèse, même par un simple message.").assertExists()

@@ -66,6 +66,14 @@ L'optimiseur de R8 reste désactivé (`-dontoptimize`) : APK de 3,8 Mo au lieu d
 le dex livré peut être reconverti et exécuté hors appareil pour vérification (voir plus bas),
 ce que l'optimiseur empêche. Il pourra être réactivé après des essais sur téléphone.
 
+### 1.22.2
+
+- Chaque sensation de « Ce que je ressens » a maintenant 4 conseils pour la faire passer (3 affichés, le 4e
+  sous « Plus d'idées »), et chaque symptôme du suivi a au moins 4 conseils.
+- Rapport PDF pour le médecin : la partie « Profil » ajoute les conditions suivies dans l'appli (« Ce qui
+  m'accompagne ») quand le suivi est activé. Les symptômes notés depuis « Ce que je ressens » y figuraient déjà,
+  puisqu'ils sont ajoutés au suivi des symptômes.
+
 ### 1.22.1
 
 - L'écran « Ça ne va pas » n'a plus la carte « Gorge nouée ? » : ses conseils (mâchoire, épaules, petites

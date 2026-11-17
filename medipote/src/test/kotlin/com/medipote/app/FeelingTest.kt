@@ -31,7 +31,7 @@ class FeelingTest {
         val ids = FeelingGuide.SIGNS.map { it.id }
         assertEquals(ids.size, ids.toSet().size)
         FeelingGuide.SIGNS.forEach { s ->
-            assertTrue("${s.id} things to try", s.tryNow.size >= 3)
+            assertTrue("${s.id} has three or four things to try", s.tryNow.size in 4..5)
             assertTrue("${s.id} why", s.why.length > 20)
             assertTrue("${s.id} feeling", FeelingGuide.feeling(s.feeling) != null)
             // The symptom it can be noted as exists in the tracking.
@@ -118,5 +118,10 @@ class FeelingTest {
         assertTrue(text.contains("mâchoire") && text.contains("épaules"))
         assertTrue(text.contains("petites gorgées d'eau"))
         assertTrue(text.contains("main sur ta gorge"))
+    }
+
+    @Test
+    fun everySymptomHasAtLeastFourTipsToEaseIt() {
+        WellbeingLibrary.SYMPTOMS.forEach { assertTrue("${it.id} tips", it.tips.size >= 4) }
     }
 }

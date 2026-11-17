@@ -188,4 +188,16 @@ class V19Test {
         assertEquals(0, off.symptomDays)
         assertEquals(0, off.wins)
     }
+
+    @Test
+    fun theReportNamesTheConditionsTheAppFollows() {
+        val s = wellState("fatigue").let { st ->
+            st.copy(settings = st.settings.copy(wellbeing = st.settings.wellbeing.copy(conditions = listOf(com.medipote.app.data.MyCondition("Hashimoto / hypothyroïdie", "hashimoto")))))
+        }
+        val facts = DoctorReports.build(s, at(12), 30, setOf(ReportPart.PROFILE)).sections.single().blocks.filterIsInstance<ReportBlock.Facts>().single().items
+        assertTrue(facts.any { it.first == "Conditions suivies dans l'appli" && it.second.contains("Hashimoto") })
+        // Not turned on: nothing is added.
+        val off = DoctorReports.build(s.copy(settings = Settings()), at(12), 30, setOf(ReportPart.PROFILE)).sections.single().blocks.filterIsInstance<ReportBlock.Facts>().single().items
+        assertTrue(off.none { it.first.startsWith("Conditions") })
+    }
 }
