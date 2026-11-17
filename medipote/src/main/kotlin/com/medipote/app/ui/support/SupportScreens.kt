@@ -83,7 +83,7 @@ private val noteDate = DateTimeFormatter.ofPattern("d MMM · HH:mm", Locale.FRAN
 /** A calm frame for every support screen: nothing flashy, nothing to win. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun SupportFrame(title: String, onBack: () -> Unit, actions: @Composable () -> Unit = {}, content: @Composable () -> Unit) {
+internal fun SupportFrame(title: String, onBack: () -> Unit, actions: @Composable () -> Unit = {}, content: @Composable () -> Unit) {
     Scaffold(
         topBar = {
             TopAppBar(
@@ -119,6 +119,7 @@ data class SupportActions(
     val onAskAgain: () -> Unit = {},
     /** Opens the gentle day (missions, small steps); only offered once the user turned it on. */
     val onSoftDay: (() -> Unit)? = null,
+    val onFeel: () -> Unit = {},
 )
 
 /** "Ça ne va pas": a few big, quiet ways to get through a hard moment. */
@@ -156,6 +157,7 @@ fun SupportScreen(state: AppState, now: LocalDateTime, a: SupportActions) {
 
         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Text("Qu'est-ce qui t'aiderait ?", style = MaterialTheme.typography.titleMedium)
+            ToolRow("💭", "Ce que je ressens", "Anxiété, angoisse, moral bas : ce qui peut aider", a.onFeel)
             ToolRow("🌬️", "Respirer", "Un cercle pour caler ton souffle", a.onBreathe)
             ToolRow("🖐️", "Me poser", "5 choses que je vois, 4 que je touche…", a.onGround)
             ToolRow("✍️", "Vider ma tête", "Écrire sans filtre, rien que pour moi", a.onThoughts)

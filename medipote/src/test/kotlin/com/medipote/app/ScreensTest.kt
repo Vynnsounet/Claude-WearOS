@@ -1889,6 +1889,94 @@ class ScreensTest {
         compose.onNodeWithText("🩺  Préparer ce rendez-vous").assertDoesNotExist()
     }
 
+    // ───────────── Ce que je ressens ─────────────
+
+    @Test
+    @Config(qualifiers = "w400dp-h3000dp-xhdpi")
+    fun feelScreenAsksWhatIsFelt() {
+        render("feel") { com.medipote.app.ui.support.FeelScreen(com.medipote.app.ui.support.FeelActions()) }
+        compose.onNodeWithText("Touche ce qui te ressemble.").assertExists()
+        compose.onNodeWithText("😰  Anxiété").assertExists()
+        compose.onNodeWithText("😨  Angoisse").assertExists()
+        compose.onNodeWithText("😔  Moral bas").assertExists()
+        // The person's own words are there.
+        compose.onNodeWithText("💔  Poids dans la poitrine").assertExists()
+        compose.onNodeWithText("🔋  Fatigue extrême").assertExists()
+        compose.onNodeWithText("🛏️  Du mal à se lever du lit").assertExists()
+        compose.onNodeWithText("😶  Envie de rien faire").assertExists()
+        compose.onNodeWithText("Choisis une ou plusieurs choses", substring = true).assertExists()
+        compose.onNodeWithText("Ce qui peut aider maintenant").assertDoesNotExist()
+    }
+
+    @Test
+    @Config(qualifiers = "w400dp-h3600dp-xhdpi")
+    fun lowMoodSignsGiveGesturesToolsAndWhenToTalk() {
+        val tools = mutableListOf<com.medipote.app.domain.SupportTool>()
+        var called: String? = null
+        var noted: Pair<List<String>, Int>? = null
+        render("feel_low") {
+            com.medipote.app.ui.support.FeelScreen(
+                com.medipote.app.ui.support.FeelActions(onTool = { tools += it }, onCall = { called = it }, onNote = { s, v -> noted = s to v }),
+                initial = listOf("heavy_chest", "cant_get_up", "exhausted", "no_desire"),
+            )
+        }
+        compose.onNodeWithText("Ce qui peut aider maintenant").assertExists()
+        compose.onNodeWithText("•  Ne vise pas « me lever » : vise une toute petite étape, comme t'asseoir au bord du lit.").assertExists()
+        compose.onNodeWithText("Quand en parler").assertExists()
+        // A weight on the chest reminds when to call; the line is one tap away.
+        compose.onNodeWithText("appelle le 15 tout de suite", substring = true).assertExists()
+        compose.onNodeWithText("📞 Appeler le 15").performScrollTo().performClick()
+        org.junit.Assert.assertEquals("15", called)
+        // The tools the signs point to.
+        compose.onNodeWithText("💛  Journée douce").performScrollTo().performClick()
+        compose.onNodeWithText("🌬️  Respirer").performScrollTo().performClick()
+        org.junit.Assert.assertEquals(listOf(com.medipote.app.domain.SupportTool.SOFT_DAY, com.medipote.app.domain.SupportTool.BREATHE), tools)
+        // Noting what was felt, with a strength.
+        compose.onNodeWithText("📝  Les noter dans mes symptômes").assertExists()
+        compose.onNodeWithText("4 · fort").performScrollTo().performClick()
+        compose.onNodeWithText("Noter").performScrollTo().performClick()
+        org.junit.Assert.assertEquals(listOf("lowmood", "fatigue") to 4, noted)
+    }
+
+    @Test
+    @Config(qualifiers = "w400dp-h3200dp-xhdpi")
+    fun darkThoughtsShowTheHelpLineFirst() {
+        var called: String? = null
+        render("feel_dark") {
+            com.medipote.app.ui.support.FeelScreen(com.medipote.app.ui.support.FeelActions(onCall = { called = it }), initial = listOf("dark"))
+        }
+        compose.onNodeWithText("Tu n'as pas à rester seul·e avec ça").assertExists()
+        compose.onNodeWithText("📞 Appeler le 3114").performClick()
+        org.junit.Assert.assertEquals("3114", called)
+        // A dark thought is not turned into a tip list or a symptom to note.
+        compose.onNodeWithText("📝  Les noter dans mes symptômes").assertExists() // it can still be noted, as low mood
+    }
+
+    @Test
+    @Config(qualifiers = "w400dp-h2600dp-xhdpi")
+    fun anxietyAndPanicSignsOfferBreathingAndGrounding() {
+        val tools = mutableListOf<com.medipote.app.domain.SupportTool>()
+        render("feel_anxiety") {
+            com.medipote.app.ui.support.FeelScreen(com.medipote.app.ui.support.FeelActions(onTool = { tools += it }), initial = listOf("heart_fast", "wave", "loop"))
+        }
+        compose.onNodeWithText("•  Dis-toi : « c'est une vague, elle va passer ».").assertExists()
+        compose.onNodeWithText("🖐️  Me poser (5-4-3-2-1)").performScrollTo().performClick()
+        compose.onNodeWithText("✍️  Vider ma tête").performScrollTo().performClick()
+        org.junit.Assert.assertEquals(listOf(com.medipote.app.domain.SupportTool.GROUND, com.medipote.app.domain.SupportTool.THOUGHTS), tools)
+        // The anxiety feeling mentions the thyroid among possible causes.
+        compose.onNodeWithText("la thyroïde", substring = true).assertExists()
+    }
+
+    @Test
+    fun theSupportScreenOpensTheFeelingGuideFirst() {
+        var opened = 0
+        render("support_with_feel") {
+            com.medipote.app.ui.support.SupportScreen(supportState(), now, com.medipote.app.ui.support.SupportActions(onFeel = { opened++ }))
+        }
+        compose.onNodeWithText("Ce que je ressens").performScrollTo().performClick()
+        org.junit.Assert.assertEquals(1, opened)
+    }
+
     private fun save(name: String, bitmap: Bitmap) {
         val dir = File("build/screenshots").apply { mkdirs() }
         File(dir, "$name.png").outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }

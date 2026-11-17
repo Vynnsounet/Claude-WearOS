@@ -416,6 +416,24 @@ soin : il ne remplace ni un médecin ni un psy.
 
 ![](docs/support.png)
 
+### Ce que je ressens
+
+Dans « Ça ne va pas », en premier : on touche ce qu'on ressent, **dans le corps comme dans la tête**, et l'appli
+répond. Trois familles : **anxiété** (poitrine serrée, cœur qui bat vite, souffle court, tremblements, boule au
+ventre, tensions, pensées en boucle, mal à s'endormir…), **angoisse** (vague de peur, impression d'étouffer,
+fourmillements, irréalité, peur de perdre le contrôle) et **moral bas** (poids dans la poitrine, fatigue
+extrême, mal à se lever du lit, envie de rien faire, gorge nouée, vide, culpabilité, idées noires…).
+
+Pour chaque chose touchée : **ce qui peut aider maintenant** (gestes simples), un mot sur **pourquoi ça arrive**,
+des boutons vers les outils qui aident (respirer, me poser, vider ma tête, boîte à réconfort, journée douce) et
+**quand en parler**. Une sensation dans la poitrine, le cœur ou le souffle rappelle toujours quand appeler le 15 ;
+les idées noires mettent le 3114 en premier ; le moral bas et l'anxiété rappellent qu'une cause physique (thyroïde,
+carence, anémie…) peut jouer et mérite un point avec le médecin. Aucun diagnostic, aucune maladie nommée, aucun
+traitement touché. Un bouton « Les noter dans mes symptômes » (force de 1 à 5) les ajoute au suivi, donc aux
+statistiques et au rapport pour le médecin. Tout est hors ligne et à faire relire par un·e professionnel·le.
+
+![](docs/feel_low.png)
+
 ## Siestes
 
 Dans Suivi › Sommeil : **« 😴 Je m'endors »** lance un chronomètre (visible aussi sur l'accueil,

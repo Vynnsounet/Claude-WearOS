@@ -66,6 +66,14 @@ L'optimiseur de R8 reste désactivé (`-dontoptimize`) : APK de 3,8 Mo au lieu d
 le dex livré peut être reconverti et exécuté hors appareil pour vérification (voir plus bas),
 ce que l'optimiseur empêche. Il pourra être réactivé après des essais sur téléphone.
 
+### 1.21.0 — « Ce que je ressens »
+
+- Dans « Ça ne va pas » : un guide des signes de l'anxiété, de l'angoisse et du moral bas, dans le corps et dans
+  la tête (poids dans la poitrine, fatigue extrême, mal à se lever, envie de rien faire, poitrine serrée, cœur qui
+  bat vite…). Gestes à essayer tout de suite, pourquoi ça arrive, quand en parler (15, 3114), boutons vers les
+  outils, et « Les noter dans mes symptômes ». Hors ligne, sans diagnostic. Contenu à faire relire par un·e
+  professionnel·le de santé.
+
 ### 1.20.0 (téléphone) · 1.15.0 (montre) — widget, récap, montre
 
 - Widget « Comment je me sens » : cinq visages pour noter l'humeur d'un geste, raccourcis « Ça ne va pas » et

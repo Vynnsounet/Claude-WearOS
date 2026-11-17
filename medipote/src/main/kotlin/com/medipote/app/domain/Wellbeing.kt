@@ -100,6 +100,19 @@ object Wellbeing {
         return setIntensity(state, date, symptom, old.intensity, note.take(500))
     }
 
+    /**
+     * Notes several symptoms for today at once (from "Ce que je ressens"). It turns the tracking on and
+     * adds them to the followed list, so what was felt is kept and can be shown to a doctor.
+     */
+    fun noteFelt(state: AppState, date: LocalDate, symptoms: List<String>, intensity: Int): AppState {
+        val ids = symptoms.distinct()
+        if (ids.isEmpty()) return state
+        val w = state.settings.wellbeing
+        var s = state.copy(settings = state.settings.copy(wellbeing = w.copy(enabled = true, symptoms = (w.symptoms + ids).distinct())))
+        ids.forEach { s = setIntensity(s, date, it, intensity) }
+        return s
+    }
+
     /** Symptoms felt strongly today, strongest first. */
     fun strongToday(state: AppState, date: LocalDate, from: Int = 3): List<String> =
         notesOn(state, date).filter { it.intensity >= from }.sortedByDescending { it.intensity }.map { it.symptom }

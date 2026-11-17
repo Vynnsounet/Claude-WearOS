@@ -780,6 +780,27 @@ fun MediPoteApp(vm: AppViewModel) {
                             onMood = vm::setMood,
                             onAskAgain = vm::askAgainLater,
                             onSoftDay = { nav.navigate("softday") },
+                            onFeel = { nav.navigate("support_feel") },
+                        ),
+                    )
+                }
+                composable("support_feel") {
+                    com.medipote.app.ui.support.FeelScreen(
+                        com.medipote.app.ui.support.FeelActions(
+                            onBack = { nav.popBackStack() },
+                            onTool = { tool ->
+                                nav.navigate(
+                                    when (tool) {
+                                        com.medipote.app.domain.SupportTool.BREATHE -> "support_breathe"
+                                        com.medipote.app.domain.SupportTool.GROUND -> "support_ground"
+                                        com.medipote.app.domain.SupportTool.THOUGHTS -> "support_thoughts"
+                                        com.medipote.app.domain.SupportTool.COMFORT -> "support_comfort"
+                                        com.medipote.app.domain.SupportTool.SOFT_DAY -> "softday"
+                                    },
+                                )
+                            },
+                            onCall = { com.medipote.app.ui.support.dial(context, it) },
+                            onNote = vm::noteFelt,
                         ),
                     )
                 }
