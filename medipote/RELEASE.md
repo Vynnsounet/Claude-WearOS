@@ -66,6 +66,13 @@ L'optimiseur de R8 reste désactivé (`-dontoptimize`) : APK de 3,8 Mo au lieu d
 le dex livré peut être reconverti et exécuté hors appareil pour vérification (voir plus bas),
 ce que l'optimiseur empêche. Il pourra être réactivé après des essais sur téléphone.
 
+### 1.23.0 — des heures différentes selon les jours
+
+- Chaque heure de prise d'un traitement a ses propres jours (10:00 en semaine et 12:00 le week-end, 10:00
+  sauf le mercredi, seulement lundi et vendredi…). Rappels, accueil, montre, stock, statistiques et rapport
+  pour le médecin suivent ; changer les jours d'une heure ne réécrit pas le passé (testé). Les traitements
+  existants ne changent pas. Montre : rien à réinstaller, elle suit ce que le téléphone lui envoie.
+
 ### 1.22.2
 
 - Chaque sensation de « Ce que je ressens » a maintenant 4 conseils pour la faire passer (3 affichés, le 4e

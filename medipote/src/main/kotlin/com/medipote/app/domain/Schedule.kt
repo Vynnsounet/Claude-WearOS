@@ -114,7 +114,7 @@ object Schedule {
 
     fun occurrencesOn(treatments: List<Treatment>, date: LocalDate): List<DoseOccurrence> =
         treatments.filter { it.isActiveOn(date) }
-            .flatMap { t -> t.doses.map { DoseOccurrence(t, it, date) } }
+            .flatMap { t -> t.doses.filter { it.appliesOn(date) }.map { DoseOccurrence(t, it, date) } }
             .filter { o ->
                 // A dose whose on-time window had already closed when the treatment (or this dose time)
                 // was added is not owed.
@@ -184,9 +184,16 @@ object Schedule {
         val pairs = pairDoseTimes(old.doses.map { it.minuteOfDay }, edited.doses.map { it.minuteOfDay })
         val oldSince = old.doses.associate { it.minuteOfDay to it.since }
         val newToOld = pairs.entries.associate { (o, n) -> n to o }
+        val oldByMinute = old.doses.associateBy { it.minuteOfDay }
         val doses = edited.doses.map { d ->
             val from = newToOld[d.minuteOfDay]
-            d.copy(since = if (from != null) oldSince[from] else now)
+            val kept = d.copy(since = if (from != null) oldSince[from] else now)
+            val before = from?.let { oldByMinute[it] }
+            // The days of a dose time changed: from today on the new days apply, the past keeps its own.
+            if (before != null && before.days != d.days) {
+                val today = now.toLocalDate()
+                kept.copy(daysFrom = today, daysBefore = before.daysOn(today.minusDays(1)))
+            } else kept
         }
         val treatment = edited.copy(doses = doses)
 

@@ -112,7 +112,7 @@ object Game {
         val log = state.doseLogs.firstOrNull { it.key == key } ?: return state
         val t = state.treatments.firstOrNull { it.id == log.treatmentId }
         val minute = log.scheduled.hour * 60 + log.scheduled.minute
-        val quantity = t?.let { tr -> tr.doses.firstOrNull { it.minuteOfDay == minute }?.let { tr.quantityOn(log.scheduled.toLocalDate(), it) } } ?: 0.0
+        val quantity = t?.let { tr -> tr.doses.firstOrNull { it.minuteOfDay == minute && it.appliesOn(log.scheduled.toLocalDate()) }?.let { tr.quantityOn(log.scheduled.toLocalDate(), it) } } ?: 0.0
         val treatments = state.treatments.map { if (it.id == log.treatmentId && it.stock != null) it.copy(stock = it.stock + quantity) else it }
         val game = if (log.points > 0) addPoints(state.game, -log.points, "Prise annulée : ${t?.displayName ?: "?"}", now) else state.game
         return state.copy(doseLogs = state.doseLogs - log, treatments = treatments, game = game)

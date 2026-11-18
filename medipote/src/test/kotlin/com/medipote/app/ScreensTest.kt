@@ -2016,6 +2016,54 @@ class ScreensTest {
         org.junit.Assert.assertEquals(1, opened)
     }
 
+    // ───────────── A treatment at different times on different days ─────────────
+
+    @Test
+    @Config(qualifiers = "w400dp-h2200dp-xhdpi")
+    fun theEditorGivesEachTimeItsOwnDays() {
+        var saved: Treatment? = null
+        val levo = treatments.first().copy(doses = listOf(DoseTime(10 * 60, days = setOf(1, 2, 3, 4, 5)), DoseTime(12 * 60, days = setOf(6, 7))))
+        render("editor_days") {
+            TreatmentEditorScreen(
+                existing = levo, drug = DrugGuide.byId(levo.drugId ?: "levothyroxine"), customName = "",
+                allergies = emptyList(), today = today, onSave = { saved = it }, onDelete = {}, onBack = {},
+            )
+        }
+        // The days of each time are said in words, "every day" being the default.
+        compose.onNodeWithText("📅  En semaine").assertExists()
+        compose.onNodeWithText("📅  Le week-end").assertExists()
+        // The first time goes to "every day except Wednesday" through the day buttons.
+        compose.onAllNodesWithText("Tous les jours")[0].performScrollTo().performClick()
+        compose.onAllNodesWithText("mer")[0].performScrollTo().performClick()
+        compose.onNodeWithText("Enregistrer").performClick()
+        org.junit.Assert.assertEquals(setOf(1, 2, 4, 5, 6, 7), saved!!.doses.first().days) // every day except Wednesday
+        org.junit.Assert.assertEquals(setOf(6, 7), saved!!.doses.last().days)
+    }
+
+    @Test
+    @Config(qualifiers = "w400dp-h900dp-xhdpi")
+    fun aTimeKeepsEveryDayUntilAskedAndNeverEndsWithNoDay() {
+        var saved: Treatment? = null
+        val plain = treatments.first()
+        render("editor_days_plain") {
+            TreatmentEditorScreen(
+                existing = plain, drug = DrugGuide.byId(plain.drugId ?: "levothyroxine"), customName = "",
+                allergies = emptyList(), today = today, onSave = { saved = it }, onDelete = {}, onBack = {},
+            )
+        }
+        compose.onNodeWithText("📅  Tous les jours").assertExists()
+        compose.onNodeWithText("Enregistrer").performClick()
+        org.junit.Assert.assertNull(saved!!.doses.single().days)
+    }
+
+    @Test
+    @Config(qualifiers = "w400dp-h900dp-xhdpi")
+    fun theTreatmentCardNamesTheDaysOfEachTime() {
+        val levo = treatments.first().copy(doses = listOf(DoseTime(10 * 60, days = setOf(1, 2, 3, 4, 5)), DoseTime(12 * 60, days = setOf(6, 7))))
+        render("treatments_days") { TreatmentsScreen(listOf(levo), today, {}, {}) }
+        compose.onNodeWithText("10:00 en semaine · 12:00 le week-end").assertExists()
+    }
+
     private fun save(name: String, bitmap: Bitmap) {
         val dir = File("build/screenshots").apply { mkdirs() }
         File(dir, "$name.png").outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }

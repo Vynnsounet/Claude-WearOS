@@ -309,6 +309,18 @@ par une action de la personne : sauvegarde, rapport PDF ou document partagé.
 
 ![](docs/widget_mood.png)
 
+## Un traitement à des heures différentes selon les jours
+
+![](docs/editor_days.png)
+
+Chaque heure de prise a ses **propres jours** : par exemple Lévothyrox à **10:00 en semaine** et **12:00 le
+week-end**, ou à 10:00 **tous les jours sauf le mercredi**, ou **seulement le lundi et le vendredi**. Dans le
+formulaire d'un traitement, sous chaque heure, « 📅 Tous les jours » s'ouvre pour choisir : tous les jours,
+en semaine, week-end, ou les jours un par un (au moins un reste toujours coché). Rien ne change tant qu'on ne
+le demande pas. Les rappels et leur relance, l'accueil, la montre, le stock (la consommation de la semaine
+réelle), les statistiques et le rapport pour le médecin suivent. Quand on change les jours d'une heure de
+prise, le passé garde les jours qu'il avait : l'historique et les statistiques ne sont pas réécrits.
+
 ## Préparer un rendez-vous, rapport, heures calmes
 
 - **Préparer mon rendez-vous** (depuis un rendez-vous de l'agenda) : tes questions d'abord (tu les écris à

@@ -107,7 +107,7 @@ object DoctorReports {
             t.minIntervalHours?.let { append(", au moins $it h entre deux prises") }
         }
         else -> buildString {
-            append(t.doses.sortedBy { it.minuteOfDay }.joinToString(", ") { "${it.timeLabel} (${t.unit.format(t.quantityOn(today, it))})" })
+            append(t.doses.sortedBy { it.minuteOfDay }.joinToString(", ") { "${it.timeLabel} (${t.unit.format(t.quantityOn(today, it))})" + it.daysText.let { d -> if (d.isEmpty()) "" else " $d" } })
             t.pill?.let { append(" · ${com.medipote.app.data.PillRegimen.of(it).label}") }
             when {
                 t.everyDays > 1 -> append(" · tous les ${t.everyDays} jours")

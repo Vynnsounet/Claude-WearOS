@@ -321,6 +321,7 @@ fun TreatmentEditorScreen(
                     onTime = { editingTime = index },
                     onQuantity = { doses[index] = dose.copy(quantity = it) },
                     onRemove = if (doses.size > 1) ({ doses.removeAt(index) }) else null,
+                    onDays = { doses[index] = dose.copy(days = it) },
                 )
             }
             TextButton(onClick = {
@@ -588,8 +589,11 @@ private fun InfoLine(label: String, text: String) {
 }
 
 @Composable
-private fun DoseRow(dose: DoseTime, unit: DoseUnit, onTime: () -> Unit, onQuantity: (Double) -> Unit, onRemove: (() -> Unit)?) {
+@OptIn(ExperimentalLayoutApi::class)
+private fun DoseRow(dose: DoseTime, unit: DoseUnit, onTime: () -> Unit, onQuantity: (Double) -> Unit, onRemove: (() -> Unit)?, onDays: (Set<Int>?) -> Unit = {}) {
+    var daysOpen by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(dose.days != null) }
     Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)) {
+      Column {
         Row(Modifier.padding(start = 8.dp, end = 4.dp, top = 4.dp, bottom = 4.dp), verticalAlignment = Alignment.CenterVertically) {
             TextButton(onClick = onTime) {
                 Icon(Icons.Rounded.Schedule, null, Modifier.size(18.dp))
@@ -604,6 +608,34 @@ private fun DoseRow(dose: DoseTime, unit: DoseUnit, onTime: () -> Unit, onQuanti
             IconButton(onClick = { onQuantity(nextQuantity(dose.quantity, true)) }) { Icon(Icons.Rounded.Add, "Plus") }
             if (onRemove != null) IconButton(onClick = onRemove) { Icon(Icons.Rounded.Close, "Retirer cette prise") }
         }
+        // The days of this dose time: "every day" until asked, so the form stays light.
+        TextButton(onClick = { daysOpen = !daysOpen }, modifier = Modifier.padding(start = 4.dp)) {
+            Text("📅  " + (dose.daysText.ifEmpty { "Tous les jours" }).replaceFirstChar { it.titlecase(Locale.FRANCE) })
+        }
+        if (daysOpen) {
+            Column(Modifier.padding(start = 12.dp, end = 12.dp, bottom = 10.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    listOf("Tous les jours" to null, "En semaine" to setOf(1, 2, 3, 4, 5), "Week-end" to setOf(6, 7)).forEach { (label, set) ->
+                        FilterChip(selected = (dose.days ?: Treatment.ALL_DAYS) == (set ?: Treatment.ALL_DAYS), onClick = { onDays(set) }, label = { Text(label) })
+                    }
+                }
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    val current = dose.days ?: Treatment.ALL_DAYS
+                    (1..7).forEach { d ->
+                        FilterChip(
+                            selected = d in current,
+                            onClick = {
+                                // At least one day stays; all seven means "every day".
+                                val next = if (d in current) current - d else current + d
+                                if (next.isNotEmpty()) onDays(if (next.size == 7) null else next)
+                            },
+                            label = { Text(DayOfWeek.of(d).getDisplayName(TextStyle.SHORT, Locale.FRANCE).trimEnd('.')) },
+                        )
+                    }
+                }
+            }
+        }
+      }
     }
 }
 

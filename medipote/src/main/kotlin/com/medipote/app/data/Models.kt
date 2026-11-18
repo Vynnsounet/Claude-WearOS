@@ -135,10 +135,11 @@ data class Treatment(
     val dailyUse: Double
         get() {
             val today = LocalDate.now()
-            val perDay = doses.sumOf { quantityOn(today, it) }
             val pillRatio = pill?.let { if (it.placebo) 1.0 else it.activeDays.toDouble() / it.cycleLength } ?: 1.0
-            val dayRatio = if (everyDays > 1) 1.0 / everyDays else daysOfWeek.size / 7.0
-            return perDay * dayRatio * pillRatio
+            if (everyDays > 1) return doses.sumOf { quantityOn(today, it) } / everyDays * pillRatio
+            // A week of doses, each on its own days, spread over seven days.
+            val week = daysOfWeek.sumOf { d -> doses.filter { it.days == null || d in it.days }.sumOf { quantityOn(today, it) } }
+            return week / 7.0 * pillRatio
         }
 
     /** Whole days of treatment left in stock, or null when not tracked. */
@@ -172,8 +173,37 @@ data class DoseTime(
     val quantity: Double = 1.0,
     /** When this dose time was added to an existing treatment: it isn't owed on earlier days. */
     @Serializable(with = LocalDateTimeSerializer::class) val since: LocalDateTime? = null,
+    /**
+     * The days of the week (1 = Monday … 7 = Sunday) this dose time is taken on; null = every day the
+     * treatment is taken. It is what lets one treatment be taken at different times on different days
+     * (10:00 on weekdays and 12:00 at weekends: two dose times with their own days).
+     */
+    val days: Set<Int>? = null,
+    /** When [days] last changed, and what it was before: past days keep the days they had. */
+    @Serializable(with = LocalDateSerializer::class) val daysFrom: LocalDate? = null,
+    val daysBefore: Set<Int>? = null,
 ) {
     val timeLabel: String get() = "%02d:%02d".format(minuteOfDay / 60, minuteOfDay % 60)
+
+    /** The days this dose time was taken on, on [date] (earlier days keep the days they had). */
+    fun daysOn(date: LocalDate): Set<Int>? = if (daysFrom != null && date.isBefore(daysFrom)) daysBefore else days
+
+    /** Whether this dose time is due on [date], treatment's own days aside. */
+    fun appliesOn(date: LocalDate): Boolean = daysOn(date).let { it == null || date.dayOfWeek.value in it }
+
+    /** "en semaine", "le week-end", "lun, mer, ven"; empty for every day. */
+    val daysText: String get() = daysLabel(days)
+
+    companion object {
+        fun daysLabel(days: Set<Int>?): String = when {
+            days == null || days.size == 7 -> ""
+            days == setOf(1, 2, 3, 4, 5) -> "en semaine"
+            days == setOf(6, 7) -> "le week-end"
+            else -> days.sorted().joinToString(", ") {
+                java.time.DayOfWeek.of(it).getDisplayName(java.time.format.TextStyle.SHORT, java.util.Locale.FRANCE).trimEnd('.')
+            }
+        }
+    }
 }
 
 @Serializable
