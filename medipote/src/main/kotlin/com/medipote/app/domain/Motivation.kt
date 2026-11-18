@@ -98,6 +98,9 @@ object Challenges {
         Challenge("cuddle4", "🤗", "Câliner ton compagnon 4 jours", 4, 20),
         Challenge("notes3", "💭", "Écrire une note dans ton journal 3 jours", 3, 25),
         Challenge("ritual4", "✨", "Faire 4 rituels", 4, 30),
+        Challenge("journal5", "📖", "Remplir ton journal 5 jours", 5, 35),
+        Challenge("sleep6", "🌙", "Noter 6 nuits", 6, 40),
+        Challenge("wins3", "💛", "3 petites victoires dans la semaine", 3, 30),
     )
 
     fun weekStart(date: LocalDate): LocalDate = date.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
@@ -108,11 +111,15 @@ object Challenges {
             when (c.id) {
                 "complete4" -> state.treatments.any { !it.asNeeded }
                 "water3" -> true
+                "wins3" -> Wellbeing.enabled(state)
                 else -> true
             }
         }
         val week = date.get(IsoFields.WEEK_OF_WEEK_BASED_YEAR) + date.get(IsoFields.WEEK_BASED_YEAR) * 53
-        return (0 until usable.size).map { usable[(week * 3 + it * 5) % usable.size] }.distinct().take(3)
+        // Steps through the list by a number with no common factor with its size, so three different ones always come.
+        fun gcd(a: Int, b: Int): Int = if (b == 0) a else gcd(b, a % b)
+        val step = listOf(5, 3, 7, 1).first { gcd(it, usable.size) == 1 }
+        return (0 until usable.size).map { usable[(week * 3 + it * step) % usable.size] }.distinct().take(3)
     }
 
     private fun progress(state: AppState, c: Challenge, from: LocalDate, to: LocalDate): Int {
@@ -120,7 +127,9 @@ object Challenges {
         val entries = state.journal.filter { inWeek(it.date) }
         return when (c.id) {
             "sleep5" -> state.sleep.count { inWeek(it.date) }
-            "journal3" -> entries.count { it.hasJournal }
+            "journal3", "journal5" -> entries.count { it.hasJournal }
+            "sleep6" -> state.sleep.count { inWeek(it.date) }
+            "wins3" -> state.wins.count { inWeek(it.date) }
             "water3" -> state.game.waterRewardDays.count(::inWeek)
             "complete4" -> {
                 val logs = state.doseLogs.associateBy { it.key }

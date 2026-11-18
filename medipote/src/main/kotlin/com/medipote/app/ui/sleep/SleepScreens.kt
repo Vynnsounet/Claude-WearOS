@@ -227,6 +227,7 @@ fun SleepScreen(
     onNapCancel: () -> Unit = {},
     onNapLog: () -> Unit = {},
     onOpenNap: (com.medipote.app.data.Nap) -> Unit = {},
+    onNightHelp: () -> Unit = {},
 ) {
     val today = now.toLocalDate()
     var period by rememberSaveable { mutableStateOf(SleepPeriod.WEEK) }
@@ -237,6 +238,21 @@ fun SleepScreen(
         Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
+        // One calm card for the nights that are hard.
+        Card(
+            onClick = onNightHelp,
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Row(Modifier.padding(horizontal = 18.dp, vertical = 16.dp), verticalAlignment = Alignment.CenterVertically) {
+                Text("🌙", style = MaterialTheme.typography.headlineSmall)
+                Spacer(Modifier.width(14.dp))
+                Column(Modifier.weight(1f)) {
+                    Text("Nuit difficile ?", style = MaterialTheme.typography.titleSmall)
+                    Text("Des idées douces pour t'endormir ou te rendormir.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
+        }
         if (lastNight == null) {
             Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow), modifier = Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {

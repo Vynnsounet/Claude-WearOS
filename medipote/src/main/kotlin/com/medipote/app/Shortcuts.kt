@@ -27,6 +27,7 @@ object Shortcuts {
             val list = buildList {
                 add(shortcut("support", "Ça ne va pas", "support"))
                 if (wellbeing) add(shortcut("symptoms", "Noter un symptôme", "symptoms"))
+                add(shortcut("night", "Nuit difficile", "sleep_help"))
                 add(shortcut("journal", "Mon journal", "journal_today"))
                 if (wellbeing) add(shortcut("softday", "Journée douce", "softday"))
             }

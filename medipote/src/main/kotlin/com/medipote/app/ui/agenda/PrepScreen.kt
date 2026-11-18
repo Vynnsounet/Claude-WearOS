@@ -42,6 +42,9 @@ fun AppointmentPrepScreen(
     onShare: (String) -> Unit,
     onReport: () -> Unit,
     onBack: () -> Unit,
+    attended: Boolean = false,
+    canMarkAttended: Boolean = false,
+    onAttended: () -> Unit = {},
 ) {
     var question by rememberSaveable { mutableStateOf("") }
     WbPage("Préparer mon rendez-vous", embedded = false, onBack = onBack) {
@@ -95,6 +98,11 @@ fun AppointmentPrepScreen(
             }
         }
 
+        if (attended) {
+            Text("✓ Tu y es allé·e, bravo 💛", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
+        } else if (canMarkAttended) {
+            androidx.compose.material3.FilledTonalButton(onClick = onAttended) { Text("✓ J'y suis allé·e") }
+        }
         Button(onClick = { onShare(prep.asText()) }, modifier = Modifier.fillMaxWidth().height(52.dp)) { Text("📤  Partager ce résumé") }
         OutlinedButton(onClick = { onCopy(prep.asText()) }, modifier = Modifier.fillMaxWidth().height(52.dp)) { Text("📋  Copier le texte") }
         OutlinedButton(onClick = onReport, modifier = Modifier.fillMaxWidth().height(52.dp)) { Text("📄  Le rapport PDF complet") }

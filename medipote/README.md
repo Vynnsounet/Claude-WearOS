@@ -309,6 +309,38 @@ par une action de la personne : sauvegarde, rapport PDF ou document partagé.
 
 ![](docs/widget_mood.png)
 
+## Une nuit difficile
+
+Dans Suivi › Sommeil, une carte douce **« 🌙 Nuit difficile ? »** (et un raccourci sur l'icône de l'appli) ouvre un
+écran **sombre et chaud** (peu de lumière, pas de bleu, quel que soit le thème) : « Respire. Tu n'as rien à
+réussir. » Deux gros choix, **je n'arrive pas à m'endormir** ou **je me suis réveillé·e et je n'arrive pas à me
+rendormir**, puis **quatre idées courtes** : respirer lentement, une **relaxation guidée** du front aux pieds (une
+phrase à la fois), vider sa tête, doux et frais (lumière douce, chaussettes chaudes) ; ou, pour se rendormir : un
+réveil est normal, ne pas regarder l'heure, respirer, se détendre. Toujours : **la règle des 20 minutes** (se lever si
+on est toujours éveillé·e, lumière douce, activité calme, revenir quand le sommeil revient), **« Ma recette pour me
+rendormir »** (ce qui t'a aidé, noté dans tes mots, rappelé la fois suivante), « Noter ma nuit et mes réveils », un
+lien vers « Ça ne va pas » si c'est l'angoisse, et un petit **« ✓ J'ai essayé »** qui rapporte des points.
+
+Pour les journées : **« Pour mieux dormir les prochains soirs »** (heure de lever régulière, lumière du matin,
+caféine le matin, siestes courtes, rituel du soir, le lit sert à dormir) et un **petit mot le soir** facultatif
+(« Doucement vers la nuit », à l'heure choisie dans Paramètres › Sommeil, jamais pendant les heures calmes).
+Rien de médicamenteux (ni somnifère, ni complément) ; une insomnie de plus de trois semaines, des ronflements forts
+avec pauses de respiration ou une grande fatigue en journée renvoient au médecin. Hors ligne, sans diagnostic.
+
+## Points pour prendre soin de soi, souhait de la semaine
+
+Les points ne se retirent jamais. En plus des prises, de l'eau, du journal, des nuits et des petites victoires :
+**première mesure du jour** +2, **premier symptôme noté du jour** +2 (quelle que soit sa force : on récompense le fait
+de noter, jamais de souffrir), **rendez-vous préparé** +5 et **honoré** (« ✓ J'y suis allé·e ») +10, **traitement
+racheté** quand le stock était bas +5, un **cadeau-surprise** (+25) après **sept jours de suite** où tu as fait
+quelque chose pour toi, et trois nouveaux défis de la semaine (journal 5 jours, 6 nuits, 3 petites victoires).
+Rien pour les prises « si besoin », le cycle ou les siestes. Le mot « malus » a disparu : une prise en retard rapporte
+moins de points, sans reproche.
+
+La boutique a un **souhait de la semaine** : une carte avec l'objet dont ton compagnon rêve (choisi selon la saison,
+jamais un objet déjà possédé) et une barre de progression ; quand il est offert, il se réjouit. Nouveaux objets
+cosy : bonnet de Noël, plaid cosy, tasse de tisane, lanterne.
+
 ## Un traitement à des heures différentes selon les jours
 
 ![](docs/editor_days.png)

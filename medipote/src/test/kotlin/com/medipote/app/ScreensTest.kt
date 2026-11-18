@@ -2064,6 +2064,142 @@ class ScreensTest {
         compose.onNodeWithText("10:00 en semaine · 12:00 le week-end").assertExists()
     }
 
+    // ───────────── Hard nights, the companion's wish ─────────────
+
+    @Test
+    @Config(qualifiers = "w400dp-h1600dp-xhdpi")
+    fun theSleepTabOffersTheNightHelpInOneCalmCard() {
+        var opened = 0
+        render("sleep_night_card") { com.medipote.app.ui.sleep.SleepScreen(sampleState(), now, {}, {}, onNightHelp = { opened++ }) }
+        compose.onNodeWithText("Nuit difficile ?").performClick()
+        org.junit.Assert.assertEquals(1, opened)
+    }
+
+    @Test
+    @Config(qualifiers = "w400dp-h2600dp-xhdpi")
+    fun nightHelpStartsWithTwoChoicesAndThenFourIdeas() {
+        val tools = mutableListOf<com.medipote.app.domain.SleepTool>()
+        val tried = mutableListOf<com.medipote.app.domain.SleepTrouble>()
+        var recipe: List<String>? = null
+        render("sleep_help") {
+            com.medipote.app.ui.sleep.SleepHelpScreen(
+                listOf("Une tisane tiède"), emptySet(),
+                com.medipote.app.ui.sleep.SleepHelpActions(onTool = { tools += it }, onTried = { tried += it }, onRecipe = { recipe = it }),
+            )
+        }
+        compose.onNodeWithText("Respire. Tu n'as rien à réussir.").assertExists()
+        // Two big choices first; nothing else until one is chosen.
+        compose.onNodeWithText("Je n'arrive pas à m'endormir").assertExists()
+        compose.onNodeWithText("Je me suis réveillé·e et je n'arrive pas à me rendormir").assertExists()
+        compose.onNodeWithText("🕰️  La règle des 20 minutes").assertDoesNotExist()
+        compose.onNodeWithText("Je n'arrive pas à m'endormir").performClick()
+        compose.onNodeWithText("🌬️  Respirer lentement").assertExists()
+        compose.onNodeWithText("🧘  Détendre le corps").assertExists()
+        compose.onNodeWithText("✍️  Vider ma tête").assertExists()
+        compose.onNodeWithText("🕯️  Doux et frais").assertExists()
+        compose.onNodeWithText("🕰️  La règle des 20 minutes").assertExists()
+        compose.onNodeWithText("Commencer").performClick()
+        compose.onNodeWithText("Écrire").performClick()
+        org.junit.Assert.assertEquals(listOf(com.medipote.app.domain.SleepTool.RELAX, com.medipote.app.domain.SleepTool.THOUGHTS), tools)
+        // The person's own recipe is shown, and can be changed.
+        compose.onNodeWithText("•  Une tisane tiède").assertExists()
+        compose.onNodeWithContentDescription("Retirer « Une tisane tiède »").performClick()
+        org.junit.Assert.assertEquals(emptyList<String>(), recipe)
+        compose.onNodeWithText("✓ J'ai essayé quelque chose").performScrollTo().performClick()
+        org.junit.Assert.assertEquals(listOf(com.medipote.app.domain.SleepTrouble.FALL), tried)
+    }
+
+    @Test
+    @Config(qualifiers = "w400dp-h2400dp-xhdpi")
+    fun goingBackToSleepHasItsOwnIdeasAndShowsWhatWasTried() {
+        render("sleep_help_back") {
+            com.medipote.app.ui.sleep.SleepHelpScreen(emptyList(), setOf("back"), com.medipote.app.ui.sleep.SleepHelpActions(), initial = com.medipote.app.domain.SleepTrouble.BACK)
+        }
+        compose.onNodeWithText("🤍  Un réveil, c'est normal").assertExists()
+        compose.onNodeWithText("🙈  Ne pas regarder l'heure").assertExists()
+        compose.onNodeWithText("✓ Essayé, bravo 💛").performScrollTo().assertExists()
+        compose.onNodeWithText("Ce qui t'a aidé une nuit", substring = true).assertExists()
+        compose.onNodeWithText("Chaque essai rapporte quelques points. Ne rien essayer ne coûte rien.").performScrollTo().assertExists()
+    }
+
+    @Test
+    fun theGuidedRelaxationGoesOneLineAtATime() {
+        render("sleep_relax") { com.medipote.app.ui.sleep.RelaxScreen({}) }
+        compose.onNodeWithText("Installe-toi, ferme les yeux. Laisse ton souffle ralentir.").assertExists()
+        compose.onNodeWithText("1 / 8").assertExists()
+        compose.onNodeWithText("Suivant, quand tu es prêt·e").performClick()
+        compose.onNodeWithText("Ton front : détends-le, comme si on le lissait doucement.").assertExists()
+        compose.onNodeWithText("Ton front : détends-le, comme si on le lissait doucement.", substring = true).assertExists()
+        compose.onNodeWithText("Revenir en arrière").performClick()
+        compose.onNodeWithText("1 / 8").assertExists()
+    }
+
+    @Test
+    @Config(qualifiers = "w400dp-h1800dp-xhdpi")
+    fun theDayTipsComeWithAnEveningReminderSwitchAndTheLimits() {
+        var windDown: Boolean? = null
+        render("sleep_tips") { com.medipote.app.ui.sleep.SleepTipsScreen(false, { windDown = it }, {}, {}, {}) }
+        compose.onNodeWithText("⏰  Se lever à peu près à la même heure").assertExists()
+        compose.onNodeWithText("Un petit mot le soir").performScrollTo().assertExists()
+        compose.onNodeWithText("trois semaines", substring = true).performScrollTo().assertExists()
+        compose.onNodeWithText("Un petit mot le soir").assertExists()
+    }
+
+    @Test
+    @Config(qualifiers = "w400dp-h2200dp-xhdpi")
+    fun theShopShowsTheCompanionsWishWithAProgressBar() {
+        val game = sampleState().game.copy(points = 70, wishId = "hat_santa", wishWeek = today)
+        var bought: com.medipote.app.domain.ShopItem? = null
+        render("shop_wish") { ShopScreen(game, { bought = it }, {}, animate = false) }
+        compose.onNodeWithText("🎁  Cette semaine, Pilou rêve de…").assertExists()
+        compose.onAllNodesWithText("Bonnet de Noël")[0].assertExists()
+        compose.onNodeWithText("encore 70 pts").assertExists()
+        // Touching it tries it on, ready to be offered.
+        compose.onNodeWithText("🎁  Cette semaine, Pilou rêve de…").performClick()
+        compose.onNodeWithText("Encore 70 pts").assertExists()
+    }
+
+    @Test
+    @Config(qualifiers = "w400dp-h1500dp-xhdpi")
+    fun theWishDisappearsOnceGranted() {
+        val game = sampleState().game.copy(points = 500, wishId = "hat_santa", wishWeek = today, owned = sampleState().game.owned + "hat_santa")
+        render("shop_wish_done") { ShopScreen(game, {}, {}, animate = false) }
+        compose.onNodeWithText("🎁  Cette semaine, Pilou rêve de…").assertDoesNotExist()
+    }
+
+    @Test
+    @Config(qualifiers = "w400dp-h1000dp-xhdpi")
+    fun theNewCosyItemsAreDrawn() {
+        val game = sampleState().game.copy(
+            equipped = mapOf("COLOR" to "color_mint", "BACKGROUND" to "bg_room", "HAT" to "hat_santa", "NECK" to "neck_plaid", "TOY" to "toy_tea"),
+            owned = Shop.items.map { it.id }.toSet(),
+        )
+        render("shop_cosy", ThemeMode.DARK) { ShopScreen(game, {}, {}, animate = false) }
+        compose.onNodeWithText("Boutique").assertExists()
+    }
+
+    @Test
+    @Config(qualifiers = "w400dp-h2000dp-xhdpi")
+    fun anAppointmentCanBeMarkedAsAttendedOnceItIsTime() {
+        val appointment = Appointment("a", "Endocrinologue", "Dr Martin", dateTime = today.atTime(9, 0))
+        val prep = com.medipote.app.domain.AppointmentPrepper.build(sampleState(), appointment, now)
+        var went = 0
+        render("appointment_prep_attended") {
+            com.medipote.app.ui.agenda.AppointmentPrepScreen(prep, "aujourd'hui · 09:00", {}, {}, {}, {}, {}, canMarkAttended = true, onAttended = { went++ })
+        }
+        compose.onNodeWithText("✓ J'y suis allé·e").performScrollTo().performClick()
+        org.junit.Assert.assertEquals(1, went)
+    }
+
+    @Test
+    @Config(qualifiers = "w400dp-h1500dp-xhdpi")
+    fun beforeTheAppointmentThereIsNoAttendedButtonAndAfterItItShowsDone() {
+        val future = Appointment("a", "Endocrinologue", dateTime = today.plusDays(3).atTime(9, 0))
+        val prep = com.medipote.app.domain.AppointmentPrepper.build(sampleState(), future, now)
+        render("appointment_prep_future") { com.medipote.app.ui.agenda.AppointmentPrepScreen(prep, "dans 3 jours", {}, {}, {}, {}, {}) }
+        compose.onNodeWithText("✓ J'y suis allé·e").assertDoesNotExist()
+    }
+
     private fun save(name: String, bitmap: Bitmap) {
         val dir = File("build/screenshots").apply { mkdirs() }
         File(dir, "$name.png").outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }

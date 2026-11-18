@@ -51,6 +51,8 @@ data class AppState(
     val tasks: List<SplitTask> = emptyList(),
     /** The energy announced today, if any. */
     val energy: EnergyNote? = null,
+    /** What helped the person go back to sleep, in their own words: shown on the next hard night. */
+    val sleepRecipe: List<String> = emptyList(),
 ) {
     fun entryFor(date: LocalDate): DayEntry = journal.firstOrNull { it.date == date } ?: DayEntry(date)
 }
@@ -289,6 +291,13 @@ data class GameState(
     @Serializable(with = LocalDateSerializer::class) val recapSeen: LocalDate? = null,
     /** Days the "night logged" bonus was already given. */
     val sleepRewardDays: Set<@Serializable(with = LocalDateSerializer::class) LocalDate> = emptySet(),
+    /** Small rewards for taking care (a measure, a symptom noted, an appointment prepared…), each once: "2026-11-18:measure". */
+    val careRewards: List<String> = emptyList(),
+    /** What the companion wishes for this week (a shop item) and the Monday of that week. */
+    val wishId: String? = null,
+    @Serializable(with = LocalDateSerializer::class) val wishWeek: LocalDate? = null,
+    /** The last day the surprise gift for gentle days was given. */
+    @Serializable(with = LocalDateSerializer::class) val giftOn: LocalDate? = null,
     val history: List<PointEvent> = emptyList(),
 ) {
     companion object {

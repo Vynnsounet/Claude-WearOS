@@ -119,6 +119,8 @@ data class Appointment(
     val reminderMinutes: List<Int> = listOf(24 * 60, 60),
     /** What the person wants to ask or say at this appointment. */
     val questions: List<String> = emptyList(),
+    /** "I went": noted once the appointment has taken place. */
+    val attended: Boolean = false,
 )
 
 // ─────────────────────────── Health documents ───────────────────────────
@@ -184,6 +186,9 @@ data class SleepSettings(
     val reminderMinute: Int = 9 * 60,
     /** Naps count towards the daily sleep goal (never in the night's own figures). */
     val napsInGoal: Boolean = true,
+    /** A soft reminder in the evening to get ready for sleep, with an idea waiting for a hard night. */
+    val windDown: Boolean = false,
+    val windDownMinute: Int = 21 * 60 + 30,
 )
 
 /** Waking up during the night: when, for how long, and why if known. */

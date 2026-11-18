@@ -23,6 +23,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.rotate
@@ -995,6 +996,22 @@ private fun DrawScope.drawNeck(id: String, cx: Float, cy: Float, bw: Float, bh: 
             drawRoundRect(Color(0xFFE57373), Offset(cx + bw * 0.12f, y), Size(bw * 0.1f, bh * 0.28f), CornerRadius(s * 0.01f))
             for (i in 0..2) drawLine(Color.White.copy(alpha = 0.7f), Offset(cx + bw * 0.12f, y + bh * (0.08f + i * 0.07f)), Offset(cx + bw * 0.22f, y + bh * (0.08f + i * 0.07f)), s * 0.008f)
         }
+        "neck_plaid" -> {
+            // A soft checked blanket around the shoulders.
+            val blanket = Path().apply {
+                moveTo(cx - bw * 0.46f, y - bh * 0.1f)
+                quadraticTo(cx, y + bh * 0.06f, cx + bw * 0.46f, y - bh * 0.1f)
+                lineTo(cx + bw * 0.5f, y + bh * 0.12f)
+                quadraticTo(cx, y + bh * 0.26f, cx - bw * 0.5f, y + bh * 0.12f)
+                close()
+            }
+            drawPath(blanket, Color(0xFFC0504D))
+            clipPath(blanket) {
+                for (i in -4..4) drawLine(Color(0xFF7B2D2B).copy(alpha = 0.55f), Offset(cx + i * bw * 0.11f, y - bh * 0.15f), Offset(cx + i * bw * 0.11f, y + bh * 0.3f), s * 0.01f)
+                for (i in 0..3) drawLine(Color(0xFFF3D9B1).copy(alpha = 0.7f), Offset(cx - bw * 0.5f, y - bh * 0.05f + i * bh * 0.07f), Offset(cx + bw * 0.5f, y - bh * 0.05f + i * bh * 0.07f), s * 0.007f)
+            }
+            drawPath(blanket, Color(0xFF7B2D2B), style = Stroke(s * 0.006f))
+        }
         "neck_stetho" -> {
             val tube = Color(0xFF546E7A)
             drawPath(Path().apply {
@@ -1085,6 +1102,19 @@ private fun DrawScope.drawHat(id: String, cx: Float, top: Float, bw: Float, s: F
                 drawCircle(Color(0xFFFFF59D), r, c + Offset((cos(a) * r * 1.2f).toFloat(), (sin(a) * r * 1.2f).toFloat()))
             }
             drawCircle(Color(0xFFFF9800), r * 0.9f, c)
+        }
+        "hat_santa" -> {
+            val base = top + s * 0.035f
+            val w = bw * 0.62f
+            val cone = Path().apply {
+                moveTo(cx - w / 2, base)
+                quadraticTo(cx - w * 0.15f, base - s * 0.2f, cx + w * 0.32f, base - s * 0.17f)
+                lineTo(cx + w / 2, base)
+                close()
+            }
+            drawPath(cone, Color(0xFFD32F2F))
+            drawRoundRect(Color.White, Offset(cx - w / 2 - s * 0.01f, base - s * 0.02f), Size(w + s * 0.02f, s * 0.05f), CornerRadius(s * 0.022f))
+            drawCircle(Color.White, s * 0.03f, Offset(cx + w * 0.32f, base - s * 0.17f))
         }
         "hat_cap" -> {
             val w = bw * 0.62f
@@ -1254,6 +1284,33 @@ private fun DrawScope.drawToy(id: String, cx: Float, cy: Float, bw: Float, bh: F
             drawCircle(Ink, s * 0.007f, c + Offset(-s * 0.018f, -s * 0.085f))
             drawCircle(Ink, s * 0.007f, c + Offset(s * 0.018f, -s * 0.085f))
             drawCircle(Ink, s * 0.006f, c + Offset(0f, -s * 0.065f))
+        }
+        "toy_tea" -> scale(1.5f, Offset(cx + bw * 0.78f, ground)) {
+            val c = Offset(cx + bw * 0.78f, ground - s * 0.05f)
+            val w = s * 0.1f
+            drawRoundRect(Color(0xFFF5F0E6), Offset(c.x - w / 2, c.y - s * 0.03f), Size(w, s * 0.08f), CornerRadius(s * 0.025f))
+            drawRoundRect(Color(0xFF8D6E63).copy(alpha = 0.85f), Offset(c.x - w / 2 + s * 0.006f, c.y - s * 0.03f), Size(w - s * 0.012f, s * 0.016f), CornerRadius(s * 0.008f))
+            drawArc(Color(0xFFF5F0E6), -90f, 180f, false, Offset(c.x + w / 2 - s * 0.012f, c.y - s * 0.015f), Size(s * 0.05f, s * 0.045f), style = Stroke(s * 0.011f))
+            // Steam: two slow curls.
+            for (k in 0..1) {
+                val t = (loop + k * 0.5f) % 1f
+                val x0 = c.x - w * 0.18f + k * w * 0.36f
+                drawPath(Path().apply {
+                    moveTo(x0, c.y - s * 0.04f)
+                    cubicTo(x0 + s * 0.02f, c.y - s * 0.07f - t * s * 0.02f, x0 - s * 0.02f, c.y - s * 0.09f - t * s * 0.02f, x0, c.y - s * 0.12f - t * s * 0.02f)
+                }, Color.White.copy(alpha = 0.75f * (1f - t * 0.5f)), style = Stroke(s * 0.006f, cap = StrokeCap.Round))
+            }
+        }
+        "toy_lantern" -> scale(1.5f, Offset(cx - bw * 0.78f, ground)) {
+            val c = Offset(cx - bw * 0.78f, ground - s * 0.07f)
+            val glow = 0.55f + 0.2f * sin(loop * 2 * PI).toFloat()
+            drawCircle(Color(0xFFFFE082).copy(alpha = 0.22f * glow), s * 0.11f, c)
+            drawRoundRect(Color(0xFF6D4C41), Offset(c.x - s * 0.04f, c.y + s * 0.045f), Size(s * 0.08f, s * 0.014f), CornerRadius(s * 0.005f))
+            drawRoundRect(Color(0xFFFFD54F).copy(alpha = glow), Offset(c.x - s * 0.032f, c.y - s * 0.035f), Size(s * 0.064f, s * 0.08f), CornerRadius(s * 0.012f))
+            drawRoundRect(Color(0xFF6D4C41), Offset(c.x - s * 0.032f, c.y - s * 0.035f), Size(s * 0.064f, s * 0.08f), CornerRadius(s * 0.012f), style = Stroke(s * 0.006f))
+            drawRoundRect(Color(0xFF6D4C41), Offset(c.x - s * 0.036f, c.y - s * 0.045f), Size(s * 0.072f, s * 0.014f), CornerRadius(s * 0.005f))
+            drawArc(Color(0xFF6D4C41), 180f, 180f, false, Offset(c.x - s * 0.022f, c.y - s * 0.07f), Size(s * 0.044f, s * 0.05f), style = Stroke(s * 0.006f))
+            drawCircle(Color.White.copy(alpha = 0.8f * glow), s * 0.012f, Offset(c.x, c.y + s * 0.005f))
         }
         "toy_pillplush" -> scale(1.6f, Offset(cx + bw * 0.76f, ground)) {
             val c = Offset(cx + bw * 0.76f, ground - s * 0.06f)

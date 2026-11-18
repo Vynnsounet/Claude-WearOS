@@ -268,6 +268,10 @@ fun SettingsScreen(
                 if (sl.reminder) {
                     com.medipote.app.ui.components.NumberStepper("À", sl.reminderMinute / 60, { v -> update { it.copy(reminderMinute = v * 60) } }, 5..14, suffix = " h")
                 }
+                SwitchRow("Un petit mot le soir pour me préparer à dormir", sl.windDown, supporting = "« Doucement vers la nuit », jamais pendant les heures calmes") { v -> update { it.copy(windDown = v) } }
+                if (sl.windDown) {
+                    com.medipote.app.ui.components.NumberStepper("À", sl.windDownMinute / 60, { v -> update { it.copy(windDownMinute = v * 60 + sl.windDownMinute % 60) } }, 18..23, suffix = " h")
+                }
             }
 
             SectionTitle("Rituels et récap")
@@ -409,8 +413,8 @@ fun SettingsScreen(
                 }
                 if (rulesOpen) {
                 Rule("Prise à l'heure (de ${Rules.EARLY_WINDOW_MINUTES} min avant à ${Rules.ON_TIME_MINUTES} min après)", "+${Rules.POINTS_ON_TIME} pts")
-                Rule("En retard (jusqu'à ${Rules.LATE_MINUTES / 60} h)", "+${Rules.POINTS_LATE} pts (malus −${Rules.POINTS_ON_TIME - Rules.POINTS_LATE})")
-                Rule("Très en retard (plus de ${Rules.LATE_MINUTES / 60} h)", "+${Rules.POINTS_VERY_LATE} pts (malus −${Rules.POINTS_ON_TIME - Rules.POINTS_VERY_LATE})")
+                Rule("En retard (jusqu'à ${Rules.LATE_MINUTES / 60} h)", "+${Rules.POINTS_LATE} pts")
+                Rule("Très en retard (plus de ${Rules.LATE_MINUTES / 60} h)", "+${Rules.POINTS_VERY_LATE} pts")
                 Rule("Noté « Déjà pris » plus de ${Rules.EARLY_WINDOW_MINUTES} min en avance", "+${Rules.POINTS_EARLY} pts")
                 Rule("Journée parfaite (tout à l'heure)", "+${Rules.PERFECT_DAY_BONUS} pts")
                 Rule("Verre d'eau (même après l'objectif, jusqu'au double)", "+${Rules.WATER_GLASS_POINTS} pts")
@@ -418,13 +422,19 @@ fun SettingsScreen(
                 Rule("Journal du jour rempli", "+${Rules.JOURNAL_BONUS} pts")
                 Rule("Nuit notée le matin même", "+${Rules.SLEEP_BONUS} pts")
                 Rule("Rituel du matin ou du soir (une fois par jour chacun)", "+${com.medipote.app.domain.Rituals.BONUS} pts")
+                Rule("Première mesure du jour (tension, poids…)", "+${com.medipote.app.domain.Care.MEASURE_POINTS} pts")
+                Rule("Premier symptôme noté du jour (quelle que soit sa force)", "+${com.medipote.app.domain.Care.SYMPTOM_POINTS} pts")
+                Rule("Rendez-vous préparé · rendez-vous honoré", "+${com.medipote.app.domain.Care.PREP_POINTS} · +${com.medipote.app.domain.Care.ATTENDED_POINTS} pts")
+                Rule("Traitement racheté quand le stock était bas", "+${com.medipote.app.domain.Care.RESTOCK_POINTS} pts")
+                Rule("Petite victoire ou « J'ai essayé » (3 par jour au plus)", "+${com.medipote.app.domain.Wellbeing.MISSION_POINTS} pts")
+                Rule("Sept jours de suite à prendre soin de toi", "+${com.medipote.app.domain.Care.GIFT_POINTS} pts, cadeau-surprise")
                 Rule("Défi de la semaine réussi", "+20 à +40 pts")
                 Rule("Joker de série", "1 jour oublié par semaine ne casse pas la série")
                 Rule("Premier câlin du jour (caresse ou appui long sur ton compagnon)", "+${Rules.CUDDLE_BONUS} pts")
                 Rule("Connexion quotidienne (le jour change à ${Rules.DAY_START_HOUR} h du matin)", "+${Rules.STREAK_POINTS_PER_DAY} pts × jours de série, jusqu'à +${Rules.STREAK_POINTS_CAP}")
                 Rule("Paliers de série", Rules.STREAK_MILESTONES.entries.joinToString(" · ") { "${it.key} j : +${it.value}" })
                 Text(
-                    "Une prise se donne à partir de ${Rules.EARLY_WINDOW_MINUTES} min avant l'heure prévue (plus tôt, avec « Déjà pris ? »). Une prise oubliée affaiblit ton compagnon pendant deux jours, et un gros retard le rend malade.",
+                    "Une prise se donne à partir de ${Rules.EARLY_WINDOW_MINUTES} min avant l'heure prévue (plus tôt, avec « Déjà pris ? »). Une prise oubliée affaiblit ton compagnon pendant deux jours, et un gros retard le rend malade. Les points ne se retirent jamais.",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )

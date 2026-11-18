@@ -214,8 +214,8 @@ fun MediPoteApp(vm: AppViewModel) {
                         lastPoints = e.points + e.perfectDayBonus
                         val base = when (e.status) {
                             TakeStatus.ON_TIME -> "Bravo ! $pet a pris ${e.treatmentName} à l'heure : +${e.points} pts"
-                            TakeStatus.LATE -> "${e.treatmentName} donné en retard : +${e.points} pts (malus −${Rules.POINTS_ON_TIME - e.points})"
-                            TakeStatus.VERY_LATE -> "${e.treatmentName} donné très en retard : +${e.points} pts (malus −${Rules.POINTS_ON_TIME - e.points})"
+                            TakeStatus.LATE -> "${e.treatmentName} donné en retard : +${e.points} pts"
+                            TakeStatus.VERY_LATE -> "${e.treatmentName} donné très en retard : +${e.points} pts"
                             TakeStatus.EARLY -> "${e.treatmentName} noté comme pris en avance : +${e.points} pts"
                         }
                         val bonus = if (e.perfectDayBonus > 0) " · Journée parfaite : +${e.perfectDayBonus} !" else ""
@@ -465,6 +465,7 @@ fun MediPoteApp(vm: AppViewModel) {
                                 onNapCancel = vm::cancelNap,
                                 onNapLog = { nav.navigate("nap_log") },
                                 onOpenNap = { nav.navigate("nap_log?id=${it.id}") },
+                                onNightHelp = { nav.navigate("sleep_help") },
                             )
                             "suivi:symptoms" -> com.medipote.app.ui.wellbeing.SymptomsScreen(
                                 state, now,
@@ -767,6 +768,40 @@ fun MediPoteApp(vm: AppViewModel) {
                         onNight = { nav.navigate("sleep_log") { popUpTo("nap_log?id={id}&start={start}&minutes={minutes}") { inclusive = true } } },
                     )
                 }
+                // ── Hard nights ──
+                composable("sleep_help") {
+                    com.medipote.app.ui.sleep.SleepHelpScreen(
+                        state.sleepRecipe,
+                        com.medipote.app.domain.Wellbeing.triedToday(state, today, com.medipote.app.domain.SleepHelp.TRIED_KIND),
+                        com.medipote.app.ui.sleep.SleepHelpActions(
+                            onBack = { nav.popBackStack() },
+                            onTool = { tool ->
+                                nav.navigate(
+                                    when (tool) {
+                                        com.medipote.app.domain.SleepTool.BREATHE -> "support_breathe"
+                                        com.medipote.app.domain.SleepTool.RELAX -> "sleep_relax"
+                                        com.medipote.app.domain.SleepTool.THOUGHTS -> "support_thoughts"
+                                    },
+                                )
+                            },
+                            onTips = { nav.navigate("sleep_tips") },
+                            onLogNight = { nav.navigate("sleep_log") },
+                            onSupport = { nav.navigate("support") },
+                            onTried = { t -> vm.tried(com.medipote.app.domain.SleepHelp.TRIED_KIND, t.id, "J'ai essayé : m'aider à dormir") },
+                            onRecipe = vm::setSleepRecipe,
+                        ),
+                    )
+                }
+                composable("sleep_relax") { com.medipote.app.ui.sleep.RelaxScreen(onBack = { nav.popBackStack() }) }
+                composable("sleep_tips") {
+                    com.medipote.app.ui.sleep.SleepTipsScreen(
+                        windDown = state.settings.sleep.windDown,
+                        onWindDown = { on -> vm.updateSettings { it.copy(sleep = it.sleep.copy(windDown = on)) } },
+                        onEvening = { nav.navigate("ritual/EVENING") },
+                        onHelp = { nav.navigate("sleep_help") },
+                        onBack = { nav.popBackStack() },
+                    )
+                }
                 // ── "Ça ne va pas" ──
                 composable("support") {
                     LaunchedEffect(Unit) { vm.supportOpened() }
@@ -983,7 +1018,10 @@ fun MediPoteApp(vm: AppViewModel) {
                         val prep = com.medipote.app.domain.AppointmentPrepper.build(state, a, now)
                         com.medipote.app.ui.agenda.AppointmentPrepScreen(
                             prep, a.dateTime.format(java.time.format.DateTimeFormatter.ofPattern("EEEE d MMMM · HH:mm", java.util.Locale.FRANCE)),
-                            onQuestions = { vm.saveAppointment(a.copy(questions = it)) },
+                            onQuestions = { vm.savePrepQuestions(a, it) },
+                            attended = a.attended,
+                            canMarkAttended = !a.dateTime.isAfter(now.plusHours(2)),
+                            onAttended = { vm.markAttended(a) },
                             onCopy = { text ->
                                 val clipboard = context.getSystemService(android.content.ClipboardManager::class.java)
                                 clipboard.setPrimaryClip(android.content.ClipData.newPlainText("Rendez-vous", text))

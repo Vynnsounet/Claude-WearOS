@@ -92,6 +92,8 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             s.copy(game = result.first)
         }
         reward?.let { _checkIn.value = UiEvent.CheckedIn(it) }
+        // The companion's wish of the week is chosen once, on the first opening of the week.
+        repo.update { com.medipote.app.domain.Wishes.refresh(it, repo.now().toLocalDate()) }
         // The companion's birthday is the first day of use: noted once, so it never moves.
         if (state.value.settings.seasons.petBirthday == null) {
             repo.update { s ->
@@ -167,7 +169,10 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             bought = true
             s.copy(game = game)
         }
-        if (bought) _events.trySend(UiEvent.Bought(item))
+        if (bought) {
+            _events.trySend(UiEvent.Bought(item))
+            if (item.id == state.value.game.wishId) _events.trySend(UiEvent.Message("🎁 ${state.value.game.petName} est ravi·e : son souhait de la semaine est exaucé !"))
+        }
         checkAchievements()
     }
 
@@ -310,6 +315,8 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     fun saveMeasurement(m: com.medipote.app.data.Measurement) {
         repo.update { com.medipote.app.domain.Measures.save(it, m) }
         _events.trySend(UiEvent.Message("Mesure enregistrée"))
+        // The first one of the day earns a little; a measure noted for an earlier day does not.
+        if (m.at.toLocalDate() == repo.now().toLocalDate()) careReward { com.medipote.app.domain.Care.measureNoted(it, repo.now()) }
         checkAchievements()
     }
 
@@ -342,6 +349,8 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     fun setSymptom(symptom: String, intensity: Int?) {
         val today = repo.now().toLocalDate()
         repo.update { com.medipote.app.domain.Wellbeing.setIntensity(it, today, symptom, intensity) }
+        if (intensity != null) careReward { com.medipote.app.domain.Care.symptomNoted(it, repo.now()) }
+        checkAchievements()
     }
 
     /** "Ce que je ressens": notes what was felt as symptoms for today (and turns the tracking on). */
@@ -349,11 +358,13 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         val today = repo.now().toLocalDate()
         repo.update { com.medipote.app.domain.Wellbeing.noteFelt(it, today, symptoms, intensity) }
         _events.trySend(UiEvent.Message("Noté dans tes symptômes 📝"))
+        careReward { com.medipote.app.domain.Care.symptomNoted(it, repo.now()) }
     }
 
     /** A symptom's strength on any day (from the journal of that day). */
     fun setSymptomOn(date: java.time.LocalDate, symptom: String, intensity: Int?) {
         repo.update { com.medipote.app.domain.Wellbeing.setIntensity(it, date, symptom, intensity) }
+        if (intensity != null && date == repo.now().toLocalDate()) careReward { com.medipote.app.domain.Care.symptomNoted(it, repo.now()) }
     }
 
     fun setSymptomNote(symptom: String, note: String) {
@@ -364,6 +375,16 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     fun setEnergy(level: Int) {
         val today = repo.now().toLocalDate()
         repo.update { com.medipote.app.domain.Wellbeing.setEnergy(it, today, level) }
+    }
+
+    /** A small reward for taking care: a discreet "+N pts" bubble, nothing when it was already given. */
+    private fun careReward(block: (AppState) -> com.medipote.app.domain.CareReward) {
+        var points = 0
+        repo.update { s -> block(s).also { points = it.points }.state }
+        if (points > 0) {
+            _events.trySend(UiEvent.Points(points))
+            _events.trySend(UiEvent.Message("+$points pts 💛"))
+        }
     }
 
     private fun celebrate(result: com.medipote.app.domain.WinResult) {
@@ -419,6 +440,10 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     fun showAllCards() {
         repo.update { it.copy(settings = it.settings.copy(hiddenCards = emptySet())) }
+    }
+
+    fun setSleepRecipe(items: List<String>) {
+        repo.update { it.copy(sleepRecipe = items) }
     }
 
     /** Shows or hides a card of a hub page. */
@@ -541,6 +566,18 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         reschedule()
     }
 
+    /** The questions written for an appointment: the first time, they earn a little. */
+    fun savePrepQuestions(a: com.medipote.app.data.Appointment, questions: List<String>) {
+        saveAppointment(a.copy(questions = questions))
+        if (questions.isNotEmpty()) careReward { com.medipote.app.domain.Care.appointmentPrepared(it, a.id, repo.now()) }
+    }
+
+    /** "I went": noted once, and it earns a little. */
+    fun markAttended(a: com.medipote.app.data.Appointment) {
+        saveAppointment(a.copy(attended = true))
+        careReward { com.medipote.app.domain.Care.appointmentAttended(it, a.id, repo.now()) }
+    }
+
     fun deleteAppointment(id: String) {
         repo.update { s -> s.copy(appointments = s.appointments.filterNot { it.id == id }) }
         reschedule()
@@ -561,12 +598,15 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     // ── Stock and pill ──
 
     fun refill(treatmentId: String) {
+        val wasLow = state.value.treatments.firstOrNull { it.id == treatmentId }?.isLowStock == true
         repo.update { s ->
             s.copy(treatments = s.treatments.map { t ->
                 if (t.id == treatmentId && t.packSize != null) t.copy(stock = (t.stock ?: 0.0) + t.packSize) else t
             })
         }
         _events.trySend(UiEvent.Message("Stock mis à jour"))
+        // Buying back what was running low is a way of taking care.
+        if (wasLow) careReward { com.medipote.app.domain.Care.restocked(it, treatmentId, repo.now()) }
         reschedule()
     }
 
@@ -590,6 +630,13 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             val (afterBadges, earned) = com.medipote.app.domain.Badges.award(afterChallenges, repo.now().toLocalDate())
             badges = earned
             afterBadges
+        }
+        // A week of gentle days earns a surprise.
+        var gift = 0
+        repo.update { s -> com.medipote.app.domain.Care.gift(s, repo.now()).also { gift = it.points }.state }
+        if (gift > 0) {
+            _events.trySend(UiEvent.Points(gift))
+            _events.trySend(UiEvent.Message("🎁 Un petit cadeau : 7 jours à prendre soin de toi · +$gift pts"))
         }
         challenges.forEach { _events.trySend(UiEvent.Message("🎯 Défi réussi : ${it.title.lowercase()} · +${it.points} pts")) }
         badges.forEach { _events.trySend(UiEvent.BadgeEarned(it)) }

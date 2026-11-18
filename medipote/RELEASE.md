@@ -66,6 +66,19 @@ L'optimiseur de R8 reste désactivé (`-dontoptimize`) : APK de 3,8 Mo au lieu d
 le dex livré peut être reconverti et exécuté hors appareil pour vérification (voir plus bas),
 ce que l'optimiseur empêche. Il pourra être réactivé après des essais sur téléphone.
 
+### 1.24.0 — l'aide au sommeil et des points pour prendre soin de soi
+
+- « 🌙 Nuit difficile ? » dans Sommeil : écran sombre et chaud, deux cas (m'endormir, me rendormir), quatre idées,
+  relaxation guidée, règle des 20 minutes, « Ma recette pour me rendormir », « Pour mieux dormir les prochains
+  soirs », petit mot du soir facultatif (hors heures calmes), raccourci sur l'icône. Sans médicament ni diagnostic.
+- Points : mesure du jour +2, symptôme noté du jour +2, rendez-vous préparé +5 / honoré +10, traitement racheté +5,
+  cadeau-surprise après 7 jours de suite (+25), trois défis de la semaine en plus. Jamais retirés ; rien pour les
+  prises « si besoin », le cycle ou les siestes. « Malus » supprimé.
+- Boutique : souhait de la semaine avec barre de progression, et quatre objets cosy (bonnet de Noël, plaid, tasse de
+  tisane, lanterne).
+- Correctif : le choix des défis de la semaine reste varié quel que soit le nombre de défis possibles.
+- Pas encore : un point pour une ordonnance renouvelée (l'appli n'a pas d'action « renouvelée » à récompenser).
+
 ### 1.23.0 — des heures différentes selon les jours
 
 - Chaque heure de prise d'un traitement a ses propres jours (10:00 en semaine et 12:00 le week-end, 10:00

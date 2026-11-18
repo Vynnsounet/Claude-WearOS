@@ -117,6 +117,35 @@ fun ShopScreen(game: GameState, onBuy: (ShopItem) -> Unit, onEquip: (ShopItem) -
                     SelectionBar(game, selected, onBuy, onEquip)
                 }
             }
+            // The companion's wish of the week, while it is not granted: one calm card.
+            val wish = com.medipote.app.domain.Wishes.current(game)?.takeIf { it.id !in game.owned }
+            if (wish != null) {
+                item(span = { GridItemSpan(maxLineSpan) }) {
+                    Card(
+                        onClick = { slot = wish.slot; selectedId = wish.id },
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Box(Modifier.size(64.dp).clip(MaterialTheme.shapes.medium)) { ItemPreview(wish.id, wish.slot.name, Modifier.fillMaxSize()) }
+                            Spacer(Modifier.width(14.dp))
+                            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                Text("🎁  Cette semaine, ${game.petName} rêve de…", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Text(wish.name, style = MaterialTheme.typography.titleMedium)
+                                androidx.compose.material3.LinearProgressIndicator(
+                                    progress = { com.medipote.app.domain.Wishes.progress(game, wish) },
+                                    drawStopIndicator = {},
+                                    modifier = Modifier.fillMaxWidth().height(6.dp).clip(androidx.compose.foundation.shape.CircleShape),
+                                )
+                                Text(
+                                    if (game.points >= wish.price) "Tu peux le lui offrir 💛" else "encore ${wish.price - game.points} pts",
+                                    style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                        }
+                    }
+                }
+            }
             item(span = { GridItemSpan(maxLineSpan) }) {
                 LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     items(Slot.entries) { s ->

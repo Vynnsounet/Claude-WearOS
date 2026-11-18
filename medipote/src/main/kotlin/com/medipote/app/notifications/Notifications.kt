@@ -28,7 +28,7 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
-enum class AlarmKind { DOSE, FOLLOW_UP, APPOINTMENT, WATER, STOCK, TEST, PRN_CHECK, SLEEP, SNOOZE, RENEWAL, RITUAL, RECAP, PRODUCT, SUPPORT }
+enum class AlarmKind { DOSE, FOLLOW_UP, APPOINTMENT, WATER, STOCK, TEST, PRN_CHECK, SLEEP, SNOOZE, RENEWAL, RITUAL, RECAP, PRODUCT, SUPPORT, WIND_DOWN }
 
 /** One planned alarm. [ref] identifies what it is about (an appointment id, for instance). */
 data class AlarmSpec(val kind: AlarmKind, val time: LocalDateTime, val ref: String = "") {
@@ -106,6 +106,15 @@ object ReminderPlanner {
             }
         }
 
+        // A soft word in the evening to get ready for sleep.
+        if (sleep.windDown) {
+            for (d in 0..1) {
+                val date = now.toLocalDate().plusDays(d.toLong())
+                val t = date.atTime(sleep.windDownMinute / 60, sleep.windDownMinute % 60)
+                if (t.isAfter(now)) alarms += AlarmSpec(AlarmKind.WIND_DOWN, t)
+            }
+        }
+
         // Period product: time to change it, then the longest time it should be worn.
         state.productSession?.let { s ->
             val change = com.medipote.app.domain.PeriodCare.changeAt(s)
@@ -164,7 +173,7 @@ object ReminderPlanner {
         return alarms.mapNotNull { a ->
             when {
                 !q.contains(a.time) -> a
-                a.kind == AlarmKind.WATER -> null
+                a.kind == AlarmKind.WATER || a.kind == AlarmKind.WIND_DOWN -> null
                 a.kind in setOf(AlarmKind.STOCK, AlarmKind.RENEWAL, AlarmKind.RITUAL, AlarmKind.RECAP, AlarmKind.SLEEP) -> a.copy(time = q.endAfter(a.time))
                 else -> a
             }
@@ -187,6 +196,7 @@ object Notifications {
     private val OLD_CHANNELS = listOf("dose_reminders", "appointments", "water", "stock", "sleep")
     val ALL_CHANNELS = listOf(CHANNEL_DOSES, CHANNEL_APPOINTMENTS, CHANNEL_WATER, CHANNEL_STOCK, CHANNEL_SLEEP, CHANNEL_RITUALS, CHANNEL_PERIOD, CHANNEL_SUPPORT)
     private const val SLEEP_ID = 2004
+    private const val WIND_DOWN_ID = 2012
     private const val WATER_ID = 2001
     private const val STOCK_ID = 2002
 
@@ -465,6 +475,15 @@ object Notifications {
         )
     }
 
+    fun showWindDown(context: Context, state: AppState) {
+        if (!state.settings.sleep.windDown) return
+        post(
+            context, CHANNEL_SLEEP, WIND_DOWN_ID, "Doucement vers la nuit 🌙",
+            "Baisse les lumières, éteins les écrans dans un moment. Une aide t'attend si le sommeil tarde.",
+            route = "sleep_tips",
+        )
+    }
+
     /** A short confirmation after a notification button, without sound; it goes away by itself. */
     fun confirm(context: Context, id: Int, text: String) {
         if (!canPost(context)) return
@@ -571,6 +590,7 @@ class ReminderReceiver : BroadcastReceiver() {
                 AlarmKind.TEST -> Unit
                 AlarmKind.PRN_CHECK -> Notifications.showPrnCheck(context, state, spec.ref)
                 AlarmKind.SLEEP -> Notifications.showSleep(context, state, repo.now())
+                AlarmKind.WIND_DOWN -> Notifications.showWindDown(context, state)
                 AlarmKind.RENEWAL -> Notifications.showRenewal(context, state, spec.ref, repo.now())
                 AlarmKind.RITUAL -> Notifications.showRitual(context, state, spec.ref, repo.now())
                 AlarmKind.RECAP -> Notifications.showRecap(context, state, repo.now())

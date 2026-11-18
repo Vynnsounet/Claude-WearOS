@@ -39,6 +39,7 @@ object Shop {
         ShopItem("hat_straw", "Chapeau de paille", Slot.HAT, 120),
         ShopItem("hat_catears", "Oreilles de chat", Slot.HAT, 150),
         ShopItem("hat_headphones", "Casque audio", Slot.HAT, 200),
+        ShopItem("hat_santa", "Bonnet de Noël", Slot.HAT, 140),
         ShopItem("hat_witch", "Chapeau de sorcier", Slot.HAT, 220),
         ShopItem("hat_halo", "Auréole", Slot.HAT, 300),
         ShopItem("hat_crown", "Couronne", Slot.HAT, 400),
@@ -57,11 +58,14 @@ object Shop {
         ShopItem("neck_tie", "Cravate", Slot.NECK, 90),
         ShopItem("neck_pearls", "Collier de perles", Slot.NECK, 160),
         ShopItem("neck_medal", "Médaille d'or", Slot.NECK, 250),
+        ShopItem("neck_plaid", "Plaid cosy", Slot.NECK, 130),
         ShopItem("neck_cape", "Cape de héros", Slot.NECK, 260),
 
         ShopItem("toy_balloon", "Ballon", Slot.TOY, 90),
         ShopItem("toy_pillplush", "Peluche pilule", Slot.TOY, 120),
         ShopItem("toy_butterfly", "Papillon", Slot.TOY, 140),
+        ShopItem("toy_tea", "Tasse de tisane", Slot.TOY, 110),
+        ShopItem("toy_lantern", "Lanterne", Slot.TOY, 130),
         ShopItem("toy_teddy", "Ourson", Slot.TOY, 160),
         ShopItem("toy_fishbowl", "Bocal à poisson", Slot.TOY, 200),
 
