@@ -274,7 +274,12 @@ fun MediPoteApp(vm: AppViewModel) {
             when (val t = entry.target) {
                 is com.medipote.app.domain.SearchTarget.Action -> if (t.id == "water") vm.addWater(1)
                 is com.medipote.app.domain.SearchTarget.Route -> {
-                    val route = if (t.route == "journal_today") "day/$today" else t.route
+                    val route = when (t.route) {
+                        "journal_today" -> "day/$today"
+                        // The idea box remembers where the person was.
+                        "ideas" -> "ideas?from=${Uri.encode(nav.currentBackStackEntry?.destination?.route.orEmpty())}"
+                        else -> t.route
+                    }
                     val tab = route.substringBefore('?')
                     nav.navigate(route) {
                         // A tab opens fresh, on its card; anything else is a screen on top.
@@ -369,6 +374,7 @@ fun MediPoteApp(vm: AppViewModel) {
                         onOpenProfile = openProfile,
                         onOpenSettings = openSettings,
                         onOpenSearch = openSearch,
+                        onOpenPause = { nav.navigate("settings?section=reminders") },
                         onOpenShortcut = { id -> com.medipote.app.domain.AppSearch.CATALOG.firstOrNull { it.id == id }?.let(openEntry) },
                         onUnpin = vm::togglePin,
                         onAddWater = vm::addWater,
@@ -477,6 +483,7 @@ fun MediPoteApp(vm: AppViewModel) {
                     // Suivi: what's noted day after day.
                     val cards = listOfNotNull(
                         HubCard("suivi:journal", "📖", "Journal", HubPreviews.journal(state, now)),
+                        HubCard("suivi:calendar", "🗓️", "Calendrier", "Tes prises, ton humeur et tes symptômes, mois par mois"),
                         HubCard("suivi:sleep", "🌙", "Sommeil", HubPreviews.sleep(state, now)),
                         HubCard("suivi:measures", "🩺", "Mesures", HubPreviews.measures(state)).takeIf { state.settings.measures.isNotEmpty() },
                         HubCard("suivi:cycle", "🩸", "Cycle", "Règles, cycle et protections").takeIf { menstruating },
@@ -489,6 +496,7 @@ fun MediPoteApp(vm: AppViewModel) {
                                 onOpenDay = { nav.navigate("day/$it") },
                                 onOpenMyDay = { nav.navigate("myday/$it") },
                             )
+                            "suivi:calendar" -> com.medipote.app.ui.journal.MonthScreen(state, today, onOpenDay = { nav.navigate("myday/$it") })
                             "suivi:measures" -> com.medipote.app.ui.measures.MeasuresScreen(
                                 state, now,
                                 onAdd = { nav.navigate("measure_log/${it.name}") },
@@ -806,6 +814,27 @@ fun MediPoteApp(vm: AppViewModel) {
                     )
                 }
                 // ── Finding things, and the first tour ──
+                composable(
+                    "ideas?from={from}",
+                    arguments = listOf(navArgument("from") { type = NavType.StringType; nullable = true; defaultValue = null }),
+                ) { ideasEntry ->
+                    val screen = com.medipote.app.domain.Ideas.screenName(ideasEntry.arguments?.getString("from"))
+                    com.medipote.app.ui.ideas.IdeasScreen(
+                        ideas = state.ideas,
+                        screen = screen,
+                        onAdd = { text -> vm.addIdea(text, screen); vm.message("Ajouté à ta liste") },
+                        onRemove = vm::removeIdea,
+                        onShare = {
+                            val version = runCatching { context.packageManager.getPackageInfo(context.packageName, 0).versionName }.getOrNull().orEmpty()
+                            val send = Intent(Intent.ACTION_SEND)
+                                .setType("text/plain")
+                                .putExtra(Intent.EXTRA_SUBJECT, "Idées pour MédiPote")
+                                .putExtra(Intent.EXTRA_TEXT, com.medipote.app.domain.Ideas.shareText(state.ideas, version))
+                            context.startActivity(Intent.createChooser(send, "Partager mes idées"))
+                        },
+                        onBack = { nav.popBackStack() },
+                    )
+                }
                 composable("find") {
                     com.medipote.app.ui.SearchScreen(
                         state,
@@ -1140,6 +1169,7 @@ fun MediPoteApp(vm: AppViewModel) {
                             onEdit = { nav.navigate("doc_info?id=${doc.id}") },
                             onShare = { context.startActivity(DocumentStore.shareIntent(context, doc)) },
                             onDelete = { vm.deleteDocument(doc); nav.popBackStack() },
+                            onRenew = { vm.renewDocument(doc) },
                         )
                     }
                 }
@@ -1190,6 +1220,7 @@ fun MediPoteApp(vm: AppViewModel) {
                         onOpenSupport = { nav.navigate("support_settings") },
                         onOpenWellbeing = { nav.navigate("wellbeing_me") },
                         onOpenTour = { nav.navigate("tour?first=false") },
+                        onOpenIdeas = { nav.navigate("ideas?from=settings") },
                         onOpenCards = { nav.navigate("cards_layout") },
                         watchLastSeen = com.medipote.app.wear.WatchLink.lastSeen(context),
                         watchRings = com.medipote.app.wear.WatchLink.watchHandlesReminders(context),

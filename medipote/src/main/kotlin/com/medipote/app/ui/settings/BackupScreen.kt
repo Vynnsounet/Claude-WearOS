@@ -31,6 +31,10 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Row
+import androidx.compose.ui.Alignment
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -68,7 +72,9 @@ private fun stamp(t: LocalDateTime) = "le ${t.format(dayMonthYear)} à ${t.forma
 /** What the user is being asked, one dialog at a time. */
 private sealed interface Ask {
     data object ExportPassword : Ask
-    data class RestorePassword(val bytes: ByteArray, val error: String? = null) : Ask
+    data class RestorePassword(val bytes: ByteArray, val error: String? = null, val test: Boolean = false) : Ask
+    /** A backup opened only to check it is readable: nothing is changed. */
+    data class TestResult(val content: Backup.Content) : Ask
     data class ConfirmRestore(val content: Backup.Content) : Ask
     data object AutoPassword : Ask
 }
@@ -111,28 +117,31 @@ fun BackupScreen(
         }
     }
 
-    fun decode(bytes: ByteArray, password: CharArray?) = work {
+    fun decode(bytes: ByteArray, password: CharArray?, test: Boolean = false) = work {
         val result = withContext(Dispatchers.IO) { runCatching { Backup.decode(bytes, password) } }
         result.fold(
-            { ask = Ask.ConfirmRestore(it) },
+            { ask = if (test) Ask.TestResult(it) else Ask.ConfirmRestore(it) },
             { e ->
                 ask = when (e) {
-                    is Backup.WrongPassword -> Ask.RestorePassword(bytes, "Mot de passe incorrect")
-                    is Backup.NeedsPassword -> Ask.RestorePassword(bytes)
+                    is Backup.WrongPassword -> Ask.RestorePassword(bytes, "Mot de passe incorrect", test)
+                    is Backup.NeedsPassword -> Ask.RestorePassword(bytes, test = test)
                     else -> null.also { onMessage(e.message ?: "Fichier illisible") }
                 }
             },
         )
     }
 
+    var testing by remember { mutableStateOf(false) }
     val openFile = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri: Uri? ->
+        val test = testing
+        testing = false
         if (uri == null) return@rememberLauncherForActivityResult
         work {
             val bytes = withContext(Dispatchers.IO) { runCatching { BackupManager.read(context, uri) } }.getOrNull()
             when {
                 bytes == null || !Backup.isBackup(bytes) -> onMessage("Ce fichier n'est pas une sauvegarde MédiPote.")
-                Backup.isEncrypted(bytes) -> ask = Ask.RestorePassword(bytes)
-                else -> decode(bytes, null)
+                Backup.isEncrypted(bytes) -> ask = Ask.RestorePassword(bytes, test = test)
+                else -> decode(bytes, null, test)
             }
         }
     }
@@ -170,6 +179,8 @@ fun BackupScreen(
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+
+            PhoneChangeGuide(onTest = { testing = true; openFile.launch(arrayOf("*/*")) }, busy = busy)
 
             SectionTitle("Sauvegarde manuelle")
             Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)) {
@@ -268,7 +279,7 @@ fun BackupScreen(
             onDismiss = { ask = null },
         ) { pw ->
             ask = null
-            decode(a.bytes, pw.toCharArray())
+            decode(a.bytes, pw.toCharArray(), a.test)
         }
         is Ask.ConfirmRestore -> {
             val s = a.content.state
@@ -279,8 +290,7 @@ fun BackupScreen(
                     Text(
                         buildString {
                             a.content.createdAt?.let { append("Sauvegarde du ${it.format(dayMonthYear)} à ${it.format(hourMinute)}.\n\n") }
-                            append("Elle contient ${s.treatments.size} traitement(s), ${s.doseLogs.size} prise(s), ${s.journal.size} jour(s) de journal, ")
-                            append("${s.sleep.size} nuit(s), ${s.measurements.size} mesure(s) et ${s.documents.size} document(s).\n\n")
+                            append(Backup.summary(a.content)).append("\n\n")
                             append("Toutes les données actuelles de l'appli seront remplacées.")
                         },
                     )
@@ -297,6 +307,19 @@ fun BackupScreen(
                 dismissButton = { TextButton(onClick = { ask = null }) { Text("Annuler") } },
             )
         }
+        is Ask.TestResult -> AlertDialog(
+            onDismissRequest = { ask = null },
+            title = { Text("✅ Cette sauvegarde est bonne") },
+            text = {
+                Text(
+                    buildString {
+                        a.content.createdAt?.let { append("Faite le ${it.format(dayMonthYear)} à ${it.format(hourMinute)}.\n\n") }
+                        append(Backup.summary(a.content)).append("\n\nRien n'a été changé sur ton téléphone : c'était juste un essai.")
+                    },
+                )
+            },
+            confirmButton = { TextButton(onClick = { ask = null }) { Text("Super") } },
+        )
         Ask.AutoPassword -> PasswordDialog(
             title = "Mot de passe des sauvegardes automatiques",
             text = "Il sera demandé pour restaurer une sauvegarde automatique. Il est gardé sur ce téléphone uniquement.",
@@ -354,4 +377,30 @@ private fun PasswordDialog(
         confirmButton = { TextButton(onClick = { onConfirm(pw) }, enabled = ok) { Text(if (pw.isEmpty() && allowEmpty) "Sans mot de passe" else confirmLabel) } },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Annuler") } },
     )
+}
+
+/** Changing phone, step by step, and a way to be sure the backup works before the old phone is wiped. */
+@Composable
+private fun PhoneChangeGuide(onTest: () -> Unit, busy: Boolean) {
+    var open by rememberSaveable { mutableStateOf(false) }
+    Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer), modifier = Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Row(Modifier.fillMaxWidth().clickable { open = !open }, verticalAlignment = Alignment.CenterVertically) {
+                Text("📱  Je change de téléphone", style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
+                Text(if (open) "Masquer" else "Voir", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
+            }
+            if (open) {
+                listOf(
+                    "1️⃣  Sur l'ancien téléphone : « Créer une sauvegarde ». Un mot de passe est conseillé ; note-le bien.",
+                    "2️⃣  Envoie le fichier vers le nouveau téléphone (mail à toi-même, clé USB, dossier synchronisé…). MédiPote n'envoie rien tout seul.",
+                    "3️⃣  Teste-le ici, sur l'ancien téléphone, avec le bouton ci-dessous : il vérifie que le fichier se lit et ce qu'il contient, sans rien changer.",
+                    "4️⃣  Sur le nouveau : installe MédiPote, crée un profil rapide, puis Paramètres › Sauvegarde › « Restaurer une sauvegarde ». Tout est remplacé par ta sauvegarde.",
+                    "5️⃣  Vérifie tes traitements et tes rappels, puis seulement après efface l'ancien téléphone.",
+                ).forEach { Text(it, style = MaterialTheme.typography.bodyMedium) }
+            }
+            OutlinedButton(onClick = onTest, enabled = !busy, modifier = Modifier.fillMaxWidth()) {
+                Text("🔍  Tester une sauvegarde (sans rien changer)")
+            }
+        }
+    }
 }

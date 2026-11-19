@@ -430,6 +430,22 @@ et « Jour par jour » a rejoint le journal. Une carte ouverte montre où l'on e
 
 ![](docs/home_shortcuts.png) ![](docs/settings_groups.png)
 
+## Pause, calendrier, idées et changement de téléphone
+
+- **Pause des rappels** (Paramètres › Rappels et notifications) : « Jusqu'à demain matin », « 3 jours » ou « 1 semaine ». Les
+  rappels doux (eau, stock, rituels, récap, sommeil) se taisent ; **les prises et les rendez-vous sonnent toujours**. On peut
+  ajouter les rappels de prises, mais ce n'est jamais le réglage par défaut et un avertissement le précise. Un bandeau sur
+  l'accueil rappelle la pause, qui se termine toute seule (la montre suit).
+- **Calendrier** (Suivi) : le mois d'un coup d'œil, avec des points pour les prises, l'humeur et les symptômes. Aucun jour n'est
+  « raté » : un jour sans point est juste un jour sans note. Toucher un jour l'ouvre.
+- **Une idée, un souci ?** (Paramètres › Aide, ou la loupe) : une liste qui reste sur le téléphone, avec l'écran où l'on était ;
+  elle se partage en texte, rien n'est envoyé par l'appli.
+- **Ordonnance renouvelée** : sur la fiche d'une ordonnance, un bouton arrête les rappels et donne +5 points, une seule fois.
+- **Changer de téléphone** (Paramètres › Sauvegarde) : un guide en cinq étapes et « Tester une sauvegarde », qui ouvre le fichier
+  et dit ce qu'il contient sans rien changer.
+
+![](docs/month_calendar.png) ![](docs/settings_pause.png)
+
 ## Le petit tour de la première fois
 
 Après la création du profil, un tour de cinq pages (une idée et quelques mots chacune), qu'on peut **passer à tout moment** et revoir depuis Paramètres › Aide

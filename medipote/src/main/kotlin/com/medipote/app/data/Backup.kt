@@ -36,6 +36,21 @@ object Backup {
 
     data class Content(val state: AppState, val documents: Map<String, ByteArray>, val createdAt: LocalDateTime?)
 
+    /** What a backup holds, in words: shown before restoring and when a backup is only being tested. */
+    fun summary(content: Content): String {
+        val s = content.state
+        fun n(count: Int, one: String, many: String) = "$count ${if (count > 1) many else one}"
+        return buildString {
+            append("Elle contient ")
+            append(n(s.treatments.size, "traitement", "traitements")).append(", ")
+            append(n(s.doseLogs.size, "prise notée", "prises notées")).append(", ")
+            append(n(s.journal.size, "jour de journal", "jours de journal")).append(", ")
+            append(n(s.sleep.size, "nuit", "nuits")).append(", ")
+            append(n(s.measurements.size, "mesure", "mesures")).append(" et ")
+            append(n(s.documents.size, "document", "documents")).append(".")
+        }
+    }
+
     fun fileName(now: LocalDateTime, auto: Boolean = false) =
         "MediPote-${if (auto) "auto" else "sauvegarde"}-${now.toLocalDate()}_${"%02dh%02d".format(now.hour, now.minute)}.medipote"
 

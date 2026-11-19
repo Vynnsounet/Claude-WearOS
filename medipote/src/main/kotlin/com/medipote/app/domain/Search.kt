@@ -37,9 +37,10 @@ object AppSearch {
         SearchEntry("soins:treatments", "💊", "Traitements", "Soins", listOf("médicament", "médicaments", "comprimé", "gélule", "prise", "prises", "posologie", "pilulier", "ajouter un traitement", "stock"), card("treatments", "soins:treatments")),
         SearchEntry("soins:pill", "🔁", "Pilule", "Soins", listOf("contraception", "contraceptif", "plaquette", "pause", "oubli de pilule"), card("treatments", "soins:pill")),
         SearchEntry("soins:agenda", "📅", "Agenda", "Soins", listOf("rendez-vous", "rdv", "médecin", "docteur", "consultation", "dentiste", "préparer un rendez-vous"), card("treatments", "soins:agenda")),
-        SearchEntry("soins:docs", "📂", "Carnet de santé", "Soins", listOf("ordonnance", "document", "documents", "analyse", "résultats", "compte rendu", "pdf", "photo", "scan"), card("treatments", "soins:docs")),
+        SearchEntry("soins:docs", "📂", "Carnet de santé", "Soins", listOf("ordonnance", "ordonnance renouvelée", "renouveler", "document", "documents", "analyse", "résultats", "compte rendu", "pdf", "photo", "scan"), card("treatments", "soins:docs")),
         // ── Suivi ──
         SearchEntry("suivi:journal", "📖", "Journal", "Suivi", listOf("humeur", "note", "notes", "écrire", "journée", "aujourd'hui", "moral"), card("suivi", "suivi:journal")),
+        SearchEntry("suivi:calendar", "🗓️", "Calendrier", "Suivi", listOf("mois", "vue du mois", "jour par jour", "historique", "agenda du mois", "mes jours", "calendrier"), card("suivi", "suivi:calendar")),
         SearchEntry("suivi:sleep", "🌙", "Sommeil", "Suivi", listOf("dormir", "nuit", "nuits", "sieste", "siestes", "réveil", "réveils", "coucher", "insomnie"), card("suivi", "suivi:sleep")),
         SearchEntry("suivi:measures", "🩺", "Mesures", "Suivi", listOf("tension", "poids", "pouls", "glycémie", "température", "saturation", "oxygène", "fréquence cardiaque"), card("suivi", "suivi:measures")),
         SearchEntry("suivi:cycle", "🩸", "Cycle", "Suivi", listOf("règles", "menstruations", "ovulation", "protection", "tampon", "serviette", "cycle menstruel", "période"), card("suivi", "suivi:cycle")),
@@ -85,6 +86,9 @@ object AppSearch {
         SearchEntry("reminders", "🔔", "Rappels et notifications", "Paramètres", listOf("rappel", "notification", "alarme", "son", "vibration", "pause"), go("settings?section=reminders")),
         SearchEntry("sober", "🍃", "Mode sobre", "Paramètres › Jeu", listOf("sans points", "sans jeu", "série", "points", "badges", "boutique", "discret", "calme"), go("settings?section=game")),
         SearchEntry("moment", "🕐", "Accueil du moment", "Paramètres › Mon accueil", listOf("matin", "soir", "voir plus", "accueil simple", "moins de choses"), go("home_layout")),
+        SearchEntry("pause", "⏸️", "Mettre les rappels en pause", "Paramètres › Rappels", listOf("pause", "vacances", "voyage", "silence", "arrêter les rappels", "ne plus être dérangé", "week-end", "repos"), go("settings?section=reminders")),
+        SearchEntry("ideas", "💡", "Une idée, un souci ?", "Paramètres › Aide", listOf("idée", "suggestion", "souci", "problème", "bug", "remarque", "amélioration", "feedback", "avis"), go("ideas")),
+        SearchEntry("phone_change", "📱", "Changer de téléphone", "Paramètres › Sauvegarde", listOf("nouveau téléphone", "transférer", "migrer", "récupérer mes données", "restaurer", "tester ma sauvegarde"), go("backup")),
         SearchEntry("tour", "👋", "Revoir le petit tour", "Aide", listOf("tuto", "tutoriel", "aide", "comment ça marche", "découvrir", "explications", "guide"), go("tour")),
     )
 

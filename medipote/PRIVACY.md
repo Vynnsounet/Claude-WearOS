@@ -1,6 +1,6 @@
 # Politique de confidentialité de MédiPote
 
-*Dernière mise à jour : 18 novembre 2026*
+*Dernière mise à jour : 19 novembre 2026*
 
 MédiPote est une application d'aide à la prise de traitements. Cette politique explique
 quelles données l'application utilise et ce qu'elle en fait.
@@ -20,6 +20,11 @@ confiance et leurs numéros) reste dans l'espace privé de l'application, comme 
 n'est partagé avec personne. Les appels et messages passent par les applications Téléphone et
 Messages de ton téléphone, seulement quand tu appuies sur « appeler » ou « envoyer » là-bas.
 MédiPote n'envoie rien et n'a pas accès à Internet.
+
+## Tes idées sur l'appli
+
+Ce que tu écris dans « Une idée, un souci ? » reste dans l'espace privé de l'application, avec le nom de l'écran où tu étais.
+Rien n'est envoyé : si tu touches « Partager », le texte part vers l'application que tu choisis, et seulement celui-là.
 
 ## Tes symptômes, tes conditions et tes petites missions
 

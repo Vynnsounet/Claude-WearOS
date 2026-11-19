@@ -290,7 +290,7 @@ fun DocumentInfoScreen(doc: HealthDocument, isNew: Boolean, onSave: (HealthDocum
 /** Full view: zoomable photo or every page of a PDF. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun DocumentViewerScreen(doc: HealthDocument, onBack: () -> Unit, onEdit: () -> Unit, onShare: () -> Unit, onDelete: () -> Unit) {
+fun DocumentViewerScreen(doc: HealthDocument, onBack: () -> Unit, onEdit: () -> Unit, onShare: () -> Unit, onDelete: () -> Unit, onRenew: () -> Unit = {}) {
     val context = LocalContext.current
     var confirmDelete by remember { mutableStateOf(false) }
     val pages by produceState<List<Bitmap>?>(null, doc.fileName) {
@@ -328,6 +328,15 @@ fun DocumentViewerScreen(doc: HealthDocument, onBack: () -> Unit, onEdit: () -> 
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             if (doc.notes.isNotBlank()) item { Text(doc.notes, style = MaterialTheme.typography.bodyMedium) }
+            // A prescription that is running out: one tap says it is renewed, and the reminders stop.
+            if (com.medipote.app.domain.Renewals.canRenew(doc)) item {
+                androidx.compose.material3.FilledTonalButton(onClick = onRenew, modifier = Modifier.fillMaxWidth()) {
+                    Text("✅  Ordonnance renouvelée")
+                }
+            }
+            doc.renewedOn?.let { day ->
+                item { Text("Renouvelée le ${day.format(dayMonthYear)}", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.primary) }
+            }
             val list = pages
             when {
                 list == null -> item { Text("Chargement…", style = MaterialTheme.typography.bodyMedium) }

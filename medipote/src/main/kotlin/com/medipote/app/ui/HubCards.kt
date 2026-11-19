@@ -91,7 +91,7 @@ object HubCatalog {
     val EVERYTHING: List<CardDef> = listOf(
         CardDef("soins:treatments", "💊", "Traitements"), CardDef("soins:pill", "🔁", "Pilule"), CardDef("soins:agenda", "📅", "Agenda"),
         CardDef("soins:docs", "📂", "Carnet de santé"),
-        CardDef("suivi:journal", "📖", "Journal"), CardDef("suivi:sleep", "🌙", "Sommeil"), CardDef("suivi:measures", "🩺", "Mesures"),
+        CardDef("suivi:journal", "📖", "Journal"), CardDef("suivi:calendar", "🗓️", "Calendrier"), CardDef("suivi:sleep", "🌙", "Sommeil"), CardDef("suivi:measures", "🩺", "Mesures"),
         CardDef("suivi:cycle", "🩸", "Cycle"), CardDef("suivi:symptoms", "🌡️", "Symptômes"),
         CardDef("mieux:softday", "💛", "Journée douce"), CardDef("mieux:feel", "💭", "Ce que je ressens"),
         CardDef("mieux:rituals", "✨", "Rituels du matin et du soir"), CardDef("mieux:me", "🌿", "Ce qui m'accompagne"),
@@ -116,6 +116,7 @@ object HubCatalog {
             ),
             SUIVI to listOfNotNull(
                 CardDef("suivi:journal", "📖", "Journal"),
+                CardDef("suivi:calendar", "🗓️", "Calendrier"),
                 CardDef("suivi:sleep", "🌙", "Sommeil"),
                 CardDef("suivi:measures", "🩺", "Mesures").takeIf { state.settings.measures.isNotEmpty() },
                 CardDef("suivi:cycle", "🩸", "Cycle").takeIf { menstruating },
@@ -342,7 +343,7 @@ enum class Interest(val emoji: String, val label: String) {
     ;
 
     companion object {
-        private val ALWAYS = setOf("soins:treatments", "soins:agenda", "suivi:journal", "moi:stats", "moi:year", "moi:shop", "moi:badges")
+        private val ALWAYS = setOf("soins:treatments", "soins:agenda", "suivi:journal", "suivi:calendar", "moi:stats", "moi:year", "moi:shop", "moi:badges")
         private val COVERS = mapOf(
             TREATMENTS to setOf("soins:pill", "soins:docs", "suivi:measures"),
             CYCLE to setOf("suivi:cycle", "soins:pill"),

@@ -66,6 +66,19 @@ L'optimiseur de R8 reste désactivé (`-dontoptimize`) : APK de 3,8 Mo au lieu d
 le dex livré peut être reconverti et exécuté hors appareil pour vérification (voir plus bas),
 ce que l'optimiseur empêche. Il pourra être réactivé après des essais sur téléphone.
 
+### 1.27.0 — se mettre en pause, retrouver ses jours, changer de téléphone
+
+- Pause des rappels (Paramètres › Rappels) : jusqu'à demain matin, 3 jours ou 1 semaine. L'eau, le stock, les rituels, le récap
+  et le sommeil se taisent ; les prises et les rendez-vous sonnent toujours, sauf si on ajoute « Aussi les rappels de prises »
+  (désactivé par défaut, avec un avertissement). Un bandeau sur l'accueil rappelle la pause ; la montre suit.
+- « 💡 Une idée, un souci ? » (Paramètres › Aide, ou la loupe) : une liste locale, avec l'écran où l'on était, qu'on peut partager
+  en texte. Rien n'est envoyé par l'appli.
+- Calendrier (Suivi) : le mois d'un coup d'œil, avec des points pour les prises, l'humeur et les symptômes ; un jour sans point
+  est juste un jour sans note. Toucher un jour l'ouvre.
+- « ✅ Ordonnance renouvelée » sur la fiche d'une ordonnance : les rappels s'arrêtent, +5 points une seule fois.
+- Sauvegarde : guide « Je change de téléphone » en cinq étapes et « Tester une sauvegarde » (le fichier est ouvert et décrit,
+  sans rien changer).
+
 ### 1.26.1 — un petit tour plus aéré
 
 - Le petit tour passe de sept à cinq pages : une idée et quelques mots par page, plus d'espace.

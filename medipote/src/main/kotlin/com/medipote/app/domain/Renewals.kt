@@ -12,7 +12,7 @@ object Renewals {
     private const val SHOW_AFTER_DAYS = 14L
 
     fun reminderDate(doc: HealthDocument): LocalDate? {
-        if (doc.category != DocCategory.PRESCRIPTION) return null
+        if (doc.category != DocCategory.PRESCRIPTION || doc.renewedOn != null) return null
         val until = doc.validUntil ?: return null
         val days = doc.remindDays ?: return null
         return until.minusDays(days.toLong())
@@ -20,7 +20,7 @@ object Renewals {
 
     /** Prescriptions that run out soon (or just did), soonest first. */
     fun due(state: AppState, today: LocalDate): List<HealthDocument> = state.documents
-        .filter { it.category == DocCategory.PRESCRIPTION }
+        .filter { it.category == DocCategory.PRESCRIPTION && it.renewedOn == null }
         .filter { d ->
             val from = reminderDate(d) ?: return@filter false
             !today.isBefore(from) && !today.isAfter(d.validUntil!!.plusDays(SHOW_AFTER_DAYS))
@@ -38,4 +38,10 @@ object Renewals {
             else -> "Valable encore $left jours"
         }
     }
+
+    /** Whether the « Ordonnance renouvelée » action makes sense: a prescription with an end date, not yet renewed. */
+    fun canRenew(doc: HealthDocument): Boolean = doc.category == DocCategory.PRESCRIPTION && doc.validUntil != null && doc.renewedOn == null
+
+    /** The document once renewed: no more reminders. */
+    fun renewed(doc: HealthDocument, today: LocalDate): HealthDocument = doc.copy(renewedOn = today)
 }

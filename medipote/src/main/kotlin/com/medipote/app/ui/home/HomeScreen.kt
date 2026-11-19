@@ -153,6 +153,7 @@ fun HomeScreen(
     onOpenShortcut: (String) -> Unit = {},
     onUnpin: (String) -> Unit = {},
     onOpenSoftDay: () -> Unit = {},
+    onOpenPause: () -> Unit = {},
     quickAdd: QuickAddActions? = null,
 ) {
     val logs = remember(state.doseLogs) { state.doseLogs.associateBy { it.key } }
@@ -320,9 +321,16 @@ fun HomeScreen(
     val renewals = com.medipote.app.domain.Renewals.due(state, date)
     val blocked = notificationsBlocked && state.settings.notificationsEnabled
     val quiet = !blocked && remindersQuiet && state.settings.notificationsEnabled
+    val pausedNow = com.medipote.app.domain.Pause.active(state.settings.pause, now)
     val alerts: (@Composable () -> Unit)? =
-        if (recap == null && low.isEmpty() && renewals.isEmpty() && !blocked && !quiet && forgotten.isEmpty()) null
+        if (recap == null && low.isEmpty() && renewals.isEmpty() && !blocked && !quiet && forgotten.isEmpty() && !pausedNow) null
         else { {
+            if (pausedNow) Notice(
+                null, MaterialTheme.colorScheme.primary, "Rappels en pause",
+                com.medipote.app.domain.Pause.label(state.settings.pause).removePrefix("En pause ").replaceFirstChar(Char::uppercase) +
+                    if (state.settings.pause.doses) ". Les prises aussi : touche pour reprendre." else ". Touche pour reprendre.",
+                emoji = "⏸️", onClick = onOpenPause,
+            )
             if (blocked) Notice(Icons.Rounded.NotificationsOff, AppTheme.status.warning, "Les notifications sont bloquées", "Tu ne recevras pas les rappels. Touche ici pour les autoriser.", onClick = onFixNotifications)
             if (quiet) Notice(
                 Icons.Rounded.NotificationsOff, AppTheme.status.warning, "Les rappels arrivent sans pop-up",

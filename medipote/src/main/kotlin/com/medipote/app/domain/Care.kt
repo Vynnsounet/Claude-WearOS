@@ -19,6 +19,7 @@ object Care {
     const val MEASURE_POINTS = 2
     const val SYMPTOM_POINTS = 2
     const val RESTOCK_POINTS = 5
+    const val RENEWAL_POINTS = 5
     const val GIFT_POINTS = 25
     const val GIFT_DAYS = 7
     private const val KEEP = 600
@@ -48,6 +49,10 @@ object Care {
     /** A treatment that was running low is bought back: once per treatment and day. */
     fun restocked(state: AppState, treatmentId: String, now: LocalDateTime) =
         reward(state, "${day(now)}:restock:$treatmentId", RESTOCK_POINTS, "Traitement racheté", now)
+
+    /** A prescription renewed: once per prescription and end date. */
+    fun renewed(state: AppState, docId: String, validUntil: LocalDate?, now: LocalDateTime) =
+        reward(state, "renew:$docId:${validUntil ?: ""}", RENEWAL_POINTS, "Ordonnance renouvelée", now)
 
     // ── The surprise gift ──
 

@@ -149,6 +149,8 @@ data class HealthDocument(
     @Serializable(with = LocalDateSerializer::class) val validUntil: LocalDate? = null,
     /** Remind this many days before [validUntil] to get it renewed (null: no reminder). */
     val remindDays: Int? = 10,
+    /** Prescriptions: the day the person renewed it (the reminders stop). */
+    @Serializable(with = LocalDateSerializer::class) val renewedOn: LocalDate? = null,
 ) {
     val isPdf: Boolean get() = mimeType == "application/pdf"
 }

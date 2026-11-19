@@ -28,7 +28,7 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
-enum class AlarmKind { DOSE, FOLLOW_UP, APPOINTMENT, WATER, STOCK, TEST, PRN_CHECK, SLEEP, SNOOZE, RENEWAL, RITUAL, RECAP, PRODUCT, SUPPORT, WIND_DOWN }
+enum class AlarmKind { DOSE, FOLLOW_UP, APPOINTMENT, WATER, STOCK, TEST, PRN_CHECK, SLEEP, SNOOZE, RENEWAL, RITUAL, RECAP, PRODUCT, SUPPORT, WIND_DOWN, RESUME }
 
 /** One planned alarm. [ref] identifies what it is about (an appointment id, for instance). */
 data class AlarmSpec(val kind: AlarmKind, val time: LocalDateTime, val ref: String = "") {
@@ -160,7 +160,19 @@ object ReminderPlanner {
             val today = now.toLocalDate().atTime(STOCK_CHECK)
             alarms += AlarmSpec(AlarmKind.STOCK, if (today.isAfter(now)) today else today.plusDays(1))
         }
-        return quiet(state, alarms)
+        return paused(state, quiet(state, alarms), now)
+    }
+
+    /**
+     * A pause: the soft reminders (and the doses only if the person said so) stay quiet until the end of
+     * the pause; a silent alarm at its end plans everything again. Appointments are never paused.
+     */
+    private fun paused(state: AppState, alarms: List<AlarmSpec>, now: LocalDateTime): List<AlarmSpec> {
+        val p = state.settings.pause
+        val until = p.until ?: return alarms
+        if (!com.medipote.app.domain.Pause.active(p, now)) return alarms
+        return alarms.filter { a -> !a.time.isBefore(until) || !com.medipote.app.domain.Pause.silences(p, a.kind) } +
+            AlarmSpec(AlarmKind.RESUME, until)
     }
 
     /**
@@ -587,7 +599,7 @@ class ReminderReceiver : BroadcastReceiver() {
                 AlarmKind.APPOINTMENT -> Notifications.showAppointment(context, state, spec.ref)
                 AlarmKind.WATER -> Notifications.showWater(context, state, repo.now())
                 AlarmKind.STOCK -> Notifications.showStock(context, state)
-                AlarmKind.TEST -> Unit
+                AlarmKind.TEST, AlarmKind.RESUME -> Unit
                 AlarmKind.PRN_CHECK -> Notifications.showPrnCheck(context, state, spec.ref)
                 AlarmKind.SLEEP -> Notifications.showSleep(context, state, repo.now())
                 AlarmKind.WIND_DOWN -> Notifications.showWindDown(context, state)

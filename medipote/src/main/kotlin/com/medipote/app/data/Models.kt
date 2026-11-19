@@ -53,6 +53,8 @@ data class AppState(
     val energy: EnergyNote? = null,
     /** What helped the person go back to sleep, in their own words: shown on the next hard night. */
     val sleepRecipe: List<String> = emptyList(),
+    /** « Une idée, un souci ? »: what the person noted about the app, kept here and shared only if they choose. */
+    val ideas: List<Idea> = emptyList(),
 ) {
     fun entryFor(date: LocalDate): DayEntry = journal.firstOrNull { it.date == date } ?: DayEntry(date)
 }
@@ -360,6 +362,8 @@ data class Settings(
     val usage: UsageStats = UsageStats(),
     /** Order the cards of each page by use (once enough days have passed). */
     val cardsByUse: Boolean = true,
+    /** Reminders put on pause for a while. */
+    val pause: ReminderPause = ReminderPause(),
     /** Sober mode: no points, streak, shop or badges on screen; the care stays the same. */
     val sober: Boolean = false,
     /** Reminder to change each period product, in minutes, when the user changed the default. */
@@ -369,6 +373,27 @@ data class Settings(
     val notificationsEnabled: Boolean = true,
     /** Send a second notification when a dose is still not given 30 minutes after its time. */
     val followUpReminder: Boolean = true,
+)
+
+/** A thought about the app, with the screen the person was on. */
+@Serializable
+data class Idea(
+    val id: String,
+    val text: String,
+    /** Where the person was (« Soins », « Réglages »…); empty when unknown. */
+    val screen: String = "",
+    @Serializable(with = LocalDateTimeSerializer::class) val at: LocalDateTime,
+)
+
+/**
+ * Gentle reminders put to sleep until [until] (a trip, a bad week). The doses and the appointments keep
+ * ringing unless the person explicitly adds [doses].
+ */
+@Serializable
+data class ReminderPause(
+    @Serializable(with = LocalDateTimeSerializer::class) val until: LocalDateTime? = null,
+    /** Also silence the dose reminders: only on purpose, never the default. */
+    val doses: Boolean = false,
 )
 
 /** How often each card of the hub pages was opened, on how many different days; nothing leaves the phone. */

@@ -633,6 +633,26 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         checkAchievements()
     }
 
+    /** « Ordonnance renouvelée »: the reminders stop, and a small reward is given once. */
+    fun renewDocument(doc: HealthDocument) {
+        if (!com.medipote.app.domain.Renewals.canRenew(doc)) return
+        val today = repo.now().toLocalDate()
+        repo.update { s ->
+            s.copy(documents = s.documents.map { if (it.id == doc.id) com.medipote.app.domain.Renewals.renewed(it, today) else it })
+        }
+        reschedule()
+        _events.trySend(UiEvent.Message("Ordonnance renouvelée. Pense à ajouter la nouvelle dans le carnet de santé."))
+        careReward { com.medipote.app.domain.Care.renewed(it, doc.id, doc.validUntil, repo.now()) }
+    }
+
+    fun addIdea(text: String, screen: String) {
+        repo.update { it.copy(ideas = com.medipote.app.domain.Ideas.add(it.ideas, text, screen, repo.now())) }
+    }
+
+    fun removeIdea(id: String) {
+        repo.update { it.copy(ideas = com.medipote.app.domain.Ideas.remove(it.ideas, id)) }
+    }
+
     fun deleteDocument(doc: HealthDocument) {
         DocumentStore.delete(getApplication(), doc)
         repo.update { s -> s.copy(documents = s.documents.filterNot { it.id == doc.id }) }

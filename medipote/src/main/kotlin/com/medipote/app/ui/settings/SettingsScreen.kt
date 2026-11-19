@@ -66,7 +66,7 @@ import com.medipote.app.ui.components.SectionTitle
 import com.medipote.app.ui.theme.AppTheme
 import com.medipote.app.ui.treatments.SwitchRow
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 @Composable
 fun SettingsScreen(
     settings: Settings,
@@ -93,6 +93,7 @@ fun SettingsScreen(
     onOpenSupport: () -> Unit = {},
     onOpenWellbeing: () -> Unit = {},
     onOpenTour: () -> Unit = {},
+    onOpenIdeas: () -> Unit = {},
     onOpenCards: () -> Unit = {},
     /** When the Wear OS app last got in touch (0 = never), and whether it rings the reminders itself. */
     watchLastSeen: Long = 0L,
@@ -147,6 +148,44 @@ fun SettingsScreen(
             }
 
             SettingsGroup("reminders", "🔔", "Rappels et notifications", openGroup, { openGroup = it }) {
+            SectionTitle("Pause")
+            SettingsCard {
+                val clock = java.time.LocalDateTime.ofInstant(java.time.Instant.ofEpochMilli(nowMs), java.time.ZoneId.systemDefault())
+                val pause = settings.pause
+                if (com.medipote.app.domain.Pause.active(pause, clock)) {
+                    Text(com.medipote.app.domain.Pause.label(pause), style = MaterialTheme.typography.bodyLarge)
+                    Text(
+                        if (pause.doses) "⚠️ Les rappels de prises sont aussi en pause. Les rendez-vous sonnent toujours."
+                        else "Les prises et les rendez-vous sonnent toujours.",
+                        style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    androidx.compose.material3.OutlinedButton(
+                        onClick = { onChange { it.copy(pause = com.medipote.app.data.ReminderPause()) } }, modifier = Modifier.fillMaxWidth(),
+                    ) { Text("Reprendre les rappels maintenant") }
+                } else {
+                    var withDoses by remember { mutableStateOf(false) }
+                    Text(
+                        "Un voyage, une mauvaise semaine : l'eau, le stock, les rituels, le récap et le sommeil se taisent un moment. " +
+                            "Les prises et les rendez-vous sonnent toujours.",
+                        style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    androidx.compose.foundation.layout.FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        com.medipote.app.domain.Pause.Length.entries.forEach { length ->
+                            androidx.compose.material3.FilterChip(
+                                selected = false,
+                                onClick = { onChange { it.copy(pause = com.medipote.app.domain.Pause.start(length, withDoses, clock)) } },
+                                label = { Text("⏸️  ${length.label}") },
+                            )
+                        }
+                    }
+                    SwitchRow(
+                        "Aussi les rappels de prises", withDoses,
+                        supporting = if (withDoses) "⚠️ Pendant la pause, tu ne seras pas prévenu·e des prises : à n'utiliser que si tu es sûr·e de toi."
+                        else "Déconseillé, sauf si tu sais que tu n'en as pas besoin.",
+                    ) { withDoses = it }
+                }
+            }
+
             SectionTitle("Rappels")
             SettingsCard {
                 SwitchRow("Notifications de prise", settings.notificationsEnabled && notificationsAllowed, supporting = "Une notification à l'heure de chaque prise") { v ->
@@ -458,6 +497,7 @@ fun SettingsScreen(
                 Rule("Premier symptôme noté du jour (quelle que soit sa force)", "+${com.medipote.app.domain.Care.SYMPTOM_POINTS} pts")
                 Rule("Rendez-vous préparé · rendez-vous honoré", "+${com.medipote.app.domain.Care.PREP_POINTS} · +${com.medipote.app.domain.Care.ATTENDED_POINTS} pts")
                 Rule("Traitement racheté quand le stock était bas", "+${com.medipote.app.domain.Care.RESTOCK_POINTS} pts")
+                Rule("Ordonnance renouvelée", "+${com.medipote.app.domain.Care.RENEWAL_POINTS} pts")
                 Rule("Petite victoire ou « J'ai essayé » (3 par jour au plus)", "+${com.medipote.app.domain.Wellbeing.MISSION_POINTS} pts")
                 Rule("Sept jours de suite à prendre soin de toi", "+${com.medipote.app.domain.Care.GIFT_POINTS} pts, cadeau-surprise")
                 Rule("Défi de la semaine réussi", "+20 à +40 pts")
@@ -480,6 +520,9 @@ fun SettingsScreen(
             SettingsCard {
                 androidx.compose.material3.FilledTonalButton(onClick = onOpenTour, modifier = Modifier.fillMaxWidth()) {
                     Text("👋  Revoir le petit tour")
+                }
+                androidx.compose.material3.FilledTonalButton(onClick = onOpenIdeas, modifier = Modifier.fillMaxWidth()) {
+                    Text("💡  Une idée, un souci ?")
                 }
             }
 
