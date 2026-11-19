@@ -20,6 +20,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.KeyboardArrowUp
+import androidx.compose.material.icons.rounded.KeyboardArrowDown
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material.icons.outlined.AccountCircle
@@ -100,8 +102,11 @@ fun SettingsScreen(
     lockEnabled: Boolean = false,
     onToggleLock: (Boolean) -> Unit = {},
     lastBackup: java.time.LocalDateTime? = null,
+    openSection: String? = null,
 ) {
     var renaming by remember { mutableStateOf(false) }
+    // One group open at a time; a search result can open the right one (« settings?section=reminders »).
+    var openGroup by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(openSection) }
     var confirmReset by remember { mutableStateOf(false) }
     Scaffold(
         topBar = {
@@ -116,7 +121,7 @@ fun SettingsScreen(
             Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).padding(horizontal = 16.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            SectionTitle("Apparence")
+            SettingsGroup("look", "🎨", "Apparence", openGroup, { openGroup = it }) {
             SettingsCard {
                 Text("Thème", style = MaterialTheme.typography.bodyLarge)
                 SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
@@ -139,6 +144,9 @@ fun SettingsScreen(
                 }
             }
 
+            }
+
+            SettingsGroup("reminders", "🔔", "Rappels et notifications", openGroup, { openGroup = it }) {
             SectionTitle("Rappels")
             SettingsCard {
                 SwitchRow("Notifications de prise", settings.notificationsEnabled && notificationsAllowed, supporting = "Une notification à l'heure de chaque prise") { v ->
@@ -253,7 +261,9 @@ fun SettingsScreen(
                 }
             }
 
-            SectionTitle("Sommeil")
+            }
+
+            SettingsGroup("sleep", "🌙", "Sommeil", openGroup, { openGroup = it }) {
             SettingsCard {
                 val sl = settings.sleep
                 fun update(f: (com.medipote.app.data.SleepSettings) -> com.medipote.app.data.SleepSettings) = onChange { it.copy(sleep = f(it.sleep)) }
@@ -290,7 +300,9 @@ fun SettingsScreen(
                 SwitchRow("Récap de la semaine", r.weeklyRecap, supporting = "Une notification le dimanche à 19 h") { v -> update { it.copy(weeklyRecap = v) } }
             }
 
-            SectionTitle("Mesures de santé")
+            }
+
+            SettingsGroup("health", "🩺", "Mesures de santé", openGroup, { openGroup = it }) {
             SettingsCard {
                 Text(
                     "Choisis ce que tu veux suivre : seules les mesures cochées apparaissent (accueil, Suivi › Mesures, rapport).",
@@ -303,6 +315,9 @@ fun SettingsScreen(
                 }
             }
 
+            }
+
+            SettingsGroup("privacy", "🔒", "Confidentialité et sauvegarde", openGroup, { openGroup = it }) {
             SectionTitle("Confidentialité")
             SettingsCard {
                 SwitchRow(
@@ -346,6 +361,9 @@ fun SettingsScreen(
                 )
             }
 
+            }
+
+            SettingsGroup("mind", "🌿", "Ce qui m'accompagne et soutien", openGroup, { openGroup = it }) {
             SectionTitle("Ce qui m'accompagne")
             SettingsCard {
                 Text(
@@ -355,13 +373,6 @@ fun SettingsScreen(
                 )
                 androidx.compose.material3.FilledTonalButton(onClick = onOpenWellbeing, modifier = Modifier.fillMaxWidth()) {
                     Text("🌿  Mes conditions, symptômes et missions")
-                }
-            }
-
-            SectionTitle("Aide")
-            SettingsCard {
-                androidx.compose.material3.FilledTonalButton(onClick = onOpenTour, modifier = Modifier.fillMaxWidth()) {
-                    Text("👋  Revoir le petit tour")
                 }
             }
 
@@ -377,7 +388,9 @@ fun SettingsScreen(
                 }
             }
 
-            SectionTitle("Montre")
+            }
+
+            SettingsGroup("watch", "⌚", "Montre", openGroup, { openGroup = it }) {
             SettingsCard {
                 if (watchLastSeen == 0L) {
                     Text("⌚ Aucune montre reliée", style = MaterialTheme.typography.bodyLarge)
@@ -407,6 +420,17 @@ fun SettingsScreen(
                 androidx.compose.material3.FilledTonalButton(onClick = onSyncWatch, modifier = Modifier.fillMaxWidth()) {
                     Text("Synchroniser la montre maintenant")
                 }
+            }
+
+            }
+
+            SettingsGroup("game", "🎮", "Jeu et récompenses", openGroup, { openGroup = it }) {
+            SectionTitle("Mode sobre")
+            SettingsCard {
+                SwitchRow(
+                    "Mode sobre", settings.sober,
+                    supporting = "Plus de points, de série, de boutique ni de badges à l'écran. Le suivi reste le même, et tu peux revenir quand tu veux.",
+                ) { v -> onChange { it.copy(sober = v) } }
             }
 
             SectionTitle("Règles du jeu")
@@ -449,6 +473,16 @@ fun SettingsScreen(
                 }
             }
 
+            }
+
+            SettingsGroup("about", "ℹ️", "Aide et à propos", openGroup, { openGroup = it }) {
+            SectionTitle("Aide")
+            SettingsCard {
+                androidx.compose.material3.FilledTonalButton(onClick = onOpenTour, modifier = Modifier.fillMaxWidth()) {
+                    Text("👋  Revoir le petit tour")
+                }
+            }
+
             SectionTitle("À propos")
             SettingsCard {
                 Text(
@@ -464,6 +498,7 @@ fun SettingsScreen(
                     colors = ListItemDefaults.colors(containerColor = Color.Transparent),
                     modifier = Modifier.clickable { confirmReset = true },
                 )
+            }
             }
             Spacer(Modifier.height(16.dp))
         }
@@ -487,6 +522,30 @@ fun SettingsScreen(
             confirmButton = { TextButton(onClick = { confirmReset = false; onReset() }) { Text("Effacer", color = MaterialTheme.colorScheme.error) } },
             dismissButton = { TextButton(onClick = { confirmReset = false }) { Text("Annuler") } },
         )
+    }
+}
+
+/** A group of settings that opens on a tap, one at a time, so the page is short and nothing is lost in a long scroll. */
+@Composable
+private fun SettingsGroup(id: String, emoji: String, title: String, open: String?, onOpen: (String?) -> Unit, content: @Composable () -> Unit) {
+    val isOpen = open == id
+    Card(
+        onClick = { onOpen(if (isOpen) null else id) },
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Row(Modifier.padding(horizontal = 16.dp, vertical = 16.dp), verticalAlignment = Alignment.CenterVertically) {
+            Text(emoji, style = MaterialTheme.typography.titleLarge)
+            Spacer(Modifier.size(12.dp))
+            Text(title, style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
+            Icon(
+                if (isOpen) Icons.Rounded.KeyboardArrowUp else Icons.Rounded.KeyboardArrowDown,
+                if (isOpen) "Replier $title" else "Ouvrir $title",
+            )
+        }
+    }
+    if (isOpen) {
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(bottom = 8.dp)) { content() }
     }
 }
 

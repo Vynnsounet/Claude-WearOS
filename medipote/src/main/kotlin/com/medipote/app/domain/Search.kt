@@ -83,6 +83,8 @@ object AppSearch {
         SearchEntry("backup", "💾", "Sauvegarde", "Paramètres", listOf("sauvegarder", "restaurer", "exporter", "changer de téléphone", "perdre mes données", "copie"), go("backup")),
         SearchEntry("quiet", "🔕", "Heures calmes", "Paramètres", listOf("silence", "nuit", "ne pas déranger", "notifications", "rappels"), go("settings?section=reminders")),
         SearchEntry("reminders", "🔔", "Rappels et notifications", "Paramètres", listOf("rappel", "notification", "alarme", "son", "vibration", "pause"), go("settings?section=reminders")),
+        SearchEntry("sober", "🍃", "Mode sobre", "Paramètres › Jeu", listOf("sans points", "sans jeu", "série", "points", "badges", "boutique", "discret", "calme"), go("settings?section=game")),
+        SearchEntry("moment", "🕐", "Accueil du moment", "Paramètres › Mon accueil", listOf("matin", "soir", "voir plus", "accueil simple", "moins de choses"), go("home_layout")),
         SearchEntry("tour", "👋", "Revoir le petit tour", "Aide", listOf("tuto", "tutoriel", "aide", "comment ça marche", "découvrir", "explications", "guide"), go("tour")),
     )
 

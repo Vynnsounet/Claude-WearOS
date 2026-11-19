@@ -413,6 +413,23 @@ La règle : **ajouter = « + Noter »**, **regarder = les onglets**, **aller mal
 « Ça ne va pas » et « Respirer » ne sont plus répétés dans « + Noter » et Mieux-être (Mieux-être a « Ce que je ressens »),
 et « Jour par jour » a rejoint le journal. Une carte ouverte montre où l'on est (le nom de l'onglet sous le sien).
 
+## Un accueil et des réglages à ta mesure
+
+- **Accueil du moment** (Paramètres › Mon accueil) : le matin (rituel, nuit, humeur, mesures), la journée (eau, mesures,
+  humeur) et le soir (rituel, journal, aide au sommeil) ne mettent pas en avant les mêmes blocs. Les prises, le compagnon, la
+  journée douce et tes raccourcis restent toujours devant ; le reste attend sous « Voir plus ».
+- **Raccourcis** : un appui long sur une carte d'un onglet (Soins, Suivi, Mieux-être, Moi) → « Épingler sur l'accueil » ; quatre
+  au plus, retirés par un appui long ou depuis « Mes cartes ».
+- **Les cartes s'adaptent à l'usage** : celles que tu ouvres le plus passent devant, et après deux semaines, une carte jamais
+  ouverte est proposée au rangement (« Ranger » / « Garder » : jamais sans ton accord ; elle reste trouvable avec la loupe). Le
+  décompte reste sur le téléphone et se coupe dans « Mes cartes ».
+- **Paramètres en groupes** qui s'ouvrent d'un toucher, un seul à la fois (Apparence, Rappels, Sommeil, Mesures, Confidentialité
+  et sauvegarde, Ce qui m'accompagne, Montre, Jeu, Aide) ; la loupe ouvre directement le bon groupe.
+- **Mode sobre** (Jeu et récompenses) : plus de points, de série, de badges, de boutique ni de félicitations chiffrées ; le suivi
+  et les rappels sont identiques, et les points restent comptés sans bruit pour le jour où on revient.
+
+![](docs/home_shortcuts.png) ![](docs/settings_groups.png)
+
 ## Le petit tour de la première fois
 
 Après la création du profil, un tour de sept pages, qu'on peut **passer à tout moment** et revoir depuis Paramètres › Aide

@@ -201,16 +201,17 @@ fun MediPoteApp(vm: AppViewModel) {
             }
         }
 
+        val sober by androidx.compose.runtime.rememberUpdatedState(state.settings.sober)
         LaunchedEffect(Unit) {
             vm.events.collect { e ->
                 when (e) {
                     is UiEvent.Points -> {
                         lastPoints = e.amount
-                        pointsSignal++
+                        if (!sober) pointsSignal++
                     }
                     is UiEvent.Fed -> {
                         feedSignal++
-                        pointsSignal++
+                        if (!sober) pointsSignal++
                         lastPoints = e.points + e.perfectDayBonus
                         val base = when (e.status) {
                             TakeStatus.ON_TIME -> "Bravo ! $pet a pris ${e.treatmentName} à l'heure : +${e.points} pts"
@@ -220,17 +221,20 @@ fun MediPoteApp(vm: AppViewModel) {
                         }
                         val bonus = if (e.perfectDayBonus > 0) " · Journée parfaite : +${e.perfectDayBonus} !" else ""
                         snackbar.currentSnackbarData?.dismiss()
-                        snackbar.showSnackbar(base + bonus)
+                        snackbar.showSnackbar(if (sober) com.medipote.app.domain.Sober.clean(base) ?: "Prise notée" else base + bonus)
                     }
                     is UiEvent.CheckedIn -> Unit // shown from vm.checkIn
-                    is UiEvent.BadgeEarned -> badgeQueue.add(e.badge)
+                    is UiEvent.BadgeEarned -> if (!sober) badgeQueue.add(e.badge)
                     is UiEvent.Bought -> {
                         snackbar.currentSnackbarData?.dismiss()
                         snackbar.showSnackbar("${e.item.name} acheté et équipé !")
                     }
                     is UiEvent.Message -> {
-                        snackbar.currentSnackbarData?.dismiss()
-                        snackbar.showSnackbar(e.text)
+                        val text = if (sober) com.medipote.app.domain.Sober.clean(e.text) else e.text
+                        if (text != null) {
+                            snackbar.currentSnackbarData?.dismiss()
+                            snackbar.showSnackbar(text)
+                        }
                     }
                 }
             }
@@ -259,6 +263,27 @@ fun MediPoteApp(vm: AppViewModel) {
         val startDestination = remember { if (state.onboarded) "home" else "welcome" }
         val openSettings = { nav.navigate("settings") }
         val openSearch = { nav.navigate("find") }
+        val hiddenCards = HubCatalog.hidden(state.settings)
+        val hubTools = HubTools(
+            usage = state.settings.usage, byUse = state.settings.cardsByUse, pins = state.settings.pins,
+            onOpened = vm::cardOpened, onTogglePin = vm::togglePin, onKeep = vm::keepCard,
+            onPutAway = { key -> vm.setCardHidden(key, true); vm.message("Rangé : tu la retrouves avec la loupe") },
+        )
+        // A search result and a pinned shortcut lead to the same place: one way to open anything.
+        val openEntry: (com.medipote.app.domain.SearchEntry) -> Unit = { entry ->
+            when (val t = entry.target) {
+                is com.medipote.app.domain.SearchTarget.Action -> if (t.id == "water") vm.addWater(1)
+                is com.medipote.app.domain.SearchTarget.Route -> {
+                    val route = if (t.route == "journal_today") "day/$today" else t.route
+                    val tab = route.substringBefore('?')
+                    nav.navigate(route) {
+                        // A tab opens fresh, on its card; anything else is a screen on top.
+                        if (TABS.any { it.route == tab }) popUpTo("home")
+                        launchSingleTop = true
+                    }
+                }
+            }
+        }
         // The heart is in every bar unless the person hid it: asking for help never needs a search.
         val openSupport: (() -> Unit)? = if (state.settings.support.homeButton) ({ nav.navigate("support") }) else null
         // "I wake up": noted at once, unless the timer was forgotten (then the duration is fixed by hand).
@@ -344,6 +369,8 @@ fun MediPoteApp(vm: AppViewModel) {
                         onOpenProfile = openProfile,
                         onOpenSettings = openSettings,
                         onOpenSearch = openSearch,
+                        onOpenShortcut = { id -> com.medipote.app.domain.AppSearch.CATALOG.firstOrNull { it.id == id }?.let(openEntry) },
+                        onUnpin = vm::togglePin,
                         onAddWater = vm::addWater,
                         onOpenJournal = { nav.navigate("day/$today") },
                         onOpenAppointment = { nav.navigate("appointment?id=${it.id}") },
@@ -405,7 +432,7 @@ fun MediPoteApp(vm: AppViewModel) {
                         HubCard("soins:agenda", "📅", "Agenda", HubPreviews.agenda(state, now)),
                         HubCard("soins:docs", "📂", "Carnet de santé", HubPreviews.documents(state)),
                     )
-                    CardHub("Soins", cards, state.settings.hiddenCards, openProfile, openSettings, { nav.navigate("cards_layout") }, onSearch = openSearch, onSupport = openSupport, initialOpen = cardEntry.arguments?.getString("card")) { key ->
+                    CardHub("Soins", cards, hiddenCards, openProfile, openSettings, { nav.navigate("cards_layout") }, onSearch = openSearch, onSupport = openSupport, initialOpen = cardEntry.arguments?.getString("card"), tools = hubTools) { key ->
                         when (key) {
                             "soins:treatments" -> TreatmentsScreen(
                                 state.treatments, today,
@@ -455,7 +482,7 @@ fun MediPoteApp(vm: AppViewModel) {
                         HubCard("suivi:cycle", "🩸", "Cycle", "Règles, cycle et protections").takeIf { menstruating },
                         HubCard("suivi:symptoms", "🌡️", "Symptômes", HubPreviews.symptoms(state, now)).takeIf { com.medipote.app.domain.Wellbeing.enabled(state) },
                     )
-                    CardHub("Suivi", cards, state.settings.hiddenCards, openProfile, openSettings, { nav.navigate("cards_layout") }, onSearch = openSearch, onSupport = openSupport, initialOpen = cardEntry.arguments?.getString("card")) { key ->
+                    CardHub("Suivi", cards, hiddenCards, openProfile, openSettings, { nav.navigate("cards_layout") }, onSearch = openSearch, onSupport = openSupport, initialOpen = cardEntry.arguments?.getString("card"), tools = hubTools) { key ->
                         when (key) {
                             "suivi:journal" -> JournalScreen(
                                 state.journal, today,
@@ -531,8 +558,8 @@ fun MediPoteApp(vm: AppViewModel) {
                         HubCard("mieux:me", "🌿", "Ce qui m'accompagne", HubPreviews.me(state)) { nav.navigate("wellbeing_me") },
                     )
                     CardHub(
-                        "Mieux-être", cards, state.settings.hiddenCards, openProfile, openSettings, { nav.navigate("cards_layout") },
-                        onSearch = openSearch, onSupport = openSupport, initialOpen = cardEntry.arguments?.getString("card"),
+                        "Mieux-être", cards, hiddenCards, openProfile, openSettings, { nav.navigate("cards_layout") },
+                        onSearch = openSearch, onSupport = openSupport, initialOpen = cardEntry.arguments?.getString("card"), tools = hubTools,
                         intro = if (wellbeing) null else {
                             {
                                 androidx.compose.material3.Surface(
@@ -574,7 +601,7 @@ fun MediPoteApp(vm: AppViewModel) {
                         HubCard("moi:shop", "🛍️", "Boutique", "${state.game.points} pts à dépenser pour $pet"),
                         HubCard("moi:badges", "🏅", "Badges et défis", "${state.game.badges.size} badge${if (state.game.badges.size > 1) "s" else ""} gagné${if (state.game.badges.size > 1) "s" else ""}"),
                     )
-                    CardHub("Moi", cards, state.settings.hiddenCards, openProfile, openSettings, { nav.navigate("cards_layout") }, onSearch = openSearch, onSupport = openSupport, initialOpen = cardEntry.arguments?.getString("card")) { key ->
+                    CardHub("Moi", cards, hiddenCards, openProfile, openSettings, { nav.navigate("cards_layout") }, onSearch = openSearch, onSupport = openSupport, initialOpen = cardEntry.arguments?.getString("card"), tools = hubTools) { key ->
                         when (key) {
                             "moi:stats" -> StatsScreen(state, now, embedded = true, onOpenPrn = { nav.navigate("prn_stats/$it") }, onReport = { nav.navigate("report") }, onManageSymptoms = { nav.navigate("wellbeing_me") })
                             "moi:year" -> com.medipote.app.ui.motivation.YearScreen(state, now, onOpenDay = { nav.navigate("myday/$it") }, onBack = {}, embedded = true)
@@ -644,7 +671,10 @@ fun MediPoteApp(vm: AppViewModel) {
                     com.medipote.app.ui.wellbeing.ConditionsScreen(state.settings.wellbeing, onChange = vm::updateWellbeing, onBack = { nav.popBackStack() })
                 }
                 composable("cards_layout") {
-                    com.medipote.app.ui.settings.CardsScreen(state, onToggle = vm::setCardHidden, onReset = vm::showAllCards, onBack = { nav.popBackStack() })
+                    com.medipote.app.ui.settings.CardsScreen(
+                        state, onToggle = vm::setCardHidden, onReset = vm::showAllCards, onBack = { nav.popBackStack() },
+                        onByUse = { on -> vm.updateSettings { it.copy(cardsByUse = on) } }, onUnpin = vm::togglePin,
+                    )
                 }
 
                 // ── Treatments flow ──
@@ -781,18 +811,7 @@ fun MediPoteApp(vm: AppViewModel) {
                         state,
                         onOpen = { entry ->
                             nav.popBackStack()
-                            when (val t = entry.target) {
-                                is com.medipote.app.domain.SearchTarget.Action -> if (t.id == "water") vm.addWater(1)
-                                is com.medipote.app.domain.SearchTarget.Route -> {
-                                    val route = if (t.route == "journal_today") "day/$today" else t.route
-                                    val tab = route.substringBefore('?')
-                                    nav.navigate(route) {
-                                        // A tab opens fresh, on its card; anything else is a screen on top.
-                                        if (TABS.any { it.route == tab }) popUpTo("home")
-                                        launchSingleTop = true
-                                    }
-                                }
-                            }
+                            openEntry(entry)
                         },
                         onBack = { nav.popBackStack() },
                     )
@@ -1129,8 +1148,9 @@ fun MediPoteApp(vm: AppViewModel) {
                 composable(
                     "settings?section={section}",
                     arguments = listOf(navArgument("section") { type = NavType.StringType; nullable = true; defaultValue = null }),
-                ) {
+                ) { settingsEntry ->
                     SettingsScreen(
+                        openSection = settingsEntry.arguments?.getString("section"),
                         settings = state.settings,
                         petName = pet,
                         notificationsAllowed = notificationsAllowed,
@@ -1206,7 +1226,9 @@ fun MediPoteApp(vm: AppViewModel) {
         }
 
         checkIn?.let { event ->
-            if (state.settings.look.celebrations) {
+            if (state.settings.sober) {
+                LaunchedEffect(event) { vm.checkInShown() }
+            } else if (state.settings.look.celebrations) {
                 com.medipote.app.ui.home.StreakCelebration(event.reward, pet, com.medipote.app.domain.Rules.gameDay(now)) { vm.checkInShown() }
             } else {
                 CheckInDialog(event, pet) { vm.checkInShown() }

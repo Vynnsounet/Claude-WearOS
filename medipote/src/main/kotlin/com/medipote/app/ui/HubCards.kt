@@ -1,6 +1,7 @@
 package com.medipote.app.ui
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -39,6 +40,10 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.semantics.CustomAccessibilityAction
+import androidx.compose.ui.semantics.customActions
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.medipote.app.data.AppState
@@ -56,6 +61,20 @@ data class HubCard(
     val label: String,
     val preview: String? = null,
     val onClick: (() -> Unit)? = null,
+)
+
+/**
+ * What a hub page needs to be a little personal: the cards pinned on home, what the person opens (to order
+ * the cards and offer to put away the unused ones). All local, all optional.
+ */
+data class HubTools(
+    val usage: com.medipote.app.data.UsageStats = com.medipote.app.data.UsageStats(),
+    val byUse: Boolean = true,
+    val pins: List<String> = emptyList(),
+    val onOpened: (String) -> Unit = {},
+    val onTogglePin: (String) -> Unit = {},
+    val onKeep: (String) -> Unit = {},
+    val onPutAway: (String) -> Unit = {},
 )
 
 /** A card as the "Mes cartes" page lists it. */
@@ -79,6 +98,10 @@ object HubCatalog {
         CardDef("moi:stats", "📊", "Statistiques"), CardDef("moi:year", "📆", "Mon année"), CardDef("moi:shop", "🛍️", "Boutique"),
         CardDef("moi:badges", "🏅", "Badges et défis"),
     )
+
+    /** Hidden by the person, plus what sober mode puts away (the shop and the badges). */
+    fun hidden(settings: com.medipote.app.data.Settings): Set<String> =
+        if (settings.sober) settings.hiddenCards + setOf("moi:shop", "moi:badges") else settings.hiddenCards
 
     /** The cards that make sense for this person, page by page. */
     fun cards(state: AppState): List<Pair<String, List<CardDef>>> {
@@ -185,10 +208,15 @@ fun CardHub(
     onSupport: (() -> Unit)? = null,
     /** The card opened at once (from the search). It opens even if the person hid it. */
     initialOpen: String? = null,
+    tools: HubTools = HubTools(),
     content: @Composable (String) -> Unit,
 ) {
-    val shown = cards.filter { it.key !in hidden }
+    val listed = cards.filter { it.key !in hidden }
+    val order = com.medipote.app.domain.CardUse.ordered(tools.usage, listed.map { it.key }, tools.byUse)
+    val shown = order.mapNotNull { key -> listed.firstOrNull { it.key == key } }
+    val suggestion = com.medipote.app.domain.CardUse.suggestion(tools.usage, listed.map { it.key })?.let { key -> cards.firstOrNull { it.key == key } }
     var open by rememberSaveable { mutableStateOf(initialOpen) }
+    androidx.compose.runtime.LaunchedEffect(initialOpen) { initialOpen?.let(tools.onOpened) }
     val current = cards.firstOrNull { it.key == open && it.onClick == null && (it.key !in hidden || it.key == initialOpen) }
     BackHandler(enabled = current != null) { open = null }
     Scaffold(
@@ -223,11 +251,26 @@ fun CardHub(
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
                     if (intro != null) item { intro() }
+                    suggestion?.let { card ->
+                        item(key = "suggestion") { PutAwayOffer(card, onPutAway = { tools.onPutAway(card.key) }, onKeep = { tools.onKeep(card.key) }) }
+                    }
                     items(shown, key = { it.key }) { card ->
-                        CardRow(card) { if (card.onClick != null) card.onClick.invoke() else open = card.key }
+                        CardRow(
+                            card, pinned = card.key in tools.pins, onPin = { tools.onTogglePin(card.key) },
+                        ) {
+                            tools.onOpened(card.key)
+                            if (card.onClick != null) card.onClick.invoke() else open = card.key
+                        }
                     }
                     item {
                         TextButton(onClick = onChooseCards, modifier = Modifier.fillMaxWidth()) { Text("✏️  Choisir mes cartes") }
+                        if (tools.pins.isEmpty()) {
+                            Text(
+                                "Astuce : un appui long sur une carte l'épingle sur l'accueil.",
+                                style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                textAlign = androidx.compose.ui.text.style.TextAlign.Center, modifier = Modifier.fillMaxWidth(),
+                            )
+                        }
                     }
                 }
             }
@@ -235,23 +278,57 @@ fun CardHub(
     }
 }
 
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
-private fun CardRow(card: HubCard, onClick: () -> Unit) {
-    Card(
-        onClick = onClick,
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
-        modifier = Modifier.fillMaxWidth(),
-    ) {
-        Row(Modifier.padding(horizontal = 20.dp, vertical = 18.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text(card.emoji, style = MaterialTheme.typography.headlineMedium)
-            Spacer(Modifier.width(16.dp))
-            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                Text(card.label, style = MaterialTheme.typography.titleMedium)
-                card.preview?.let {
-                    Text(it, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 2, overflow = TextOverflow.Ellipsis)
+private fun CardRow(card: HubCard, pinned: Boolean, onPin: () -> Unit, onClick: () -> Unit) {
+    var menu by androidx.compose.runtime.remember { mutableStateOf(false) }
+    val pinLabel = if (pinned) "Retirer de l'accueil" else "Épingler sur l'accueil"
+    Box {
+        Card(
+            shape = CardDefaults.shape,
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(CardDefaults.shape)
+                .combinedClickable(onClick = onClick, onLongClick = { menu = true })
+                .semantics { customActions = listOf(CustomAccessibilityAction(pinLabel) { onPin(); true }) },
+        ) {
+            Row(Modifier.padding(horizontal = 20.dp, vertical = 18.dp), verticalAlignment = Alignment.CenterVertically) {
+                Text(card.emoji, style = MaterialTheme.typography.headlineMedium)
+                Spacer(Modifier.width(16.dp))
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    Text(card.label, style = MaterialTheme.typography.titleMedium)
+                    card.preview?.let {
+                        Text(it, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                    }
                 }
+                if (pinned) Text("📌", style = MaterialTheme.typography.bodyMedium)
+                Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
             }
-            Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+        androidx.compose.material3.DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
+            androidx.compose.material3.DropdownMenuItem(
+                text = { Text("📌  $pinLabel") },
+                onClick = { menu = false; onPin() },
+            )
+        }
+    }
+}
+
+/** « Tu n'ouvres jamais X : on le range ? », once enough days have passed; the person always decides. */
+@Composable
+private fun PutAwayOffer(card: HubCard, onPutAway: () -> Unit, onKeep: () -> Unit) {
+    Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer), modifier = Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text("Tu n'ouvres jamais « ${card.label} » : on la range ?", style = MaterialTheme.typography.titleSmall)
+            Text(
+                "Elle ne disparaît pas : tu la retrouves avec la loupe et dans « Choisir mes cartes ».",
+                style = MaterialTheme.typography.bodySmall,
+            )
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                androidx.compose.material3.FilledTonalButton(onClick = onPutAway) { Text("Ranger") }
+                TextButton(onClick = onKeep) { Text("Garder") }
+            }
         }
     }
 }

@@ -66,6 +66,18 @@ L'optimiseur de R8 reste désactivé (`-dontoptimize`) : APK de 3,8 Mo au lieu d
 le dex livré peut être reconverti et exécuté hors appareil pour vérification (voir plus bas),
 ce que l'optimiseur empêche. Il pourra être réactivé après des essais sur téléphone.
 
+### 1.26.0 — un accueil à ta mesure
+
+- « Accueil du moment » (Paramètres › Mon accueil, facultatif) : le matin, la journée et le soir ne mettent pas en avant les
+  mêmes blocs ; le reste attend sous « Voir plus », rien n'est masqué pour de bon.
+- Raccourcis : un appui long sur une carte d'un onglet l'épingle sur l'accueil (quatre au plus) ; un appui long sur un
+  raccourci le retire. Gérables aussi dans « Mes cartes ».
+- Rangement selon l'usage : les cartes ouvertes le plus souvent passent devant et, après deux semaines, une carte jamais
+  ouverte est proposée au rangement (« Ranger » ou « Garder », jamais sans demander). Décompte local, désactivable.
+- Paramètres en neuf groupes qui s'ouvrent d'un toucher, un seul à la fois ; la recherche ouvre le bon groupe.
+- Mode sobre (Paramètres › Jeu et récompenses) : plus de points, de série, de badges ni de boutique à l'écran ; le suivi
+  est le même et les points continuent d'être comptés sans bruit.
+
 ### 1.25.0 — tout trouver tout de suite
 
 - Recherche dans l'appli (loupe + cœur dans chaque barre) avec les mots de tous les jours, tes traitements, rendez-vous,

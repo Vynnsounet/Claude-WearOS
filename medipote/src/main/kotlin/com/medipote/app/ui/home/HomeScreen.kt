@@ -1,6 +1,7 @@
 package com.medipote.app.ui.home
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.VectorConverter
 import androidx.compose.animation.core.spring
@@ -149,6 +150,8 @@ fun HomeScreen(
     onNapCancel: () -> Unit = {},
     onOpenSupport: () -> Unit = {},
     onOpenSearch: () -> Unit = {},
+    onOpenShortcut: (String) -> Unit = {},
+    onUnpin: (String) -> Unit = {},
     onOpenSoftDay: () -> Unit = {},
     quickAdd: QuickAddActions? = null,
 ) {
@@ -167,7 +170,9 @@ fun HomeScreen(
     val yesterday = date.minusDays(1)
     val forgotten = remember(state.doseLogs, state.treatments, yesterday) { forgottenDoses(state, yesterday, now) }
     val ambiance = remember(state, now.toLocalDate()) { com.medipote.app.domain.Seasons.ambiance(state, now) }
-    val sections = look.visibleSections
+    val sober = state.settings.sober
+    // Sober mode puts the game away: no status line of points and streak.
+    val sections = look.visibleSections.filter { !(sober && it == HomeSection.STATUS) }
     val hero = if (HomeSection.NEXT_DOSE in sections) com.medipote.app.domain.HomeRules.nextDose(today, now) else null
     val todayOnly = today.filter { it.occurrence.date == date }
 
@@ -216,7 +221,7 @@ fun HomeScreen(
                         modifier = Modifier.fillMaxSize(),
                     )
                     HealthTag(state.game.petName, condition, growth, Modifier.align(Alignment.TopEnd).padding(8.dp))
-                    FloatingPoints(pointsSignal, lastPoints, Modifier.align(Alignment.TopCenter).padding(top = 32.dp))
+                    if (!sober) FloatingPoints(pointsSignal, lastPoints, Modifier.align(Alignment.TopCenter).padding(top = 32.dp))
                 }
                 MoodMessage(condition)
             }
@@ -275,6 +280,10 @@ fun HomeScreen(
                 }
             } }
         }
+        HomeSection.SHORTCUTS -> state.settings.pins
+            .mapNotNull { id -> com.medipote.app.domain.AppSearch.CATALOG.firstOrNull { it.id == id } }
+            .takeIf { it.isNotEmpty() }
+            ?.let { entries -> { Shortcuts(entries, onOpenShortcut, onUnpin) } }
         HomeSection.AS_NEEDED -> com.medipote.app.domain.HomeRules.recentPrn(state, now).takeIf { it.isNotEmpty() }?.let { prn ->
             { PrnCard(state, prn, now, onLogPrn, onOpenPrnIntake) }
         }
@@ -343,6 +352,7 @@ fun HomeScreen(
             recap?.let { week -> Notice(null, MaterialTheme.colorScheme.primary, "Ton récap de la semaine est prêt", "Tes prises, tes nuits et ton humeur en quelques cartes.", emoji = "🎁") { onOpenRecap(week) } }
         } }
 
+    var showMore by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
     val blocks = buildList<@Composable () -> Unit> {
         val rest = sections.toMutableList()
         // The status line and the phrase of the day stay on top, then the companion, then the alerts.
@@ -353,7 +363,18 @@ fun HomeScreen(
             add { com.medipote.app.ui.sleep.NapTimerCard(since, now, onWake = onNapWake, onCancel = onNapCancel, compact = true) }
         }
         alerts?.let(::add)
-        rest.forEach { section -> block(section)?.let(::add) }
+        // « Du moment » : only what suits the hour in front; the rest waits behind « Voir plus ».
+        val (front, later) = if (look.moment) com.medipote.app.domain.HomeMoment.split(rest, now) else rest.toList() to emptyList()
+        front.forEach { section -> block(section)?.let(::add) }
+        val behind = later.mapNotNull { block(it) }
+        if (behind.isNotEmpty()) {
+            add {
+                TextButton(onClick = { showMore = !showMore }, modifier = Modifier.fillMaxWidth()) {
+                    Text(if (showMore) "Voir moins" else "Voir plus (${behind.size})")
+                }
+            }
+            if (showMore) behind.forEach(::add)
+        }
     }
 
     Scaffold(
@@ -399,6 +420,32 @@ fun HomeScreen(
             }
             // Room for the "+" button.
             Spacer(Modifier.height(if (quickAdd != null) 64.dp else 0.dp))
+        }
+    }
+}
+
+/** The cards pinned with a long press in the tabs: one tap to get there, a long press to remove. */
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class, ExperimentalLayoutApi::class)
+@Composable
+private fun Shortcuts(entries: List<com.medipote.app.domain.SearchEntry>, onOpen: (String) -> Unit, onUnpin: (String) -> Unit) {
+    SectionTitle("Mes raccourcis")
+    FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        entries.forEach { entry ->
+            var menu by remember { mutableStateOf(false) }
+            Box {
+                Text(
+                    "${entry.emoji}  ${entry.title}",
+                    style = MaterialTheme.typography.labelLarge,
+                    modifier = Modifier
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.secondaryContainer)
+                        .combinedClickable(onClick = { onOpen(entry.id) }, onLongClick = { menu = true })
+                        .padding(horizontal = 16.dp, vertical = 10.dp),
+                )
+                androidx.compose.material3.DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
+                    androidx.compose.material3.DropdownMenuItem(text = { Text("Retirer de l'accueil") }, onClick = { menu = false; onUnpin(entry.id) })
+                }
+            }
         }
     }
 }

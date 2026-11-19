@@ -354,6 +354,14 @@ data class Settings(
     val tourSeen: Boolean = false,
     /** Cards of the hub pages the user chose to hide, "suivi:Cycle". */
     val hiddenCards: Set<String> = emptySet(),
+    /** Cards pinned on the home screen (ids of hub cards, "soins:agenda"), four at most. */
+    val pins: List<String> = emptyList(),
+    /** What the person opens, counted on the phone only: it orders the cards and suggests tidying the unused ones. */
+    val usage: UsageStats = UsageStats(),
+    /** Order the cards of each page by use (once enough days have passed). */
+    val cardsByUse: Boolean = true,
+    /** Sober mode: no points, streak, shop or badges on screen; the care stays the same. */
+    val sober: Boolean = false,
     /** Reminder to change each period product, in minutes, when the user changed the default. */
     val productReminders: Map<PeriodProduct, Int> = emptyMap(),
     /** Ask for the phone's fingerprint, face or PIN to open the app. */
@@ -361,6 +369,17 @@ data class Settings(
     val notificationsEnabled: Boolean = true,
     /** Send a second notification when a dose is still not given 30 minutes after its time. */
     val followUpReminder: Boolean = true,
+)
+
+/** How often each card of the hub pages was opened, on how many different days; nothing leaves the phone. */
+@Serializable
+data class UsageStats(
+    val opens: Map<String, Int> = emptyMap(),
+    /** Days on which at least one card was opened. */
+    val days: Int = 0,
+    @Serializable(with = LocalDateSerializer::class) val lastDay: LocalDate? = null,
+    /** Cards the person chose to keep when the app offered to put them away. */
+    val kept: Set<String> = emptySet(),
 )
 
 /**

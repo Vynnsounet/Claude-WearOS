@@ -14,6 +14,7 @@ enum class HomeSection(val label: String, val emoji: String, val hint: String = 
     RITUAL("Rituel du matin / du soir", "✨", "Le matin et le soir seulement"),
     PERIOD("Protection pendant les règles", "🩸", "Pendant les règles ou quand un minuteur tourne"),
     DOSES("Prises du jour", "💊"),
+    SHORTCUTS("Mes raccourcis", "📌", "Les cartes que tu épingles avec un appui long dans les onglets"),
     AS_NEEDED("Si besoin", "🩹", "Après une prise des dernières 24 h"),
     MEASURES("Mes mesures", "🩺"),
     WATER("Hydratation", "💧", "Si les rappels d'eau sont activés ou un verre noté"),
@@ -55,6 +56,8 @@ data class Look(
     val hiddenSections: Set<HomeSection> = emptySet(),
     /** Celebration animations (daily streak…). */
     val celebrations: Boolean = true,
+    /** "Accueil du moment": only what suits the hour; the rest waits under « Voir plus ». */
+    val moment: Boolean = false,
 ) {
     /** Every section in the user's order; one added by an update goes where it is by default. */
     val fullOrder: List<HomeSection>
@@ -98,7 +101,7 @@ data class Look(
         /** What "Accueil simple" keeps: the companion, the next dose, today's doses, the mood, the gentle day. */
         val ESSENTIALS = setOf(
             HomeSection.STATUS, HomeSection.PHRASE, HomeSection.COMPANION, HomeSection.NEXT_DOSE,
-            HomeSection.DOSES, HomeSection.MOOD, HomeSection.SOFT_DAY,
+            HomeSection.DOSES, HomeSection.MOOD, HomeSection.SOFT_DAY, HomeSection.SHORTCUTS,
         )
         val AVATARS = listOf(
             "👋", "😊", "🌸", "🌻", "🌿", "🍀", "🌈", "⭐", "🌙", "☀️", "🔥", "💜",

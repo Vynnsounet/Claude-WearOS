@@ -37,7 +37,14 @@ import com.medipote.app.ui.HubCatalog
 /** "Mes cartes": which cards each tab shows. A hidden card is not lost: it comes back with its switch. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CardsScreen(state: AppState, onToggle: (String, Boolean) -> Unit, onReset: () -> Unit, onBack: () -> Unit) {
+fun CardsScreen(
+    state: AppState,
+    onToggle: (String, Boolean) -> Unit,
+    onReset: () -> Unit,
+    onBack: () -> Unit,
+    onByUse: (Boolean) -> Unit = {},
+    onUnpin: (String) -> Unit = {},
+) {
     val hidden = state.settings.hiddenCards
     Scaffold(
         topBar = {
@@ -72,6 +79,29 @@ fun CardsScreen(state: AppState, onToggle: (String, Boolean) -> Unit, onReset: (
                                     onCheckedChange = { on -> onToggle(card.key, !on) },
                                     modifier = Modifier.semantics { contentDescription = "Afficher ${card.label}" },
                                 )
+                            }
+                        }
+                    }
+                }
+            }
+            Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow), modifier = Modifier.fillMaxWidth()) {
+                Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    com.medipote.app.ui.treatments.SwitchRow(
+                        "Mettre en premier ce que j'ouvre le plus", state.settings.cardsByUse,
+                        supporting = "Après deux semaines d'usage. Le décompte reste sur ton téléphone, il ne sert qu'à ça.",
+                        onChange = onByUse,
+                    )
+                }
+            }
+            val pinned = state.settings.pins.mapNotNull { id -> com.medipote.app.domain.AppSearch.CATALOG.firstOrNull { it.id == id } }
+            if (pinned.isNotEmpty()) {
+                Text("Raccourcis de l'accueil", style = MaterialTheme.typography.titleMedium)
+                Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow), modifier = Modifier.fillMaxWidth()) {
+                    Column(Modifier.padding(vertical = 4.dp)) {
+                        pinned.forEach { entry ->
+                            Row(Modifier.fillMaxWidth().padding(start = 16.dp, end = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                                Text("📌  ${entry.emoji}  ${entry.title}", style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
+                                TextButton(onClick = { onUnpin(entry.id) }) { Text("Retirer") }
                             }
                         }
                     }

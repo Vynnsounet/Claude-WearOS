@@ -71,6 +71,14 @@ fun HomeLayoutScreen(settings: Settings, onChange: ((Settings) -> Settings) -> U
                     label = { Text("🧰  Accueil complet") },
                 )
             }
+            Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow), modifier = Modifier.fillMaxWidth()) {
+                Column(Modifier.padding(16.dp)) {
+                    com.medipote.app.ui.treatments.SwitchRow(
+                        "🕐  Accueil du moment", look.moment,
+                        supporting = "Le matin, la journée et le soir ne montrent pas la même chose. Le reste attend sous « Voir plus ».",
+                    ) { on -> updateLook { it.copy(moment = on) } }
+                }
+            }
             Text(
                 "$shown bloc${if (shown > 1) "s" else ""} affiché${if (shown > 1) "s" else ""}. Un bloc masqué reste dans son onglet : rien n'est perdu.",
                 style = MaterialTheme.typography.bodyMedium,

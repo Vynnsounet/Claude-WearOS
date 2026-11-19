@@ -456,6 +456,31 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
+    /** A card of a hub page was opened: counted on the phone, to order the cards and suggest tidying. */
+    fun cardOpened(key: String) {
+        val today = repo.now().toLocalDate()
+        repo.update { s -> s.copy(settings = s.settings.copy(usage = com.medipote.app.domain.CardUse.record(s.settings.usage, key, today))) }
+    }
+
+    /** « Garder » : the card stays, and the app does not offer to put it away again. */
+    fun keepCard(key: String) {
+        repo.update { s -> s.copy(settings = s.settings.copy(usage = com.medipote.app.domain.CardUse.keep(s.settings.usage, key))) }
+    }
+
+    /** Pins a card on the home screen, or removes the pin. */
+    fun togglePin(key: String) {
+        val pins = state.value.settings.pins
+        if (key !in pins && pins.size >= com.medipote.app.domain.CardUse.MAX_PINS) {
+            _events.trySend(UiEvent.Message("Déjà ${com.medipote.app.domain.CardUse.MAX_PINS} raccourcis : retires-en un d'abord"))
+            return
+        }
+        repo.update { s ->
+            val next = if (key in pins) com.medipote.app.domain.CardUse.unpin(s.settings.pins, key) else com.medipote.app.domain.CardUse.pin(s.settings.pins, key)
+            s.copy(settings = s.settings.copy(pins = next))
+        }
+        _events.trySend(UiEvent.Message(if (key in pins) "Raccourci retiré de l'accueil" else "📌 Épinglé sur l'accueil"))
+    }
+
     fun tourSeen() {
         repo.update { it.copy(settings = it.settings.copy(tourSeen = true)) }
     }

@@ -377,7 +377,11 @@ class ScreensTest {
                 onRenamePet = {}, onOpenProfile = {}, onReset = {},
             )
         }
+        // The page is a short list of groups; one tap opens one.
+        compose.onNodeWithText("Sombre").assertDoesNotExist()
+        compose.onNodeWithText("Apparence").performClick()
         compose.onNodeWithText("Sombre").assertExists()
+        compose.onNodeWithText("Jeu et récompenses").performScrollTo().performClick()
         // The scoring rules are folded: one tap shows them.
         compose.onNodeWithText("Verre d'eau (même après l'objectif, jusqu'au double)").assertDoesNotExist()
         compose.onNodeWithText("Points, série et compagnon : le barème").performScrollTo().performClick()
@@ -1084,9 +1088,11 @@ class ScreensTest {
                 onRenamePet = {}, onOpenProfile = {}, onReset = {}, quietReminders = 1, lockEnabled = true, lastBackup = now.minusDays(2),
             )
         }
-        compose.onNodeWithText("Verrouiller l'appli").assertExists()
-        compose.onNodeWithText("Rappels sans pop-up").assertExists()
         compose.onNodeWithText("Mesures de santé").assertExists()
+        compose.onNodeWithText("Confidentialité et sauvegarde").performClick()
+        compose.onNodeWithText("Verrouiller l'appli").assertExists()
+        compose.onNodeWithText("Rappels et notifications").performClick()
+        compose.onNodeWithText("Rappels sans pop-up").assertExists()
     }
 
     @Test
@@ -1846,6 +1852,7 @@ class ScreensTest {
                 onRenamePet = {}, onOpenProfile = {}, onReset = {},
             )
         }
+        compose.onNodeWithText("Rappels et notifications").performClick()
         compose.onNodeWithText("Heures calmes").performScrollTo().assertExists()
         compose.onNodeWithText("Pas de rappel doux la nuit").performScrollTo().assertExists()
         compose.onNodeWithText("À partir de").performScrollTo().assertExists()

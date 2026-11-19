@@ -116,6 +116,8 @@ class AppFlowTest {
         compose.onNodeWithText("Comment as-tu dormi cette nuit ?").assertExists()
         compose.onNodeWithText("Accueil").performClick()
         compose.onNodeWithContentDescription("Paramètres").performClick()
+        // The settings are short groups: the look opens on a tap.
+        compose.onNodeWithText("Apparence").performClick()
         compose.onNodeWithText("Sombre").performClick()
         compose.waitForIdle()
         assertEquals(com.medipote.app.data.ThemeMode.DARK, repo.state.value.settings.themeMode)

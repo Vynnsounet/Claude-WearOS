@@ -115,7 +115,7 @@ class V14Test {
         assertEquals(
             listOf(
                 HomeSection.STATUS, HomeSection.PHRASE, HomeSection.WATER, HomeSection.PROMPTS,
-                HomeSection.CHALLENGES, HomeSection.GARDEN, HomeSection.DOSES, HomeSection.AS_NEEDED, HomeSection.MEASURES,
+                HomeSection.CHALLENGES, HomeSection.GARDEN, HomeSection.DOSES, HomeSection.SHORTCUTS, HomeSection.AS_NEEDED, HomeSection.MEASURES,
                 HomeSection.COMPANION, HomeSection.NEXT_DOSE, HomeSection.MOOD, HomeSection.SOFT_DAY, HomeSection.RITUAL, HomeSection.PERIOD,
             ),
             look.visibleSections,
