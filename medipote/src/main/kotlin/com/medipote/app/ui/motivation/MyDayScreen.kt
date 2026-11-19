@@ -172,7 +172,7 @@ fun MyDayScreen(
                 if (night == null) Muted("Nuit pas notée.")
                 else {
                     Text(
-                        "${Sleep.format(night.asleepMinutes)} de sommeil · ${night.awakenings.size} réveil${if (night.awakenings.size > 1) "s" else ""}",
+                        if (night.noSleep) "Nuit blanche" else "${Sleep.format(night.asleepMinutes)} de sommeil · ${night.awakenings.size} réveil${if (night.awakenings.size > 1) "s" else ""}",
                         style = MaterialTheme.typography.bodyLarge,
                     )
                     NightTimeline(night)

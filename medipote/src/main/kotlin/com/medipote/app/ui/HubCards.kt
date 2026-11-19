@@ -168,7 +168,7 @@ object HubPreviews {
         if (state.entryFor(now.toLocalDate()).hasJournal) "Noté aujourd'hui" else "Pas encore noté aujourd'hui"
 
     fun sleep(state: AppState, now: LocalDateTime): String =
-        state.sleep.firstOrNull { it.date == now.toLocalDate() }?.let { "Cette nuit : ${Sleep.format(it.asleepMinutes)}" } ?: "Nuit pas encore notée"
+        state.sleep.firstOrNull { it.date == now.toLocalDate() }?.let { "Cette nuit : ${Sleep.label(it)}" } ?: "Nuit pas encore notée"
 
     fun measures(state: AppState): String = state.settings.measures.joinToString(", ") { it.label.lowercase() }.ifEmpty { "Tension, poids, pouls…" }
 

@@ -42,6 +42,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
@@ -154,8 +155,12 @@ fun NightTimeline(night: SleepNight, modifier: Modifier = Modifier, height: Int 
                 .height(height.dp)
                 .clip(RoundedCornerShape((height / 3).dp))
                 .semantics {
-                    contentDescription = "Coucher ${night.bedtime.format(hourMinute)}, réveil ${night.wakeTime.format(hourMinute)}, " +
-                        "${night.awakenings.size} réveil(s) dans la nuit"
+                    contentDescription = if (night.noSleep) {
+                        "Nuit blanche, au lit ${night.bedtime.format(hourMinute)}, levé ou levée ${night.wakeTime.format(hourMinute)}"
+                    } else {
+                        "Coucher ${night.bedtime.format(hourMinute)}, réveil ${night.wakeTime.format(hourMinute)}, " +
+                            "${night.awakenings.size} réveil(s) dans la nuit"
+                    }
                 },
         ) {
             if (segments.isEmpty()) return@Canvas
@@ -204,6 +209,10 @@ private fun feelings(n: SleepNight): String? = listOfNotNull(
 ).joinToString(" · ").ifEmpty { null }
 
 private fun nightSummary(n: SleepNight): String = buildString {
+    if (n.noSleep) {
+        append("Au lit ${n.bedtime.format(hourMinute)} · levé·e ${n.wakeTime.format(hourMinute)} · pas dormi")
+        return@buildString
+    }
     append("Coucher ${n.bedtime.format(hourMinute)} · réveil ${n.wakeTime.format(hourMinute)}")
     append(
         when (n.awakenings.size) {
@@ -228,6 +237,7 @@ fun SleepScreen(
     onNapLog: () -> Unit = {},
     onOpenNap: (com.medipote.app.data.Nap) -> Unit = {},
     onNightHelp: () -> Unit = {},
+    onBlankNight: () -> Unit = {},
 ) {
     val today = now.toLocalDate()
     var period by rememberSaveable { mutableStateOf(SleepPeriod.WEEK) }
@@ -267,6 +277,7 @@ fun SleepScreen(
                         Spacer(Modifier.width(8.dp))
                         Text("Noter ma nuit")
                     }
+                    TextButton(onClick = onBlankNight) { Text("🌙  Nuit blanche, je n'ai pas dormi") }
                 }
             }
         } else {
@@ -278,10 +289,10 @@ fun SleepScreen(
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(nightLabel(lastNight.date), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Row(verticalAlignment = Alignment.Bottom) {
-                        Text(Sleep.format(lastNight.asleepMinutes), style = MaterialTheme.typography.headlineMedium)
+                        Text(if (lastNight.noSleep) "Nuit blanche" else Sleep.format(lastNight.asleepMinutes), style = MaterialTheme.typography.headlineMedium)
                         Spacer(Modifier.width(8.dp))
                         Text(
-                            "de sommeil",
+                            if (lastNight.noSleep) "" else "de sommeil",
                             style = MaterialTheme.typography.bodyMedium,
                             modifier = Modifier.padding(bottom = 4.dp),
                         )
@@ -517,7 +528,7 @@ private fun DurationChart(r: SleepReport, today: LocalDate) {
                 else mapOf(0 to dates.first().format(dayMonth), dates.size / 2 to dates[dates.size / 2].format(dayMonth), dates.lastIndex to "Auj."),
                 describe = { i ->
                     val n = byDate[dates[i]]
-                    "${dates[i].format(shortDay).capitalized()} · " + (n?.let { "${Sleep.format(it.asleepMinutes)} de sommeil, ${it.awakenings.size} réveil${if (it.awakenings.size > 1) "s" else ""}" } ?: "pas de nuit notée")
+                    "${dates[i].format(shortDay).capitalized()} · " + (n?.let { if (it.noSleep) "nuit blanche" else "${Sleep.format(it.asleepMinutes)} de sommeil, ${it.awakenings.size} réveil${if (it.awakenings.size > 1) "s" else ""}" } ?: "pas de nuit notée")
                 },
                 initialSelected = dates.indices.lastOrNull { byDate[dates[it]] != null } ?: dates.lastIndex,
                 maxValue = top,
@@ -594,7 +605,7 @@ private fun NightRow(n: SleepNight, goal: Int, naps: Int = 0, onClick: () -> Uni
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(n.date.format(shortDay).capitalized(), style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
             Text(
-                Sleep.format(n.asleepMinutes),
+                if (n.noSleep) "Nuit blanche" else Sleep.format(n.asleepMinutes),
                 style = MaterialTheme.typography.titleSmall,
                 color = if (n.asleepMinutes >= goal) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -635,6 +646,7 @@ fun SleepEditorScreen(
     var bedMinute by rememberSaveable { mutableIntStateOf(Sleep.minuteOf(initial.bedtime)) }
     var wakeMinute by rememberSaveable { mutableIntStateOf(Sleep.minuteOf(initial.wakeTime)) }
     var latency by rememberSaveable { mutableIntStateOf(initial.latencyMinutes) }
+    var blank by rememberSaveable { mutableStateOf(initial.noSleep) }
     val awakenings = remember {
         mutableStateListOf<AwakeningDraft>().apply { addAll(initial.awakenings.map { AwakeningDraft(Sleep.minuteOf(it.at), it.minutes, it.reason) }) }
     }
@@ -653,7 +665,8 @@ fun SleepEditorScreen(
         bedtime = bed,
         latencyMinutes = latency,
         wakeTime = wake,
-        awakenings = awakenings.map { Awakening(Sleep.inNight(wake, it.minuteOfDay), it.minutes, it.reason) },
+        awakenings = if (blank) emptyList() else awakenings.map { Awakening(Sleep.inNight(wake, it.minuteOfDay), it.minutes, it.reason) },
+        noSleep = blank,
         quality = quality,
         rested = rested,
         pleasant = pleasant,
@@ -697,7 +710,13 @@ fun SleepEditorScreen(
             // Live summary
             Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow), modifier = Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    if (problems.isEmpty()) {
+                    if (problems.isEmpty() && blank) {
+                        Text("Nuit blanche", style = MaterialTheme.typography.headlineMedium)
+                        Text(
+                            "Au lit ${Sleep.format(night.inBedMinutes)}, sans dormir. Si le sommeil finit par venir dans la matinée, tu pourras la modifier.",
+                            style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    } else if (problems.isEmpty()) {
                         Row(verticalAlignment = Alignment.Bottom) {
                             Text(Sleep.format(night.asleepMinutes), style = MaterialTheme.typography.headlineMedium)
                             Spacer(Modifier.width(8.dp))
@@ -724,18 +743,33 @@ fun SleepEditorScreen(
 
             DateField("Réveil le", day, { day = it }, maxDate = today, supporting = if (replaces) "Une nuit est déjà notée pour ce jour : elle sera remplacée." else null)
 
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                TimeCard("Coucher", bedMinute, Icons.Outlined.Bedtime, Modifier.weight(1f)) { picking = "bed" to bedMinute }
-                TimeCard("Réveil", wakeMinute, Icons.Outlined.WbSunny, Modifier.weight(1f)) { picking = "wake" to wakeMinute }
+            // « Nuit blanche »: no sleep at all; editable later if sleep finally comes.
+            Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow), modifier = Modifier.fillMaxWidth()) {
+                Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    com.medipote.app.ui.treatments.SwitchRow(
+                        "🌙  Nuit blanche", blank,
+                        supporting = "Je n'ai pas dormi de la nuit. Tu pourras la modifier si tu t'endors plus tard dans la matinée.",
+                    ) { blank = it }
+                    if (blank) {
+                        OutlinedButton(onClick = { picking = "onset" to ((wakeMinute + 60) % (24 * 60)) }, modifier = Modifier.fillMaxWidth()) {
+                            Text("Finalement, je me suis endormi·e plus tard…")
+                        }
+                    }
+                }
             }
 
-            SectionTitle("Réveils dans la nuit") {
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                TimeCard(if (blank) "Au lit" else "Coucher", bedMinute, Icons.Outlined.Bedtime, Modifier.weight(1f)) { picking = "bed" to bedMinute }
+                TimeCard(if (blank) "Levé·e" else "Réveil", wakeMinute, Icons.Outlined.WbSunny, Modifier.weight(1f)) { picking = "wake" to wakeMinute }
+            }
+
+            if (!blank) SectionTitle("Réveils dans la nuit") {
                 Text("${awakenings.size}", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
-            if (awakenings.isEmpty()) {
+            if (!blank && awakenings.isEmpty()) {
                 Text("Aucun réveil : une nuit d'une traite. Sinon, ajoute chaque réveil avec son heure et sa durée.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
-            awakenings.forEachIndexed { i, a ->
+            if (!blank) awakenings.forEachIndexed { i, a ->
                 AwakeningCard(
                     a,
                     onTime = { picking = "a$i" to a.minuteOfDay },
@@ -743,7 +777,7 @@ fun SleepEditorScreen(
                     onRemove = { awakenings.removeAt(i) },
                 )
             }
-            TextButton(onClick = {
+            if (!blank) TextButton(onClick = {
                 // Halfway through the night, or an hour after the last awakening.
                 val sleepStart = bed.plusMinutes(latency.toLong())
                 val last = awakenings.lastOrNull()?.let { Sleep.inNight(wake, it.minuteOfDay).plusMinutes(it.minutes + 60L) }
@@ -766,15 +800,15 @@ fun SleepEditorScreen(
 
             com.medipote.app.ui.components.MoreOptions(
                 listOfNotNull(
-                    "endormissement : " + if (latency == 0) "tout de suite" else Sleep.format(latency),
+                    "endormissement : ".takeIf { !blank }?.plus(if (latency == 0) "tout de suite" else Sleep.format(latency)),
                     tags.size.takeIf { it > 0 }?.let { "$it facteur${if (it > 1) "s" else ""}" },
                     "notes".takeIf { notes.isNotBlank() },
                 ).joinToString(" · "),
                 initiallyOpen = tags.isNotEmpty() || notes.isNotBlank(),
                 label = "Endormissement, facteurs, notes",
             ) {
-                SectionTitle("Temps pour t'endormir")
-                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                if (!blank) SectionTitle("Temps pour t'endormir")
+                if (!blank) FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Sleep.LATENCY_OPTIONS.forEach { m ->
                         FilterChip(
                             selected = latency == m,
@@ -809,12 +843,19 @@ fun SleepEditorScreen(
     picking?.let { (what, minute) ->
         TimePickerModal(
             minuteOfDay = minute,
-            title = when (what) { "bed" -> "Heure du coucher"; "wake" -> "Heure du réveil"; else -> "Heure du réveil nocturne" },
+            title = when (what) { "bed" -> "Heure du coucher"; "wake" -> "Heure du réveil"; "onset" -> "Heure à laquelle tu t'es endormi·e"; else -> "Heure du réveil nocturne" },
             onDismiss = { picking = null },
         ) { m ->
             when {
                 what == "bed" -> bedMinute = m
                 what == "wake" -> wakeMinute = m
+                what == "onset" -> {
+                    // Sleep finally came: the night becomes a normal one, the time before counting as falling asleep.
+                    val updated = Sleep.fellAsleepLater(night, m)
+                    blank = false
+                    latency = updated.latencyMinutes
+                    wakeMinute = Sleep.minuteOf(updated.wakeTime)
+                }
                 else -> what.drop(1).toIntOrNull()?.let { i -> awakenings.getOrNull(i)?.let { awakenings[i] = it.copy(minuteOfDay = m) } }
             }
             picking = null

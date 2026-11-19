@@ -66,6 +66,13 @@ L'optimiseur de R8 reste désactivé (`-dontoptimize`) : APK de 3,8 Mo au lieu d
 le dex livré peut être reconverti et exécuté hors appareil pour vérification (voir plus bas),
 ce que l'optimiseur empêche. Il pourra être réactivé après des essais sur téléphone.
 
+### 1.27.1 — la nuit blanche
+
+- Sommeil : « 🌙 Nuit blanche, je n'ai pas dormi » en un toucher, ou le réglage « Nuit blanche » dans l'éditeur d'une nuit.
+  Elle compte pour 0 h de sommeil, sans fausser l'endormissement, l'efficacité ni les horaires habituels.
+- Elle se modifie si le sommeil est finalement venu : « Finalement, je me suis endormi·e plus tard… » demande l'heure
+  d'endormissement, la nuit devient une nuit normale (l'attente compte comme temps pour s'endormir) et le réveil se règle.
+
 ### 1.27.0 — se mettre en pause, retrouver ses jours, changer de téléphone
 
 - Pause des rappels (Paramètres › Rappels) : jusqu'à demain matin, 3 jours ou 1 semaine. L'eau, le stock, les rituels, le récap

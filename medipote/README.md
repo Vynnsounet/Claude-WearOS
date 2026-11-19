@@ -430,6 +430,12 @@ et « Jour par jour » a rejoint le journal. Une carte ouverte montre où l'on e
 
 ![](docs/home_shortcuts.png) ![](docs/settings_groups.png)
 
+## Nuit blanche
+
+Dans Suivi › Sommeil, **« 🌙 Nuit blanche, je n'ai pas dormi »** note la nuit en un toucher (0 h de sommeil, sans fausser tes
+horaires habituels ni ton temps d'endormissement). Si le sommeil finit par venir dans la matinée, ouvre la nuit et touche
+**« Finalement, je me suis endormi·e plus tard… »** : tu choisis l'heure, la nuit redevient une nuit normale.
+
 ## Pause, calendrier, idées et changement de téléphone
 
 - **Pause des rappels** (Paramètres › Rappels et notifications) : « Jusqu'à demain matin », « 3 jours » ou « 1 semaine ». Les

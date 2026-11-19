@@ -513,6 +513,7 @@ fun MediPoteApp(vm: AppViewModel) {
                                 onNapLog = { nav.navigate("nap_log") },
                                 onOpenNap = { nav.navigate("nap_log?id=${it.id}") },
                                 onNightHelp = { nav.navigate("sleep_help") },
+                                onBlankNight = vm::saveBlankNight,
                             )
                             "suivi:symptoms" -> com.medipote.app.ui.wellbeing.SymptomsScreen(
                                 state, now,

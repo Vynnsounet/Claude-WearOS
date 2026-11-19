@@ -326,6 +326,12 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     // ── Sleep ──
 
+    /** « Nuit blanche » in one tap; the night can be edited later if sleep finally came. */
+    fun saveBlankNight() {
+        saveSleep(com.medipote.app.domain.Sleep.blankNight(state.value, repo.now().toLocalDate()))
+        _events.trySend(UiEvent.Message("Nuit blanche notée. Tu peux la modifier si tu t'endors plus tard."))
+    }
+
     fun saveSleep(night: com.medipote.app.data.SleepNight) {
         var bonus = 0
         repo.update { s -> com.medipote.app.domain.Sleep.save(s, night, repo.now()).let { (u, b) -> bonus = b; u } }

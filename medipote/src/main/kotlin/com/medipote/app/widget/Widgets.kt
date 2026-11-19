@@ -483,7 +483,7 @@ fun SleepContent(state: AppState, now: LocalDateTime) {
             Text("🌙 Sommeil", style = muted, maxLines = 1)
             if (night != null) {
                 Text(
-                    com.medipote.app.domain.Sleep.format(night.asleepMinutes),
+                    if (night.noSleep) "Nuit blanche" else com.medipote.app.domain.Sleep.format(night.asleepMinutes),
                     style = TextStyle(color = GlanceTheme.colors.onSurface, fontSize = 22.sp, fontWeight = FontWeight.Bold),
                     maxLines = 1,
                 )

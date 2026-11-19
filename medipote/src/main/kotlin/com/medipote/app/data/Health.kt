@@ -220,13 +220,15 @@ data class SleepNight(
     val pleasant: Int? = null,
     val tags: List<String> = emptyList(),
     val notes: String = "",
+    /** « Nuit blanche »: no sleep at all. Can be edited later if sleep finally came in the morning. */
+    val noSleep: Boolean = false,
 ) {
     val inBedMinutes: Int get() = java.time.Duration.between(bedtime, wakeTime).toMinutes().toInt().coerceAtLeast(0)
     val awakeMinutes: Int get() = awakenings.sumOf { it.minutes }
-    val asleepMinutes: Int get() = (inBedMinutes - latencyMinutes - awakeMinutes).coerceAtLeast(0)
+    val asleepMinutes: Int get() = if (noSleep) 0 else (inBedMinutes - latencyMinutes - awakeMinutes).coerceAtLeast(0)
 
     /** Share of the time in bed spent asleep. */
-    val efficiency: Float get() = if (inBedMinutes == 0) 0f else asleepMinutes.toFloat() / inBedMinutes
+    val efficiency: Float get() = if (inBedMinutes == 0 || noSleep) 0f else asleepMinutes.toFloat() / inBedMinutes
 }
 
 // ─────────────────────────── Seasons and festivals ───────────────────────────

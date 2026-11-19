@@ -94,8 +94,27 @@ object Sleep {
         return if (t.isAfter(wake)) t.minusDays(1) else t
     }
 
+    /** The length of sleep in words; a sleepless night says so. */
+    fun label(n: SleepNight): String = if (n.noSleep) "nuit blanche" else format(n.asleepMinutes)
+
+    /**
+     * A sleepless night turned into a night with sleep: the person finally fell asleep at [onsetMinute] (clock
+     * time, after lights off). The time before is counted as time to fall asleep; if the wake-up is not after
+     * it, the wake-up is moved one hour later, on the same morning, for the person to adjust.
+     */
+    fun fellAsleepLater(n: SleepNight, onsetMinute: Int): SleepNight {
+        val clock = LocalTime.of(onsetMinute / 60, onsetMinute % 60)
+        val onset = n.bedtime.toLocalDate().atTime(clock).let { if (it.isAfter(n.bedtime)) it else it.plusDays(1) }
+        val wake = if (n.wakeTime.isAfter(onset)) n.wakeTime else onset.plusHours(1).let { if (it.toLocalDate() == n.date) it else n.date.atTime(23, 55) }
+        return n.copy(
+            noSleep = false, awakenings = emptyList(), wakeTime = wake,
+            latencyMinutes = java.time.Duration.between(n.bedtime, onset).toMinutes().toInt(),
+        )
+    }
+
     fun segments(n: SleepNight): List<SleepSegment> {
         if (!n.wakeTime.isAfter(n.bedtime)) return emptyList()
+        if (n.noSleep) return listOf(SleepSegment(n.bedtime, n.wakeTime, asleep = false))
         val out = mutableListOf<SleepSegment>()
         val sleepStart = minOf(n.bedtime.plusMinutes(n.latencyMinutes.toLong()), n.wakeTime)
         if (sleepStart.isAfter(n.bedtime)) out += SleepSegment(n.bedtime, sleepStart, asleep = false)
@@ -121,6 +140,7 @@ object Sleep {
             return@buildList
         }
         if (n.inBedMinutes > 16 * 60) add("Plus de 16 h entre le coucher et le réveil : vérifie les heures.")
+        if (n.noSleep) return@buildList
         if (n.latencyMinutes + n.awakeMinutes >= n.inBedMinutes) add("L'endormissement et les réveils durent plus longtemps que la nuit.")
         if (n.awakenings.any { it.at.isBefore(n.bedtime) || !it.at.isBefore(n.wakeTime) }) {
             add("Un réveil est en dehors de la nuit (entre ${n.bedtime.toLocalTime()} et ${n.wakeTime.toLocalTime()}).")
@@ -129,7 +149,7 @@ object Sleep {
 
     /** A new night pre-filled with the usual times of the last two weeks. */
     fun newNight(state: AppState, date: LocalDate): SleepNight {
-        val recent = state.sleep.filter { it.date.isBefore(date) && !it.date.isBefore(date.minusDays(14)) }
+        val recent = state.sleep.filter { !it.noSleep && it.date.isBefore(date) && !it.date.isBefore(date.minusDays(14)) }
         val bed = Reports.circularMean(recent.map { minuteOf(it.bedtime) }, 0.5)?.let { it / 5 * 5 } ?: (23 * 60)
         val wake = Reports.circularMean(recent.map { minuteOf(it.wakeTime) }, 0.5)?.let { it / 5 * 5 } ?: (7 * 60)
         val latency = recent.map { it.latencyMinutes }.sorted().let { if (it.isEmpty()) 15 else it[it.size / 2] }
@@ -137,6 +157,10 @@ object Sleep {
         val bedtime = bedtimeFor(date, bed).let { if (it.isBefore(wakeTime)) it else it.minusDays(1) }
         return SleepNight(date, bedtime, latency, wakeTime)
     }
+
+    /** A sleepless night in one tap: the usual times, no sleep. It can be edited later. */
+    fun blankNight(state: AppState, date: LocalDate): SleepNight =
+        newNight(state, date).copy(noSleep = true, awakenings = emptyList(), quality = null, rested = null, pleasant = null)
 
     /** Saves a night (one per date); the first night logged on its own morning earns a small bonus. */
     fun save(state: AppState, night: SleepNight, now: LocalDateTime): Pair<AppState, Int> {
@@ -164,7 +188,9 @@ object Sleep {
         val previous = state.sleep.filter { inRange(it, start.minusDays(days.toLong()), start.minusDays(1)) }
 
         fun avg(values: List<Int>) = values.takeIf { it.isNotEmpty() }?.average()?.roundToInt()
-        val beds = nights.map { minuteOf(it.bedtime) }
+        // A sleepless night counts as no sleep, but says nothing of the usual times, falling asleep or efficiency.
+        val slept = nights.filter { !it.noSleep }
+        val beds = slept.map { minuteOf(it.bedtime) }
         val typicalBed = Reports.circularMean(beds, 0.3)
         val awakenings = nights.flatMap { it.awakenings }
         val hours = IntArray(24).also { h -> awakenings.forEach { h[it.at.hour]++ } }
@@ -178,17 +204,17 @@ object Sleep {
             goalMinutes = goal,
             nights = nights,
             averageAsleep = avg(nights.map { it.asleepMinutes }),
-            averageInBed = avg(nights.map { it.inBedMinutes }),
-            averageLatency = avg(nights.map { it.latencyMinutes }),
-            averageEfficiency = nights.takeIf { it.isNotEmpty() }?.map { it.efficiency }?.average()?.toFloat(),
-            averageAwakenings = nights.takeIf { it.isNotEmpty() }?.let { awakenings.size.toFloat() / it.size },
+            averageInBed = avg(slept.map { it.inBedMinutes }),
+            averageLatency = avg(slept.map { it.latencyMinutes }),
+            averageEfficiency = slept.takeIf { it.isNotEmpty() }?.map { it.efficiency }?.average()?.toFloat(),
+            averageAwakenings = slept.takeIf { it.isNotEmpty() }?.let { awakenings.size.toFloat() / it.size },
             averageAwakeMinutes = avg(nights.map { it.awakeMinutes }),
-            averageLongestStretch = avg(nights.map { longestStretch(it) }),
+            averageLongestStretch = avg(slept.map { longestStretch(it) }),
             typicalBedtime = typicalBed,
-            typicalWake = Reports.circularMean(nights.map { minuteOf(it.wakeTime) }, 0.3),
+            typicalWake = Reports.circularMean(slept.map { minuteOf(it.wakeTime) }, 0.3),
             bedtimeSpread = typicalBed?.let { t -> avg(beds.map { abs(Reports.circularDiff(it, t)) }) },
             goalNights = nights.count { Naps.reachesGoal(state, it) },
-            calmNights = nights.count { it.awakenings.isEmpty() },
+            calmNights = slept.count { it.awakenings.isEmpty() },
             averageQuality = nights.mapNotNull { it.quality }.takeIf { it.isNotEmpty() }?.average()?.toFloat(),
             averageRested = nights.mapNotNull { it.rested }.takeIf { it.isNotEmpty() }?.average()?.toFloat(),
             averagePleasant = nights.mapNotNull { it.pleasant }.takeIf { it.isNotEmpty() }?.average()?.toFloat(),
