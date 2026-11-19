@@ -131,6 +131,25 @@ class V271Test {
         assertTrue(back.sleep.single().noSleep)
     }
 
+    @Test
+    fun sleeplessNightsAreCountedAndNamed() {
+        val base = AppState(sleep = (1..3).map { normal.copy(date = day.minusDays(it.toLong()), awakenings = emptyList()) })
+        val s = base.copy(sleep = base.sleep + blank + blank.copy(date = day.minusDays(4)))
+        val r = Sleep.report(s, day, 7)
+        assertEquals(2, r.sleeplessNights)
+        assertEquals(5, r.count)
+        // They weigh in the average: three nights of 7 h 45 and two of nothing.
+        assertEquals((3 * 465) / 5, r.averageAsleep)
+        // And in the goal: they never reach it.
+        assertEquals(0, Sleep.report(AppState(sleep = listOf(blank)), day, 7).goalNights)
+        // The doctor's report says so.
+        val report = com.medipote.app.domain.DoctorReports.build(s, day.atTime(12, 0), 7, setOf(com.medipote.app.domain.ReportPart.SLEEP))
+        val text = report.sections.flatMap { it.blocks }.joinToString(" ") { it.toString() }
+        assertTrue(text, "Nuits blanches" in text)
+        // None, nothing said.
+        assertEquals(0, Sleep.report(base, day, 7).sleeplessNights)
+    }
+
     // ── Screens ──
     private fun show(content: @androidx.compose.runtime.Composable () -> Unit) {
         compose.setContent { MediPoteTheme { Surface(color = MaterialTheme.colorScheme.background) { content() } } }
@@ -160,6 +179,21 @@ class V271Test {
         compose.onAllNodesWithText("Réveils dans la nuit").assertCountEquals(0)
         compose.onNodeWithText("Enregistrer").performClick()
         assertTrue(saved!!.noSleep)
+    }
+
+    @Test
+    fun theSleepPageAndTheStatsShowTheCount() {
+        val s = AppState(onboarded = true, sleep = listOf(blank, normal.copy(date = day.minusDays(1), awakenings = emptyList())))
+        show { SleepScreen(s, day.atTime(9, 0), {}, {}) }
+        compose.onNodeWithText("Nuits blanches").performScrollTo().assertExists()
+    }
+
+    @Test
+    fun theStatsTabShowsTheCountToo() {
+        val s = AppState(onboarded = true, sleep = listOf(blank, normal.copy(date = day.minusDays(1), awakenings = emptyList())))
+        show { com.medipote.app.ui.sleep.SleepStatsTab(s, day, 7, "7 jours") }
+        compose.onNodeWithText("Nuits blanches").assertExists()
+        compose.onNodeWithText("sur 2 nuits notées", substring = true).assertExists()
     }
 
     @Test

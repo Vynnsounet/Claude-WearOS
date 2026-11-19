@@ -66,6 +66,11 @@ L'optimiseur de R8 reste désactivé (`-dontoptimize`) : APK de 3,8 Mo au lieu d
 le dex livré peut être reconverti et exécuté hors appareil pour vérification (voir plus bas),
 ce que l'optimiseur empêche. Il pourra être réactivé après des essais sur téléphone.
 
+### 1.27.2 — les nuits blanches, dites dans les statistiques
+
+- Une nuit blanche compte toujours pour 0 h dans la moyenne de sommeil, et n'atteint jamais l'objectif ; elle est maintenant
+  nommée : « Nuits blanches : N, sur X nuits notées » dans Suivi › Sommeil et Statistiques › Sommeil, et dans le rapport pour le médecin.
+
 ### 1.27.1 — la nuit blanche
 
 - Sommeil : « 🌙 Nuit blanche, je n'ai pas dormi » en un toucher, ou le réglage « Nuit blanche » dans l'éditeur d'une nuit.

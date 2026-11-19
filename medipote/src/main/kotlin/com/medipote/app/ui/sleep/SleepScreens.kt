@@ -425,6 +425,7 @@ private fun SleepTiles(r: SleepReport, more: Boolean) {
             Modifier.weight(1f),
         )
     }
+    if (!more && r.sleeplessNights > 0) StatTile("Nuits blanches", "${r.sleeplessNights}", "sur ${r.count} nuit${if (r.count > 1) "s" else ""} notée${if (r.count > 1) "s" else ""} · comptées pour 0 h de sommeil", Modifier.fillMaxWidth())
     if (!more) {
         // How the nights felt stays in sight.
         if (r.averageQuality != null || r.averageRested != null || r.averagePleasant != null) {
@@ -942,6 +943,7 @@ fun SleepStatsTab(state: AppState, today: LocalDate, days: Int, periodLabel: Str
             "${r.calmNights} nuit${if (r.calmNights > 1) "s" else ""} sans réveil", Modifier.weight(1f),
         )
     }
+    if (r.sleeplessNights > 0) StatTile("Nuits blanches", "${r.sleeplessNights}", "sur ${r.count} nuit${if (r.count > 1) "s" else ""} notée${if (r.count > 1) "s" else ""} · comptées pour 0 h de sommeil", Modifier.fillMaxWidth())
     Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
         StatTile("Coucher habituel", r.typicalBedtime?.let(Reports::formatTime) ?: "—", r.bedtimeSpread?.let { "écart moyen : $it min" }, Modifier.weight(1f))
         StatTile("Ressenti", r.averageQuality?.let { "${decimal(it)}/5" } ?: "—", "qualité des nuits", Modifier.weight(1f))

@@ -53,6 +53,9 @@ data class SleepReport(
 ) {
     val count: Int get() = nights.size
     val awakeningCount: Int get() = nights.sumOf { it.awakenings.size }
+
+    /** Nights without any sleep (« nuits blanches »): counted as 0 h in the averages, and named here. */
+    val sleeplessNights: Int get() = nights.count { it.noSleep }
 }
 
 object Sleep {

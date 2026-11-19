@@ -239,6 +239,7 @@ object DoctorReports {
         if (r.count == 0 && r.naps.naps.isEmpty()) return null
         val facts = listOfNotNull(
             r.count.takeIf { it > 0 }?.let { "Nuits notées" to "$it" },
+            r.sleeplessNights.takeIf { it > 0 }?.let { "Nuits blanches" to "$it (comptées pour 0 h de sommeil dans la moyenne)" },
             r.averageAsleep?.let { "Sommeil moyen" to "${Sleep.format(it)} (au lit ${Sleep.format(r.averageInBed ?: 0)})" },
             r.typicalBedtime?.let { "Coucher / réveil habituels" to "${Reports.formatTime(it)} / ${r.typicalWake?.let(Reports::formatTime) ?: "—"}" },
             r.averageLatency?.let { "Endormissement" to Sleep.format(it) },

@@ -436,6 +436,8 @@ Dans Suivi › Sommeil, **« 🌙 Nuit blanche, je n'ai pas dormi »** note la n
 horaires habituels ni ton temps d'endormissement). Si le sommeil finit par venir dans la matinée, ouvre la nuit et touche
 **« Finalement, je me suis endormi·e plus tard… »** : tu choisis l'heure, la nuit redevient une nuit normale.
 
+Dans les statistiques, une nuit blanche **compte pour 0 h** dans la moyenne et n'atteint pas l'objectif ; un compteur « Nuits blanches » le dit, aussi dans le rapport pour le médecin. Elle ne fausse en revanche ni l'endormissement, ni l'efficacité, ni tes horaires habituels.
+
 ## Pause, calendrier, idées et changement de téléphone
 
 - **Pause des rappels** (Paramètres › Rappels et notifications) : « Jusqu'à demain matin », « 3 jours » ou « 1 semaine ». Les
