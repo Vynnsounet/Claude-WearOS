@@ -84,7 +84,7 @@ fun WelcomeScreen(onStart: () -> Unit, animate: Boolean = true) {
         )
         Feature(Icons.Rounded.Medication, "Tes traitements", "Cherche tes médicaments dans le guide intégré et indique ta posologie.")
         Feature(Icons.Rounded.NotificationsActive, "Des rappels à l'heure", "Ton compagnon te prévient quand c'est le moment.")
-        Feature(Icons.Rounded.Pets, "Un compagnon à soigner", "Donne-lui ses médicaments à l'heure : un oubli et il tombe malade.")
+        Feature(Icons.Rounded.Pets, "Un compagnon à soigner", "Il compte sur toi, sans pression : donne-lui ses médicaments à l'heure et il va bien.")
         Feature(Icons.Rounded.EmojiEvents, "Points et récompenses", "Gagne des points, enchaîne les jours et offre-lui des accessoires.")
         Spacer(Modifier.height(8.dp))
         Button(onClick = onStart, modifier = Modifier.fillMaxWidth().height(52.dp)) { Text("Commencer") }

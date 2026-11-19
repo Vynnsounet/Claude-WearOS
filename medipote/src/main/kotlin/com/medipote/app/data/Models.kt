@@ -350,6 +350,8 @@ data class Settings(
     val rituals: RitualSettings = RitualSettings(),
     val wellbeing: WellbeingSettings = WellbeingSettings(),
     val quiet: QuietHours = QuietHours(),
+    /** The first-run tour has been shown (or skipped). */
+    val tourSeen: Boolean = false,
     /** Cards of the hub pages the user chose to hide, "suivi:Cycle". */
     val hiddenCards: Set<String> = emptySet(),
     /** Reminder to change each period product, in minutes, when the user changed the default. */

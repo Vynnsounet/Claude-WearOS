@@ -90,6 +90,7 @@ fun SettingsScreen(
     onOpenHomeLayout: () -> Unit = {},
     onOpenSupport: () -> Unit = {},
     onOpenWellbeing: () -> Unit = {},
+    onOpenTour: () -> Unit = {},
     onOpenCards: () -> Unit = {},
     /** When the Wear OS app last got in touch (0 = never), and whether it rings the reminders itself. */
     watchLastSeen: Long = 0L,
@@ -354,6 +355,13 @@ fun SettingsScreen(
                 )
                 androidx.compose.material3.FilledTonalButton(onClick = onOpenWellbeing, modifier = Modifier.fillMaxWidth()) {
                     Text("🌿  Mes conditions, symptômes et missions")
+                }
+            }
+
+            SectionTitle("Aide")
+            SettingsCard {
+                androidx.compose.material3.FilledTonalButton(onClick = onOpenTour, modifier = Modifier.fillMaxWidth()) {
+                    Text("👋  Revoir le petit tour")
                 }
             }
 

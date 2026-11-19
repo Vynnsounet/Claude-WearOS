@@ -61,6 +61,9 @@ class AppFlowTest {
         compose.onAllNodes(androidx.compose.ui.test.hasText("C'est parti !")).onFirst().assertExists()
         compose.onAllNodes(androidx.compose.ui.test.hasText("jour")).onFirst().assertExists()
         compose.onAllNodes(androidx.compose.ui.test.hasText("C'est parti !") and androidx.compose.ui.test.hasClickAction()).onFirst().performClick()
+        // Then the first-run tour: where things are, skippable.
+        compose.onNodeWithText("Un petit tour").assertExists()
+        compose.onNodeWithText("Passer").performClick()
         compose.onNodeWithText("Bonjour Sam 👋").assertExists()
 
         val repo = ApplicationProvider.getApplicationContext<MediPoteApplication>().repository
@@ -102,7 +105,15 @@ class AppFlowTest {
         compose.onNodeWithText("Boutique").performClick()
         compose.onNodeWithText("Touche un objet", substring = true).assertExists()
         compose.onNodeWithText("Mieux-être").performClick()
-        compose.onNodeWithText("Ça ne va pas").assertExists()
+        compose.onNodeWithText("Ce que je ressens").assertExists()
+        // The search is one tap away, and finds a card by the words people use.
+        compose.onNodeWithContentDescription("Chercher dans l'appli").performClick()
+        compose.onNode(hasSetTextAction()).performTextInput("dormir")
+        compose.onNodeWithText("Nuit difficile").assertExists()
+        compose.onNodeWithText("Sommeil").assertExists()
+        // A result opens its place: the Sommeil card of Suivi, with its path in the bar.
+        compose.onNodeWithText("Sommeil").performClick()
+        compose.onNodeWithText("Comment as-tu dormi cette nuit ?").assertExists()
         compose.onNodeWithText("Accueil").performClick()
         compose.onNodeWithContentDescription("Paramètres").performClick()
         compose.onNodeWithText("Sombre").performClick()

@@ -91,7 +91,6 @@ fun QuickAddContent(state: AppState, now: LocalDateTime, actions: QuickAddAction
         when (page) {
             QuickPage.MAIN -> {
                 Text("Que veux-tu noter ?", style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp))
-                QuickRow("🤗", "Ça ne va pas", "Respirer, se poser, appeler quelqu'un", onClick = { done(actions.onSupport) })
                 val entry = state.entryFor(today)
                 Column(Modifier.padding(horizontal = 24.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text("😊  Mon humeur", style = MaterialTheme.typography.titleMedium)

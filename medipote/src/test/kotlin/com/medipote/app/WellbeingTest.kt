@@ -288,7 +288,11 @@ class WellbeingTest {
         assertTrue("suivi:symptoms" in keys(on()))
         assertTrue("mieux:softday" in keys(on()))
         // The page for hard moments is always there, and so is the way to turn the rest on.
-        assertTrue("mieux:support" in keys(AppState()))
+        assertTrue("mieux:feel" in keys(AppState()))
+        // One path per thing: the help for bad moments is the heart, not a second card.
+        assertFalse("mieux:support" in keys(AppState()))
+        assertFalse("mieux:breathe" in keys(AppState()))
+        assertFalse("moi:day" in keys(AppState()))
         assertTrue("mieux:me" in keys(AppState()))
     }
 }

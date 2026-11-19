@@ -2200,6 +2200,104 @@ class ScreensTest {
         compose.onNodeWithText("✓ J'y suis allé·e").assertDoesNotExist()
     }
 
+    // ───────────── Search and the first tour ─────────────
+
+    @Test
+    @Config(qualifiers = "w400dp-h1000dp-xhdpi")
+    fun theSearchSuggestsWordsBeforeAnythingIsTyped() {
+        render("search_empty") { com.medipote.app.ui.SearchScreen(sampleState(), {}, {}) }
+        compose.onNodeWithText("Essaie avec tes mots :").assertExists()
+        compose.onNodeWithText("sommeil").assertExists()
+        compose.onNodeWithText("ordonnance").assertExists()
+        // A suggestion is typed for you.
+        compose.onNodeWithText("sommeil").performClick()
+        compose.onNodeWithText("Sommeil").assertExists()
+    }
+
+    @Test
+    @Config(qualifiers = "w400dp-h1200dp-xhdpi")
+    fun searchResultsSayWhereEachThingLives() {
+        val opened = mutableListOf<String>()
+        render("search_results") { com.medipote.app.ui.SearchScreen(sampleState(), { opened += it.id }, {}, initial = "tension") }
+        compose.onNodeWithText("Mesures").assertExists()
+        compose.onNodeWithText("Suivi").assertExists()
+        compose.onNodeWithText("Mesures").performClick()
+        org.junit.Assert.assertEquals(listOf("suivi:measures"), opened)
+    }
+
+    @Test
+    @Config(qualifiers = "w400dp-h800dp-xhdpi")
+    fun nothingFoundIsSaidGently() {
+        render("search_none") { com.medipote.app.ui.SearchScreen(sampleState(), {}, {}, initial = "zzzqqq") }
+        compose.onNodeWithText("Rien trouvé pour « zzzqqq ».").assertExists()
+    }
+
+    @Test
+    @Config(qualifiers = "w400dp-h1000dp-xhdpi")
+    fun theTourGoesPageByPageAndEndsWithWhatMatters() {
+        var finished: Set<com.medipote.app.ui.Interest>? = null
+        var skipped = 0
+        render("tour") { com.medipote.app.ui.onboarding.TourScreen({ finished = it }, { skipped++ }) }
+        compose.onNodeWithText("Un petit tour").assertExists()
+        compose.onNodeWithText("Suivant").performClick()
+        compose.onNodeWithText("L'accueil : ce qui compte aujourd'hui").assertExists()
+        repeat(4) { compose.onNodeWithText("Suivant").performClick() }
+        compose.onNodeWithText("Tu cherches quelque chose ?").assertExists()
+        compose.onNodeWithText("Suivant").performClick()
+        // The last page asks what matters, and may be left empty.
+        compose.onNodeWithText("Qu'est-ce qui compte pour toi ?").assertExists()
+        compose.onNodeWithText("💊  Mes traitements").performClick()
+        compose.onNodeWithText("💛  Ma santé mentale").performClick()
+        compose.onNodeWithText("C'est parti !").performClick()
+        org.junit.Assert.assertEquals(setOf(com.medipote.app.ui.Interest.TREATMENTS, com.medipote.app.ui.Interest.MENTAL), finished)
+        org.junit.Assert.assertEquals(0, skipped)
+    }
+
+    @Test
+    @Config(qualifiers = "w400dp-h900dp-xhdpi")
+    fun theTourCanBeSkippedAtAnyTime() {
+        var skipped = 0
+        render("tour_skip") { com.medipote.app.ui.onboarding.TourScreen({}, { skipped++ }) }
+        compose.onNodeWithText("Suivant").performClick()
+        compose.onNodeWithText("Passer").performClick()
+        org.junit.Assert.assertEquals(1, skipped)
+        compose.onNodeWithText("Revenir en arrière").performClick()
+        compose.onNodeWithText("Un petit tour").assertExists()
+    }
+
+    @Test
+    @Config(qualifiers = "w400dp-h1000dp-xhdpi")
+    fun everyTabBarHasTheHeartAndTheSearchAndSaysWhereYouAre() {
+        var search = 0
+        var support = 0
+        render("hub_bar") {
+            CardHub(
+                "Suivi", listOf(HubCard("suivi:sleep", "🌙", "Sommeil"), HubCard("suivi:journal", "📖", "Journal")),
+                emptySet(), {}, {}, {}, onSearch = { search++ }, onSupport = { support++ }, initialOpen = "suivi:sleep",
+            ) { androidx.compose.material3.Text("contenu") }
+        }
+        compose.onNodeWithContentDescription("Chercher dans l'appli").performClick()
+        compose.onNodeWithContentDescription("Ça ne va pas : soutien").performClick()
+        org.junit.Assert.assertEquals(1, search)
+        org.junit.Assert.assertEquals(1, support)
+        // The card asked for opens at once, with the tab's name under its own.
+        compose.onNodeWithText("contenu").assertExists()
+        compose.onNodeWithText("Suivi").assertExists()
+        compose.onNodeWithText("Sommeil").assertExists()
+    }
+
+    @Test
+    @Config(qualifiers = "w400dp-h1000dp-xhdpi")
+    fun aCardTheyHidIsStillOpenedWhenSearchedFor() {
+        render("hub_hidden_open") {
+            CardHub(
+                "Suivi", listOf(HubCard("suivi:sleep", "🌙", "Sommeil"), HubCard("suivi:journal", "📖", "Journal")),
+                setOf("suivi:sleep"), {}, {}, {}, initialOpen = "suivi:sleep",
+            ) { androidx.compose.material3.Text("contenu") }
+        }
+        compose.onNodeWithText("contenu").assertExists()
+    }
+
     private fun save(name: String, bitmap: Bitmap) {
         val dir = File("build/screenshots").apply { mkdirs() }
         File(dir, "$name.png").outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }

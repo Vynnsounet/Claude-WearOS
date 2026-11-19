@@ -400,6 +400,26 @@ Une page par sujet, pour mieux comprendre : des puces en haut (📊 Vue d'ensemb
 
 ![](docs/stats_symptoms_tab.png)
 
+## Retrouver les choses tout de suite
+
+**Une loupe 🔍 en haut de l'accueil et de chaque onglet**, avec **le cœur ❤️** (« Ça ne va pas ») à côté : chercher et demander
+de l'aide ne demandent jamais de fouiller. On tape un mot, avec ses propres mots (« dormir », « insomnie », « règles »,
+« tension », « angoisse », « ordonnance », « heures calmes », « changer de téléphone », « tuto »…), accents et majuscules
+sans importance, et la recherche indique **où vit chaque chose** (« Suivi › Sommeil ») puis l'ouvre sur la bonne carte. Elle
+trouve aussi tes traitements, tes rendez-vous, tes documents, les réglages, et quelques actions à faire sur place
+(« un verre d'eau »). Tout se passe sur le téléphone, rien de ce qui est tapé n'est gardé ni envoyé.
+
+La règle : **ajouter = « + Noter »**, **regarder = les onglets**, **aller mal = le cœur**. Chaque chose n'a qu'une seule place :
+« Ça ne va pas » et « Respirer » ne sont plus répétés dans « + Noter » et Mieux-être (Mieux-être a « Ce que je ressens »),
+et « Jour par jour » a rejoint le journal. Une carte ouverte montre où l'on est (le nom de l'onglet sous le sien).
+
+## Le petit tour de la première fois
+
+Après la création du profil, un tour de sept pages, qu'on peut **passer à tout moment** et revoir depuis Paramètres › Aide
+ou la recherche (« tuto ») : l'accueil, « + Noter », les onglets, le cœur, la loupe, puis **« Qu'est-ce qui compte pour toi ? »**
+(mes traitements, mon cycle, ma santé mentale, mon sommeil). Ce choix décide quelles cartes démarrent visibles : l'essentiel
+reste (traitements, agenda, journal, statistiques), le reste est rangé et revient en un toucher dans « Mes cartes ».
+
 ## Journée douce, symptômes et « ce qui m'accompagne »
 
 Pour les jours où la maladie pèse. Tout est **facultatif et masqué tant qu'on ne l'a pas activé** :

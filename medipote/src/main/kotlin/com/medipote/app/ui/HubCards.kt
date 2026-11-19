@@ -18,6 +18,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material.icons.outlined.AccountCircle
+import androidx.compose.material.icons.outlined.FavoriteBorder
+import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -66,6 +68,18 @@ object HubCatalog {
     const val MIEUX = "Mieux-être"
     const val MOI = "Moi"
 
+    /** Every card of the app, whoever you are: what "ce qui compte pour toi" starts from. */
+    val EVERYTHING: List<CardDef> = listOf(
+        CardDef("soins:treatments", "💊", "Traitements"), CardDef("soins:pill", "🔁", "Pilule"), CardDef("soins:agenda", "📅", "Agenda"),
+        CardDef("soins:docs", "📂", "Carnet de santé"),
+        CardDef("suivi:journal", "📖", "Journal"), CardDef("suivi:sleep", "🌙", "Sommeil"), CardDef("suivi:measures", "🩺", "Mesures"),
+        CardDef("suivi:cycle", "🩸", "Cycle"), CardDef("suivi:symptoms", "🌡️", "Symptômes"),
+        CardDef("mieux:softday", "💛", "Journée douce"), CardDef("mieux:feel", "💭", "Ce que je ressens"),
+        CardDef("mieux:rituals", "✨", "Rituels du matin et du soir"), CardDef("mieux:me", "🌿", "Ce qui m'accompagne"),
+        CardDef("moi:stats", "📊", "Statistiques"), CardDef("moi:year", "📆", "Mon année"), CardDef("moi:shop", "🛍️", "Boutique"),
+        CardDef("moi:badges", "🏅", "Badges et défis"),
+    )
+
     /** The cards that make sense for this person, page by page. */
     fun cards(state: AppState): List<Pair<String, List<CardDef>>> {
         val menstruating = state.profile?.menstruating == true
@@ -86,14 +100,12 @@ object HubCatalog {
             ),
             MIEUX to listOfNotNull(
                 CardDef("mieux:softday", "💛", "Journée douce").takeIf { Wellbeing.enabled(state) },
-                CardDef("mieux:support", "🤗", "Ça ne va pas"),
-                CardDef("mieux:breathe", "🌬️", "Respirer"),
+                CardDef("mieux:feel", "💭", "Ce que je ressens"),
                 CardDef("mieux:rituals", "✨", "Rituels du matin et du soir"),
                 CardDef("mieux:me", "🌿", "Ce qui m'accompagne"),
             ),
             MOI to listOf(
                 CardDef("moi:stats", "📊", "Statistiques"),
-                CardDef("moi:day", "📋", "Jour par jour"),
                 CardDef("moi:year", "📆", "Mon année"),
                 CardDef("moi:shop", "🛍️", "Boutique"),
                 CardDef("moi:badges", "🏅", "Badges et défis"),
@@ -168,20 +180,33 @@ fun CardHub(
     onOpenSettings: () -> Unit,
     onChooseCards: () -> Unit,
     intro: (@Composable () -> Unit)? = null,
+    /** The magnifying glass and the heart sit in every bar: finding things and asking for help never take a search. */
+    onSearch: (() -> Unit)? = null,
+    onSupport: (() -> Unit)? = null,
+    /** The card opened at once (from the search). It opens even if the person hid it. */
+    initialOpen: String? = null,
     content: @Composable (String) -> Unit,
 ) {
     val shown = cards.filter { it.key !in hidden }
-    var open by rememberSaveable { mutableStateOf<String?>(null) }
-    val current = shown.firstOrNull { it.key == open && it.onClick == null }
+    var open by rememberSaveable { mutableStateOf(initialOpen) }
+    val current = cards.firstOrNull { it.key == open && it.onClick == null && (it.key !in hidden || it.key == initialOpen) }
     BackHandler(enabled = current != null) { open = null }
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(current?.label ?: title) },
+                // Where you are, always: "Sommeil" with the tab's name under it.
+                title = {
+                    if (current == null) Text(title) else Column {
+                        Text(current.label)
+                        Text(title, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                },
                 navigationIcon = {
                     if (current != null) IconButton(onClick = { open = null }) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, "Retour") }
                 },
                 actions = {
+                    onSupport?.let { IconButton(onClick = it) { Icon(Icons.Outlined.FavoriteBorder, "Ça ne va pas : soutien") } }
+                    onSearch?.let { IconButton(onClick = it) { Icon(Icons.Outlined.Search, "Chercher dans l'appli") } }
                     IconButton(onClick = onOpenProfile) { Icon(Icons.Outlined.AccountCircle, "Profil médical") }
                     IconButton(onClick = onOpenSettings) { Icon(Icons.Outlined.Settings, "Paramètres") }
                 },
@@ -227,6 +252,32 @@ private fun CardRow(card: HubCard, onClick: () -> Unit) {
                 }
             }
             Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+    }
+}
+
+/** What matters most to the person: it decides which cards start visible (the rest is one tap away in "Mes cartes"). */
+enum class Interest(val emoji: String, val label: String) {
+    TREATMENTS("💊", "Mes traitements"),
+    CYCLE("🩸", "Mon cycle"),
+    MENTAL("💛", "Ma santé mentale"),
+    SLEEP("🌙", "Mon sommeil"),
+    ;
+
+    companion object {
+        private val ALWAYS = setOf("soins:treatments", "soins:agenda", "suivi:journal", "moi:stats", "moi:year", "moi:shop", "moi:badges")
+        private val COVERS = mapOf(
+            TREATMENTS to setOf("soins:pill", "soins:docs", "suivi:measures"),
+            CYCLE to setOf("suivi:cycle", "soins:pill"),
+            MENTAL to setOf("mieux:softday", "mieux:feel", "mieux:rituals", "mieux:me", "suivi:symptoms"),
+            SLEEP to setOf("suivi:sleep"),
+        )
+
+        /** The cards to hide for someone who chose [chosen]; nothing chosen, or everything, hides nothing. */
+        fun hiddenFor(chosen: Set<Interest>): Set<String> {
+            if (chosen.isEmpty() || chosen.size == entries.size) return emptySet()
+            val visible = ALWAYS + chosen.flatMap { COVERS.getValue(it) }
+            return HubCatalog.EVERYTHING.map { it.key }.filter { it !in visible }.toSet()
         }
     }
 }

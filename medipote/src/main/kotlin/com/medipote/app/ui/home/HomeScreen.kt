@@ -36,6 +36,7 @@ import androidx.compose.material.icons.outlined.Inventory2
 import androidx.compose.material.icons.outlined.Restaurant
 import androidx.compose.material.icons.rounded.Remove
 import androidx.compose.material.icons.rounded.WaterDrop
+import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.History
@@ -147,6 +148,7 @@ fun HomeScreen(
     onNapWake: () -> Unit = {},
     onNapCancel: () -> Unit = {},
     onOpenSupport: () -> Unit = {},
+    onOpenSearch: () -> Unit = {},
     onOpenSoftDay: () -> Unit = {},
     quickAdd: QuickAddActions? = null,
 ) {
@@ -371,6 +373,7 @@ fun HomeScreen(
                     if (state.settings.support.homeButton) {
                         IconButton(onClick = onOpenSupport) { Icon(Icons.Outlined.FavoriteBorder, "Ça ne va pas : soutien") }
                     }
+                    IconButton(onClick = onOpenSearch) { Icon(Icons.Outlined.Search, "Chercher dans l'appli") }
                     IconButton(onClick = onOpenProfile) { Icon(Icons.Outlined.AccountCircle, "Profil médical") }
                     IconButton(onClick = onOpenSettings) { Icon(Icons.Outlined.Settings, "Paramètres") }
                 },

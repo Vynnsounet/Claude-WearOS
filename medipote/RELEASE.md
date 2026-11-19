@@ -66,6 +66,17 @@ L'optimiseur de R8 reste désactivé (`-dontoptimize`) : APK de 3,8 Mo au lieu d
 le dex livré peut être reconverti et exécuté hors appareil pour vérification (voir plus bas),
 ce que l'optimiseur empêche. Il pourra être réactivé après des essais sur téléphone.
 
+### 1.25.0 — tout trouver tout de suite
+
+- Recherche dans l'appli (loupe + cœur dans chaque barre) avec les mots de tous les jours, tes traitements, rendez-vous,
+  documents, réglages et quelques actions ; elle dit où vit chaque chose et l'ouvre sur la bonne carte.
+- Une seule place par chose : « Ça ne va pas » et « Respirer » ne sont plus répétés dans « + Noter » et Mieux-être ;
+  « Jour par jour » est fusionné avec le journal. Chaque carte ouverte montre l'onglet où l'on est.
+- Petit tour de la première fois (sept pages, facultatif, à revoir dans Paramètres › Aide) avec « Qu'est-ce qui compte pour toi ? »
+  qui range d'emblée les cartes dont on n'a pas besoin.
+- Texte de bienvenue adouci (plus de « il tombe malade »). Correctif : finir la création du profil ne renvoie plus à l'accueil
+  avant le tour.
+
 ### 1.24.0 — l'aide au sommeil et des points pour prendre soin de soi
 
 - « 🌙 Nuit difficile ? » dans Sommeil : écran sombre et chaud, deux cas (m'endormir, me rendormir), quatre idées,

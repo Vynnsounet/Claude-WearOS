@@ -442,6 +442,24 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         repo.update { it.copy(settings = it.settings.copy(hiddenCards = emptySet())) }
     }
 
+    /** The end of the first-run tour: what matters to the person decides which cards start visible. */
+    fun applyInterests(chosen: Set<com.medipote.app.ui.Interest>) {
+        repo.update { s ->
+            val hidden = com.medipote.app.ui.Interest.hiddenFor(chosen)
+            val mental = com.medipote.app.ui.Interest.MENTAL in chosen
+            s.copy(
+                settings = s.settings.copy(
+                    tourSeen = true, hiddenCards = hidden,
+                    wellbeing = if (mental) s.settings.wellbeing.copy(enabled = true) else s.settings.wellbeing,
+                ),
+            )
+        }
+    }
+
+    fun tourSeen() {
+        repo.update { it.copy(settings = it.settings.copy(tourSeen = true)) }
+    }
+
     fun setSleepRecipe(items: List<String>) {
         repo.update { it.copy(sleepRecipe = items) }
     }
