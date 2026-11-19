@@ -432,8 +432,8 @@ et « Jour par jour » a rejoint le journal. Une carte ouverte montre où l'on e
 
 ## Le petit tour de la première fois
 
-Après la création du profil, un tour de sept pages, qu'on peut **passer à tout moment** et revoir depuis Paramètres › Aide
-ou la recherche (« tuto ») : l'accueil, « + Noter », les onglets, le cœur, la loupe, puis **« Qu'est-ce qui compte pour toi ? »**
+Après la création du profil, un tour de cinq pages (une idée et quelques mots chacune), qu'on peut **passer à tout moment** et revoir depuis Paramètres › Aide
+ou la recherche (« tuto ») : l'accueil et le « + », les onglets, le cœur et la loupe, puis **« Qu'est-ce qui compte pour toi ? »**
 (mes traitements, mon cycle, ma santé mentale, mon sommeil). Ce choix décide quelles cartes démarrent visibles : l'essentiel
 reste (traitements, agenda, journal, statistiques), le reste est rangé et revient en un toucher dans « Mes cartes ».
 

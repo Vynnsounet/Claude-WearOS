@@ -66,6 +66,10 @@ L'optimiseur de R8 reste désactivé (`-dontoptimize`) : APK de 3,8 Mo au lieu d
 le dex livré peut être reconverti et exécuté hors appareil pour vérification (voir plus bas),
 ce que l'optimiseur empêche. Il pourra être réactivé après des essais sur téléphone.
 
+### 1.26.1 — un petit tour plus aéré
+
+- Le petit tour passe de sept à cinq pages : une idée et quelques mots par page, plus d'espace.
+
 ### 1.26.0 — un accueil à ta mesure
 
 - « Accueil du moment » (Paramètres › Mon accueil, facultatif) : le matin, la journée et le soir ne mettent pas en avant les

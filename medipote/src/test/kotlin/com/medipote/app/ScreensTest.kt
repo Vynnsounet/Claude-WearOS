@@ -2247,9 +2247,9 @@ class ScreensTest {
         render("tour") { com.medipote.app.ui.onboarding.TourScreen({ finished = it }, { skipped++ }) }
         compose.onNodeWithText("Un petit tour").assertExists()
         compose.onNodeWithText("Suivant").performClick()
-        compose.onNodeWithText("L'accueil : ce qui compte aujourd'hui").assertExists()
-        repeat(4) { compose.onNodeWithText("Suivant").performClick() }
-        compose.onNodeWithText("Tu cherches quelque chose ?").assertExists()
+        compose.onNodeWithText("L'accueil").assertExists()
+        repeat(2) { compose.onNodeWithText("Suivant").performClick() }
+        compose.onNodeWithText("En haut de l'écran").assertExists()
         compose.onNodeWithText("Suivant").performClick()
         // The last page asks what matters, and may be left empty.
         compose.onNodeWithText("Qu'est-ce qui compte pour toi ?").assertExists()

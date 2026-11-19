@@ -35,17 +35,17 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.medipote.app.ui.Interest
 
 private data class TourPage(val emoji: String, val title: String, val text: String)
 
+// One idea per page, a few words each: the tour breathes.
 private val PAGES = listOf(
-    TourPage("👋", "Un petit tour", "MédiPote t'aide à ne rien oublier, avec douceur. Une minute pour voir où sont les choses : tu peux passer quand tu veux."),
-    TourPage("🏠", "L'accueil : ce qui compte aujourd'hui", "Tes prochaines prises, ton compagnon, ton humeur. Tu choisis ce qui s'affiche : « Mon accueil » dans les paramètres."),
-    TourPage("➕", "« + Noter » : tout ce qui s'ajoute", "Ta nuit, ton eau, un symptôme, une mesure, un médicament « si besoin »… Toujours au même endroit, en deux gestes."),
-    TourPage("🗂️", "Les onglets : tout ce que tu regardes", "Soins, Suivi, Mieux-être, Moi. Chaque chose n'a qu'une seule place, et les cartes dont tu n'as pas besoin se masquent dans « Mes cartes »."),
-    TourPage("❤️", "Quand ça ne va pas", "Le petit cœur en haut de l'écran est toujours là : respirer, se poser, appeler quelqu'un, le 3114."),
-    TourPage("🔍", "Tu cherches quelque chose ?", "La loupe en haut trouve tout, avec tes mots : « sommeil », « angoisse », « ordonnance », « heures calmes »…"),
+    TourPage("👋", "Un petit tour", "Ici, on prend soin de soi, sans pression.\nPasse quand tu veux."),
+    TourPage("🏠", "L'accueil", "Ce qui compte aujourd'hui.\nEt le « + » pour tout noter."),
+    TourPage("🗂️", "Les onglets", "Tout ce que tu regardes,\nchaque chose à une seule place."),
+    TourPage("🔍", "En haut de l'écran", "❤️  quand ça ne va pas\n🔍  pour tout retrouver"),
 )
 
 /**
@@ -78,22 +78,26 @@ fun TourScreen(onFinish: (Set<Interest>) -> Unit, onSkip: () -> Unit) {
             ) {
                 if (page < last) {
                     val p = PAGES[page]
-                    Text(p.emoji, style = MaterialTheme.typography.displayMedium)
+                    Text(p.emoji, style = MaterialTheme.typography.displayLarge)
+                    Spacer(Modifier.height(32.dp))
+                    Text(p.title, style = MaterialTheme.typography.headlineMedium, textAlign = TextAlign.Center)
                     Spacer(Modifier.height(20.dp))
-                    Text(p.title, style = MaterialTheme.typography.headlineSmall, textAlign = TextAlign.Center)
-                    Spacer(Modifier.height(12.dp))
-                    Text(p.text, style = MaterialTheme.typography.bodyLarge, textAlign = TextAlign.Center, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                } else {
-                    Text("🌿", style = MaterialTheme.typography.displayMedium)
-                    Spacer(Modifier.height(20.dp))
-                    Text("Qu'est-ce qui compte pour toi ?", style = MaterialTheme.typography.headlineSmall, textAlign = TextAlign.Center)
-                    Spacer(Modifier.height(12.dp))
                     Text(
-                        "On n'affichera d'abord que l'essentiel. Le reste reste à un toucher, dans « Mes cartes ». Tu peux tout choisir, ou rien.",
-                        style = MaterialTheme.typography.bodyLarge, textAlign = TextAlign.Center, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        p.text, style = MaterialTheme.typography.titleMedium.copy(lineHeight = 30.sp), textAlign = TextAlign.Center,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(horizontal = 16.dp),
                     )
+                } else {
+                    Text("🌿", style = MaterialTheme.typography.displayLarge)
+                    Spacer(Modifier.height(32.dp))
+                    Text("Qu'est-ce qui compte pour toi ?", style = MaterialTheme.typography.headlineMedium, textAlign = TextAlign.Center)
                     Spacer(Modifier.height(20.dp))
-                    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        "Plusieurs choix possibles, ou aucun.\nLe reste reste à un toucher.",
+                        style = MaterialTheme.typography.titleMedium.copy(lineHeight = 30.sp), textAlign = TextAlign.Center,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(horizontal = 16.dp),
+                    )
+                    Spacer(Modifier.height(32.dp))
+                    FlowRow(horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterHorizontally), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         Interest.entries.forEach { i ->
                             FilterChip(
                                 selected = i.name in chosen,
