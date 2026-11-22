@@ -1,6 +1,6 @@
 # Politique de confidentialité de MédiPote
 
-*Dernière mise à jour : 19 novembre 2026*
+*Dernière mise à jour : 22 novembre 2026*
 
 MédiPote est une application d'aide à la prise de traitements. Cette politique explique
 quelles données l'application utilise et ce qu'elle en fait.

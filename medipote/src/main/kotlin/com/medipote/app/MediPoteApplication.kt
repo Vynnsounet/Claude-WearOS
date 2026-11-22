@@ -31,6 +31,7 @@ class MediPoteApplication : Application() {
     override fun onCreate() {
         super.onCreate()
         Notifications.createChannels(this)
+        forgetRemovedAiKey()
         // Any change to the data (from the app, a notification or a widget) refreshes the widgets.
         appScope.launch {
             repository.state.drop(1).debounce(300).collect {
@@ -41,6 +42,21 @@ class MediPoteApplication : Application() {
         }
         com.medipote.app.wear.WatchLink.drain(this)
     }
+}
+
+/**
+ * Version 1.29.0 briefly offered an AI assistant that kept the person's API key, encrypted, in a private file of the phone.
+ * The assistant is gone: a key it may have kept is erased, once, at the next launch.
+ */
+private fun Context.forgetRemovedAiKey() {
+    val flag = getSharedPreferences("housekeeping", Context.MODE_PRIVATE)
+    if (flag.getBoolean("ai_key_erased", false)) return
+    runCatching {
+        getSharedPreferences("ai_key", Context.MODE_PRIVATE).edit().clear().apply()
+        deleteSharedPreferences("ai_key")
+        java.security.KeyStore.getInstance("AndroidKeyStore").apply { load(null) }.deleteEntry("medipote_ai_key")
+    }
+    flag.edit().putBoolean("ai_key_erased", true).apply()
 }
 
 val Context.repository: AppRepository get() = (applicationContext as MediPoteApplication).repository
