@@ -430,6 +430,20 @@ et « Jour par jour » a rejoint le journal. Une carte ouverte montre où l'on e
 
 ![](docs/home_shortcuts.png) ![](docs/settings_groups.png)
 
+## Analyses, voyage, urgence, suivi régulier, pharmacie
+
+- **Analyses** (Suivi) : note les valeurs de tes prises de sang. L'appli trace la courbe avec les repères (ceux de ton laboratoire si tu
+  les notes), dit si c'est en hausse ou en baisse, et marque d'un trait pointillé chaque changement de dose de tes traitements.
+- **Voyage** (Paramètres › Rappels) : au changement de fuseau, les prises restent à l'heure de chez toi puis se rapprochent de l'heure
+  locale de 1 à 3 h par jour ; le même chemin au retour. Un aperçu jour par jour est montré avant d'enregistrer.
+- **Fiche d'urgence** (Profil médical) : allergies, traitements, groupe sanguin, personnes à prévenir, sur un écran lisible par les
+  secours ; affichable sur l'écran de verrouillage de l'appli **si tu le choisis**.
+- **Après le rendez-vous** et **Suivi régulier** (Agenda) : ce qui a été dit, le prochain rendez-vous, et les contrôles qui reviennent
+  de temps en temps (dentiste, prise de sang…), avec un rappel doux.
+- **Liste pour la pharmacie** (Traitements) : ce qui manque bientôt et les ordonnances à renouveler, à partager.
+
+![](docs/labs.png) ![](docs/lab_detail.png) ![](docs/travel.png) ![](docs/emergency.png)
+
 ## Comprendre (explications, conseils, quand consulter)
 
 La carte **« 🔎 Comprendre »** (Suivi) et la page de chaque symptôme répondent à quatre questions, à partir de **tes propres notes** :

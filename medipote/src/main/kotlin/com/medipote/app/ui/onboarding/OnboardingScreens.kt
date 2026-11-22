@@ -192,7 +192,7 @@ fun PetNamingScreen(currentName: String, onBack: () -> Unit, animate: Boolean = 
 /** Shows the medical profile, with an edit mode using the same form as the onboarding. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ProfileScreen(profile: Profile, today: LocalDate, onBack: () -> Unit, onSave: (Profile) -> Unit) {
+fun ProfileScreen(profile: Profile, today: LocalDate, onBack: () -> Unit, onSave: (Profile) -> Unit, onOpenEmergency: (() -> Unit)? = null) {
     var editing by rememberSaveable { mutableStateOf(false) }
     val draft = remember(editing) { ProfileDraft(profile, today) }
     Scaffold(
@@ -235,11 +235,16 @@ fun ProfileScreen(profile: Profile, today: LocalDate, onBack: () -> Unit, onSave
                         }
                     }
                 }
+                onOpenEmergency?.let { open ->
+                    androidx.compose.material3.OutlinedButton(onClick = open, modifier = Modifier.fillMaxWidth()) { Text("🚑  Ma fiche d'urgence") }
+                }
                 Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)) {
                     Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                         LabeledValue("Antécédents médicaux", profile.medicalHistory.ifEmpty { listOf("Aucun renseigné") }.joinToString(" · "))
                         HorizontalDivider()
                         LabeledValue("Allergies", profile.allergies.ifEmpty { listOf("Aucune renseignée") }.joinToString(" · "))
+                        HorizontalDivider()
+                        LabeledValue("Groupe sanguin", profile.bloodGroup.ifBlank { "Non renseigné" })
                         HorizontalDivider()
                         LabeledValue(
                             "Suivi du cycle",

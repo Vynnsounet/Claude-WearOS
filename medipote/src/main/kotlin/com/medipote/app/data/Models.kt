@@ -55,6 +55,12 @@ data class AppState(
     val sleepRecipe: List<String> = emptyList(),
     /** « Une idée, un souci ? »: what the person noted about the app, kept here and shared only if they choose. */
     val ideas: List<Idea> = emptyList(),
+    /** Blood test values, newest first. */
+    val labs: List<LabResult> = emptyList(),
+    /** Things to do from time to time (dentist, blood test…). */
+    val checkups: List<RegularCheckup> = emptyList(),
+    /** A trip across time zones, if one is planned. */
+    val travel: TravelPlan? = null,
 ) {
     fun entryFor(date: LocalDate): DayEntry = journal.firstOrNull { it.date == date } ?: DayEntry(date)
 }
@@ -73,6 +79,8 @@ data class Profile(
     val allergies: List<String> = emptyList(),
     val menstruating: Boolean = false,
     val cycle: CycleInfo? = null,
+    /** Shown on the emergency card, e.g. "O+". */
+    val bloodGroup: String = "",
 )
 
 @Serializable
@@ -123,7 +131,14 @@ data class Treatment(
     val steps: List<DoseStep> = emptyList(),
     /** Shown in the period medication list; null = automatic (common period painkillers only). */
     val forPeriod: Boolean? = null,
+    /** Changes of strength or times, oldest first (kept to read analyses against them). */
+    val changes: List<DoseChange> = emptyList(),
+    /** A trip across time zones: minutes added to the doses of a day (ISO date → minutes). Computed from the plan. */
+    val shifts: Map<String, Int> = emptyMap(),
 ) {
+    /** Minutes the doses of [date] are moved by a trip. */
+    fun shiftOn(date: LocalDate): Int = shifts[date.toString()] ?: 0
+
     val displayName: String get() = if (strength.isBlank()) name else "$name $strength"
 
     fun isActiveOn(date: LocalDate): Boolean =
@@ -362,6 +377,8 @@ data class Settings(
     val usage: UsageStats = UsageStats(),
     /** Order the cards of each page by use (once enough days have passed). */
     val cardsByUse: Boolean = true,
+    /** Show the emergency card from the app's lock screen too, without unlocking (off until the person chooses). */
+    val emergencyOnLock: Boolean = false,
     /** Reminders put on pause for a while. */
     val pause: ReminderPause = ReminderPause(),
     /** The home screen says when the notes show something worth a professional's opinion. */

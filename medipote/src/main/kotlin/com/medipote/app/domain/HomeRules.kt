@@ -24,6 +24,11 @@ object HomeRules {
         .minByOrNull { it.dateTime }
 
     /** Water only for people who follow it: reminders on, or a glass noted today. */
+    /** An appointment that took place in the last days and has nothing written about it yet: the home asks, once, gently. */
+    fun followUpDue(state: AppState, now: LocalDateTime): com.medipote.app.data.Appointment? = state.appointments
+        .filter { !it.attended && it.afterNotes.isBlank() && it.dateTime.isBefore(now.minusHours(1)) && !it.dateTime.isBefore(now.minusDays(3)) }
+        .maxByOrNull { it.dateTime }
+
     fun showWater(state: AppState, date: LocalDate): Boolean =
         state.settings.water.enabled || state.entryFor(date).waterGlasses > 0
 

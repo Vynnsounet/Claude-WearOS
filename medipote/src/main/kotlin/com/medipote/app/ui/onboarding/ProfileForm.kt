@@ -64,6 +64,7 @@ class ProfileDraft(profile: Profile?, private val today: LocalDate) {
     var sex by mutableStateOf(profile?.sex)
     var history by mutableStateOf(profile?.medicalHistory.orEmpty())
     var allergies by mutableStateOf(profile?.allergies.orEmpty())
+    var bloodGroup by mutableStateOf(profile?.bloodGroup.orEmpty())
     var menstruating by mutableStateOf(profile?.menstruating ?: false)
     var menstruatingTouched by mutableStateOf(profile != null)
     var lastPeriod by mutableStateOf(profile?.cycle?.periodStarts?.maxOrNull())
@@ -95,6 +96,7 @@ class ProfileDraft(profile: Profile?, private val today: LocalDate) {
             allergies = allergies,
             menstruating = menstruating,
             cycle = cycle,
+            bloodGroup = bloodGroup,
         )
     }
 
@@ -180,6 +182,18 @@ fun ProfileForm(draft: ProfileDraft, modifier: Modifier = Modifier) {
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
+
+        SectionTitle("Groupe sanguin (facultatif)")
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            com.medipote.app.domain.Emergency.BLOOD_GROUPS.forEach { g ->
+                androidx.compose.material3.FilterChip(
+                    selected = draft.bloodGroup == g,
+                    onClick = { draft.bloodGroup = if (draft.bloodGroup == g) "" else g },
+                    label = { Text(g) },
+                )
+            }
+        }
+        Text("Pour ta fiche d'urgence.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }
 

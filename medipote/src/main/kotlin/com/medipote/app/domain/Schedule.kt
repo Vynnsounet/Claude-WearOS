@@ -16,7 +16,7 @@ data class DoseOccurrence(val treatment: Treatment, val dose: DoseTime, val date
 
     /** What to take that day (dose steps included). */
     val quantity: Double get() = treatment.quantityOn(date, dose)
-    val scheduled: LocalDateTime get() = date.atTime(LocalTime.of(dose.minuteOfDay / 60, dose.minuteOfDay % 60))
+    val scheduled: LocalDateTime get() = date.atTime(LocalTime.of(dose.minuteOfDay / 60, dose.minuteOfDay % 60)).plusMinutes(treatment.shiftOn(date).toLong())
 
     /** Last moment the dose can still be given: end of its day, or 4 hours after it for late-evening doses. */
     val deadline: LocalDateTime
@@ -178,6 +178,16 @@ object Schedule {
      * days) follow their time to its new value, so they don't have to be given again; a time that was
      * added is only owed from now on.
      */
+    /** What changed in a treatment that matters when reading analyses: strength and dose times. */
+    fun changesBetween(old: Treatment, edited: Treatment, today: LocalDate): List<com.medipote.app.data.DoseChange> = buildList {
+        fun times(t: Treatment) = t.doses.map { it.minuteOfDay }.sorted().joinToString(", ") { "%d h %02d".format(it / 60, it % 60) }
+        if (old.strength != edited.strength) add(com.medipote.app.data.DoseChange(today, "${edited.name} : ${old.strength.ifBlank { "dosage" }} → ${edited.strength.ifBlank { "sans dosage" }}"))
+        if (times(old) != times(edited) && !old.asNeeded && !edited.asNeeded) add(com.medipote.app.data.DoseChange(today, "${edited.name} : horaires ${times(old)} → ${times(edited)}"))
+        val oldQuantity = old.doses.sumOf { it.quantity }
+        val newQuantity = edited.doses.sumOf { it.quantity }
+        if (oldQuantity != newQuantity && !edited.asNeeded) add(com.medipote.app.data.DoseChange(today, "${edited.name} : ${"%.1f".format(java.util.Locale.FRANCE, oldQuantity)} → ${"%.1f".format(java.util.Locale.FRANCE, newQuantity)} par jour"))
+    }
+
     fun applyEdit(state: AppState, edited: Treatment, now: LocalDateTime): AppState {
         val old = state.treatments.firstOrNull { it.id == edited.id }
             ?: return state.copy(treatments = state.treatments + edited)
@@ -195,7 +205,7 @@ object Schedule {
                 kept.copy(daysFrom = today, daysBefore = before.daysOn(today.minusDays(1)))
             } else kept
         }
-        val treatment = edited.copy(doses = doses)
+        val treatment = edited.copy(doses = doses, changes = old.changes + changesBetween(old, edited, now.toLocalDate()))
 
         val moved = pairs.filter { (o, n) -> o != n }
         val logs = if (moved.isEmpty()) state.doseLogs else {

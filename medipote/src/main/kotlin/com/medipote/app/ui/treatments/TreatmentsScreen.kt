@@ -95,6 +95,8 @@ fun TreatmentsScreen(
     now: java.time.LocalDateTime = today.atTime(12, 0),
     onLogPrn: (Treatment) -> Unit = {},
     onPrnStats: (Treatment) -> Unit = {},
+    /** Opens « Liste pour la pharmacie »; offered only when there is something on it. */
+    onPharmacy: (() -> Unit)? = null,
 ) {
     val (current, finished) = treatments.partition { it.endDate == null || !it.endDate.isBefore(today) }
     Scaffold(
@@ -167,6 +169,9 @@ fun TreatmentsScreen(
                         modifier = Modifier.fillMaxWidth().height(52.dp),
                     ) { Text(if (treatments.isEmpty()) "Passer cette étape" else "C'est parti !") }
                 }
+            }
+            onPharmacy?.let { open ->
+                item { androidx.compose.material3.OutlinedButton(onClick = open, modifier = Modifier.fillMaxWidth()) { Text("🛒  Liste pour la pharmacie") } }
             }
             item { Disclaimer("MédiPote est un aide-mémoire : il ne remplace pas l'avis de ton médecin ou de ton pharmacien.") }
         }

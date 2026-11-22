@@ -94,6 +94,7 @@ fun SettingsScreen(
     onOpenWellbeing: () -> Unit = {},
     onOpenTour: () -> Unit = {},
     onOpenIdeas: () -> Unit = {},
+    onOpenTravel: () -> Unit = {},
     onOpenCards: () -> Unit = {},
     /** When the Wear OS app last got in touch (0 = never), and whether it rings the reminders itself. */
     watchLastSeen: Long = 0L,
@@ -184,6 +185,15 @@ fun SettingsScreen(
                         else "Déconseillé, sauf si tu sais que tu n'en as pas besoin.",
                     ) { withDoses = it }
                 }
+            }
+
+            SectionTitle("Voyage")
+            SettingsCard {
+                Text(
+                    "Quand tu changes de fuseau horaire, tes prises se décalent doucement au lieu de sonner à l'heure du bout du monde.",
+                    style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                androidx.compose.material3.FilledTonalButton(onClick = onOpenTravel, modifier = Modifier.fillMaxWidth()) { Text("✈️  Préparer un voyage") }
             }
 
             SectionTitle("Rappels")
@@ -359,6 +369,10 @@ fun SettingsScreen(
             SettingsGroup("privacy", "🔒", "Confidentialité et sauvegarde", openGroup, { openGroup = it }) {
             SectionTitle("Confidentialité")
             SettingsCard {
+                SwitchRow(
+                    "Fiche d'urgence sur l'écran de verrouillage de l'appli", settings.emergencyOnLock,
+                    supporting = "Allergies, traitements et personnes à prévenir visibles par les secours sans ton code. Désactivé tant que tu ne l'as pas choisi.",
+                ) { v -> onChange { it.copy(emergencyOnLock = v) } }
                 SwitchRow(
                     "Verrouiller l'appli",
                     lockEnabled,

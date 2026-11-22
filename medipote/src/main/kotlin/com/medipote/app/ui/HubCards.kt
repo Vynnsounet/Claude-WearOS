@@ -91,7 +91,7 @@ object HubCatalog {
     val EVERYTHING: List<CardDef> = listOf(
         CardDef("soins:treatments", "💊", "Traitements"), CardDef("soins:pill", "🔁", "Pilule"), CardDef("soins:agenda", "📅", "Agenda"),
         CardDef("soins:docs", "📂", "Carnet de santé"),
-        CardDef("suivi:journal", "📖", "Journal"), CardDef("suivi:calendar", "🗓️", "Calendrier"), CardDef("suivi:checkup", "🔎", "Comprendre"), CardDef("suivi:sleep", "🌙", "Sommeil"), CardDef("suivi:measures", "🩺", "Mesures"),
+        CardDef("suivi:journal", "📖", "Journal"), CardDef("suivi:calendar", "🗓️", "Calendrier"), CardDef("suivi:labs", "🧪", "Analyses"), CardDef("suivi:checkup", "🔎", "Comprendre"), CardDef("suivi:sleep", "🌙", "Sommeil"), CardDef("suivi:measures", "🩺", "Mesures"),
         CardDef("suivi:cycle", "🩸", "Cycle"), CardDef("suivi:symptoms", "🌡️", "Symptômes"),
         CardDef("mieux:softday", "💛", "Journée douce"), CardDef("mieux:feel", "💭", "Ce que je ressens"),
         CardDef("mieux:rituals", "✨", "Rituels du matin et du soir"), CardDef("mieux:me", "🌿", "Ce qui m'accompagne"),
@@ -117,6 +117,7 @@ object HubCatalog {
             SUIVI to listOfNotNull(
                 CardDef("suivi:journal", "📖", "Journal"),
                 CardDef("suivi:calendar", "🗓️", "Calendrier"),
+                CardDef("suivi:labs", "🧪", "Analyses"),
                 CardDef("suivi:checkup", "🔎", "Comprendre"),
                 CardDef("suivi:sleep", "🌙", "Sommeil"),
                 CardDef("suivi:measures", "🩺", "Mesures").takeIf { state.settings.measures.isNotEmpty() },
@@ -170,6 +171,11 @@ object HubPreviews {
 
     fun sleep(state: AppState, now: LocalDateTime): String =
         state.sleep.firstOrNull { it.date == now.toLocalDate() }?.let { "Cette nuit : ${Sleep.label(it)}" } ?: "Nuit pas encore notée"
+
+    fun labs(state: AppState): String {
+        val last = state.labs.maxByOrNull { it.date } ?: return "Tes prises de sang, courbe par courbe"
+        return "Dernière : ${com.medipote.app.domain.Labs.name(last.marker)} ${com.medipote.app.domain.Labs.format(last.value, last.marker)} ${last.unit}"
+    }
 
     fun checkup(state: AppState, today: java.time.LocalDate): String {
         val n = com.medipote.app.domain.Understand.visible(com.medipote.app.domain.Understand.scan(state, today), state.settings.dismissedChecks, today).size
@@ -351,7 +357,7 @@ enum class Interest(val emoji: String, val label: String) {
     companion object {
         private val ALWAYS = setOf("soins:treatments", "soins:agenda", "suivi:journal", "suivi:calendar", "suivi:checkup", "moi:stats", "moi:year", "moi:shop", "moi:badges")
         private val COVERS = mapOf(
-            TREATMENTS to setOf("soins:pill", "soins:docs", "suivi:measures"),
+            TREATMENTS to setOf("soins:pill", "soins:docs", "suivi:measures", "suivi:labs"),
             CYCLE to setOf("suivi:cycle", "soins:pill"),
             MENTAL to setOf("mieux:softday", "mieux:feel", "mieux:rituals", "mieux:me", "suivi:symptoms"),
             SLEEP to setOf("suivi:sleep"),

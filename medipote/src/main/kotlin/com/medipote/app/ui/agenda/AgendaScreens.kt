@@ -92,7 +92,17 @@ fun reminderLabel(minutes: Int): String = REMINDER_CHOICES.firstOrNull { it.firs
 
 /** Embedded content of the "Agenda" tab: month view, then upcoming and past appointments. */
 @Composable
-fun AgendaScreen(appointments: List<Appointment>, now: LocalDateTime, onNew: (LocalDate?) -> Unit, onOpen: (Appointment) -> Unit) {
+fun AgendaScreen(
+    appointments: List<Appointment>,
+    now: LocalDateTime,
+    onNew: (LocalDate?) -> Unit,
+    onOpen: (Appointment) -> Unit,
+    checkups: List<com.medipote.app.data.RegularCheckup>? = null,
+    onCheckupDone: (String) -> Unit = {},
+    onCheckupSave: (com.medipote.app.data.RegularCheckup) -> Unit = {},
+    onCheckupAdd: (String, Int, LocalDate?) -> Unit = { _, _, _ -> },
+    onCheckupDelete: (String) -> Unit = {},
+) {
     val today = now.toLocalDate()
     var month by rememberSaveable { mutableStateOf(YearMonth.from(today).toString()) }
     var selected by rememberSaveable { mutableStateOf<String?>(null) }
@@ -134,6 +144,7 @@ fun AgendaScreen(appointments: List<Appointment>, now: LocalDateTime, onNew: (Lo
                 SectionTitle("Passés")
                 past.take(10).forEach { AppointmentCard(it, now, past = true) { onOpen(it) } }
             }
+            if (checkups != null) CheckupsSection(checkups, today, onCheckupDone, onCheckupSave, onCheckupAdd, onCheckupDelete)
             Spacer(Modifier.height(72.dp))
         }
     }
@@ -253,10 +264,14 @@ fun AppointmentEditorScreen(
     onBack: () -> Unit,
     /** Opens "Préparer mon rendez-vous"; offered once the appointment exists. */
     onPrepare: (() -> Unit)? = null,
+    /** Opens « Après le rendez-vous »; offered once the appointment has (nearly) taken place. */
+    onAfter: (() -> Unit)? = null,
+    /** The appointment this one follows: its reason, practitioner and place are proposed. */
+    like: Appointment? = null,
 ) {
-    var title by remember { mutableStateOf(existing?.title.orEmpty()) }
-    var doctor by remember { mutableStateOf(existing?.doctor.orEmpty()) }
-    var location by remember { mutableStateOf(existing?.location.orEmpty()) }
+    var title by remember { mutableStateOf(existing?.title ?: like?.title.orEmpty()) }
+    var doctor by remember { mutableStateOf(existing?.doctor ?: like?.doctor.orEmpty()) }
+    var location by remember { mutableStateOf(existing?.location ?: like?.location.orEmpty()) }
     var date by remember { mutableStateOf(existing?.dateTime?.toLocalDate() ?: initialDate) }
     var minute by remember { mutableIntStateOf(existing?.dateTime?.let { it.hour * 60 + it.minute } ?: (9 * 60)) }
     var reminders by remember { mutableStateOf(existing?.reminderMinutes?.toSet() ?: setOf(24 * 60, 60)) }
@@ -284,6 +299,8 @@ fun AppointmentEditorScreen(
                                 dateTime = date.atTime(minute / 60, minute % 60), notes = notes.trim(),
                                 reminderMinutes = reminders.sortedDescending(),
                                 questions = existing?.questions.orEmpty(),
+                                attended = existing?.attended ?: false,
+                                afterNotes = existing?.afterNotes.orEmpty(),
                             ),
                         )
                     },
@@ -297,7 +314,9 @@ fun AppointmentEditorScreen(
             Modifier.fillMaxSize().padding(padding).imePadding().verticalScroll(rememberScrollState()).padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            if (existing != null && onPrepare != null) {
+            if (existing != null && onAfter != null) {
+                Button(onClick = onAfter, modifier = Modifier.fillMaxWidth().height(52.dp)) { Text("📝  Après le rendez-vous") }
+            } else if (existing != null && onPrepare != null) {
                 OutlinedButton(onClick = onPrepare, modifier = Modifier.fillMaxWidth().height(52.dp)) { Text("🩺  Préparer ce rendez-vous") }
             }
             SectionTitle("Motif")

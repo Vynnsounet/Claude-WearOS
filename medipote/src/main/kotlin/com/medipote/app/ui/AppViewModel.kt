@@ -651,6 +651,51 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         careReward { com.medipote.app.domain.Care.renewed(it, doc.id, doc.validUntil, repo.now()) }
     }
 
+    // ── Analyses, regular check-ups, after an appointment, travel ──
+    fun saveLab(result: com.medipote.app.data.LabResult) {
+        repo.update { com.medipote.app.domain.Labs.save(it, result) }
+    }
+
+    fun deleteLab(id: String) {
+        repo.update { com.medipote.app.domain.Labs.delete(it, id) }
+    }
+
+    fun saveCheckup(c: com.medipote.app.data.RegularCheckup) {
+        repo.update { s -> s.copy(checkups = (s.checkups.filterNot { it.id == c.id } + c)) }
+        reschedule()
+    }
+
+    fun addCheckup(title: String, everyMonths: Int, lastDone: LocalDate?) {
+        repo.update { s -> s.copy(checkups = com.medipote.app.domain.Checkups.add(s.checkups, title, everyMonths, lastDone, repo.now())) }
+        reschedule()
+    }
+
+    fun checkupDone(id: String) {
+        val today = repo.now().toLocalDate()
+        repo.update { s -> s.copy(checkups = com.medipote.app.domain.Checkups.done(s.checkups, id, today)) }
+        reschedule()
+        _events.trySend(UiEvent.Message("Noté. Je te le rappellerai quand ce sera le moment."))
+    }
+
+    fun deleteCheckup(id: String) {
+        repo.update { s -> s.copy(checkups = s.checkups.filterNot { it.id == id }) }
+        reschedule()
+    }
+
+    /** What was said and decided at an appointment. */
+    fun saveAfterNotes(id: String, text: String) {
+        repo.update { s -> s.copy(appointments = s.appointments.map { if (it.id == id) it.copy(afterNotes = text.trim()) else it }) }
+        _events.trySend(UiEvent.Message("Noté"))
+    }
+
+    /** A trip across time zones (null cancels it); the doses move with it. */
+    fun setTravel(plan: com.medipote.app.data.TravelPlan?) {
+        repo.update { it.copy(travel = plan) }
+        reschedule()
+        com.medipote.app.widget.Widgets.requestUpdate(getApplication())
+        _events.trySend(UiEvent.Message(if (plan == null) "Voyage annulé : tes prises reprennent leurs heures" else "Voyage enregistré"))
+    }
+
     /** « Je l'ai vu »: a concern is set aside for a week (an urgent one never is). */
     fun dismissCheck(key: String) {
         val today = repo.now().toLocalDate()

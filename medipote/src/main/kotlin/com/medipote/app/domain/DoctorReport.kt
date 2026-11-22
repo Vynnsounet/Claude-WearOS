@@ -17,6 +17,7 @@ enum class ReportPart(val label: String) {
     ADHERENCE("Prises et observance"),
     PRN("Médicaments « si besoin »"),
     MEASURES("Mesures de santé"),
+    LABS("Analyses (prises de sang)"),
     SLEEP("Sommeil"),
     JOURNAL("Journal : forme et symptômes"),
     CYCLE("Cycle menstruel"),
@@ -52,6 +53,7 @@ object DoctorReports {
         when (it) {
             ReportPart.PRN -> state.treatments.any { t -> t.asNeeded }
             ReportPart.MEASURES -> state.measurements.isNotEmpty()
+            ReportPart.LABS -> state.labs.isNotEmpty()
             ReportPart.SLEEP -> state.sleep.isNotEmpty() || state.naps.isNotEmpty()
             ReportPart.JOURNAL -> state.journal.any { e -> e.hasJournal }
             ReportPart.SYMPTOMS -> state.symptomLog.isNotEmpty()
@@ -70,6 +72,7 @@ object DoctorReports {
             if (ReportPart.ADHERENCE in parts) adherence(state, now, days)?.let(::add)
             if (ReportPart.PRN in parts) prn(state, now, days)?.let(::add)
             if (ReportPart.MEASURES in parts) measures(state, today, days)?.let(::add)
+            if (ReportPart.LABS in parts) labs(state)?.let(::add)
             if (ReportPart.SLEEP in parts) sleep(state, today, days)?.let(::add)
             if (ReportPart.JOURNAL in parts) journal(state, start, today)?.let(::add)
             if (ReportPart.SYMPTOMS in parts) symptoms(state, today, days)?.let(::add)
@@ -232,6 +235,35 @@ object DoctorReports {
             )
         }
         return ReportSection(ReportPart.MEASURES.label, blocks)
+    }
+
+    /** The blood tests the person noted: the last value of each, where it stands, and how it moved. Whatever the period. */
+    private fun labs(state: AppState): ReportSection? {
+        val tracked = Labs.tracked(state)
+        if (tracked.isEmpty()) return null
+        val sex = state.profile?.sex
+        val rows = tracked.map { marker ->
+            val series = Labs.series(state, marker)
+            val last = series.last()
+            val (low, high) = Labs.range(last, sex)
+            listOf(
+                Labs.name(marker), "${Labs.format(last.value, marker)} ${last.unit}", "%02d/%02d/%d".format(last.date.dayOfMonth, last.date.monthValue, last.date.year),
+                if (low != null || high != null) "${low?.let { Labs.format(it, marker) } ?: "—"} à ${high?.let { Labs.format(it, marker) } ?: "—"}" else "—",
+                Labs.levelText(Labs.level(last, sex)) + (Labs.trend(series)?.let { " ; $it" } ?: ""),
+            )
+        }
+        val changes = Labs.doseChanges(state, state.labs.minOf { it.date }, state.labs.maxOf { it.date })
+        return ReportSection(
+            "Analyses",
+            buildList {
+                add(ReportBlock.Table(listOf("Analyse", "Dernière valeur", "Date", "Repères", "Situation"), rows, listOf(1.3f, 1.1f, 1f, 1f, 2f)))
+                add(ReportBlock.Paragraph("Repères : ceux du laboratoire quand la personne les a notés, sinon les repères habituels (indicatifs).", muted = true))
+                if (changes.isNotEmpty()) {
+                    add(ReportBlock.Subtitle("Changements de traitement sur la période des analyses"))
+                    changes.forEach { add(ReportBlock.Paragraph("${"%02d/%02d/%d".format(it.date.dayOfMonth, it.date.monthValue, it.date.year)} : ${it.text}")) }
+                }
+            },
+        )
     }
 
     private fun sleep(state: AppState, today: LocalDate, days: Int): ReportSection? {

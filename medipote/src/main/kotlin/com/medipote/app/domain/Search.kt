@@ -41,6 +41,7 @@ object AppSearch {
         // ── Suivi ──
         SearchEntry("suivi:journal", "📖", "Journal", "Suivi", listOf("humeur", "note", "notes", "écrire", "journée", "aujourd'hui", "moral"), card("suivi", "suivi:journal")),
         SearchEntry("suivi:calendar", "🗓️", "Calendrier", "Suivi", listOf("mois", "vue du mois", "jour par jour", "historique", "agenda du mois", "mes jours", "calendrier"), card("suivi", "suivi:calendar")),
+        SearchEntry("suivi:labs", "🧪", "Analyses", "Suivi", listOf("prise de sang", "résultats", "tsh", "thyroïde", "ferritine", "vitamine d", "cholestérol", "glycémie", "hba1c", "bilan sanguin", "laboratoire", "valeurs"), card("suivi", "suivi:labs")),
         SearchEntry("suivi:checkup", "🔎", "Comprendre", "Suivi", listOf("pourquoi je me sens mal", "expliquer", "explication", "dois-je consulter", "consulter", "médecin", "rendez-vous médecin", "anomalie", "inquiet", "inquiète", "bilan", "conseils cycle", "conseils sommeil", "alerte"), card("suivi", "suivi:checkup")),
         SearchEntry("suivi:sleep", "🌙", "Sommeil", "Suivi", listOf("dormir", "nuit", "nuits", "sieste", "siestes", "réveil", "réveils", "coucher", "insomnie"), card("suivi", "suivi:sleep")),
         SearchEntry("suivi:measures", "🩺", "Mesures", "Suivi", listOf("tension", "poids", "pouls", "glycémie", "température", "saturation", "oxygène", "fréquence cardiaque"), card("suivi", "suivi:measures")),
@@ -90,6 +91,11 @@ object AppSearch {
         SearchEntry("pause", "⏸️", "Mettre les rappels en pause", "Paramètres › Rappels", listOf("pause", "vacances", "voyage", "silence", "arrêter les rappels", "ne plus être dérangé", "week-end", "repos"), go("settings?section=reminders")),
         SearchEntry("ideas", "💡", "Une idée, un souci ?", "Paramètres › Aide", listOf("idée", "suggestion", "souci", "problème", "bug", "remarque", "amélioration", "feedback", "avis"), go("ideas")),
         SearchEntry("phone_change", "📱", "Changer de téléphone", "Paramètres › Sauvegarde", listOf("nouveau téléphone", "transférer", "migrer", "récupérer mes données", "restaurer", "tester ma sauvegarde"), go("backup")),
+        SearchEntry("travel", "✈️", "Voyage et décalage horaire", "Paramètres › Rappels", listOf("voyage", "fuseau", "décalage", "jet lag", "vacances", "étranger", "heure locale", "changer d'heure"), go("travel")),
+        SearchEntry("emergency", "🚑", "Fiche d'urgence", "Profil médical", listOf("urgence", "secours", "allergies", "groupe sanguin", "samu", "pompiers", "infos d'urgence", "personnes à prévenir"), go("emergency")),
+        SearchEntry("pharmacy", "🛒", "Liste pour la pharmacie", "Soins › Traitements", listOf("pharmacie", "racheter", "courses", "stock", "renouveler", "ordonnance"), go("pharmacy")),
+        SearchEntry("checkups", "🗓️", "Suivi régulier", "Soins › Agenda", listOf("dentiste", "contrôle", "rappel annuel", "prise de sang annuelle", "gynécologue", "ophtalmo", "dermato", "tous les ans"), card("treatments", "soins:agenda")),
+        SearchEntry("after_appointment", "📝", "Après le rendez-vous", "Soins › Agenda", listOf("compte rendu", "ce que le médecin a dit", "après la consultation", "notes de consultation"), card("treatments", "soins:agenda")),
         SearchEntry("tour", "👋", "Revoir le petit tour", "Aide", listOf("tuto", "tutoriel", "aide", "comment ça marche", "découvrir", "explications", "guide"), go("tour")),
     )
 

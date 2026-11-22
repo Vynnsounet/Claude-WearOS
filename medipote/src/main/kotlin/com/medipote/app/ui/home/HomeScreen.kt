@@ -155,6 +155,9 @@ fun HomeScreen(
     onOpenSoftDay: () -> Unit = {},
     onOpenPause: () -> Unit = {},
     onOpenCheckup: () -> Unit = {},
+    onOpenAfter: (com.medipote.app.data.Appointment) -> Unit = {},
+    onOpenAgenda: () -> Unit = {},
+    onOpenTravel: () -> Unit = {},
     quickAdd: QuickAddActions? = null,
 ) {
     val logs = remember(state.doseLogs) { state.doseLogs.associateBy { it.key } }
@@ -328,9 +331,25 @@ fun HomeScreen(
         com.medipote.app.domain.Understand.visible(com.medipote.app.domain.Understand.scan(state, date), state.settings.dismissedChecks, date)
             .firstOrNull { it.urgency != com.medipote.app.domain.Urgency.MENTION }
     }
+    // After an appointment, a regular check-up due, a trip: each says a word, once, and leads to its one place.
+    val followUp = com.medipote.app.domain.HomeRules.followUpDue(state, now)
+    val checkupsDue = remember(state.checkups, date) { com.medipote.app.domain.Checkups.pending(state, date) }
+    val travelText = state.travel?.let { com.medipote.app.domain.Travel.todayText(it, date) }
     val alerts: (@Composable () -> Unit)? =
-        if (recap == null && low.isEmpty() && renewals.isEmpty() && !blocked && !quiet && forgotten.isEmpty() && !pausedNow && concern == null) null
+        if (recap == null && low.isEmpty() && renewals.isEmpty() && !blocked && !quiet && forgotten.isEmpty() && !pausedNow && concern == null &&
+            followUp == null && checkupsDue.isEmpty() && travelText == null
+        ) null
         else { {
+            if (travelText != null) Notice(null, MaterialTheme.colorScheme.primary, "Mode voyage", travelText, emoji = "✈️", onClick = onOpenTravel)
+            followUp?.let { a -> Notice(null, MaterialTheme.colorScheme.primary, "Rendez-vous « ${a.title} » : et ensuite ?", "Note ce qui a été dit tant que tu t'en souviens.", emoji = "📝") { onOpenAfter(a) } }
+            if (checkupsDue.isNotEmpty()) {
+                val first = checkupsDue.first()
+                Notice(
+                    null, MaterialTheme.colorScheme.primary, "Suivi régulier : ${first.title.lowercase()}",
+                    com.medipote.app.domain.Checkups.label(first, date) + if (checkupsDue.size > 1) " (et ${checkupsDue.size - 1} autre${if (checkupsDue.size > 2) "s" else ""})" else "",
+                    emoji = "🗓️", onClick = onOpenAgenda,
+                )
+            }
             if (concern != null) Notice(
                 null,
                 if (concern.urgency == com.medipote.app.domain.Urgency.URGENT) AppTheme.status.critical else AppTheme.status.warning,

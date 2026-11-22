@@ -2,6 +2,8 @@ package com.medipote.app.ui
 
 import android.Manifest
 import android.content.Intent
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import android.net.Uri
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -377,6 +379,9 @@ fun MediPoteApp(vm: AppViewModel) {
                         onOpenSearch = openSearch,
                         onOpenCheckup = { nav.navigate("suivi?card=suivi:checkup") { popUpTo("home") } },
                         onOpenPause = { nav.navigate("settings?section=reminders") },
+                        onOpenAfter = { nav.navigate("appointment_after/${it.id}") },
+                        onOpenAgenda = { nav.navigate("treatments?card=soins:agenda") { popUpTo("home") } },
+                        onOpenTravel = { nav.navigate("travel") },
                         onOpenShortcut = { id -> com.medipote.app.domain.AppSearch.CATALOG.firstOrNull { it.id == id }?.let(openEntry) },
                         onUnpin = vm::togglePin,
                         onAddWater = vm::addWater,
@@ -452,6 +457,7 @@ fun MediPoteApp(vm: AppViewModel) {
                                 now = now,
                                 onLogPrn = { nav.navigate("prn_log/${it.id}") },
                                 onPrnStats = { nav.navigate("prn_stats/${it.id}") },
+                                onPharmacy = { nav.navigate("pharmacy") }.takeIf { com.medipote.app.domain.Pharmacy.list(state, today).isNotEmpty() },
                             )
                             "soins:pill" -> PillScreen(
                                 state, now,
@@ -464,6 +470,9 @@ fun MediPoteApp(vm: AppViewModel) {
                                 state.appointments, now,
                                 onNew = { date -> nav.navigate("appointment?date=${date ?: today}") },
                                 onOpen = { nav.navigate("appointment?id=${it.id}") },
+                                checkups = state.checkups,
+                                onCheckupDone = vm::checkupDone, onCheckupSave = vm::saveCheckup,
+                                onCheckupAdd = vm::addCheckup, onCheckupDelete = vm::deleteCheckup,
                             )
                             else -> DocumentsScreen(
                                 state.documents,
@@ -486,6 +495,7 @@ fun MediPoteApp(vm: AppViewModel) {
                     val cards = listOfNotNull(
                         HubCard("suivi:journal", "📖", "Journal", HubPreviews.journal(state, now)),
                         HubCard("suivi:calendar", "🗓️", "Calendrier", "Tes prises, ton humeur et tes symptômes, mois par mois"),
+                        HubCard("suivi:labs", "🧪", "Analyses", HubPreviews.labs(state)),
                         HubCard("suivi:checkup", "🔎", "Comprendre", HubPreviews.checkup(state, today)),
                         HubCard("suivi:sleep", "🌙", "Sommeil", HubPreviews.sleep(state, now)),
                         HubCard("suivi:measures", "🩺", "Mesures", HubPreviews.measures(state)).takeIf { state.settings.measures.isNotEmpty() },
@@ -500,6 +510,11 @@ fun MediPoteApp(vm: AppViewModel) {
                                 onOpenMyDay = { nav.navigate("myday/$it") },
                             )
                             "suivi:calendar" -> com.medipote.app.ui.journal.MonthScreen(state, today, onOpenDay = { nav.navigate("myday/$it") })
+                            "suivi:labs" -> com.medipote.app.ui.labs.LabsScreen(
+                                state,
+                                onOpen = { nav.navigate("lab/${Uri.encode(it)}") },
+                                onAdd = { nav.navigate("lab_edit") },
+                            )
                             "suivi:checkup" -> com.medipote.app.ui.understand.CheckupScreen(
                                 state, today,
                                 onCall = { com.medipote.app.ui.support.dial(context, it) },
@@ -860,6 +875,77 @@ fun MediPoteApp(vm: AppViewModel) {
                         onBack = { nav.popBackStack() },
                     )
                 }
+                composable("lab/{marker}") { entry ->
+                    val marker = entry.arguments?.getString("marker").orEmpty()
+                    com.medipote.app.ui.labs.LabDetailScreen(
+                        state, marker,
+                        onAdd = { nav.navigate("lab_edit?marker=${Uri.encode(marker)}") },
+                        onEdit = { nav.navigate("lab_edit?id=$it") },
+                        onBack = { nav.popBackStack() },
+                    )
+                }
+                composable(
+                    "lab_edit?id={id}&marker={marker}",
+                    arguments = listOf(
+                        navArgument("id") { type = NavType.StringType; nullable = true; defaultValue = null },
+                        navArgument("marker") { type = NavType.StringType; nullable = true; defaultValue = null },
+                    ),
+                ) { entry ->
+                    val existing = entry.arguments?.getString("id")?.let { id -> state.labs.firstOrNull { it.id == id } }
+                    com.medipote.app.ui.labs.LabEditorScreen(
+                        existing, entry.arguments?.getString("marker"), today,
+                        onSave = { vm.saveLab(it); nav.popBackStack() },
+                        onDelete = { existing?.let { vm.deleteLab(it.id) }; nav.popBackStack() },
+                        onBack = { nav.popBackStack() },
+                    )
+                }
+                composable("pharmacy") {
+                    val items = com.medipote.app.domain.Pharmacy.list(state, today)
+                    com.medipote.app.ui.treatments.PharmacyScreen(
+                        items,
+                        onShare = {
+                            val send = Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, com.medipote.app.domain.Pharmacy.shareText(items))
+                            context.startActivity(Intent.createChooser(send, "Partager la liste"))
+                        },
+                        onBack = { nav.popBackStack() },
+                    )
+                }
+                composable("emergency") {
+                    val card = com.medipote.app.domain.Emergency.card(state, today)
+                    com.medipote.app.ui.emergency.EmergencyScreen(
+                        card,
+                        onCall = { com.medipote.app.ui.support.dial(context, it) },
+                        onShare = {
+                            val send = Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, com.medipote.app.domain.Emergency.shareText(card))
+                            context.startActivity(Intent.createChooser(send, "Partager ma fiche d'urgence"))
+                        },
+                        onEditProfile = { nav.navigate("profile") },
+                        onBack = { nav.popBackStack() },
+                    )
+                }
+                composable("travel") {
+                    com.medipote.app.ui.settings.TravelScreen(
+                        state.travel, today,
+                        sampleMinute = state.treatments.firstOrNull { !it.asNeeded }?.doses?.firstOrNull()?.minuteOfDay ?: (8 * 60),
+                        onSave = { vm.setTravel(it); nav.popBackStack() },
+                        onCancelTrip = { vm.setTravel(null); nav.popBackStack() },
+                        onBack = { nav.popBackStack() },
+                    )
+                }
+                composable("appointment_after/{id}") { entry ->
+                    val a = state.appointments.firstOrNull { it.id == entry.arguments?.getString("id") }
+                    if (a == null) LaunchedEffect(Unit) { nav.popBackStack() } else {
+                        com.medipote.app.ui.agenda.AfterAppointmentScreen(
+                            a,
+                            onSaveNotes = { vm.saveAfterNotes(a.id, it) },
+                            onAttended = { vm.markAttended(a) },
+                            onTreatments = { nav.navigate("treatments") { launchSingleTop = true } },
+                            onLabs = { nav.navigate("suivi?card=suivi:labs") { popUpTo("home") } },
+                            onNext = { nav.navigate("appointment?date=$today&like=${a.id}") },
+                            onBack = { nav.popBackStack() },
+                        )
+                    }
+                }
                 composable("checkup") {
                     com.medipote.app.ui.understand.CheckupScreen(
                         state, today,
@@ -1126,10 +1212,11 @@ fun MediPoteApp(vm: AppViewModel) {
 
                 // ── Appointments ──
                 composable(
-                    "appointment?id={id}&date={date}",
+                    "appointment?id={id}&date={date}&like={like}",
                     arguments = listOf(
                         navArgument("id") { type = NavType.StringType; nullable = true },
                         navArgument("date") { type = NavType.StringType; nullable = true },
+                        navArgument("like") { type = NavType.StringType; nullable = true; defaultValue = null },
                     ),
                 ) { entry ->
                     val existing = entry.arguments?.getString("id")?.let { id -> state.appointments.firstOrNull { it.id == id } }
@@ -1140,6 +1227,8 @@ fun MediPoteApp(vm: AppViewModel) {
                         onDelete = { existing?.let { vm.deleteAppointment(it.id) }; nav.popBackStack() },
                         onBack = { nav.popBackStack() },
                         onPrepare = existing?.let { a -> { nav.navigate("appointment_prep/${a.id}") } },
+                        onAfter = existing?.takeIf { it.dateTime.isBefore(now.plusHours(1)) }?.let { a -> { nav.navigate("appointment_after/${a.id}") } },
+                        like = entry.arguments?.getString("like")?.let { id -> state.appointments.firstOrNull { it.id == id } },
                     )
                 }
                 composable("appointment_prep/{id}") { entry ->
@@ -1257,6 +1346,7 @@ fun MediPoteApp(vm: AppViewModel) {
                         onOpenWellbeing = { nav.navigate("wellbeing_me") },
                         onOpenTour = { nav.navigate("tour?first=false") },
                         onOpenIdeas = { nav.navigate("ideas?from=settings") },
+                        onOpenTravel = { nav.navigate("travel") },
                         onOpenCards = { nav.navigate("cards_layout") },
                         watchLastSeen = com.medipote.app.wear.WatchLink.lastSeen(context),
                         watchRings = com.medipote.app.wear.WatchLink.watchHandlesReminders(context),
@@ -1287,7 +1377,7 @@ fun MediPoteApp(vm: AppViewModel) {
                     )
                 }
                 composable("profile") {
-                    state.profile?.let { p -> ProfileScreen(p, today, onBack = { nav.popBackStack() }, onSave = vm::saveProfile) }
+                    state.profile?.let { p -> ProfileScreen(p, today, onBack = { nav.popBackStack() }, onSave = vm::saveProfile, onOpenEmergency = { nav.navigate("emergency") }) }
                 }
             }
         }
@@ -1315,7 +1405,13 @@ fun MediPoteApp(vm: AppViewModel) {
         }
 
         val locked by vm.locked.collectAsStateWithLifecycle()
-        if (locked) LockScreen(pet, onUnlocked = vm::unlock)
+        if (locked) {
+            LockScreen(
+                pet, onUnlocked = vm::unlock,
+                emergency = com.medipote.app.domain.Emergency.card(state, today).takeIf { state.settings.emergencyOnLock },
+                onCall = { com.medipote.app.ui.support.dial(context, it) },
+            )
+        }
     }
 }
 
@@ -1327,8 +1423,9 @@ private tailrec fun android.content.Context.findActivity(): androidx.fragment.ap
 
 /** Covers the app until the phone's fingerprint, face or PIN is given. */
 @Composable
-private fun LockScreen(pet: String, onUnlocked: () -> Unit) {
+private fun LockScreen(pet: String, onUnlocked: () -> Unit, emergency: com.medipote.app.domain.EmergencyCard? = null, onCall: (String) -> Unit = {}) {
     val context = LocalContext.current
+    var showEmergency by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
     fun ask() {
         val activity = context.findActivity()
@@ -1367,6 +1464,17 @@ private fun LockScreen(pet: String, onUnlocked: () -> Unit) {
                 }
                 androidx.compose.foundation.layout.Spacer(Modifier.size(24.dp))
                 androidx.compose.material3.Button(onClick = { error = null; ask() }) { Text("Déverrouiller") }
+                // The person chose to let the emergency services read this card without the code.
+                if (emergency != null) {
+                    androidx.compose.foundation.layout.Spacer(Modifier.size(16.dp))
+                    androidx.compose.material3.OutlinedButton(onClick = { showEmergency = !showEmergency }) { Text(if (showEmergency) "Masquer la fiche" else "🚑  Fiche d'urgence") }
+                    if (showEmergency) {
+                        androidx.compose.foundation.layout.Spacer(Modifier.size(12.dp))
+                        Column(Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState())) {
+                            com.medipote.app.ui.emergency.EmergencyCardContent(emergency, onCall)
+                        }
+                    }
+                }
             }
         }
     }

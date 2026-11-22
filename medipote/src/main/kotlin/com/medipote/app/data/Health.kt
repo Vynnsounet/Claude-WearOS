@@ -121,6 +121,8 @@ data class Appointment(
     val questions: List<String> = emptyList(),
     /** "I went": noted once the appointment has taken place. */
     val attended: Boolean = false,
+    /** What was said and decided, written after the appointment. */
+    val afterNotes: String = "",
 )
 
 // ─────────────────────────── Health documents ───────────────────────────
@@ -394,4 +396,55 @@ data class ProductUse(
     val product: PeriodProduct,
     @Serializable(with = LocalDateTimeSerializer::class) val start: LocalDateTime,
     @Serializable(with = LocalDateTimeSerializer::class) val end: LocalDateTime,
+)
+
+
+// ─────────────────────────── Lab results ───────────────────────────
+
+/** One value from a blood test (or another analysis). [marker] is the id of a known one ("tsh") or a name typed by the person. */
+@Serializable
+data class LabResult(
+    val id: String,
+    val marker: String,
+    @Serializable(with = LocalDateSerializer::class) val date: LocalDate,
+    val value: Double,
+    val unit: String,
+    /** The reference range printed on the person's report, when they typed it; else the usual one is used. */
+    val low: Double? = null,
+    val high: Double? = null,
+    val note: String = "",
+)
+
+/** A change of a treatment (strength, times), kept so that analyses can be read against it. */
+@Serializable
+data class DoseChange(
+    @Serializable(with = LocalDateSerializer::class) val date: LocalDate,
+    val text: String,
+)
+
+// ─────────────────────────── Regular check-ups ───────────────────────────
+
+/** Something to do from time to time: a dentist visit, a yearly blood test. The person sets the rhythm. */
+@Serializable
+data class RegularCheckup(
+    val id: String,
+    val title: String,
+    val everyMonths: Int,
+    @Serializable(with = LocalDateSerializer::class) val lastDone: LocalDate? = null,
+    val remind: Boolean = true,
+)
+
+// ─────────────────────────── Travel ───────────────────────────
+
+/**
+ * A trip across time zones: the phone changes clock on arrival, but the body does not. From [arrival], the doses stay at
+ * home time (shifted by [offsetHours], destination minus home) and come back to the local clock [stepHours] a day; from
+ * [returnDate], the same way back.
+ */
+@Serializable
+data class TravelPlan(
+    @Serializable(with = LocalDateSerializer::class) val arrival: LocalDate,
+    val offsetHours: Int,
+    val stepHours: Int = 1,
+    @Serializable(with = LocalDateSerializer::class) val returnDate: LocalDate? = null,
 )

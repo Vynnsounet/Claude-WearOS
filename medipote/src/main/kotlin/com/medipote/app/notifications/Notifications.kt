@@ -28,7 +28,7 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
-enum class AlarmKind { DOSE, FOLLOW_UP, APPOINTMENT, WATER, STOCK, TEST, PRN_CHECK, SLEEP, SNOOZE, RENEWAL, RITUAL, RECAP, PRODUCT, SUPPORT, WIND_DOWN, RESUME }
+enum class AlarmKind { DOSE, FOLLOW_UP, APPOINTMENT, WATER, STOCK, TEST, PRN_CHECK, SLEEP, SNOOZE, RENEWAL, RITUAL, RECAP, PRODUCT, SUPPORT, WIND_DOWN, RESUME, CHECKUP }
 
 /** One planned alarm. [ref] identifies what it is about (an appointment id, for instance). */
 data class AlarmSpec(val kind: AlarmKind, val time: LocalDateTime, val ref: String = "") {
@@ -155,6 +155,14 @@ object ReminderPlanner {
             if (t.isAfter(now)) alarms += AlarmSpec(AlarmKind.RENEWAL, t, doc.id)
         }
 
+        // Regular check-ups: a soft reminder at 10:00 on the day each one is due.
+        for (c in state.checkups) {
+            if (!c.remind) continue
+            val due = com.medipote.app.domain.Checkups.due(c) ?: continue
+            val t = due.atTime(STOCK_CHECK)
+            if (t.isAfter(now)) alarms += AlarmSpec(AlarmKind.CHECKUP, t, c.id)
+        }
+
         // Low stock: a daily reminder at 10:00 until a box is bought.
         if (state.treatments.any { it.isLowStock }) {
             val today = now.toLocalDate().atTime(STOCK_CHECK)
@@ -186,7 +194,7 @@ object ReminderPlanner {
             when {
                 !q.contains(a.time) -> a
                 a.kind == AlarmKind.WATER || a.kind == AlarmKind.WIND_DOWN -> null
-                a.kind in setOf(AlarmKind.STOCK, AlarmKind.RENEWAL, AlarmKind.RITUAL, AlarmKind.RECAP, AlarmKind.SLEEP) -> a.copy(time = q.endAfter(a.time))
+                a.kind in setOf(AlarmKind.STOCK, AlarmKind.RENEWAL, AlarmKind.CHECKUP, AlarmKind.RITUAL, AlarmKind.RECAP, AlarmKind.SLEEP) -> a.copy(time = q.endAfter(a.time))
                 else -> a
             }
         }.distinctBy { it.key }
@@ -423,6 +431,16 @@ object Notifications {
         )
     }
 
+    fun showCheckup(context: Context, state: AppState, id: String) {
+        val c = state.checkups.firstOrNull { it.id == id } ?: return
+        post(
+            context, CHANNEL_APPOINTMENTS, "checkup:$id".hashCode(),
+            "C'est le moment : ${c.title.lowercase()} 🗓️",
+            "Ton suivi régulier arrive à échéance. Pense à prendre rendez-vous, et note-le dans l'appli quand c'est fait.",
+            route = "treatments?card=soins:agenda",
+        )
+    }
+
     fun showProduct(context: Context, state: AppState, ref: String, now: LocalDateTime) {
         val s = state.productSession ?: return
         val p = s.product
@@ -604,6 +622,7 @@ class ReminderReceiver : BroadcastReceiver() {
                 AlarmKind.SLEEP -> Notifications.showSleep(context, state, repo.now())
                 AlarmKind.WIND_DOWN -> Notifications.showWindDown(context, state)
                 AlarmKind.RENEWAL -> Notifications.showRenewal(context, state, spec.ref, repo.now())
+                AlarmKind.CHECKUP -> Notifications.showCheckup(context, state, spec.ref)
                 AlarmKind.RITUAL -> Notifications.showRitual(context, state, spec.ref, repo.now())
                 AlarmKind.RECAP -> Notifications.showRecap(context, state, repo.now())
                 AlarmKind.PRODUCT -> Notifications.showProduct(context, state, spec.ref, repo.now())

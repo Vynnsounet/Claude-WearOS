@@ -30,7 +30,7 @@ class AppRepository(private val file: File, clock: Clock = Clock.systemDefaultZo
 
     @Synchronized
     fun update(transform: (AppState) -> AppState): AppState {
-        val updated = transform(_state.value)
+        val updated = com.medipote.app.domain.Travel.sync(transform(_state.value))
         if (updated == _state.value) return updated
         _state.value = updated
         val snapshot = prune(updated)
