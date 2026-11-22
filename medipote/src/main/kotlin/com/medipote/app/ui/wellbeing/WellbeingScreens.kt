@@ -244,9 +244,21 @@ fun SymptomAdviceScreen(
     onBack: () -> Unit,
     tried: Boolean = false,
     onTried: () -> Unit = {},
+    /** What can explain it in the person's own context, and what deserves an opinion. */
+    factors: List<com.medipote.app.domain.Factor>? = null,
+    concerns: List<com.medipote.app.domain.Concern> = emptyList(),
+    onCall: (String) -> Unit = {},
+    onBook: () -> Unit = {},
+    onPrepare: (() -> Unit)? = null,
+    onDismiss: (String) -> Unit = {},
 ) {
     val info = WellbeingLibrary.symptom(symptom)
     WbPage("${Wellbeing.emoji(symptom)}  ${Wellbeing.name(symptom)}", embedded = false, onBack = onBack) {
+        concerns.forEach { c -> com.medipote.app.ui.understand.ConcernCard(c, onCall, onBook, onPrepare, onDismiss) }
+        if (factors != null) {
+            Text("Chez toi, ça peut venir de…", style = MaterialTheme.typography.titleMedium)
+            com.medipote.app.ui.understand.FactorsCard(factors)
+        }
         Text(
             if (info?.kind == true) "Ce que je te souhaite d'entendre d'abord :" else "Ce qui aide souvent, à ton rythme :",
             style = MaterialTheme.typography.titleMedium,

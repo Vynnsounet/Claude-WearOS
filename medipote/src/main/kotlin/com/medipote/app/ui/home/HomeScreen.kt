@@ -154,6 +154,7 @@ fun HomeScreen(
     onUnpin: (String) -> Unit = {},
     onOpenSoftDay: () -> Unit = {},
     onOpenPause: () -> Unit = {},
+    onOpenCheckup: () -> Unit = {},
     quickAdd: QuickAddActions? = null,
 ) {
     val logs = remember(state.doseLogs) { state.doseLogs.associateBy { it.key } }
@@ -322,9 +323,20 @@ fun HomeScreen(
     val blocked = notificationsBlocked && state.settings.notificationsEnabled
     val quiet = !blocked && remindersQuiet && state.settings.notificationsEnabled
     val pausedNow = com.medipote.app.domain.Pause.active(state.settings.pause, now)
+    // What the notes show that deserves an opinion: only the ones that matter now, and only if the person wants to be told.
+    val concern = if (!state.settings.checkups) null else remember(state, date) {
+        com.medipote.app.domain.Understand.visible(com.medipote.app.domain.Understand.scan(state, date), state.settings.dismissedChecks, date)
+            .firstOrNull { it.urgency != com.medipote.app.domain.Urgency.MENTION }
+    }
     val alerts: (@Composable () -> Unit)? =
-        if (recap == null && low.isEmpty() && renewals.isEmpty() && !blocked && !quiet && forgotten.isEmpty() && !pausedNow) null
+        if (recap == null && low.isEmpty() && renewals.isEmpty() && !blocked && !quiet && forgotten.isEmpty() && !pausedNow && concern == null) null
         else { {
+            if (concern != null) Notice(
+                null,
+                if (concern.urgency == com.medipote.app.domain.Urgency.URGENT) AppTheme.status.critical else AppTheme.status.warning,
+                if (concern.urgency == com.medipote.app.domain.Urgency.URGENT) "À ne pas laisser passer" else "Ça vaut peut-être un avis médical",
+                concern.title + ". Touche pour voir quoi faire.", emoji = "🔎", onClick = onOpenCheckup,
+            )
             if (pausedNow) Notice(
                 null, MaterialTheme.colorScheme.primary, "Rappels en pause",
                 com.medipote.app.domain.Pause.label(state.settings.pause).removePrefix("En pause ").replaceFirstChar(Char::uppercase) +

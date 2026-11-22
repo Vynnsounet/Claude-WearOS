@@ -327,6 +327,7 @@ fun SleepScreen(
             SleepTiles(report, more = false)
             NapsCard(report)
             InsightsCard(report.insights)
+            com.medipote.app.ui.understand.AdviceCard("🌙  Pour mieux dormir, d'après tes nuits", remember(state.sleep, state.settings.sleep, today) { com.medipote.app.domain.Understand.sleepAdvice(state, today) })
             DurationChart(report, today)
             com.medipote.app.ui.components.MoreOptions(
                 "Horaires, efficacité, réveils, causes",

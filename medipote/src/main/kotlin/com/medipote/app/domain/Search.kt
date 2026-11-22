@@ -41,6 +41,7 @@ object AppSearch {
         // ── Suivi ──
         SearchEntry("suivi:journal", "📖", "Journal", "Suivi", listOf("humeur", "note", "notes", "écrire", "journée", "aujourd'hui", "moral"), card("suivi", "suivi:journal")),
         SearchEntry("suivi:calendar", "🗓️", "Calendrier", "Suivi", listOf("mois", "vue du mois", "jour par jour", "historique", "agenda du mois", "mes jours", "calendrier"), card("suivi", "suivi:calendar")),
+        SearchEntry("suivi:checkup", "🔎", "Comprendre", "Suivi", listOf("pourquoi je me sens mal", "expliquer", "explication", "dois-je consulter", "consulter", "médecin", "rendez-vous médecin", "anomalie", "inquiet", "inquiète", "bilan", "conseils cycle", "conseils sommeil", "alerte"), card("suivi", "suivi:checkup")),
         SearchEntry("suivi:sleep", "🌙", "Sommeil", "Suivi", listOf("dormir", "nuit", "nuits", "sieste", "siestes", "réveil", "réveils", "coucher", "insomnie"), card("suivi", "suivi:sleep")),
         SearchEntry("suivi:measures", "🩺", "Mesures", "Suivi", listOf("tension", "poids", "pouls", "glycémie", "température", "saturation", "oxygène", "fréquence cardiaque"), card("suivi", "suivi:measures")),
         SearchEntry("suivi:cycle", "🩸", "Cycle", "Suivi", listOf("règles", "menstruations", "ovulation", "protection", "tampon", "serviette", "cycle menstruel", "période"), card("suivi", "suivi:cycle")),

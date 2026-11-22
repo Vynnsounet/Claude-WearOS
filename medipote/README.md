@@ -430,6 +430,29 @@ et « Jour par jour » a rejoint le journal. Une carte ouverte montre où l'on e
 
 ![](docs/home_shortcuts.png) ![](docs/settings_groups.png)
 
+## Comprendre (explications, conseils, quand consulter)
+
+La carte **« 🔎 Comprendre »** (Suivi) et la page de chaque symptôme répondent à quatre questions, à partir de **tes propres notes** :
+
+- **Qu'est-ce qui peut l'expliquer chez moi ?** Chaque piste montre ses chiffres : « tu as dormi 5 h 30 en moyenne ces 3 nuits »,
+  « tes règles sont attendues dans 2 jours », « un traitement commencé il y a 5 jours »…
+- **Comment le soulager ?** Les conseils habituels de chaque symptôme, jamais de médicament, complétés par ce qui colle à ton
+  contexte (de l'eau, un coucher plus tôt, de la chaleur sur le ventre…).
+- **Faut-il consulter ?** Trois niveaux : *à évoquer à ton prochain rendez-vous*, *prends rendez-vous dans les jours qui viennent*,
+  *appelle le 15* (avec les boutons 15 et 112). Les règles : un symptôme fort plusieurs jours, presque tous les jours, depuis plus de
+  deux semaines ou qui s'aggrave ; plusieurs symptômes à la fois ; une tension très élevée, un pouls, une température ou une
+  saturation hors des repères ; deux nuits blanches ou des nuits très courtes ; des règles très en retard ou des cycles hors des
+  repères (sans pilule) ; un moral bas depuis une semaine ; des prises souvent manquées.
+- **Conseils du cycle et du sommeil**, selon la phase en cours et selon tes nuits.
+
+**Ce n'est pas une IA générative.** Ce sont des règles écrites à la main, lisibles et testées, qui lisent seulement tes notes, sur le
+téléphone, sans Internet : rien n'est inventé. Un test interdit tout nom de médicament, tout diagnostic et toute consigne sur le
+traitement dans ce qu'elles écrivent. Un bandeau sur l'accueil prévient quand quelque chose mérite un avis (désactivable dans
+Paramètres › Ce qui m'accompagne › Comprendre) ; « Je l'ai vu » le met de côté une semaine, sauf une urgence. Les seuils sont
+prudents et indicatifs : **ils sont à faire relire par un professionnel de santé** avant tout usage large.
+
+![](docs/checkup.png) ![](docs/symptom_understand.png)
+
 ## Nuit blanche
 
 Dans Suivi › Sommeil, **« 🌙 Nuit blanche, je n'ai pas dormi »** note la nuit en un toucher (0 h de sommeil, sans fausser tes

@@ -415,6 +415,14 @@ fun SettingsScreen(
                 }
             }
 
+            SectionTitle("Comprendre")
+            SettingsCard {
+                SwitchRow(
+                    "Me le dire sur l'accueil", settings.checkups,
+                    supporting = "Quand mes notes montrent quelque chose qui mérite peut-être un avis médical (jamais un diagnostic). Calculé sur le téléphone, avec des règles écrites à la main.",
+                ) { v -> onChange { it.copy(checkups = v) } }
+            }
+
             SectionTitle("Soutien")
             SettingsCard {
                 Text(

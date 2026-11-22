@@ -264,6 +264,7 @@ fun MediPoteApp(vm: AppViewModel) {
         val openSettings = { nav.navigate("settings") }
         val openSearch = { nav.navigate("find") }
         val hiddenCards = HubCatalog.hidden(state.settings)
+        val nextAppointment = state.appointments.filter { !it.dateTime.isBefore(now) }.minByOrNull { it.dateTime }
         val hubTools = HubTools(
             usage = state.settings.usage, byUse = state.settings.cardsByUse, pins = state.settings.pins,
             onOpened = vm::cardOpened, onTogglePin = vm::togglePin, onKeep = vm::keepCard,
@@ -374,6 +375,7 @@ fun MediPoteApp(vm: AppViewModel) {
                         onOpenProfile = openProfile,
                         onOpenSettings = openSettings,
                         onOpenSearch = openSearch,
+                        onOpenCheckup = { nav.navigate("suivi?card=suivi:checkup") { popUpTo("home") } },
                         onOpenPause = { nav.navigate("settings?section=reminders") },
                         onOpenShortcut = { id -> com.medipote.app.domain.AppSearch.CATALOG.firstOrNull { it.id == id }?.let(openEntry) },
                         onUnpin = vm::togglePin,
@@ -484,6 +486,7 @@ fun MediPoteApp(vm: AppViewModel) {
                     val cards = listOfNotNull(
                         HubCard("suivi:journal", "📖", "Journal", HubPreviews.journal(state, now)),
                         HubCard("suivi:calendar", "🗓️", "Calendrier", "Tes prises, ton humeur et tes symptômes, mois par mois"),
+                        HubCard("suivi:checkup", "🔎", "Comprendre", HubPreviews.checkup(state, today)),
                         HubCard("suivi:sleep", "🌙", "Sommeil", HubPreviews.sleep(state, now)),
                         HubCard("suivi:measures", "🩺", "Mesures", HubPreviews.measures(state)).takeIf { state.settings.measures.isNotEmpty() },
                         HubCard("suivi:cycle", "🩸", "Cycle", "Règles, cycle et protections").takeIf { menstruating },
@@ -497,6 +500,15 @@ fun MediPoteApp(vm: AppViewModel) {
                                 onOpenMyDay = { nav.navigate("myday/$it") },
                             )
                             "suivi:calendar" -> com.medipote.app.ui.journal.MonthScreen(state, today, onOpenDay = { nav.navigate("myday/$it") })
+                            "suivi:checkup" -> com.medipote.app.ui.understand.CheckupScreen(
+                                state, today,
+                                onCall = { com.medipote.app.ui.support.dial(context, it) },
+                                onBook = { nav.navigate("appointment?date=$today") },
+                                onPrepare = nextAppointment?.let { a -> { nav.navigate("appointment_prep/${a.id}") } },
+                                onDismiss = vm::dismissCheck,
+                                onOpenSymptom = { nav.navigate("symptom/${Uri.encode(it)}") },
+                                onBack = {}, embedded = true,
+                            )
                             "suivi:measures" -> com.medipote.app.ui.measures.MeasuresScreen(
                                 state, now,
                                 onAdd = { nav.navigate("measure_log/${it.name}") },
@@ -546,7 +558,10 @@ fun MediPoteApp(vm: AppViewModel) {
                                     state.profile?.cycle, state.journal, today, vm::logPeriod, vm::updateCycle,
                                     onOpenDay = { nav.navigate("day/$it") }, embedded = true,
                                     header = { if (inPeriod) periodCards() },
-                                    footer = { if (!inPeriod) periodCards() },
+                                    footer = {
+                                        if (!inPeriod) periodCards()
+                                        com.medipote.app.ui.understand.AdviceCard("🌸  Pour ton cycle, en ce moment", com.medipote.app.domain.Understand.cycleAdvice(state, today))
+                                    },
                                 )
                             }
                         }
@@ -638,6 +653,15 @@ fun MediPoteApp(vm: AppViewModel) {
                         onSoftDay = { nav.navigate("softday") },
                         onSupport = { nav.navigate("support") },
                         onBack = { nav.popBackStack() },
+                        factors = com.medipote.app.domain.Understand.factors(state, entry.arguments?.getString("id").orEmpty(), today),
+                        concerns = com.medipote.app.domain.Understand.visible(
+                            com.medipote.app.domain.Understand.symptomConcerns(state, entry.arguments?.getString("id").orEmpty(), today),
+                            state.settings.dismissedChecks, today,
+                        ),
+                        onCall = { com.medipote.app.ui.support.dial(context, it) },
+                        onBook = { nav.navigate("appointment?date=$today") },
+                        onPrepare = nextAppointment?.let { a -> { nav.navigate("appointment_prep/${a.id}") } },
+                        onDismiss = vm::dismissCheck,
                         tried = entry.arguments?.getString("id").orEmpty() in com.medipote.app.domain.Wellbeing.triedToday(state, today, "advice"),
                         onTried = {
                             val id = entry.arguments?.getString("id").orEmpty()
@@ -833,6 +857,17 @@ fun MediPoteApp(vm: AppViewModel) {
                                 .putExtra(Intent.EXTRA_TEXT, com.medipote.app.domain.Ideas.shareText(state.ideas, version))
                             context.startActivity(Intent.createChooser(send, "Partager mes idées"))
                         },
+                        onBack = { nav.popBackStack() },
+                    )
+                }
+                composable("checkup") {
+                    com.medipote.app.ui.understand.CheckupScreen(
+                        state, today,
+                        onCall = { com.medipote.app.ui.support.dial(context, it) },
+                        onBook = { nav.navigate("appointment?date=$today") },
+                        onPrepare = nextAppointment?.let { a -> { nav.navigate("appointment_prep/${a.id}") } },
+                        onDismiss = vm::dismissCheck,
+                        onOpenSymptom = { nav.navigate("symptom/${Uri.encode(it)}") },
                         onBack = { nav.popBackStack() },
                     )
                 }

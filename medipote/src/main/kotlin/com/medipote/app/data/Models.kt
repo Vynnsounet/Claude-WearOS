@@ -364,6 +364,10 @@ data class Settings(
     val cardsByUse: Boolean = true,
     /** Reminders put on pause for a while. */
     val pause: ReminderPause = ReminderPause(),
+    /** The home screen says when the notes show something worth a professional's opinion. */
+    val checkups: Boolean = true,
+    /** Concerns set aside (key → ISO day): shown again after a week. */
+    val dismissedChecks: Map<String, String> = emptyMap(),
     /** Sober mode: no points, streak, shop or badges on screen; the care stays the same. */
     val sober: Boolean = false,
     /** Reminder to change each period product, in minutes, when the user changed the default. */

@@ -91,7 +91,7 @@ object HubCatalog {
     val EVERYTHING: List<CardDef> = listOf(
         CardDef("soins:treatments", "💊", "Traitements"), CardDef("soins:pill", "🔁", "Pilule"), CardDef("soins:agenda", "📅", "Agenda"),
         CardDef("soins:docs", "📂", "Carnet de santé"),
-        CardDef("suivi:journal", "📖", "Journal"), CardDef("suivi:calendar", "🗓️", "Calendrier"), CardDef("suivi:sleep", "🌙", "Sommeil"), CardDef("suivi:measures", "🩺", "Mesures"),
+        CardDef("suivi:journal", "📖", "Journal"), CardDef("suivi:calendar", "🗓️", "Calendrier"), CardDef("suivi:checkup", "🔎", "Comprendre"), CardDef("suivi:sleep", "🌙", "Sommeil"), CardDef("suivi:measures", "🩺", "Mesures"),
         CardDef("suivi:cycle", "🩸", "Cycle"), CardDef("suivi:symptoms", "🌡️", "Symptômes"),
         CardDef("mieux:softday", "💛", "Journée douce"), CardDef("mieux:feel", "💭", "Ce que je ressens"),
         CardDef("mieux:rituals", "✨", "Rituels du matin et du soir"), CardDef("mieux:me", "🌿", "Ce qui m'accompagne"),
@@ -117,6 +117,7 @@ object HubCatalog {
             SUIVI to listOfNotNull(
                 CardDef("suivi:journal", "📖", "Journal"),
                 CardDef("suivi:calendar", "🗓️", "Calendrier"),
+                CardDef("suivi:checkup", "🔎", "Comprendre"),
                 CardDef("suivi:sleep", "🌙", "Sommeil"),
                 CardDef("suivi:measures", "🩺", "Mesures").takeIf { state.settings.measures.isNotEmpty() },
                 CardDef("suivi:cycle", "🩸", "Cycle").takeIf { menstruating },
@@ -169,6 +170,11 @@ object HubPreviews {
 
     fun sleep(state: AppState, now: LocalDateTime): String =
         state.sleep.firstOrNull { it.date == now.toLocalDate() }?.let { "Cette nuit : ${Sleep.label(it)}" } ?: "Nuit pas encore notée"
+
+    fun checkup(state: AppState, today: java.time.LocalDate): String {
+        val n = com.medipote.app.domain.Understand.visible(com.medipote.app.domain.Understand.scan(state, today), state.settings.dismissedChecks, today).size
+        return if (n == 0) "Rien d'inhabituel dans tes notes" else "$n chose${if (n > 1) "s" else ""} à regarder"
+    }
 
     fun measures(state: AppState): String = state.settings.measures.joinToString(", ") { it.label.lowercase() }.ifEmpty { "Tension, poids, pouls…" }
 
@@ -343,7 +349,7 @@ enum class Interest(val emoji: String, val label: String) {
     ;
 
     companion object {
-        private val ALWAYS = setOf("soins:treatments", "soins:agenda", "suivi:journal", "suivi:calendar", "moi:stats", "moi:year", "moi:shop", "moi:badges")
+        private val ALWAYS = setOf("soins:treatments", "soins:agenda", "suivi:journal", "suivi:calendar", "suivi:checkup", "moi:stats", "moi:year", "moi:shop", "moi:badges")
         private val COVERS = mapOf(
             TREATMENTS to setOf("soins:pill", "soins:docs", "suivi:measures"),
             CYCLE to setOf("suivi:cycle", "soins:pill"),

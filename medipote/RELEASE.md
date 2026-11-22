@@ -66,6 +66,21 @@ L'optimiseur de R8 reste désactivé (`-dontoptimize`) : APK de 3,8 Mo au lieu d
 le dex livré peut être reconverti et exécuté hors appareil pour vérification (voir plus bas),
 ce que l'optimiseur empêche. Il pourra être réactivé après des essais sur téléphone.
 
+### 1.28.0 — Comprendre
+
+- Nouvelle carte « 🔎 Comprendre » (Suivi) et page « Chez toi, ça peut venir de… » sur chaque symptôme : ce qui peut l'expliquer
+  dans ton contexte, avec les chiffres de tes notes (sommeil, cycle, eau, traitement récent, prises manquées, fièvre, tension,
+  maladie, conditions suivies, symptômes qui reviennent ensemble ou à une phase du cycle).
+- « Faut-il consulter ? » : des règles prudentes (symptôme fort plusieurs jours, presque tous les jours, depuis deux semaines, qui
+  s'aggrave ; plusieurs symptômes à la fois ; tension, pouls, température, saturation, poids ; nuits blanches ou très courtes ;
+  règles absentes ou cycles hors des repères ; moral bas ; prises souvent manquées). Trois niveaux : à évoquer au prochain
+  rendez-vous, prends rendez-vous, appelle le 15 (boutons 15 et 112). Un bandeau sur l'accueil prévient (désactivable dans
+  Paramètres › Ce qui m'accompagne › Comprendre) ; « Je l'ai vu » met de côté une semaine, jamais une urgence.
+- Conseils pour ton cycle (selon la phase et ton journal) et pour ton sommeil (selon tes nuits), sans médicament.
+- Ce n'est pas une IA générative : des règles écrites à la main, testées (dont un test qui interdit tout nom de médicament, de
+  diagnostic ou de consigne sur le traitement), exécutées sur le téléphone, sans Internet. Les seuils sont prudents et à faire
+  relire par un professionnel de santé.
+
 ### 1.27.2 — les nuits blanches, dites dans les statistiques
 
 - Une nuit blanche compte toujours pour 0 h dans la moyenne de sommeil, et n'atteint jamais l'objectif ; elle est maintenant

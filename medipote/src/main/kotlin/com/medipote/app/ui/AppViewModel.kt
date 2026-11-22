@@ -651,6 +651,12 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         careReward { com.medipote.app.domain.Care.renewed(it, doc.id, doc.validUntil, repo.now()) }
     }
 
+    /** « Je l'ai vu »: a concern is set aside for a week (an urgent one never is). */
+    fun dismissCheck(key: String) {
+        val today = repo.now().toLocalDate()
+        repo.update { s -> s.copy(settings = s.settings.copy(dismissedChecks = com.medipote.app.domain.Understand.dismiss(s.settings.dismissedChecks, key, today))) }
+    }
+
     fun addIdea(text: String, screen: String) {
         repo.update { it.copy(ideas = com.medipote.app.domain.Ideas.add(it.ideas, text, screen, repo.now())) }
     }
