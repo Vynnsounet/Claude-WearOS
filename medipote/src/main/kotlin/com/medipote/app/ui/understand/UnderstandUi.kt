@@ -98,6 +98,8 @@ fun ConcernCard(
     onPrepare: (() -> Unit)?,
     onDismiss: (String) -> Unit,
     onOpenSymptom: ((String) -> Unit)? = null,
+    /** « Je l'ai vu » : not for what the AI said, which is not kept. */
+    showDismiss: Boolean = true,
 ) {
     val tone = when (concern.urgency) {
         Urgency.URGENT -> AppTheme.status.critical
@@ -116,11 +118,11 @@ fun ConcernCard(
                 }
                 Urgency.SOON -> Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                     FilledTonalButton(onClick = onBook) { Text("📅  Prendre rendez-vous") }
-                    TextButton(onClick = { onDismiss(concern.key) }) { Text("Je l'ai vu") }
+                    if (showDismiss) TextButton(onClick = { onDismiss(concern.key) }) { Text("Je l'ai vu") }
                 }
                 Urgency.MENTION -> Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                     if (onPrepare != null) FilledTonalButton(onClick = onPrepare) { Text("📝  Préparer mon rendez-vous") }
-                    TextButton(onClick = { onDismiss(concern.key) }) { Text("Je l'ai vu") }
+                    if (showDismiss) TextButton(onClick = { onDismiss(concern.key) }) { Text("Je l'ai vu") }
                 }
             }
             val symptom = concern.symptom

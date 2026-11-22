@@ -349,7 +349,7 @@ private fun AnswerCards(answer: AiAnswer, onCall: (String) -> Unit, onBook: () -
     }
     val level = answer.level
     if (level != null) {
-        ConcernCard(Concern("ai", level, "Avis de l'IA", listOf(answer.reason.ifBlank { level.label })), onCall, onBook, onPrepare, onDismiss = {})
+        ConcernCard(Concern("ai", level, "Avis de l'IA", listOf(answer.reason.ifBlank { level.label })), onCall, onBook, onPrepare, onDismiss = {}, showDismiss = false)
     } else if (answer.summary.isNotBlank() || answer.explanations.isNotEmpty()) {
         Text("Selon l'IA, rien d'inquiétant dans ces notes. Si tu t'inquiètes quand même, parles-en à ton médecin.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
