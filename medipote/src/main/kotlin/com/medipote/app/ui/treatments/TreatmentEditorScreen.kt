@@ -97,15 +97,19 @@ fun TreatmentEditorScreen(
     existing: Treatment?,
     drug: Drug?,
     customName: String,
+    /** The dosage read on a scanned box. */
+    presetStrength: String = "",
     asNeededDefault: Boolean = false,
     allergies: List<String>,
     today: LocalDate,
+    /** The person's other treatments, to tell when two are taken too close to each other. */
+    others: List<Treatment> = emptyList(),
     onSave: (Treatment) -> Unit,
     onDelete: () -> Unit,
     onBack: () -> Unit,
 ) {
     var name by remember { mutableStateOf(existing?.name ?: drug?.dci ?: customName) }
-    var strength by remember { mutableStateOf(existing?.strength ?: drug?.strengths?.firstOrNull().orEmpty()) }
+    var strength by remember { mutableStateOf(existing?.strength ?: presetStrength.ifBlank { drug?.strengths?.firstOrNull().orEmpty() }) }
     var unit by remember { mutableStateOf(existing?.unit ?: drug?.unit ?: DoseUnit.TABLET) }
     val doses = remember { mutableStateListOf<DoseTime>().apply { addAll(existing?.doses ?: listOf(DoseTime(8 * 60))) } }
     var days by remember { mutableStateOf(existing?.daysOfWeek ?: Treatment.ALL_DAYS) }
@@ -233,6 +237,11 @@ fun TreatmentEditorScreen(
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             if (drug != null) DrugInfoCard(drug, showInfo) { showInfo = !showInfo }
+            val precautionDrug = existing?.drugId ?: drug?.id
+            PrecautionsCard(
+                com.medipote.app.domain.Precautions.notes(precautionDrug) +
+                    com.medipote.app.domain.Precautions.spacing(precautionDrug, if (asNeeded) emptyList() else doses.map { it.minuteOfDay }, others.filter { it.id != existing?.id }),
+            )
 
             if (allergyHits.isNotEmpty()) {
                 Card(colors = CardDefaults.cardColors(containerColor = AppTheme.status.criticalContainer)) {

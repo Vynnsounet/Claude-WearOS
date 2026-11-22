@@ -444,6 +444,22 @@ et « Jour par jour » a rejoint le journal. Une carte ouverte montre où l'on e
 
 ![](docs/labs.png) ![](docs/lab_detail.png) ![](docs/travel.png) ![](docs/emergency.png)
 
+## Où ça fait mal, précautions, scan de boîte
+
+- **Où ça fait mal ?** (Symptômes) : une fois la force d'un symptôme notée, « 📍 Où ça se passe ? » ouvre un schéma du corps, de face
+  et de dos, à toucher (droite et gauche sont les tiennes). Les mêmes zones sont aussi en boutons, pour les lecteurs d'écran. Le mois
+  s'affiche sous le symptôme et le rapport pour le médecin dit « où ».
+- **À savoir pour bien la prendre** (fiche d'un traitement) : les habitudes courantes (à jeun, repas, pamplemousse, soleil…) et l'écart
+  à laisser avec d'autres traitements (lévothyroxine ↔ calcium/fer, alendronate, doxycycline…). Si deux prises sont trop proches, une
+  carte rouge le dit en haut de la liste des traitements. Repères généraux tirés des notices : **à faire relire par un pharmacien**.
+- **Scanner la boîte** (Ajouter un traitement) : le code carré ou les barres d'une boîte française donnent le nom et le dosage, qui
+  remplissent la fiche. La liste (≈ 19 500 boîtes) est embarquée dans l'appli, issue de la *Base de données publique des médicaments*
+  (ANSM / HAS / Assurance maladie, Licence Ouverte 2.0), régénérée avec `tools/build_cip_directory.py`. La lecture utilise le scanner
+  de Google (services Google Play) : l'appli ne demande **ni la caméra ni Internet**, et rien n'est envoyé. À la première utilisation,
+  Google peut télécharger lui-même le module du scanner.
+
+![](docs/body_map.png) ![](docs/editor_precautions.png)
+
 ## Comprendre (explications, conseils, quand consulter)
 
 La carte **« 🔎 Comprendre »** (Suivi) et la page de chaque symptôme répondent à quatre questions, à partir de **tes propres notes** :

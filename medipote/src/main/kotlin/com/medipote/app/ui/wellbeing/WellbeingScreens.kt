@@ -101,6 +101,8 @@ fun SymptomsScreen(
     onSoftDay: () -> Unit,
     embedded: Boolean = true,
     onBack: () -> Unit = {},
+    /** Where it hurts: the places chosen on the body for a symptom today. */
+    onZones: (String, List<String>) -> Unit = { _, _ -> },
 ) {
     val today = now.toLocalDate()
     val tracked = Wellbeing.tracked(state)
@@ -144,6 +146,7 @@ fun SymptomsScreen(
                         }
                     }
                     SymptomPicker(id, value) { onSet(id, it) }
+                    if (value != null) WhereItHurts(id, state.symptomLog.firstOrNull { it.date == today && it.symptom == id }?.zones.orEmpty(), com.medipote.app.domain.BodyZones.counts(state, id, today, 30)) { onZones(id, it) }
                     if (id in mentioned) {
                         Text("📖  Noté dans ton journal : choisis la force.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
                     }
@@ -188,6 +191,30 @@ fun SymptomsScreen(
         }
 
         Disclaimer("Ces infos sont là pour t'accompagner : elles ne remplacent pas ton médecin. Tout reste sur ton téléphone.")
+    }
+}
+
+/** « 📍 Où ? » under a symptom once it is noted: the body opens right there, no other page. */
+@Composable
+private fun WhereItHurts(symptom: String, zones: List<String>, month: List<Pair<com.medipote.app.domain.BodyZone, Int>>, onZones: (List<String>) -> Unit) {
+    var open by androidx.compose.runtime.remember(symptom) { androidx.compose.runtime.mutableStateOf(false) }
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        TextButton(onClick = { open = !open }) {
+            Text(
+                if (zones.isEmpty()) "📍  Où ça se passe ?" else "📍  ${com.medipote.app.domain.BodyZones.labels(zones)}",
+                modifier = Modifier.semantics { contentDescription = "Où ça se passe pour ${Wellbeing.name(symptom)}" },
+            )
+        }
+        if (open) {
+            BodyMap(zones, onZones)
+            Text("Touche les endroits concernés, une deuxième fois pour les enlever. Droite et gauche sont les tiennes.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+        if (month.isNotEmpty()) {
+            Text(
+                "Ce mois-ci : " + month.take(3).joinToString(", ") { (z, n) -> "${z.label.lowercase()} ($n j)" },
+                style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
     }
 }
 

@@ -28,8 +28,8 @@ android {
         applicationId = "com.medipote.app"
         minSdk = 26
         targetSdk = 36
-        versionCode = 51
-        versionName = "1.30.0"
+        versionCode = 52
+        versionName = "1.31.0"
         manifestPlaceholders["appLabel"] = "@string/app_name"
     }
 
@@ -101,6 +101,7 @@ dependencies {
     // The watch companion: shared protocol, and Google's phone-watch link (no Internet permission needed).
     implementation(project(":medipote-sync"))
     implementation(libs.play.services.wearable)
+    implementation(libs.play.services.code.scanner)
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.lifecycle.viewmodel.compose)

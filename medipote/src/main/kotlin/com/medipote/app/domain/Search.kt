@@ -46,7 +46,7 @@ object AppSearch {
         SearchEntry("suivi:sleep", "🌙", "Sommeil", "Suivi", listOf("dormir", "nuit", "nuits", "sieste", "siestes", "réveil", "réveils", "coucher", "insomnie"), card("suivi", "suivi:sleep")),
         SearchEntry("suivi:measures", "🩺", "Mesures", "Suivi", listOf("tension", "poids", "pouls", "glycémie", "température", "saturation", "oxygène", "fréquence cardiaque"), card("suivi", "suivi:measures")),
         SearchEntry("suivi:cycle", "🩸", "Cycle", "Suivi", listOf("règles", "menstruations", "ovulation", "protection", "tampon", "serviette", "cycle menstruel", "période"), card("suivi", "suivi:cycle")),
-        SearchEntry("suivi:symptoms", "🌡️", "Symptômes", "Suivi", listOf("symptôme", "douleur", "fatigue", "mal", "ressenti", "intensité", "noter un symptôme"), card("suivi", "suivi:symptoms")),
+        SearchEntry("suivi:symptoms", "🌡️", "Symptômes", "Suivi", listOf("symptôme", "douleur", "fatigue", "mal", "ressenti", "intensité", "noter un symptôme", "où ça fait mal", "schéma du corps", "zone", "dos", "tête", "ventre", "localiser"), card("suivi", "suivi:symptoms")),
         // ── Mieux-être ──
         SearchEntry("mieux:softday", "💛", "Journée douce", "Mieux-être", listOf("mission", "missions", "énergie", "petite victoire", "journée lourde", "tâche"), card("mieux", "mieux:softday")),
         SearchEntry("mieux:feel", "💭", "Ce que je ressens", "Mieux-être", listOf("anxiété", "angoisse", "panique", "tristesse", "moral bas", "déprime", "dépression", "poitrine serrée", "fatigue extrême", "envie de rien"), go("support_feel")),
@@ -93,6 +93,7 @@ object AppSearch {
         SearchEntry("phone_change", "📱", "Changer de téléphone", "Paramètres › Sauvegarde", listOf("nouveau téléphone", "transférer", "migrer", "récupérer mes données", "restaurer", "tester ma sauvegarde"), go("backup")),
         SearchEntry("travel", "✈️", "Voyage et décalage horaire", "Paramètres › Rappels", listOf("voyage", "fuseau", "décalage", "jet lag", "vacances", "étranger", "heure locale", "changer d'heure"), go("travel")),
         SearchEntry("emergency", "🚑", "Fiche d'urgence", "Profil médical", listOf("urgence", "secours", "allergies", "groupe sanguin", "samu", "pompiers", "infos d'urgence", "personnes à prévenir"), go("emergency")),
+        SearchEntry("scan", "📷", "Scanner une boîte de médicament", "Soins › Traitements", listOf("scanner", "code", "boîte", "code-barres", "datamatrix", "ajouter un médicament", "dosage"), go("search")),
         SearchEntry("pharmacy", "🛒", "Liste pour la pharmacie", "Soins › Traitements", listOf("pharmacie", "racheter", "courses", "stock", "renouveler", "ordonnance"), go("pharmacy")),
         SearchEntry("checkups", "🗓️", "Suivi régulier", "Soins › Agenda", listOf("dentiste", "contrôle", "rappel annuel", "prise de sang annuelle", "gynécologue", "ophtalmo", "dermato", "tous les ans"), card("treatments", "soins:agenda")),
         SearchEntry("after_appointment", "📝", "Après le rendez-vous", "Soins › Agenda", listOf("compte rendu", "ce que le médecin a dit", "après la consultation", "notes de consultation"), card("treatments", "soins:agenda")),

@@ -29,6 +29,8 @@ data class SymptomNote(
     val symptom: String,
     val intensity: Int,
     val note: String = "",
+    /** Where it was felt, ids of [com.medipote.app.domain.BodyZone] ("lower_back"). */
+    val zones: List<String> = emptyList(),
 )
 
 /** The energy the user said they had on a day: 1 (very little) to 3 (almost usual). */

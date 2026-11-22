@@ -150,6 +150,7 @@ fun TreatmentsScreen(
                     }
                 }
             }
+            if (!onboarding) item { SpacingWarnings(current, onEdit) }
             val (prn, scheduled) = current.partition { it.asNeeded }
             items(scheduled, key = { it.id }) { TreatmentCard(it, today, onClick = { onEdit(it) }, onRefill = { onRefill(it) }) }
             if (prn.isNotEmpty()) {
@@ -382,7 +383,16 @@ private fun StockLine(t: Treatment, stock: Double, onRefill: () -> Unit) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun DrugSearchScreen(onBack: () -> Unit, onPick: (Drug) -> Unit, onCustom: (String) -> Unit, autoFocus: Boolean = true) {
+fun DrugSearchScreen(
+    onBack: () -> Unit,
+    onPick: (Drug) -> Unit,
+    onCustom: (String) -> Unit,
+    autoFocus: Boolean = true,
+    /** Reads the code of a box; offered only where a scanner exists. */
+    onScan: (() -> Unit)? = null,
+    /** What the last scan said, when it did not lead to a medication. */
+    scanMessage: String? = null,
+) {
     var query by rememberSaveable { mutableStateOf("") }
     val results = remember(query) { DrugGuide.search(query) }
     val focus = remember { FocusRequester() }
@@ -416,6 +426,17 @@ fun DrugSearchScreen(onBack: () -> Unit, onPick: (Drug) -> Unit, onCustom: (Stri
                 modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp),
             )
             LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 24.dp)) {
+                onScan?.let { scan ->
+                    item {
+                        ListItem(
+                            headlineContent = { Text("📷  Scanner la boîte", fontWeight = FontWeight.SemiBold) },
+                            supportingContent = { Text(scanMessage ?: "Le code de la boîte donne le nom et le dosage.") },
+                            colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.background),
+                            modifier = Modifier.clickable(onClick = scan),
+                        )
+                        HorizontalDivider(Modifier.padding(horizontal = 16.dp))
+                    }
+                }
                 item {
                     ListItem(
                         headlineContent = { Text("Médicament introuvable ?", fontWeight = FontWeight.SemiBold) },

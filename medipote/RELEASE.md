@@ -66,6 +66,14 @@ L'optimiseur de R8 reste désactivé (`-dontoptimize`) : APK de 3,8 Mo au lieu d
 le dex livré peut être reconverti et exécuté hors appareil pour vérification (voir plus bas),
 ce que l'optimiseur empêche. Il pourra être réactivé après des essais sur téléphone.
 
+### 1.31.0 — où ça fait mal, précautions, scan de boîte
+
+- Schéma du corps (face / dos) sous chaque symptôme noté, zones dans les statistiques du mois et le rapport médecin.
+- Précautions par médicament et écarts entre traitements (`Precautions`), alerte en tête de la liste.
+- Scan de boîte : `play-services-code-scanner` 16.1.0 (scanner exécuté par Google Play services, sans permission d'appli) +
+  `assets/cip.tsv.gz` (CIP13 → nom, BDPM, Licence Ouverte 2.0) à régénérer avec `python3 medipote/tools/build_cip_directory.py`.
+  Vérifier après build que l'APK ne déclare toujours **pas** `INTERNET` (voir ci-dessous) ; non testé sur un vrai téléphone.
+
 ### 1.28.0 — Comprendre
 
 - Nouvelle carte « 🔎 Comprendre » (Suivi) et page « Chez toi, ça peut venir de… » sur chaque symptôme : ce qui peut l'expliquer

@@ -373,6 +373,11 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         if (intensity != null && date == repo.now().toLocalDate()) careReward { com.medipote.app.domain.Care.symptomNoted(it, repo.now()) }
     }
 
+    fun setSymptomZones(symptom: String, zones: List<String>) {
+        val today = repo.now().toLocalDate()
+        repo.update { com.medipote.app.domain.Wellbeing.setZones(it, today, symptom, zones) }
+    }
+
     fun setSymptomNote(symptom: String, note: String) {
         val today = repo.now().toLocalDate()
         repo.update { com.medipote.app.domain.Wellbeing.setNote(it, today, symptom, note) }

@@ -119,6 +119,8 @@ import com.medipote.app.ui.treatments.TreatmentsScreen
 import java.io.File
 import java.time.LocalDate
 import java.util.UUID
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 private data class Tab(val route: String, val label: String, val icon: ImageVector, val selectedIcon: ImageVector)
 
@@ -548,6 +550,7 @@ fun MediPoteApp(vm: AppViewModel) {
                                 onAdvice = { nav.navigate("symptom/${Uri.encode(it)}") },
                                 onManage = { nav.navigate("wellbeing_me") },
                                 onSoftDay = { nav.navigate("softday") },
+                                onZones = vm::setSymptomZones,
                             )
                             else -> {
                                 // During the period, protection and medication come first; the rest of the month, after the cycle.
@@ -660,6 +663,7 @@ fun MediPoteApp(vm: AppViewModel) {
                         onSoftDay = { nav.navigate("softday") },
                         embedded = false,
                         onBack = { nav.popBackStack() },
+                        onZones = vm::setSymptomZones,
                     )
                 }
                 composable("symptom/{id}") { entry ->
@@ -727,18 +731,44 @@ fun MediPoteApp(vm: AppViewModel) {
 
                 // ── Treatments flow ──
                 composable("search") {
+                    val context = androidx.compose.ui.platform.LocalContext.current
+                    val scope = androidx.compose.runtime.rememberCoroutineScope()
+                    var scanMessage by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf<String?>(null) }
+                    fun open(box: com.medipote.app.domain.MedicineBox) {
+                        val strength = Uri.encode(box.strength)
+                        val target = box.drug?.let { "editor?drug=${it.id}&strength=$strength" }
+                            ?: "editor?custom=${Uri.encode(com.medipote.app.domain.Medicines.displayName(box.denomination))}&strength=$strength"
+                        nav.navigate(target) { popUpTo("search") { inclusive = true } }
+                    }
                     DrugSearchScreen(
                         onBack = { nav.popBackStack() },
                         onPick = { nav.navigate("editor?drug=${it.id}") { popUpTo("search") { inclusive = true } } },
                         onCustom = { nav.navigate("editor?custom=${Uri.encode(it)}") { popUpTo("search") { inclusive = true } } },
+                        onScan = {
+                            scanMessage = null
+                            com.medipote.app.ui.treatments.BoxScanner.scan(
+                                context,
+                                onCode = { raw ->
+                                    scope.launch {
+                                        val directory = withContext(kotlinx.coroutines.Dispatchers.IO) { com.medipote.app.domain.MedicineDirectoryStore.get(context) }
+                                        val box = directory.identify(raw)
+                                        if (box != null) open(box)
+                                        else scanMessage = if (com.medipote.app.domain.CipCode.parse(raw) == null) "Ce code n'est pas celui d'une boîte de médicament. Essaie le code carré ou les barres." else "Cette boîte n'est pas dans la liste du téléphone : cherche-la par son nom."
+                                    }
+                                },
+                                onFail = { scanMessage = "Le scanner n'a pas pu s'ouvrir. Cherche le médicament par son nom." },
+                            )
+                        },
+                        scanMessage = scanMessage,
                     )
                 }
                 composable(
-                    "editor?drug={drug}&custom={custom}&treatment={treatment}",
+                    "editor?drug={drug}&custom={custom}&treatment={treatment}&strength={strength}",
                     arguments = listOf(
                         navArgument("drug") { type = NavType.StringType; nullable = true },
                         navArgument("custom") { type = NavType.StringType; nullable = true },
                         navArgument("treatment") { type = NavType.StringType; nullable = true },
+                        navArgument("strength") { type = NavType.StringType; nullable = true },
                     ),
                 ) { entry ->
                     val args = entry.arguments
@@ -748,8 +778,10 @@ fun MediPoteApp(vm: AppViewModel) {
                         existing = existing,
                         drug = drug,
                         customName = args?.getString("custom").orEmpty(),
+                        presetStrength = args?.getString("strength").orEmpty(),
                         allergies = state.profile?.allergies.orEmpty(),
                         today = today,
+                        others = state.treatments,
                         onSave = {
                             vm.saveTreatment(it)
                             nav.popBackStack()

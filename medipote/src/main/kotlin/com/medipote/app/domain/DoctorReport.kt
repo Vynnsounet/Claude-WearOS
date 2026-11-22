@@ -330,6 +330,10 @@ object DoctorReports {
             listOf("Symptôme", "Jours notés", "Force moyenne", "Jours forts (4-5)", "Évolution"), rows,
             listOf(0.24f, 0.14f, 0.16f, 0.18f, 0.28f),
         )
+        ids.forEach { id ->
+            val where = BodyZones.counts(state, id, today, days)
+            if (where.isNotEmpty()) blocks += ReportBlock.Paragraph("• ${Wellbeing.name(id)} — où : " + where.joinToString(", ") { (z, n) -> "${z.label.lowercase()} ($n j)" })
+        }
         Wellbeing.insights(state, today).forEach { blocks += ReportBlock.Paragraph("• $it") }
         blocks += ReportBlock.Paragraph(
             "Force notée par la personne de 1 (un peu) à 5 (très fort). Ce sont des observations, pas un diagnostic.",

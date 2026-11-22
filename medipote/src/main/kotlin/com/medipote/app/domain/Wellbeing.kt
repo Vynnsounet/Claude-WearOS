@@ -91,8 +91,15 @@ object Wellbeing {
         val old = state.symptomLog.firstOrNull { it.date == date && it.symptom == symptom }
         val rest = state.symptomLog.filterNot { it.date == date && it.symptom == symptom }
         val value = intensity?.coerceIn(1, 5)
-        val log = if (value == null) rest else (rest + SymptomNote(date, symptom, value, note ?: old?.note.orEmpty()))
+        val log = if (value == null) rest else (rest + SymptomNote(date, symptom, value, note ?: old?.note.orEmpty(), old?.zones.orEmpty()))
         return state.copy(symptomLog = log.sortedByDescending { it.date }.take(LOG_LIMIT))
+    }
+
+    /** Where [symptom] was felt on [date]; only once an intensity is noted for it. */
+    fun setZones(state: AppState, date: LocalDate, symptom: String, zones: List<String>): AppState {
+        val old = state.symptomLog.firstOrNull { it.date == date && it.symptom == symptom } ?: return state
+        val valid = zones.filter { BodyZones.byId(it) != null }.distinct()
+        return state.copy(symptomLog = state.symptomLog.map { if (it === old) it.copy(zones = valid) else it })
     }
 
     fun setNote(state: AppState, date: LocalDate, symptom: String, note: String): AppState {
