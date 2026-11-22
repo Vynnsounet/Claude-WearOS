@@ -187,7 +187,7 @@ fun SymptomsScreen(
             }
         }
 
-        Disclaimer("Ces infos sont là pour t'accompagner : elles ne remplacent pas ton médecin. Tout reste sur ton téléphone.")
+        Disclaimer("Ces infos sont là pour t'accompagner : elles ne remplacent pas ton médecin. Tout reste sur ton téléphone, sauf si tu demandes de l'aide à l'IA facultative.")
     }
 }
 
@@ -251,10 +251,12 @@ fun SymptomAdviceScreen(
     onBook: () -> Unit = {},
     onPrepare: (() -> Unit)? = null,
     onDismiss: (String) -> Unit = {},
+    onAskAi: (() -> Unit)? = null,
 ) {
     val info = WellbeingLibrary.symptom(symptom)
     WbPage("${Wellbeing.emoji(symptom)}  ${Wellbeing.name(symptom)}", embedded = false, onBack = onBack) {
         concerns.forEach { c -> com.medipote.app.ui.understand.ConcernCard(c, onCall, onBook, onPrepare, onDismiss) }
+        onAskAi?.let { com.medipote.app.ui.ai.AskAiButton(it) }
         if (factors != null) {
             Text("Chez toi, ça peut venir de…", style = MaterialTheme.typography.titleMedium)
             com.medipote.app.ui.understand.FactorsCard(factors)

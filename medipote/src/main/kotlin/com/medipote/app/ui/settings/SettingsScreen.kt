@@ -94,6 +94,7 @@ fun SettingsScreen(
     onOpenWellbeing: () -> Unit = {},
     onOpenTour: () -> Unit = {},
     onOpenIdeas: () -> Unit = {},
+    onOpenAi: () -> Unit = {},
     onOpenCards: () -> Unit = {},
     /** When the Wear OS app last got in touch (0 = never), and whether it rings the reminders itself. */
     watchLastSeen: Long = 0L,
@@ -417,6 +418,9 @@ fun SettingsScreen(
 
             SectionTitle("Comprendre")
             SettingsCard {
+                androidx.compose.material3.FilledTonalButton(onClick = onOpenAi, modifier = Modifier.fillMaxWidth()) {
+                    Text(if (settings.ai.enabled) "🤖  L'IA est activée : réglages" else "🤖  Intelligence artificielle (facultatif)")
+                }
                 SwitchRow(
                     "Me le dire sur l'accueil", settings.checkups,
                     supporting = "Quand mes notes montrent quelque chose qui mérite peut-être un avis médical (jamais un diagnostic). Calculé sur le téléphone, avec des règles écrites à la main.",
@@ -538,7 +542,8 @@ fun SettingsScreen(
             SettingsCard {
                 Text(
                     "MédiPote est un aide-mémoire. Il ne remplace pas l'avis d'un professionnel de santé. " +
-                        "Tes données restent sur ton téléphone et ne sont pas sauvegardées dans le cloud.",
+                        "Tes données restent sur ton téléphone et ne sont pas sauvegardées dans le cloud. " +
+                        "Seule exception, si tu l'actives : l'IA, facultative, envoie à Anthropic ce que tu l'autorises à lire quand tu la sollicites.",
                     style = MaterialTheme.typography.bodyMedium,
                 )
             }

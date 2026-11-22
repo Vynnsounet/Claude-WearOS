@@ -12,8 +12,8 @@ import java.time.LocalDateTime
 
 /**
  * Keeps the last crash on the device so the user can share it: without it, a crash on a phone we
- * don't have is impossible to diagnose. Nothing is ever sent automatically (the app has no Internet
- * permission); the report only leaves the phone if the user shares it.
+ * don't have is impossible to diagnose. Nothing is ever sent automatically (the Internet permission is
+ * only for the optional AI assistant); the report only leaves the phone if the user shares it.
  */
 object CrashReporter {
     private const val FILE = "last-crash.txt"

@@ -364,6 +364,8 @@ data class Settings(
     val cardsByUse: Boolean = true,
     /** Reminders put on pause for a while. */
     val pause: ReminderPause = ReminderPause(),
+    /** The optional AI assistant (a Claude model, reached with the person's own key). Off until the person turns it on. */
+    val ai: AiSettings = AiSettings(),
     /** The home screen says when the notes show something worth a professional's opinion. */
     val checkups: Boolean = true,
     /** Concerns set aside (key → ISO day): shown again after a week. */
@@ -377,6 +379,27 @@ data class Settings(
     val notificationsEnabled: Boolean = true,
     /** Send a second notification when a dose is still not given 30 minutes after its time. */
     val followUpReminder: Boolean = true,
+)
+
+/** What the person lets the AI assistant read. Never the name, the contacts or the free text of the notes. */
+@Serializable
+enum class AiShare(val label: String, val detail: String) {
+    PROFILE("Mon âge et mon sexe", "Sans mon nom ni ma date de naissance"),
+    CONDITIONS("Ce que je vis", "Les conditions choisies dans « Ce qui m'accompagne »"),
+    SYMPTOMS("Mes symptômes et mon humeur", "Leur intensité sur les 14 derniers jours, sans le texte de mes notes"),
+    SLEEP("Mon sommeil", "Durée, réveils et nuits blanches des 7 dernières nuits"),
+    CYCLE("Mon cycle", "Jour du cycle, phase, durée des derniers cycles"),
+    MEASURES("Mes mesures", "Tension, poids, température… récents"),
+    TREATMENTS("Mes traitements", "Les noms, les horaires et les prises manquées"),
+}
+
+/** The AI assistant: only used once the person has turned it on, read the page about what is sent, and given a key. */
+@Serializable
+data class AiSettings(
+    val enabled: Boolean = false,
+    /** When the person accepted what is sent and to whom (ISO date-time); null = never. */
+    val consentAt: String? = null,
+    val shares: Set<AiShare> = AiShare.entries.toSet(),
 )
 
 /** A thought about the app, with the screen the person was on. */

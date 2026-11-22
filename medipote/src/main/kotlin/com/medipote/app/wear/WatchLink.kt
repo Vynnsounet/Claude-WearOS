@@ -29,7 +29,7 @@ import java.util.concurrent.TimeUnit
 
 /**
  * The link with the Wear OS companion, through Google's phone-watch data layer (Bluetooth;
- * the app still has no Internet permission). Everything here is best effort: without a watch,
+ * the Internet permission is only for the optional AI assistant). Everything here is best effort: without a watch,
  * or without Google Play services, the calls simply fail and the app carries on.
  */
 object WatchLink {

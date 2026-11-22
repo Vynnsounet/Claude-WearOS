@@ -238,6 +238,7 @@ fun SleepScreen(
     onOpenNap: (com.medipote.app.data.Nap) -> Unit = {},
     onNightHelp: () -> Unit = {},
     onBlankNight: () -> Unit = {},
+    onAskAi: (() -> Unit)? = null,
 ) {
     val today = now.toLocalDate()
     var period by rememberSaveable { mutableStateOf(SleepPeriod.WEEK) }
@@ -327,7 +328,7 @@ fun SleepScreen(
             SleepTiles(report, more = false)
             NapsCard(report)
             InsightsCard(report.insights)
-            com.medipote.app.ui.understand.AdviceCard("🌙  Pour mieux dormir, d'après tes nuits", remember(state.sleep, state.settings.sleep, today) { com.medipote.app.domain.Understand.sleepAdvice(state, today) })
+            com.medipote.app.ui.understand.AdviceCard("🌙  Pour mieux dormir, d'après tes nuits", remember(state.sleep, state.settings.sleep, today) { com.medipote.app.domain.Understand.sleepAdvice(state, today) }, onAskAi = onAskAi)
             DurationChart(report, today)
             com.medipote.app.ui.components.MoreOptions(
                 "Horaires, efficacité, réveils, causes",

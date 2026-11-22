@@ -263,6 +263,13 @@ fun MediPoteApp(vm: AppViewModel) {
         val startDestination = remember { if (state.onboarded) "home" else "welcome" }
         val openSettings = { nav.navigate("settings") }
         val openSearch = { nav.navigate("find") }
+        // The optional AI assistant: its buttons are always there; without the key they lead to its setup page.
+        val keyPresent by vm.keyPresent.collectAsStateWithLifecycle()
+        LaunchedEffect(Unit) { vm.refreshKeyPresence() }
+        val aiReady = state.settings.ai.enabled && keyPresent
+        val askAi: (com.medipote.app.ai.AiTopic) -> Unit = { topic ->
+            nav.navigate(if (aiReady) "ai?topic=${Uri.encode(topic.key)}" else "ai_setup")
+        }
         val hiddenCards = HubCatalog.hidden(state.settings)
         val nextAppointment = state.appointments.filter { !it.dateTime.isBefore(now) }.minByOrNull { it.dateTime }
         val hubTools = HubTools(
@@ -507,6 +514,7 @@ fun MediPoteApp(vm: AppViewModel) {
                                 onPrepare = nextAppointment?.let { a -> { nav.navigate("appointment_prep/${a.id}") } },
                                 onDismiss = vm::dismissCheck,
                                 onOpenSymptom = { nav.navigate("symptom/${Uri.encode(it)}") },
+                                onAskAi = { askAi(com.medipote.app.ai.AiTopic.Checkup) },
                                 onBack = {}, embedded = true,
                             )
                             "suivi:measures" -> com.medipote.app.ui.measures.MeasuresScreen(
@@ -526,6 +534,7 @@ fun MediPoteApp(vm: AppViewModel) {
                                 onOpenNap = { nav.navigate("nap_log?id=${it.id}") },
                                 onNightHelp = { nav.navigate("sleep_help") },
                                 onBlankNight = vm::saveBlankNight,
+                                onAskAi = { askAi(com.medipote.app.ai.AiTopic.Sleep) },
                             )
                             "suivi:symptoms" -> com.medipote.app.ui.wellbeing.SymptomsScreen(
                                 state, now,
@@ -560,7 +569,7 @@ fun MediPoteApp(vm: AppViewModel) {
                                     header = { if (inPeriod) periodCards() },
                                     footer = {
                                         if (!inPeriod) periodCards()
-                                        com.medipote.app.ui.understand.AdviceCard("🌸  Pour ton cycle, en ce moment", com.medipote.app.domain.Understand.cycleAdvice(state, today))
+                                        com.medipote.app.ui.understand.AdviceCard("🌸  Pour ton cycle, en ce moment", com.medipote.app.domain.Understand.cycleAdvice(state, today), onAskAi = { askAi(com.medipote.app.ai.AiTopic.Cycle) })
                                     },
                                 )
                             }
@@ -662,6 +671,7 @@ fun MediPoteApp(vm: AppViewModel) {
                         onBook = { nav.navigate("appointment?date=$today") },
                         onPrepare = nextAppointment?.let { a -> { nav.navigate("appointment_prep/${a.id}") } },
                         onDismiss = vm::dismissCheck,
+                        onAskAi = { askAi(com.medipote.app.ai.AiTopic.Symptom(entry.arguments?.getString("id").orEmpty())) },
                         tried = entry.arguments?.getString("id").orEmpty() in com.medipote.app.domain.Wellbeing.triedToday(state, today, "advice"),
                         onTried = {
                             val id = entry.arguments?.getString("id").orEmpty()
@@ -868,7 +878,40 @@ fun MediPoteApp(vm: AppViewModel) {
                         onPrepare = nextAppointment?.let { a -> { nav.navigate("appointment_prep/${a.id}") } },
                         onDismiss = vm::dismissCheck,
                         onOpenSymptom = { nav.navigate("symptom/${Uri.encode(it)}") },
+                        onAskAi = { askAi(com.medipote.app.ai.AiTopic.Checkup) },
                         onBack = { nav.popBackStack() },
+                    )
+                }
+                composable("ai_setup") {
+                    com.medipote.app.ui.ai.AiSetupScreen(
+                        ai = state.settings.ai, hasKey = keyPresent,
+                        preview = com.medipote.app.ai.AiContext.build(state, com.medipote.app.ai.AiTopic.Checkup, state.settings.ai.shares, today),
+                        onShares = vm::aiSetShares,
+                        onActivate = { key, done -> vm.aiActivate(key, done) },
+                        onDisable = { vm.aiDisable(); nav.popBackStack() },
+                        onOpenConsole = { context.startActivity(Intent(Intent.ACTION_VIEW, "https://console.anthropic.com/settings/keys".toUri())) },
+                        onBack = { nav.popBackStack() },
+                    )
+                }
+                composable(
+                    "ai?topic={topic}",
+                    arguments = listOf(navArgument("topic") { type = NavType.StringType; nullable = true; defaultValue = null }),
+                ) { aiEntry ->
+                    val topic = com.medipote.app.ai.AiTopic.parse(aiEntry.arguments?.getString("topic"))
+                    val session by vm.ai.ui.collectAsStateWithLifecycle()
+                    LaunchedEffect(topic) { vm.ai.open(topic) }
+                    val leave = { vm.ai.close(); nav.popBackStack(); Unit }
+                    androidx.activity.compose.BackHandler(onBack = leave)
+                    com.medipote.app.ui.ai.AiAssistantScreen(
+                        title = com.medipote.app.ai.AiContext.title(topic), session = session,
+                        rules = com.medipote.app.domain.Understand.visible(com.medipote.app.ai.AiContext.concerns(state, topic, today), state.settings.dismissedChecks, today),
+                        onAsk = vm.ai::ask, onRetry = vm.ai::retry,
+                        onCall = { com.medipote.app.ui.support.dial(context, it) },
+                        onBook = { nav.navigate("appointment?date=$today") },
+                        onPrepare = nextAppointment?.let { a -> { nav.navigate("appointment_prep/${a.id}") } },
+                        onDismiss = vm::dismissCheck,
+                        onOpenSettings = { nav.navigate("ai_setup") },
+                        onBack = leave,
                     )
                 }
                 composable("find") {
@@ -1257,6 +1300,7 @@ fun MediPoteApp(vm: AppViewModel) {
                         onOpenWellbeing = { nav.navigate("wellbeing_me") },
                         onOpenTour = { nav.navigate("tour?first=false") },
                         onOpenIdeas = { nav.navigate("ideas?from=settings") },
+                        onOpenAi = { nav.navigate("ai_setup") },
                         onOpenCards = { nav.navigate("cards_layout") },
                         watchLastSeen = com.medipote.app.wear.WatchLink.lastSeen(context),
                         watchRings = com.medipote.app.wear.WatchLink.watchHandlesReminders(context),

@@ -49,6 +49,59 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     private val repo = app.repository
     val state: StateFlow<AppState> = repo.state
 
+    // ── The optional AI assistant ──
+    private val keyVault: com.medipote.app.ai.KeyVault by lazy { com.medipote.app.ai.AndroidKeyVault(app) }
+
+    /** The conversation with the assistant; nothing is created until the person opens it. */
+    val ai: com.medipote.app.ai.AiAssistant by lazy {
+        com.medipote.app.ai.AiAssistant(com.medipote.app.ai.AnthropicAiClient(), keyVault, { state.value }, { repo.now().toLocalDate() }, viewModelScope)
+    }
+
+    private val _keyPresent = MutableStateFlow(false)
+    /** Whether an API key is kept on this phone (the key itself never leaves the vault). */
+    val keyPresent: StateFlow<Boolean> = _keyPresent.asStateFlow()
+
+    /** Reads the vault off the main thread, the first time the settings or an AI button need to know. */
+    fun refreshKeyPresence() {
+        viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) { _keyPresent.value = runCatching { !keyVault.load().isNullOrBlank() }.getOrDefault(false) }
+    }
+
+    /**
+     * Turns the assistant on: the key is tried first (a tiny request), then kept encrypted, and the consent is dated.
+     * [onResult] gets null when it worked, or what went wrong.
+     */
+    fun aiActivate(key: String?, onResult: (com.medipote.app.ai.AiFailureKind?) -> Unit) {
+        viewModelScope.launch {
+            val candidate = key?.trim()?.takeIf { it.isNotEmpty() } ?: withKey { it }
+            if (candidate == null) { onResult(com.medipote.app.ai.AiFailureKind.NO_KEY); return@launch }
+            when (val r = ai.test(candidate)) {
+                is com.medipote.app.ai.AiResult.Failure -> onResult(r.kind)
+                else -> {
+                    kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { if (key != null) keyVault.save(candidate) }
+                    _keyPresent.value = true
+                    val at = repo.now().withNano(0).toString()
+                    repo.update { it.copy(settings = it.settings.copy(ai = it.settings.ai.copy(enabled = true, consentAt = it.settings.ai.consentAt ?: at))) }
+                    onResult(null)
+                }
+            }
+        }
+    }
+
+    private suspend fun <T> withKey(block: (String) -> T): T? =
+        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { keyVault.load()?.takeIf { it.isNotBlank() }?.let(block) }
+
+    /** Turns the assistant off and forgets the key. */
+    fun aiDisable() {
+        viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) { keyVault.clear() }
+        _keyPresent.value = false
+        ai.close()
+        repo.update { it.copy(settings = it.settings.copy(ai = it.settings.ai.copy(enabled = false, consentAt = null))) }
+    }
+
+    fun aiSetShares(shares: Set<com.medipote.app.data.AiShare>) {
+        repo.update { it.copy(settings = it.settings.copy(ai = it.settings.ai.copy(shares = shares))) }
+    }
+
     private val _now = MutableStateFlow(repo.now())
     /** Current time, refreshed every 20 seconds so dose states and the pet's mood stay live. */
     val now: StateFlow<LocalDateTime> = _now.asStateFlow()
