@@ -90,7 +90,6 @@ object AppSearch {
         SearchEntry("pause", "⏸️", "Mettre les rappels en pause", "Paramètres › Rappels", listOf("pause", "vacances", "voyage", "silence", "arrêter les rappels", "ne plus être dérangé", "week-end", "repos"), go("settings?section=reminders")),
         SearchEntry("ideas", "💡", "Une idée, un souci ?", "Paramètres › Aide", listOf("idée", "suggestion", "souci", "problème", "bug", "remarque", "amélioration", "feedback", "avis"), go("ideas")),
         SearchEntry("phone_change", "📱", "Changer de téléphone", "Paramètres › Sauvegarde", listOf("nouveau téléphone", "transférer", "migrer", "récupérer mes données", "restaurer", "tester ma sauvegarde"), go("backup")),
-        SearchEntry("ai", "🤖", "Intelligence artificielle", "Paramètres › Comprendre", listOf("ia", "ai", "assistant", "claude", "anthropic", "clé", "intelligence", "chatbot", "demander à l'ia"), go("ai_setup")),
         SearchEntry("tour", "👋", "Revoir le petit tour", "Aide", listOf("tuto", "tutoriel", "aide", "comment ça marche", "découvrir", "explications", "guide"), go("tour")),
     )
 

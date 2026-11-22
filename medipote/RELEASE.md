@@ -66,25 +66,6 @@ L'optimiseur de R8 reste désactivé (`-dontoptimize`) : APK de 3,8 Mo au lieu d
 le dex livré peut être reconverti et exécuté hors appareil pour vérification (voir plus bas),
 ce que l'optimiseur empêche. Il pourra être réactivé après des essais sur téléphone.
 
-### 1.29.0 — l'assistant IA (facultatif)
-
-- Un assistant, Claude (Anthropic), peut expliquer un symptôme dans ton contexte, proposer des conseils sans médicament, dire s'il
-  faut consulter, et répondre à tes questions : bouton « 🤖 Demander à l'IA » sur chaque symptôme, dans Comprendre, et sous les
-  conseils du cycle et du sommeil.
-- **Désactivé par défaut** : Paramètres › Ce qui m'accompagne › Intelligence artificielle. Il faut lire ce qui part, choisir ce
-  qu'on partage (sept catégories, une par une), coller sa propre clé d'accès Anthropic (vérifiée par une petite requête) et
-  cocher « j'ai compris ». Le texte exact envoyé est visible avant et après.
-- **Jamais envoyés** : le nom, les contacts, la date de naissance, les antécédents, les documents, les rendez-vous, le texte
-  libre des notes et du journal. La clé est chiffrée dans le coffre du téléphone (Android Keystore), hors des sauvegardes.
-- Garde-fous : les règles de l'appli s'affichent d'abord et fixent le niveau minimum de la réponse ; l'appli retient toute ligne
-  qui nomme un médicament, une dose ou un diagnostic ; l'IA ne peut jamais baisser une alerte, seulement la monter.
-- **Nouvelle permission : Internet**, uniquement pour cet assistant (la montre n'en a toujours aucune). Politique de
-  confidentialité mise à jour. Hors connexion, tout le reste de l'appli, y compris « Comprendre », fonctionne comme avant.
-- Modèle : `claude-opus-5-5`, via le SDK Java officiel d'Anthropic. Les erreurs (clé refusée, crédit épuisé, trop de demandes,
-  pas de connexion, refus du modèle) sont dites en clair avec un bouton « Réessayer ».
-- Non vérifié sur un téléphone : l'appel réel au service n'a été testé ici que contre un faux serveur local (requête, réponse,
-  erreurs), et la version allégée (R8) n'a pas été lancée sur un appareil.
-
 ### 1.28.0 — Comprendre
 
 - Nouvelle carte « 🔎 Comprendre » (Suivi) et page « Chez toi, ça peut venir de… » sur chaque symptôme : ce qui peut l'expliquer

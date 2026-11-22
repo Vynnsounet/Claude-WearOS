@@ -72,7 +72,7 @@ fun FactorsCard(factors: List<Factor>) {
 }
 
 @Composable
-fun AdviceCard(title: String, items: List<AdviceItem>, onAskAi: (() -> Unit)? = null) {
+fun AdviceCard(title: String, items: List<AdviceItem>) {
     if (items.isEmpty()) return
     Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow), modifier = Modifier.fillMaxWidth()) {
         Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
@@ -84,7 +84,6 @@ fun AdviceCard(title: String, items: List<AdviceItem>, onAskAi: (() -> Unit)? = 
                     Text(a.text, style = MaterialTheme.typography.bodyMedium)
                 }
             }
-            onAskAi?.let { com.medipote.app.ui.ai.AskAiButton(it) }
         }
     }
 }
@@ -147,7 +146,6 @@ fun CheckupScreen(
     onOpenSymptom: (String) -> Unit,
     onBack: () -> Unit,
     embedded: Boolean = false,
-    onAskAi: (() -> Unit)? = null,
 ) {
     val concerns = Understand.visible(Understand.scan(state, today), state.settings.dismissedChecks, today)
     val cycle = Understand.cycleAdvice(state, today)
@@ -170,7 +168,6 @@ fun CheckupScreen(
                 }
             }
             concerns.forEach { c -> ConcernCard(c, onCall, onBook, onPrepare, onDismiss, onOpenSymptom) }
-            onAskAi?.let { com.medipote.app.ui.ai.AskAiButton(it) }
 
             if (symptoms.isNotEmpty()) {
                 SectionTitle("Comprendre un symptôme")
@@ -180,7 +177,7 @@ fun CheckupScreen(
                     }
                 }
             }
-            if (cycle.isNotEmpty()) AdviceCard("🩸  Pour ton cycle, en ce moment", cycle, onAskAi = onAskAi?.let { { onAskAi() } })
+            if (cycle.isNotEmpty()) AdviceCard("🩸  Pour ton cycle, en ce moment", cycle)
             if (sleep.isNotEmpty()) AdviceCard("🌙  Pour ton sommeil", sleep)
             Disclaimer(
                 "Ce sont des repères généraux, pas un diagnostic ni un avis médical : ils ne remplacent pas ton médecin et ne touchent jamais à ton traitement. " +

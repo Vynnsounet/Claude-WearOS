@@ -2,9 +2,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <!-- Only for the optional AI assistant, once the person has turned it on and given their own key:
-         nothing is sent otherwise. Everything else in the app works without a connection. -->
-    <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <!-- Exact reminders: granted automatically with USE_EXACT_ALARM on Android 13+,
          and with SCHEDULE_EXACT_ALARM (on by default) on Android 12. -->
@@ -20,7 +17,6 @@
     <application
         android:name=".MediPoteApplication"
         android:allowBackup="true"
-        android:usesCleartextTraffic="false"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
         android:icon="@mipmap/ic_launcher"

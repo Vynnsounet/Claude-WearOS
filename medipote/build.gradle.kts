@@ -28,8 +28,8 @@ android {
         applicationId = "com.medipote.app"
         minSdk = 26
         targetSdk = 36
-        versionCode = 49
-        versionName = "1.29.0"
+        versionCode = 48
+        versionName = "1.28.0"
         manifestPlaceholders["appLabel"] = "@string/app_name"
     }
 
@@ -100,8 +100,6 @@ android {
 dependencies {
     // The watch companion: shared protocol, and Google's phone-watch link (no Internet permission needed).
     implementation(project(":medipote-sync"))
-    // The optional AI assistant: the official Anthropic SDK, used only once the person has turned it on.
-    implementation(libs.anthropic.java)
     implementation(libs.play.services.wearable)
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.activity.compose)

@@ -31,24 +31,3 @@
     kotlinx.serialization.KSerializer serializer(...);
 }
 -keep class com.medipote.sync.**$$serializer { *; }
-
-# The optional AI assistant: the Anthropic SDK builds and reads its request and response models
-# with Jackson, by reflection and annotations. Keep them whole, and the libraries around them quiet.
--keepattributes Signature, Exceptions, EnclosingMethod
--keep class com.anthropic.** { *; }
--keep class com.fasterxml.jackson.** { *; }
--keep class kotlin.Metadata { *; }
--dontwarn com.fasterxml.jackson.**
--dontwarn com.anthropic.**
--dontwarn okhttp3.**
--dontwarn okio.**
--dontwarn org.conscrypt.**
--dontwarn org.bouncycastle.**
--dontwarn org.openjsse.**
--dontwarn javax.annotation.**
--dontwarn java.lang.management.**
-# Please add these rules to your existing keep rules in order to suppress warnings.
-# This is generated automatically by the Android Gradle plugin.
--dontwarn com.google.auto.value.AutoValue
--dontwarn java.lang.reflect.AnnotatedParameterizedType
--dontwarn java.lang.reflect.AnnotatedType

@@ -63,7 +63,7 @@ fun ConditionsScreen(
 
     WbPage(if (onboarding) "Ce qui t'accompagne" else "Ce qui m'accompagne", embedded = false, onBack = onBack) {
         Text(
-            "Tout est facultatif et reste sur ton téléphone (sauf si tu actives l'IA facultative et l'autorises à le lire). Ce que tu choisis ici donne des idées et des conseils adaptés à toi : suivi de symptômes, journée douce, petites missions.",
+            "Tout est facultatif et reste sur ton téléphone. Ce que tu choisis ici donne des idées et des conseils adaptés à toi : suivi de symptômes, journée douce, petites missions.",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )

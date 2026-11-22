@@ -453,22 +453,6 @@ prudents et indicatifs : **ils sont à faire relire par un professionnel de sant
 
 ![](docs/checkup.png) ![](docs/symptom_understand.png)
 
-## Intelligence artificielle (facultative)
-
-En plus des règles de « Comprendre », l'appli peut demander à **Claude** (une IA d'Anthropic) d'expliquer un symptôme dans ton
-contexte, de proposer des conseils sans médicament, de dire s'il faut consulter et de répondre à tes questions. Bouton
-**« 🤖 Demander à l'IA »** sur chaque symptôme, dans « Comprendre », sous les conseils du cycle et du sommeil.
-
-- **Désactivée par défaut.** Paramètres › Ce qui m'accompagne › Intelligence artificielle : tu lis ce qui part, tu choisis ce que tu
-  partages (âge et sexe, conditions, symptômes et humeur, sommeil, cycle, mesures, traitements, un interrupteur chacun), tu
-  colles **ta propre clé** (créée sur la console d'Anthropic ; l'appli n'a pas de serveur) et tu coches « j'ai compris ».
-- **Ce qui part** : un texte écrit par l'appli, que tu peux lire avant et après. Jamais ton nom, tes contacts, ta date de
-  naissance, tes antécédents, tes documents ni le texte libre de tes notes.
-- **Les règles de l'appli passent avant l'IA** : ce qu'elle a repéré s'affiche d'abord, fixe le niveau minimum de la réponse, et
-  l'IA ne peut qu'ajouter de la prudence. L'appli retient toute ligne qui nomme un médicament, une dose ou un diagnostic.
-- Coût : quelques centimes par demande, sur ta clé. Sans connexion, l'IA dit simplement qu'elle ne peut pas répondre.
-- L'IA peut se tromper : ce n'est pas un avis médical. **À faire relire par un professionnel de santé avant tout usage large.**
-
 ## Nuit blanche
 
 Dans Suivi › Sommeil, **« 🌙 Nuit blanche, je n'ai pas dormi »** note la nuit en un toucher (0 h de sommeil, sans fausser tes
@@ -528,7 +512,7 @@ Mieux-être › Ce qui m'accompagne / Paramètres.
 - Le corps : la fiche « Mal avec mon corps » ne propose ni régime ni objectif chiffré, et dit que la
   difficulté à perdre du poids avec une maladie (thyroïde, SOPK…) n'est pas un manque de volonté.
 
-Tout est écrit une fois dans l'appli et fonctionne **hors ligne** : rien ne part sur internet (sauf si tu actives l'IA facultative, voir plus bas).
+Tout est écrit une fois dans l'appli et fonctionne **hors ligne** : rien ne part sur internet.
 Ces repères généraux de bien-être sont à faire relire par un·e professionnel·le de santé avant tout
 usage large ; ils ne posent aucun diagnostic et ne touchent jamais à un traitement.
 
