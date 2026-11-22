@@ -469,8 +469,6 @@ contexte, de proposer des conseils sans médicament, de dire s'il faut consulter
 - Coût : quelques centimes par demande, sur ta clé. Sans connexion, l'IA dit simplement qu'elle ne peut pas répondre.
 - L'IA peut se tromper : ce n'est pas un avis médical. **À faire relire par un professionnel de santé avant tout usage large.**
 
-![](docs/ai_setup.png) ![](docs/ai_assistant.png)
-
 ## Nuit blanche
 
 Dans Suivi › Sommeil, **« 🌙 Nuit blanche, je n'ai pas dormi »** note la nuit en un toucher (0 h de sommeil, sans fausser tes

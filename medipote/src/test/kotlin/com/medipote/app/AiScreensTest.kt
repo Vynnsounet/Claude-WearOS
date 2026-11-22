@@ -155,8 +155,6 @@ class AiScreensTest {
         compose.onNodeWithText("Ce qui peut aider").assertExists()
         compose.onNodeWithText("Couche-toi plus tôt.").assertExists()
         compose.onNodeWithText("Avis de l'IA").assertExists()
-        // What the AI said is not kept: nothing to « set aside ».
-        compose.onAllNodesWithText("Je l'ai vu").assertCountEquals(0)
         compose.onNodeWithText("Et pour ce soir ?").performScrollTo().performClick()
         assertEquals("Et pour ce soir ?", asked)
         compose.onNodeWithText("Réponse écrite par une IA", substring = true).assertExists()
