@@ -226,7 +226,7 @@ internal class Planner(
         val inner = pick(verbs.filter { it.isPlain }) ?: return null
         val tags = modalVerb.subjTags.filter { it in inner.subjTags }
         if (tags.isEmpty()) return null
-        val s = subject(tags, false)
+        val s = subject(tags, caps.modalNeedsGender)
         val pred = innerPred(inner, Tense.PRESENT) ?: return null
         return ClauseNode(s, ModalPred(modalVerb, pred), Tense.PRESENT, neg && (caps.negatedObject || pred.obj == null))
     }

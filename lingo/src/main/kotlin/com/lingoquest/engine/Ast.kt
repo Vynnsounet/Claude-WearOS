@@ -66,6 +66,8 @@ internal data class Caps(
     val infinitive: (Verb) -> Boolean = { true },
     /** The past tense marks the subject's gender (Russian), so only subjects with a known gender are used. */
     val pastNeedsGender: Boolean = false,
+    /** "can" / "must" agree with the subject's gender (Russian "должен / должна"). */
+    val modalNeedsGender: Boolean = false,
 )
 
 /** Collects what a realizer used: grammar rules and plausible wrong tiles. */

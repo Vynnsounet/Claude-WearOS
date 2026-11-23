@@ -10,7 +10,7 @@ import org.junit.Test
 /** Checks that apply to every foreign course. */
 class CourseTest {
     private val lexicon = Lexicon.load()
-    private val courses = listOf(Lang.ES, Lang.DE)
+    private val courses = listOf(Lang.ES, Lang.DE, Lang.RU)
 
     @Test
     fun translationsLoadAndAreUnique() {
