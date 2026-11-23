@@ -15,28 +15,6 @@ class GeneratorTest {
             Progression.unlocked(lexicon, level), Stage.forStep(step), Progression.cefrFor(level), step, direction,
         )
 
-    /** Can the answer be built from the tiles, each used at most once? */
-    private fun solvable(answer: String, bank: List<String>): Boolean {
-        fun go(pos: Int, free: List<String>): Boolean {
-            if (pos >= answer.length) return free.isEmpty() || true
-            for ((i, tile) in free.withIndex()) {
-                if (!answer.startsWith(tile, pos)) continue
-                val end = pos + tile.length
-                val ok = when {
-                    end == answer.length -> true
-                    tile.endsWith("'") -> true
-                    answer[end] == ' ' -> true
-                    else -> false
-                }
-                if (!ok) continue
-                val next = if (end < answer.length && answer[end] == ' ') end + 1 else end
-                if (go(next, free.filterIndexed { j, _ -> j != i })) return true
-            }
-            return false
-        }
-        return go(0, bank)
-    }
-
     @Test
     fun everyChallengeIsAnswerableAcrossLevelsAndSteps() {
         var seed = 0
