@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Progress is small and not sensitive: it follows the user to a new device. -->
+<data-extraction-rules>
+    <cloud-backup>
+        <include domain="file" path="." />
+    </cloud-backup>
+    <device-transfer>
+        <include domain="file" path="." />
+    </device-transfer>
+</data-extraction-rules>
