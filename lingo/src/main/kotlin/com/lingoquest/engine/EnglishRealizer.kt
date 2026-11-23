@@ -35,11 +35,11 @@ internal object EnglishRealizer : Realizer {
         }
         en += T(if (n.plural) n.noun.enPlural else n.noun.en[0])
         sink.alt(if (n.plural) n.noun.en[0] else n.noun.enPlural)
-        n.relative?.let { en += relative(it, n, sink) }
         n.modifier?.let { m ->
             en += T(if (m.prep == ModPrep.WITH) "with" else "in")
             en += np(m.np, sink)
         }
+        n.relative?.let { en += relative(it, n, sink) }
         return en
     }
 

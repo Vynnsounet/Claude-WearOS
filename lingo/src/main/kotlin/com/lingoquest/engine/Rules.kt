@@ -92,7 +92,7 @@ enum class Rule(val title: String, private val fr: String, private val en: Strin
     ),
     NEGATION(
         "Négation",
-        "Français : ne … pas autour du verbe conjugué (n' devant une voyelle).",
+        "Français : ne … pas autour du verbe conjugué (n' devant une voyelle). Après la négation, un/une/des deviennent « de » (d') : je ne mange pas de pomme.",
         "Anglais : do/does + not + verbe sans « to » (did not au passé), ou « is/are not » avec be.",
         "je ne mange pas = I do not eat · il n'est pas grand = he is not big",
     ),

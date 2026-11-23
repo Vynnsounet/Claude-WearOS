@@ -47,6 +47,7 @@ internal class Planner(
     )
     private val adjLimitedToMovers = setOf("fast", "slow")
     private val adjLimitedToFoodAndPlaces = setOf("hot", "cold")
+    private val attributiveOnly = setOf("other", "same", "last", "first", "next")
     private val colors = setOf("red", "blue", "green", "yellow", "black", "white")
     private val adjOkForAbstract = setOf(
         "big", "small", "good", "bad", "new", "old", "important", "different", "interesting", "serious",
@@ -242,7 +243,8 @@ internal class Planner(
 
     private fun copulaAdj(tense: Tense, neg: Boolean): ClauseNode? {
         val s = subject("PA", true)
-        val adj = pick(adjs.filter { adjFits(it, "P") }) ?: return null
+        // "first", "last"… only make sense before a noun.
+        val adj = pick(adjs.filter { adjFits(it, "P") && it.en[0] !in attributiveOnly }) ?: return null
         return ClauseNode(s, CopAdj(adj), tense, neg)
     }
 

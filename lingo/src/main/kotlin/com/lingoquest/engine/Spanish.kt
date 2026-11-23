@@ -159,17 +159,17 @@ internal class SpanishRealizer(private val lex: Lexicon) : Realizer {
             out += EsMorph.adjective(af, fem, plural)
             sink.alt(EsMorph.adjective(af, !fem, plural), EsMorph.adjective(af, fem, !plural))
         }
+        n.modifier?.let { m ->
+            sink.rule(R_PREP)
+            out += if (m.prep == ModPrep.WITH) "con" else "en"
+            out += np(m.np, sink)
+        }
         n.relative?.let { r ->
             sink.rule(R_RELATIVE)
             val s = Subj(emptyList(), if (n.plural) 5 else 2, fem)
             val rest = r.obj?.let { objectTokens(r.verb, it, sink) }.orEmpty()
             out += "que"
             out += predicate(s, r.verb, Tense.PRESENT, false, rest, sink)
-        }
-        n.modifier?.let { m ->
-            sink.rule(R_PREP)
-            out += if (m.prep == ModPrep.WITH) "con" else "en"
-            out += np(m.np, sink)
         }
         return out
     }

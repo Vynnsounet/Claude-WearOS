@@ -101,6 +101,7 @@ class GeneratorTest {
         "\\bce [aeiouéèêàâîôû]" to "ce + vowel",
         "\\b(un|une) (des|les)\\b" to "double article",
         "\\bdes (bons|bonnes|grands|grandes|petits|petites|beaux|belles|jeunes|vieux|vieilles|nouveaux|nouvelles|mauvais|mauvaises|jolis|jolies|gros|grosses|longs|longues|autres)(?![-\\p{L}])" to "des + adjective",
+        "\\bpas (un|une|des)\\b" to "pas un/une/des instead of pas de",
         "  " to "double space",
     )
     private val enBad = listOf(

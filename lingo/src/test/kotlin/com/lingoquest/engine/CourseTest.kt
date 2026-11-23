@@ -10,7 +10,7 @@ import org.junit.Test
 /** Checks that apply to every foreign course. */
 class CourseTest {
     private val lexicon = Lexicon.load()
-    private val courses = listOf(Lang.ES)
+    private val courses = listOf(Lang.ES, Lang.DE)
 
     @Test
     fun translationsLoadAndAreUnique() {
@@ -18,11 +18,13 @@ class CourseTest {
             val course = lexicon.forCourse(lang)
             assertTrue("$lang has only ${course.entries.size} words", course.entries.size > 400)
             val seen = HashMap<String, String>()
+            val clashes = ArrayList<String>()
             for (e in course.entries) {
                 val lemma = lexicon.forms(e, lang)[0].lowercase()
                 val other = seen.put(lemma, e.id)
-                assertTrue("$lang: '$lemma' is the translation of both $other and ${e.id}", other == null)
+                if (other != null) clashes += "'$lemma' = $other / ${e.id}"
             }
+            assertTrue("$lang: same translation for two words: $clashes", clashes.isEmpty())
         }
     }
 

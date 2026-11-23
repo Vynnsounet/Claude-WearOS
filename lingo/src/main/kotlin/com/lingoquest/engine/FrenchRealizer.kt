@@ -23,7 +23,8 @@ internal object FrenchRealizer : Realizer {
 
     override fun join(tokens: List<String>) = Spelling.join(tokens)
 
-    private fun np(n: NpNode, sink: Sink): List<String> {
+    /** [negated]: object of a negative clause: « pas de pommes », not « pas des pommes ». */
+    private fun np(n: NpNode, sink: Sink, negated: Boolean = false): List<String> {
         val noun = n.noun
         val g = noun.gender
         val plural = n.plural
@@ -34,7 +35,9 @@ internal object FrenchRealizer : Realizer {
         val fr = ArrayList<String>()
         when (n.det) {
             Det.THE -> { sink.rule(Rule.ARTICLE); sink.alt("le", "la", "les", "un", "une"); fr += pick("le", "la", "les") }
-            Det.A -> {
+            Det.A -> if (negated) {
+                sink.rule(Rule.NEGATION); sink.alt("de", "des", "un", "une"); fr += "de"
+            } else {
                 sink.rule(Rule.ARTICLE); sink.alt("un", "une", "des", "le", "la")
                 if (plural) {
                     sink.rule(Rule.SOME_DES)
@@ -72,12 +75,12 @@ internal object FrenchRealizer : Realizer {
             fr += a.fr(g, plural).split(' ')
             sink.alt(a.allFrForms)
         }
-        n.relative?.let { fr += relative(it, n, sink) }
         n.modifier?.let { m ->
             sink.rule(Rule.PREP_NP)
             fr += if (m.prep == ModPrep.WITH) "avec" else "dans"
             fr += np(m.np, sink)
         }
+        n.relative?.let { fr += relative(it, n, sink) }
         return fr
     }
 
@@ -160,9 +163,9 @@ internal object FrenchRealizer : Realizer {
         return fr + rest
     }
 
-    private fun complements(p: VerbPred, sink: Sink): List<String> {
+    private fun complements(p: VerbPred, negated: Boolean, sink: Sink): List<String> {
         val out = ArrayList<String>()
-        p.obj?.let { out += np(it, sink) }
+        p.obj?.let { out += np(it, sink, negated) }
         p.loc?.let { loc ->
             sink.rule(Rule.PLACE_PREP)
             out += p.verb.locFr!!
@@ -184,10 +187,10 @@ internal object FrenchRealizer : Realizer {
                 sink.rule(Rule.PLACE_PREP)
                 copula(s, c.tense, c.neg, listOf("dans") + np(p.place, sink), sink)
             }
-            is VerbPred -> predicate(s, p.verb, c.tense, c.neg, complements(p, sink), sink)
+            is VerbPred -> predicate(s, p.verb, c.tense, c.neg, complements(p, c.neg, sink), sink)
             is ModalPred -> {
                 sink.alt(p.inner.verb.fr[0])
-                predicate(s, p.modal, Tense.PRESENT, c.neg, listOf(p.inner.verb.fr[0]) + complements(p.inner, sink), sink)
+                predicate(s, p.modal, Tense.PRESENT, c.neg, listOf(p.inner.verb.fr[0]) + complements(p.inner, c.neg, sink), sink)
             }
             is InfPred -> {
                 sink.rule(Rule.INFINITIVE)
@@ -195,7 +198,7 @@ internal object FrenchRealizer : Realizer {
                 val rest = ArrayList<String>()
                 if (!p.outer.infFr.isNullOrEmpty()) rest += p.outer.infFr
                 rest += p.inner.verb.fr[0]
-                rest += complements(p.inner, sink)
+                rest += complements(p.inner, c.neg, sink)
                 predicate(s, p.outer, c.tense, c.neg, rest, sink)
             }
         }
