@@ -261,7 +261,7 @@ fun PetContent(state: AppState, now: LocalDateTime) {
         Text(
             when {
                 due.isNotEmpty() -> condition.message
-                next != null -> "Prochaine prise à ${next.occurrence.dose.timeLabel} : ${next.occurrence.treatment.name}"
+                next != null -> "Prochaine prise ${next.occurrence.dose.whenText} : ${next.occurrence.treatment.name}"
                 else -> condition.message
             },
             style = body, maxLines = 3,
@@ -366,7 +366,7 @@ private fun DoseRow(item: DoseItem) {
         DoseState.UPCOMING -> t.unit.format(item.occurrence.quantity) to GlanceTheme.colors.onSurfaceVariant
     }
     Row(GlanceModifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-        Text(item.occurrence.dose.timeLabel, style = TextStyle(color = GlanceTheme.colors.onSurface, fontSize = 14.sp, fontWeight = FontWeight.Bold), modifier = GlanceModifier.width(48.dp))
+        Text(item.occurrence.dose.label, style = TextStyle(color = GlanceTheme.colors.onSurface, fontSize = 14.sp, fontWeight = FontWeight.Bold), modifier = GlanceModifier.width(if (item.occurrence.dose.isWindow) 92.dp else 48.dp))
         Column(GlanceModifier.defaultWeight()) {
             Text(t.displayName, style = body, maxLines = 1)
             Text(label, style = TextStyle(color = color, fontSize = 12.sp), maxLines = 1)

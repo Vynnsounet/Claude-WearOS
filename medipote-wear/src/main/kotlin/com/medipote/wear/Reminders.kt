@@ -143,7 +143,7 @@ object Reminders {
             .setContentIntent(open)
             .setAutoCancel(true)
         when (reminder.kind) {
-            WatchReminder.DOSE, WatchReminder.FOLLOW_UP -> {
+            WatchReminder.DOSE, WatchReminder.FOLLOW_UP, WatchReminder.WINDOW_END -> {
                 builder.addAction(R.drawable.ic_notification, "Pris ✓", action(context, ACTION_TAKE, id, reminder.ref, 1))
                 builder.addAction(R.drawable.ic_notification, "+${SNOOZE_MINUTES} min", action(context, ACTION_SNOOZE, id, reminder.ref, 2))
             }

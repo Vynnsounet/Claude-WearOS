@@ -46,6 +46,7 @@ object WatchBridge {
                 name = t.displayName,
                 quantity = t.unit.format(item.occurrence.quantity),
                 time = item.occurrence.scheduled.toString(),
+                until = item.occurrence.windowEnd?.toString(),
                 taken = item.state == DoseState.TAKEN,
                 withFood = t.withFood,
             )
@@ -54,6 +55,7 @@ object WatchBridge {
             when (spec.kind) {
                 AlarmKind.DOSE -> WatchReminder(WatchReminder.DOSE, spec.time.toString(), spec.time.toString())
                 AlarmKind.FOLLOW_UP -> WatchReminder(WatchReminder.FOLLOW_UP, spec.time.toString(), spec.ref)
+                AlarmKind.WINDOW_END -> WatchReminder(WatchReminder.WINDOW_END, spec.time.toString(), spec.ref)
                 // A reminder put off on the phone rings on the watch too, as a follow-up.
                 AlarmKind.SNOOZE -> WatchReminder(WatchReminder.FOLLOW_UP, spec.time.toString(), spec.ref)
                 AlarmKind.WATER -> WatchReminder(WatchReminder.WATER, spec.time.toString())

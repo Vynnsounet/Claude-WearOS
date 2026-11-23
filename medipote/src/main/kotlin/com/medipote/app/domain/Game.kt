@@ -119,7 +119,7 @@ object Game {
     }
 
     private fun record(state: AppState, occ: com.medipote.app.domain.DoseOccurrence, takenAt: LocalDateTime, now: LocalDateTime, afterwards: Boolean): GiveResult {
-        val status = Rules.statusFor(occ.scheduled, takenAt)
+        val status = Rules.statusFor(occ.scheduled, occ.windowEnd, takenAt)
         val points = Rules.pointsFor(status)
         val log = DoseLog(occ.key, occ.treatment.id, occ.scheduled, takenAt, status, points)
         val label = when (status) {

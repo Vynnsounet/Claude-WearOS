@@ -28,7 +28,7 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
-enum class AlarmKind { DOSE, FOLLOW_UP, APPOINTMENT, WATER, STOCK, TEST, PRN_CHECK, SLEEP, SNOOZE, RENEWAL, RITUAL, RECAP, PRODUCT, SUPPORT, WIND_DOWN, RESUME, CHECKUP }
+enum class AlarmKind { DOSE, FOLLOW_UP, APPOINTMENT, WATER, STOCK, TEST, PRN_CHECK, SLEEP, SNOOZE, RENEWAL, RITUAL, RECAP, PRODUCT, SUPPORT, WIND_DOWN, RESUME, CHECKUP, WINDOW_END }
 
 /** One planned alarm. [ref] identifies what it is about (an appointment id, for instance). */
 data class AlarmSpec(val kind: AlarmKind, val time: LocalDateTime, val ref: String = "") {
@@ -48,6 +48,16 @@ object ReminderPlanner {
     private const val WINDOW_HOURS = 48L
     private val STOCK_CHECK: LocalTime = LocalTime.of(10, 0)
 
+    /** How long before a window closes its reminder rings. */
+    const val WINDOW_END_MINUTES = 30L
+
+    /** When the end-of-window reminder of [o] rings; null for a fixed dose, or a window too short to be reminded in. */
+    fun windowEndReminder(o: com.medipote.app.domain.DoseOccurrence): LocalDateTime? {
+        val end = o.windowEnd ?: return null
+        val at = end.minusMinutes(WINDOW_END_MINUTES)
+        return at.takeIf { !it.isBefore(o.scheduled.plusMinutes(15)) }
+    }
+
     fun plan(state: AppState, now: LocalDateTime): List<AlarmSpec> {
         if (!state.onboarded || !state.settings.notificationsEnabled) return emptyList()
         val alarms = mutableListOf<AlarmSpec>()
@@ -58,8 +68,21 @@ object ReminderPlanner {
         for (time in times) {
             if (time.isAfter(now)) alarms += AlarmSpec(AlarmKind.DOSE, time)
             val follow = time.plusMinutes(FOLLOW_UP_MINUTES)
-            // Rings 30 minutes after the dose; [ref] keeps the dose time it is about.
-            if (state.settings.followUpReminder && follow.isAfter(now)) alarms += AlarmSpec(AlarmKind.FOLLOW_UP, follow, time.toString())
+            // Rings 30 minutes after the dose; [ref] keeps the dose time it is about. A time window has its own
+            // reminder before it closes, so only fixed doses get this one.
+            val fixed = Schedule.occurrencesOn(state.treatments, time.toLocalDate()).any { it.scheduled == time && !it.dose.isWindow }
+            if (fixed && state.settings.followUpReminder && follow.isAfter(now)) alarms += AlarmSpec(AlarmKind.FOLLOW_UP, follow, time.toString())
+        }
+
+        // Time windows: one quiet reminder shortly before each closes, if the person asked for it and the dose isn't taken.
+        val taken = state.doseLogs.mapTo(HashSet()) { it.key }
+        for (d in -1..1) {
+            Schedule.occurrencesOn(state.treatments, now.toLocalDate().plusDays(d.toLong()))
+                .filter { it.dose.isWindow && it.dose.remindEnd && it.key !in taken }
+                .forEach { o ->
+                    val at = windowEndReminder(o) ?: return@forEach
+                    if (at.isAfter(now)) alarms += AlarmSpec(AlarmKind.WINDOW_END, at, o.scheduled.toString())
+                }
         }
 
         // Reminders put off from their notification, while their doses aren't given.
@@ -348,15 +371,32 @@ object Notifications {
         }
     }
 
-    fun showDoses(context: Context, state: AppState, time: LocalDateTime, followUp: Boolean) {
+    /**
+     * The reminder of the doses planned at [time]. [followUp]: asked again later. [closing]: the window of a dose is about
+     * to close (the doses whose window closes at that time). [withoutWindows]: the follow-up, which leaves windows to their own reminder.
+     */
+    fun showDoses(context: Context, state: AppState, time: LocalDateTime, followUp: Boolean, closing: LocalDateTime? = null, withoutWindows: Boolean = false) {
         val taken = state.doseLogs.mapTo(HashSet()) { it.key }
         val doses = Schedule.occurrencesOn(state.treatments, time.toLocalDate())
             .filter { it.scheduled == time && it.key !in taken }
+            .filter { closing == null || (it.dose.isWindow && ReminderPlanner.windowEndReminder(it) == closing) }
+            .filter { !withoutWindows || !it.dose.isWindow }
         if (doses.isEmpty()) return
         val pet = state.game.petName
         val list = doses.joinToString(", ") { "${it.treatment.displayName} (${it.treatment.unit.format(it.quantity)})" }
-        val title = if (followUp) "$pet ne se sent pas très bien…" else "C'est l'heure des médicaments 💊"
-        val text = if (followUp) "Tu n'as pas encore donné : $list. Mieux vaut tard que jamais !" else "$pet attend : $list"
+        val until = doses.firstNotNullOfOrNull { it.windowEnd }?.format(hourMinute)
+        val title = when {
+            closing != null -> "Il te reste un peu de temps ⏳"
+            followUp -> "$pet ne se sent pas très bien…"
+            doses.all { it.dose.isWindow } -> "Tu peux prendre tes médicaments 💊"
+            else -> "C'est l'heure des médicaments 💊"
+        }
+        val text = when {
+            closing != null -> "Tu peux encore prendre : $list, jusqu'à $until."
+            followUp -> "Tu n'as pas encore donné : $list. Mieux vaut tard que jamais !"
+            until != null && doses.all { it.dose.isWindow } -> "$pet attend : $list. Tu as jusqu'à $until."
+            else -> "$pet attend : $list"
+        }
         val id = notificationId(time)
         post(
             context, CHANNEL_DOSES, id, title, text,
@@ -612,7 +652,10 @@ class ReminderReceiver : BroadcastReceiver() {
             when (spec.kind) {
                 AlarmKind.DOSE -> Notifications.showDoses(context, state, spec.time, followUp = false)
                 AlarmKind.FOLLOW_UP -> Notifications.showDoses(
-                    context, state, runCatching { LocalDateTime.parse(spec.ref) }.getOrDefault(spec.time), followUp = true,
+                    context, state, runCatching { LocalDateTime.parse(spec.ref) }.getOrDefault(spec.time), followUp = true, withoutWindows = true,
+                )
+                AlarmKind.WINDOW_END -> Notifications.showDoses(
+                    context, state, runCatching { LocalDateTime.parse(spec.ref) }.getOrDefault(spec.time), followUp = false, closing = spec.time,
                 )
                 AlarmKind.APPOINTMENT -> Notifications.showAppointment(context, state, spec.ref)
                 AlarmKind.WATER -> Notifications.showWater(context, state, repo.now())

@@ -444,6 +444,16 @@ et « Jour par jour » a rejoint le journal. Une carte ouverte montre où l'on e
 
 ![](docs/labs.png) ![](docs/lab_detail.png) ![](docs/travel.png) ![](docs/emergency.png)
 
+## Heure fixe ou plage horaire
+
+Chaque prise d'un traitement (fiche du traitement › Posologie › « 🕐 À heure fixe ») peut être **à heure fixe** ou **dans une plage**
+(par exemple entre 10 h et 12 h). Dans une plage, toute prise entre le début et la fin est « à l'heure » : le rappel sonne au début,
+et, si tu l'as choisi, un seul rappel discret 30 minutes avant la fin si la prise n'est pas faite. L'accueil, les widgets, la montre et
+le rapport pour le médecin affichent « 10:00–12:00 ». Les traitements « si besoin » n'ont pas de plage. Pour les médicaments où
+l'heure compte (lévothyroxine à jeun, antibiotiques…), garde plutôt une heure fixe.
+
+![](docs/editor_window.png)
+
 ## Où ça fait mal, précautions, scan de boîte
 
 - **Où ça fait mal ?** (Symptômes) : une fois la force d'un symptôme notée, « 📍 Où ça se passe ? » ouvre un schéma du corps, de face

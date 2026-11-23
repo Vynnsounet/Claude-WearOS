@@ -66,6 +66,18 @@ L'optimiseur de R8 reste désactivé (`-dontoptimize`) : APK de 3,8 Mo au lieu d
 le dex livré peut être reconverti et exécuté hors appareil pour vérification (voir plus bas),
 ce que l'optimiseur empêche. Il pourra être réactivé après des essais sur téléphone.
 
+### 1.32.0 (téléphone) · 1.16.0 (montre) — une plage horaire par prise
+
+- `DoseTime.untilMinute` / `remindEnd` : une prise peut être « à heure fixe » (comme avant, sans rien changer aux sauvegardes
+  existantes) ou « dans une plage » (début–fin). La clé de la prise reste celle de l'heure de début.
+- Toute la plage compte « à l'heure » (`Rules.statusFor(début, fin, prise)`) ; le retard se mesure depuis la fin ; le délai
+  de rattrapage part de la fin.
+- Rappel au début de la plage (`DOSE`), puis, si la personne l'a choisi, un seul rappel 30 min avant la fin
+  (`AlarmKind.WINDOW_END`) tant que la prise n'est pas faite. Pas de relance « 30 min après » pour les plages.
+- Les prises « si besoin » n'ont pas de plage. Le voyage décale toute la plage ; l'écart entre traitements prend le pire cas.
+- Montre : `WatchDose.until`, rappel `WINDOW_END`, état « à prendre » jusqu'à la fin de la plage (montre 1.16.0 ; une ancienne
+  montre ignore la plage et sonne au début).
+
 ### 1.31.0 — où ça fait mal, précautions, scan de boîte
 
 - Schéma du corps (face / dos) sous chaque symptôme noté, zones dans les statistiques du mois et le rapport médecin.

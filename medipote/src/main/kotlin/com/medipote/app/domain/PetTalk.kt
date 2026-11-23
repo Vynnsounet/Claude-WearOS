@@ -86,7 +86,7 @@ object PetTalk {
             val logs = state.doseLogs.associateBy { it.key }
             Schedule.itemsOn(state.treatments, logs, now.toLocalDate(), now)
                 .firstOrNull { it.state == DoseState.UPCOMING }
-                ?.let { add("Prochaine prise à ${it.occurrence.dose.timeLabel} : ${it.occurrence.treatment.name}.") }
+                ?.let { add("Prochaine prise ${it.occurrence.dose.whenText} : ${it.occurrence.treatment.name}.") }
             if (state.game.streak >= 2) add("Déjà ${state.game.streak} jours d'affilée, on fait une super équipe !")
             val water = state.settings.water
             val glasses = state.entryFor(now.toLocalDate()).waterGlasses

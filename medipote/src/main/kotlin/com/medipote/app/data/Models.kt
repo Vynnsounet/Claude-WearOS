@@ -201,8 +201,30 @@ data class DoseTime(
     /** When [days] last changed, and what it was before: past days keep the days they had. */
     @Serializable(with = LocalDateSerializer::class) val daysFrom: LocalDate? = null,
     val daysBefore: Set<Int>? = null,
+    /**
+     * The end of a time window, in minutes after midnight: the dose can be taken any time from [minuteOfDay]
+     * to here (10:00 to 12:00). Null = a fixed time. Never for as-needed treatments.
+     */
+    val untilMinute: Int? = null,
+    /** For a window: one more, quiet reminder shortly before it closes, if the dose is not taken yet. */
+    val remindEnd: Boolean = false,
 ) {
-    val timeLabel: String get() = "%02d:%02d".format(minuteOfDay / 60, minuteOfDay % 60)
+    /** Only windows that really span time count; a stray end at or before the start means a fixed time. */
+    val isWindow: Boolean get() = untilMinute != null && untilMinute > minuteOfDay
+
+    /** The start of the window, or the time of a fixed dose. */
+    val timeLabel: String get() = clock(minuteOfDay)
+
+    /** "08:00" for a fixed dose, "10:00–12:00" for a window. */
+    val label: String get() = if (isWindow) "${clock(minuteOfDay)}–${clock(untilMinute!!)}" else clock(minuteOfDay)
+
+    /** "à 08:00" for a fixed dose, "entre 10:00 et 12:00" for a window: for a sentence. */
+    val whenText: String get() = if (isWindow) "entre ${clock(minuteOfDay)} et ${clock(untilMinute!!)}" else "à ${clock(minuteOfDay)}"
+
+    /** The end of the window as a clock, "" for a fixed dose. */
+    val untilLabel: String get() = if (isWindow) clock(untilMinute!!) else ""
+
+    private fun clock(minute: Int) = "%02d:%02d".format(minute / 60, minute % 60)
 
     /** The days this dose time was taken on, on [date] (earlier days keep the days they had). */
     fun daysOn(date: LocalDate): Set<Int>? = if (daysFrom != null && date.isBefore(daysFrom)) daysBefore else days

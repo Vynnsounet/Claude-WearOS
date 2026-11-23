@@ -16,8 +16,16 @@ data class WatchDose(
     val time: String,
     val taken: Boolean = false,
     val withFood: Boolean = false,
+    /** For a time window: when it closes, ISO local date-time. Null for a dose at a fixed time. */
+    val until: String? = null,
 ) {
     val at: LocalDateTime get() = LocalDateTime.parse(time)
+
+    /** When the dose stops being on time: the end of its window, else its time. */
+    val endsAt: LocalDateTime get() = until?.let(LocalDateTime::parse) ?: at
+
+    /** "08:00", or "10:00–12:00" for a window. */
+    val label: String get() = "%02d:%02d".format(at.hour, at.minute) + (until?.let { "–%02d:%02d".format(endsAt.hour, endsAt.minute) } ?: "")
 }
 
 /** A reminder the watch rings by itself, even when the phone is far away. */
@@ -37,6 +45,7 @@ data class WatchReminder(
     companion object {
         const val DOSE = "DOSE"
         const val FOLLOW_UP = "FOLLOW_UP"
+        const val WINDOW_END = "WINDOW_END"
         const val WATER = "WATER"
         const val PRODUCT = "PRODUCT"
     }
@@ -167,7 +176,7 @@ object WatchPlanner {
     fun state(dose: WatchDose, now: LocalDateTime): WatchDoseState = when {
         dose.taken -> WatchDoseState.TAKEN
         now.isBefore(dose.at.minusMinutes(EARLY_MINUTES)) -> WatchDoseState.UPCOMING
-        now.isAfter(dose.at.plusMinutes(LATE_MINUTES)) -> WatchDoseState.LATE
+        now.isAfter(dose.endsAt.plusMinutes(LATE_MINUTES)) -> WatchDoseState.LATE
         else -> WatchDoseState.DUE
     }
 
@@ -189,7 +198,7 @@ object WatchPlanner {
 
     /** Whether a reminder still has something to say when it rings. */
     fun relevant(snapshot: WatchSnapshot, reminder: WatchReminder, now: LocalDateTime): Boolean = when (reminder.kind) {
-        WatchReminder.DOSE, WatchReminder.FOLLOW_UP -> dosesOf(snapshot, reminder).isNotEmpty()
+        WatchReminder.DOSE, WatchReminder.FOLLOW_UP, WatchReminder.WINDOW_END -> dosesOf(snapshot, reminder).isNotEmpty()
         WatchReminder.WATER -> snapshot.waterEnabled && glasses(snapshot, now.toLocalDate()) < snapshot.goal
         WatchReminder.PRODUCT -> snapshot.product != null
         else -> false
@@ -202,9 +211,16 @@ object WatchPlanner {
 
     /** Title and text of a reminder, from what is still to do. */
     fun message(snapshot: WatchSnapshot, reminder: WatchReminder, now: LocalDateTime): Pair<String, String> = when (reminder.kind) {
-        WatchReminder.DOSE, WatchReminder.FOLLOW_UP -> {
-            val list = dosesOf(snapshot, reminder).joinToString(", ") { "${it.name} (${it.quantity})" }
-            if (reminder.kind == WatchReminder.FOLLOW_UP) "Pas encore pris ?" to list else "C'est l'heure 💊" to list
+        WatchReminder.DOSE, WatchReminder.FOLLOW_UP, WatchReminder.WINDOW_END -> {
+            val doses = dosesOf(snapshot, reminder)
+            val list = doses.joinToString(", ") { "${it.name} (${it.quantity})" }
+            val window = doses.firstOrNull { it.until != null }
+            when {
+                reminder.kind == WatchReminder.WINDOW_END -> "Il reste un peu de temps ⏳" to "$list, jusqu'à ${"%02d:%02d".format(window?.endsAt?.hour ?: 0, window?.endsAt?.minute ?: 0)}"
+                reminder.kind == WatchReminder.FOLLOW_UP -> "Pas encore pris ?" to list
+                window != null -> "Tu peux prendre 💊" to "$list, jusqu'à ${"%02d:%02d".format(window.endsAt.hour, window.endsAt.minute)}"
+                else -> "C'est l'heure 💊" to list
+            }
         }
         WatchReminder.WATER -> "Un verre d'eau ? 💧" to "${glasses(snapshot, now.toLocalDate())} / ${snapshot.goal} verres aujourd'hui"
         else -> reminder.title to reminder.text

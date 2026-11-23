@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
@@ -164,7 +165,7 @@ fun DoseHistoryScreen(
             title = { Text("Annuler cette prise ?") },
             text = {
                 Text(
-                    "${item.occurrence.treatment.displayName} de ${item.occurrence.dose.timeLabel} redeviendra « non prise » : " +
+                    "${item.occurrence.treatment.displayName} de ${item.occurrence.dose.label} redeviendra « non prise » : " +
                         "ses ${item.log?.points ?: 0} points sont retirés et la quantité revient dans le stock.",
                 )
             },
@@ -181,7 +182,7 @@ private fun HistoryCard(item: DoseItem, now: LocalDateTime, onTaken: () -> Unit,
     val status = AppTheme.status
     Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow), modifier = Modifier.fillMaxWidth()) {
         Row(Modifier.padding(start = 16.dp, end = 8.dp, top = 12.dp, bottom = 12.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text(occ.dose.timeLabel, style = MaterialTheme.typography.titleMedium, modifier = Modifier.width(56.dp))
+            Text(occ.dose.label, style = MaterialTheme.typography.titleMedium, modifier = Modifier.widthIn(min = 56.dp).padding(end = 8.dp))
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(t.displayName, style = MaterialTheme.typography.titleSmall)
                 Text(t.unit.format(occ.quantity), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)

@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -123,7 +124,7 @@ fun MyDayScreen(
                 Section("💊 Prises · $taken / ${doses.size}", "Détails", onOpenDoses) {
                     doses.forEach { item ->
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(item.occurrence.dose.timeLabel, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.width(52.dp))
+                            Text(item.occurrence.dose.label, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.widthIn(min = 52.dp).padding(end = 8.dp))
                             Text(item.occurrence.treatment.displayName, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
                             Text(
                                 when (item.state) {

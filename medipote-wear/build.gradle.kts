@@ -30,8 +30,8 @@ android {
         minSdk = 30 // Wear OS 3+
         targetSdk = 36
         // Same version name as the phone app; a distinct code, as the Play Store asks for watch builds.
-        versionCode = 100028
-        versionName = "1.15.0"
+        versionCode = 100029
+        versionName = "1.16.0"
         manifestPlaceholders["appLabel"] = "MédiPote"
     }
 

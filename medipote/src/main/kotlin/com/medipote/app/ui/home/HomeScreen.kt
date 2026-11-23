@@ -677,7 +677,7 @@ private fun DraggablePill(item: DoseItem, petBounds: Rect?, onHover: (Boolean) -
             Column {
                 Text(t.displayName, style = MaterialTheme.typography.labelLarge, maxLines = 1)
                 Text(
-                    "${item.occurrence.dose.timeLabel} · ${t.unit.format(item.occurrence.quantity)}",
+                    "${item.occurrence.dose.label} · ${t.unit.format(item.occurrence.quantity)}",
                     style = MaterialTheme.typography.labelSmall,
                 )
             }
@@ -692,7 +692,7 @@ private fun DoseCard(item: DoseItem, now: LocalDateTime, onGive: (DoseItem) -> U
     val t = item.occurrence.treatment
     val (label, color, container) = when (item.state) {
         DoseState.UPCOMING -> Triple("À venir", MaterialTheme.colorScheme.onSurfaceVariant, MaterialTheme.colorScheme.surfaceContainerHigh)
-        DoseState.DUE -> Triple("C'est l'heure", MaterialTheme.colorScheme.onPrimaryContainer, MaterialTheme.colorScheme.primaryContainer)
+        DoseState.DUE -> Triple(if (item.occurrence.dose.isWindow) "Tu peux le prendre" else "C'est l'heure", MaterialTheme.colorScheme.onPrimaryContainer, MaterialTheme.colorScheme.primaryContainer)
         DoseState.OVERDUE -> Triple("En retard", MaterialTheme.colorScheme.onSurface, status.warningContainer)
         DoseState.MISSED -> Triple("Oublié", MaterialTheme.colorScheme.onSurface, status.criticalContainer)
         DoseState.TAKEN -> {
@@ -713,6 +713,7 @@ private fun DoseCard(item: DoseItem, now: LocalDateTime, onGive: (DoseItem) -> U
             Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.width(56.dp)) {
                 Icon(Icons.Rounded.Schedule, null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(16.dp))
                 Text(item.occurrence.dose.timeLabel, style = MaterialTheme.typography.titleMedium)
+                if (item.occurrence.dose.isWindow) Text("→ ${item.occurrence.dose.untilLabel}", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             Spacer(Modifier.width(8.dp))
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -756,7 +757,7 @@ private fun DoseCard(item: DoseItem, now: LocalDateTime, onGive: (DoseItem) -> U
     if (confirmEarly) {
         EarlyDialog(
             name = item.occurrence.treatment.displayName,
-            time = item.occurrence.dose.timeLabel,
+            time = item.occurrence.dose.label,
             onConfirm = { confirmEarly = false; onGiveEarly(item) },
             onDismiss = { confirmEarly = false },
         )
@@ -1019,9 +1020,10 @@ private fun HeroDose(item: DoseItem, now: LocalDateTime, petName: String, onGive
     var confirmEarly by remember { mutableStateOf(false) }
     val t = item.occurrence.treatment
     val on = MaterialTheme.colorScheme.onPrimaryContainer
+    val window = item.occurrence.dose.isWindow
     val whenText = when (item.state) {
-        DoseState.DUE -> "C'est l'heure"
-        DoseState.OVERDUE -> "En retard de ${com.medipote.app.domain.Prn.formatDuration(java.time.Duration.between(item.occurrence.scheduled, now))}"
+        DoseState.DUE -> if (window) "Tu peux la prendre jusqu'à ${item.occurrence.dose.untilLabel}" else "C'est l'heure"
+        DoseState.OVERDUE -> "En retard de ${com.medipote.app.domain.Prn.formatDuration(java.time.Duration.between(item.occurrence.windowEnd ?: item.occurrence.scheduled, now))}"
         else -> "Dans ${com.medipote.app.domain.Prn.formatDuration(java.time.Duration.between(now, item.occurrence.scheduled))}"
     }
     Card(
@@ -1037,7 +1039,7 @@ private fun HeroDose(item: DoseItem, now: LocalDateTime, petName: String, onGive
                 Column(Modifier.weight(1f)) {
                     Text(t.displayName, style = MaterialTheme.typography.titleLarge, maxLines = 2, overflow = TextOverflow.Ellipsis)
                     Text(
-                        t.unit.format(item.occurrence.quantity) + if (t.withFood) " · pendant le repas" else "",
+                        t.unit.format(item.occurrence.quantity) + (if (window) " · ${item.occurrence.dose.whenText}" else "") + if (t.withFood) " · pendant le repas" else "",
                         style = MaterialTheme.typography.bodyMedium,
                         color = on.copy(alpha = 0.8f),
                     )
@@ -1055,7 +1057,7 @@ private fun HeroDose(item: DoseItem, now: LocalDateTime, petName: String, onGive
         }
     }
     if (confirmEarly) {
-        EarlyDialog(t.displayName, item.occurrence.dose.timeLabel, onConfirm = { confirmEarly = false; onGiveEarly(item) }, onDismiss = { confirmEarly = false })
+        EarlyDialog(t.displayName, item.occurrence.dose.label, onConfirm = { confirmEarly = false; onGiveEarly(item) }, onDismiss = { confirmEarly = false })
     }
 }
 

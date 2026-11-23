@@ -207,7 +207,7 @@ private fun TreatmentCard(t: Treatment, today: LocalDate, onClick: () -> Unit, o
                     Text(t.displayName, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
-                            if (t.pill != null) "Pilule · ${times.firstOrNull()?.timeLabel.orEmpty()}" else times.joinToString(" · ") { it.timeLabel + it.daysText.let { d -> if (d.isEmpty()) "" else " $d" } },
+                            if (t.pill != null) "Pilule · ${times.firstOrNull()?.timeLabel.orEmpty()}" else times.joinToString(" · ") { it.label + it.daysText.let { d -> if (d.isEmpty()) "" else " $d" } },
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             maxLines = 1,
@@ -233,7 +233,7 @@ private fun TreatmentCard(t: Treatment, today: LocalDate, onClick: () -> Unit, o
                     FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                         times.forEach {
                             Pill(
-                                "${it.timeLabel}${it.daysText.let { d -> if (d.isEmpty()) "" else " $d" }} · ${t.unit.format(t.quantityOn(today, it))}",
+                                "${it.label}${it.daysText.let { d -> if (d.isEmpty()) "" else " $d" }} · ${t.unit.format(t.quantityOn(today, it))}",
                                 container = MaterialTheme.colorScheme.secondaryContainer,
                                 content = MaterialTheme.colorScheme.onSecondaryContainer,
                             )

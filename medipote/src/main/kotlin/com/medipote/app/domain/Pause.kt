@@ -15,7 +15,7 @@ object Pause {
         AlarmKind.WATER, AlarmKind.STOCK, AlarmKind.SLEEP, AlarmKind.WIND_DOWN, AlarmKind.RENEWAL,
         AlarmKind.RITUAL, AlarmKind.RECAP, AlarmKind.PRN_CHECK, AlarmKind.CHECKUP,
     )
-    private val DOSES = setOf(AlarmKind.DOSE, AlarmKind.FOLLOW_UP, AlarmKind.SNOOZE)
+    private val DOSES = setOf(AlarmKind.DOSE, AlarmKind.FOLLOW_UP, AlarmKind.SNOOZE, AlarmKind.WINDOW_END)
 
     fun until(length: Length, now: LocalDateTime): LocalDateTime = when (length) {
         Length.TOMORROW -> now.toLocalDate().plusDays(1).atTime(8, 0)

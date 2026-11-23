@@ -55,14 +55,25 @@ object Precautions {
         Pair(setOf("fer"), setOf("calcium_vitd"), 120, "se gênent l'un l'autre"),
     )
 
-    private fun closest(a: List<Int>, b: List<Int>): Int? =
-        a.flatMap { x -> b.map { y -> abs(x - y).let { d -> minOf(d, 24 * 60 - d) } } }.minOrNull()
+    /** The time of a dose: a single minute, or a window from start to end. */
+    private fun span(d: com.medipote.app.data.DoseTime): IntRange = d.minuteOfDay..(if (d.isWindow) d.untilMinute!! else d.minuteOfDay)
+
+    /** The least time that can separate two doses, going round midnight; zero when their windows overlap. Windows count at their worst. */
+    private fun gap(x: IntRange, y: IntRange): Int =
+        listOf(-24 * 60, 0, 24 * 60).minOf { shift -> maxOf(0, maxOf(x.first, y.first + shift) - minOf(x.last, y.last + shift)) }
+
+    private fun closest(a: List<IntRange>, b: List<IntRange>): Int? = a.flatMap { x -> b.map { y -> gap(x, y) } }.minOrNull()
 
     private fun label(drugId: String, others: List<Treatment>): String = others.firstOrNull { it.drugId == drugId }?.displayName ?: drugId
 
     /** The gap to keep between the medication [drugId] taken at [times] and the other treatments, with what it really is. */
-    fun spacing(drugId: String?, times: List<Int>, others: List<Treatment>): List<Precaution> {
-        if (drugId == null || times.isEmpty()) return emptyList()
+    fun spacing(drugId: String?, times: List<Int>, others: List<Treatment>): List<Precaution> =
+        spacingOf(drugId, times.map { com.medipote.app.data.DoseTime(it) }, others)
+
+    /** Same, for doses that may be time windows: the gap is the smallest one the windows allow. */
+    fun spacingOf(drugId: String?, doses: List<com.medipote.app.data.DoseTime>, others: List<Treatment>): List<Precaution> {
+        if (drugId == null || doses.isEmpty()) return emptyList()
+        val times = doses.map(::span)
         val active = others.filter { !it.asNeeded && it.drugId != null && it.doses.isNotEmpty() }
         return buildList {
             PAIRS.forEach { p ->
@@ -72,10 +83,10 @@ object Precautions {
                     else -> emptyList()
                 }
                 partners.forEach { other ->
-                    val gap = closest(times, other.doses.map { it.minuteOfDay }) ?: return@forEach
+                    val gap = closest(times, other.doses.map(::span)) ?: return@forEach
                     val name = other.displayName
                     val hours = if (p.minutes % 60 == 0) "${p.minutes / 60} h" else "${p.minutes} min"
-                    if (gap < p.minutes) add(Precaution("⏱️", "$name est pris à ${if (gap < 60) "$gap min" else "${gap / 60} h"} d'écart : laisse au moins $hours entre les deux (${if (drugId in p.a) "ils" else "ceux-ci"} ${p.why}).", warn = true))
+                    if (gap < p.minutes) add(Precaution("⏱️", "$name est pris ${if (gap == 0) "en même temps (ou dans la même plage)" else "à ${if (gap < 60) "$gap min" else "${gap / 60} h"} d'écart"} : laisse au moins $hours entre les deux (${if (drugId in p.a) "ils" else "ceux-ci"} ${p.why}).", warn = true))
                     else add(Precaution("✅", "$name : tes horaires laissent assez d'écart (au moins $hours)."))
                 }
             }
@@ -88,12 +99,18 @@ object Precautions {
         return buildList {
             active.forEachIndexed { i, t ->
                 active.drop(i + 1).forEach { u ->
-                    val hit = spacing(t.drugId, t.doses.map { it.minuteOfDay }, listOf(u)).firstOrNull { it.warn }
+                    val hit = spacingOf(t.drugId, t.doses, listOf(u)).firstOrNull { it.warn }
                     if (hit != null) add(t to hit)
                 }
             }
         }
     }
+
+    private val TIME_SENSITIVE = setOf("levothyroxine", "alendronate", "doxycycline", "warfarine", "lithium", "amiodarone", "levonorgestrel_ee", "desogestrel") + QUINOLONES
+
+    /** A word of caution when a dose of a medication whose time matters is set as a time window; null for the others. */
+    fun windowNote(drugId: String?): String? =
+        if (drugId in TIME_SENSITIVE) "Pour ce médicament, l'heure compte (à jeun, écart entre deux prises, régularité) : une heure fixe est plus sûre qu'une plage. Demande conseil à ton pharmacien si tu hésites." else null
 
     /** Every medication of the guide this list speaks of (a check that each one exists there). */
     val knownIds: Set<String> get() = NOTES.keys + PAIRS.flatMap { it.a + it.b }

@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
@@ -262,7 +263,7 @@ private fun DosesStep(state: AppState, kind: RitualKind, now: LocalDateTime, act
         val o = item.occurrence
         Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow), modifier = Modifier.fillMaxWidth()) {
             Row(Modifier.padding(start = 16.dp, end = 8.dp, top = 10.dp, bottom = 10.dp), verticalAlignment = Alignment.CenterVertically) {
-                Text(o.dose.timeLabel, style = MaterialTheme.typography.titleMedium, modifier = Modifier.width(56.dp))
+                Text(o.dose.label, style = MaterialTheme.typography.titleMedium, modifier = Modifier.widthIn(min = 56.dp).padding(end = 8.dp))
                 Column(Modifier.weight(1f)) {
                     Text(o.treatment.displayName, style = MaterialTheme.typography.titleSmall)
                     Text(o.treatment.unit.format(o.quantity), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)

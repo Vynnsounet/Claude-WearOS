@@ -18,9 +18,17 @@ data class DoseOccurrence(val treatment: Treatment, val dose: DoseTime, val date
     val quantity: Double get() = treatment.quantityOn(date, dose)
     val scheduled: LocalDateTime get() = date.atTime(LocalTime.of(dose.minuteOfDay / 60, dose.minuteOfDay % 60)).plusMinutes(treatment.shiftOn(date).toLong())
 
-    /** Last moment the dose can still be given: end of its day, or 4 hours after it for late-evening doses. */
+    /** For a window, when it closes (the day's own shift included); null for a fixed time. */
+    val windowEnd: LocalDateTime?
+        get() = if (dose.isWindow) date.atTime(LocalTime.of(dose.untilMinute!! / 60, dose.untilMinute % 60)).plusMinutes(treatment.shiftOn(date).toLong()) else null
+
+    /** The moment the on-time period ends: the planned time, or the end of the window. */
+    val onTimeUntil: LocalDateTime
+        get() = (windowEnd ?: scheduled).plusMinutes(Rules.ON_TIME_MINUTES)
+
+    /** Last moment the dose can still be given: end of its day, or 4 hours after it (after the window's end) for late-evening doses. */
     val deadline: LocalDateTime
-        get() = maxOf(date.atTime(LocalTime.MAX), scheduled.plusMinutes(Rules.LAST_CALL_MINUTES))
+        get() = maxOf(date.atTime(LocalTime.MAX), (windowEnd ?: scheduled).plusMinutes(Rules.LAST_CALL_MINUTES))
 
     companion object {
         fun keyOf(treatmentId: String, date: LocalDate, minuteOfDay: Int) = "$treatmentId@$date@$minuteOfDay"
@@ -88,6 +96,12 @@ object Rules {
     /** Extra one-time bonus when the daily streak reaches these lengths. */
     val STREAK_MILESTONES = mapOf(7 to 30, 30 to 100, 100 to 300, 365 to 1000)
 
+    /** Taken in a time window: anywhere from its start to its end is on time; only before it is early, after it is late. */
+    fun statusFor(scheduled: LocalDateTime, windowEnd: LocalDateTime?, takenAt: LocalDateTime): TakeStatus {
+        val reference = if (windowEnd == null) scheduled else takenAt.coerceIn(scheduled, windowEnd)
+        return statusFor(reference, takenAt)
+    }
+
     fun statusFor(scheduled: LocalDateTime, takenAt: LocalDateTime): TakeStatus {
         // In whole minutes, rounded towards the planned time: 30 min 59 s late (or early) is still on time.
         val late = Duration.between(scheduled, takenAt).toMinutes()
@@ -118,14 +132,14 @@ object Schedule {
             .filter { o ->
                 // A dose whose on-time window had already closed when the treatment (or this dose time)
                 // was added is not owed.
-                listOfNotNull(o.treatment.createdAt, o.dose.since).all { !o.scheduled.plusMinutes(Rules.ON_TIME_MINUTES).isBefore(it) }
+                listOfNotNull(o.treatment.createdAt, o.dose.since).all { !o.onTimeUntil.isBefore(it) }
             }
             .sortedWith(compareBy({ it.dose.minuteOfDay }, { it.treatment.name }))
 
     fun stateOf(occurrence: DoseOccurrence, log: DoseLog?, now: LocalDateTime): DoseState = when {
         log != null -> DoseState.TAKEN
         now.isBefore(occurrence.scheduled.minusMinutes(Rules.EARLY_WINDOW_MINUTES)) -> DoseState.UPCOMING
-        !now.isAfter(occurrence.scheduled.plusMinutes(Rules.ON_TIME_MINUTES)) -> DoseState.DUE
+        !now.isAfter(occurrence.onTimeUntil) -> DoseState.DUE
         !now.isAfter(occurrence.deadline) -> DoseState.OVERDUE
         else -> DoseState.MISSED
     }

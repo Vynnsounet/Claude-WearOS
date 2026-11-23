@@ -118,6 +118,8 @@ fun TreatmentEditorScreen(
     var withFood by remember { mutableStateOf(existing?.withFood ?: false) }
     var notes by remember { mutableStateOf(existing?.notes.orEmpty()) }
     var editingTime by remember { mutableStateOf<Int?>(null) }
+    /** Whether the time being edited is the end of a window rather than the start. */
+    var editingEnd by remember { mutableStateOf(false) }
     var showInfo by remember { mutableStateOf(false) }
     var confirmDelete by remember { mutableStateOf(false) }
     var trackStock by remember { mutableStateOf(existing?.stock != null) }
@@ -240,7 +242,7 @@ fun TreatmentEditorScreen(
             val precautionDrug = existing?.drugId ?: drug?.id
             PrecautionsCard(
                 com.medipote.app.domain.Precautions.notes(precautionDrug) +
-                    com.medipote.app.domain.Precautions.spacing(precautionDrug, if (asNeeded) emptyList() else doses.map { it.minuteOfDay }, others.filter { it.id != existing?.id }),
+                    com.medipote.app.domain.Precautions.spacingOf(precautionDrug, if (asNeeded) emptyList() else doses.toList(), others.filter { it.id != existing?.id }),
             )
 
             if (allergyHits.isNotEmpty()) {
@@ -327,7 +329,10 @@ fun TreatmentEditorScreen(
                 DoseRow(
                     dose = dose,
                     unit = unit,
-                    onTime = { editingTime = index },
+                    onTime = { editingEnd = false; editingTime = index },
+                    onEnd = { editingEnd = true; editingTime = index },
+                    onWindow = { until, remind -> doses[index] = dose.copy(untilMinute = until, remindEnd = remind) },
+                    windowNote = com.medipote.app.domain.Precautions.windowNote(existing?.drugId ?: drug?.id),
                     onQuantity = { doses[index] = dose.copy(quantity = it) },
                     onRemove = if (doses.size > 1) ({ doses.removeAt(index) }) else null,
                     onDays = { doses[index] = dose.copy(days = it) },
@@ -537,10 +542,19 @@ fun TreatmentEditorScreen(
 
     editingTime?.let { index ->
         TimePickerModal(
-            minuteOfDay = doses.getOrNull(index)?.minuteOfDay ?: (8 * 60),
+            minuteOfDay = doses.getOrNull(index)?.let { if (editingEnd) it.untilMinute else it.minuteOfDay } ?: (8 * 60),
             onDismiss = { editingTime = null },
-            onConfirm = {
-                doses[index] = doses[index].copy(minuteOfDay = it)
+            onConfirm = { minute ->
+                val dose = doses[index]
+                doses[index] = if (editingEnd) {
+                    // A window always ends after it starts.
+                    dose.copy(untilMinute = minute.coerceAtLeast(dose.minuteOfDay + 15).coerceAtMost(24 * 60 - 1))
+                } else {
+                    // Moving the start carries the window along, keeping its length.
+                    val length = dose.untilMinute?.let { it - dose.minuteOfDay }
+                    val until = length?.takeIf { it > 0 }?.let { minute + it }?.takeIf { it <= 24 * 60 - 1 }
+                    dose.copy(minuteOfDay = minute, untilMinute = until, remindEnd = dose.remindEnd && until != null)
+                }
                 editingTime = null
             },
         )
@@ -599,7 +613,20 @@ private fun InfoLine(label: String, text: String) {
 
 @Composable
 @OptIn(ExperimentalLayoutApi::class)
-private fun DoseRow(dose: DoseTime, unit: DoseUnit, onTime: () -> Unit, onQuantity: (Double) -> Unit, onRemove: (() -> Unit)?, onDays: (Set<Int>?) -> Unit = {}) {
+private fun DoseRow(
+    dose: DoseTime,
+    unit: DoseUnit,
+    onTime: () -> Unit,
+    onQuantity: (Double) -> Unit,
+    onRemove: (() -> Unit)?,
+    onDays: (Set<Int>?) -> Unit = {},
+    onEnd: () -> Unit = {},
+    /** Turns the dose into a window ending at the first value (null: a fixed time) and says whether to remind before it closes. */
+    onWindow: (Int?, Boolean) -> Unit = { _, _ -> },
+    /** Shown under a window for a medication whose time matters. */
+    windowNote: String? = null,
+) {
+    var windowOpen by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(dose.isWindow) }
     var daysOpen by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(dose.days != null) }
     Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)) {
       Column {
@@ -609,6 +636,10 @@ private fun DoseRow(dose: DoseTime, unit: DoseUnit, onTime: () -> Unit, onQuanti
                 Spacer(Modifier.width(6.dp))
                 Text(dose.timeLabel, style = MaterialTheme.typography.titleMedium)
             }
+            if (dose.isWindow) {
+                Text("→", style = MaterialTheme.typography.titleMedium)
+                TextButton(onClick = onEnd) { Text(dose.untilLabel, style = MaterialTheme.typography.titleMedium) }
+            }
             Spacer(Modifier.weight(1f))
             IconButton(onClick = { onQuantity(nextQuantity(dose.quantity, false)) }, enabled = dose.quantity > 0.25) {
                 Icon(Icons.Rounded.Remove, "Moins")
@@ -616,6 +647,30 @@ private fun DoseRow(dose: DoseTime, unit: DoseUnit, onTime: () -> Unit, onQuanti
             Text(unit.format(dose.quantity), style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
             IconButton(onClick = { onQuantity(nextQuantity(dose.quantity, true)) }) { Icon(Icons.Rounded.Add, "Plus") }
             if (onRemove != null) IconButton(onClick = onRemove) { Icon(Icons.Rounded.Close, "Retirer cette prise") }
+        }
+        // Fixed time or time window: "fixed" until asked, so the form stays light.
+        TextButton(onClick = { windowOpen = !windowOpen }, modifier = Modifier.padding(start = 4.dp)) {
+            Text(if (dose.isWindow) "🕐  Entre ${dose.timeLabel} et ${dose.untilLabel}" else "🕐  À heure fixe")
+        }
+        if (windowOpen) {
+            Column(Modifier.padding(start = 12.dp, end = 12.dp, bottom = 10.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    FilterChip(selected = !dose.isWindow, onClick = { onWindow(null, false) }, label = { Text("À heure fixe") })
+                    FilterChip(
+                        selected = dose.isWindow,
+                        onClick = { if (!dose.isWindow) onWindow((dose.minuteOfDay + 120).coerceAtMost(24 * 60 - 1).takeIf { it > dose.minuteOfDay }, true) },
+                        label = { Text("Dans une plage") },
+                    )
+                }
+                if (dose.isWindow) {
+                    Text(
+                        "Tu peux la prendre n'importe quand entre ${dose.timeLabel} et ${dose.untilLabel} : c'est « à l'heure » sur toute la plage.",
+                        style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    windowNote?.let { Text("⚠️  $it", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error) }
+                    SwitchRow("Me rappeler avant la fin", dose.remindEnd, supporting = "Un seul rappel, 30 minutes avant, si tu n'as pas encore pris.") { onWindow(dose.untilMinute, it) }
+                }
+            }
         }
         // The days of this dose time: "every day" until asked, so the form stays light.
         TextButton(onClick = { daysOpen = !daysOpen }, modifier = Modifier.padding(start = 4.dp)) {

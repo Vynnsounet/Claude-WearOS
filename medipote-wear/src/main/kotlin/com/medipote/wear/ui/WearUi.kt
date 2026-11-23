@@ -223,7 +223,7 @@ fun HomeScreen(
                 item {
                     val first = doses.first()
                     val doseState = WatchPlanner.state(first, now)
-                    val label = "${first.at.format(hourMinute)} · " + doses.joinToString(", ") { it.name }
+                    val label = "${first.label} · " + doses.joinToString(", ") { it.name }
                     val detail = when (doseState) {
                         WatchDoseState.DUE -> "C'est l'heure"
                         WatchDoseState.LATE -> "En retard"
