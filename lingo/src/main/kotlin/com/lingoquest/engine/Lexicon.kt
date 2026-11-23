@@ -186,7 +186,7 @@ class Lexicon(entries: List<Entry>, private val translations: Map<Lang, Map<Stri
         val forms = forms(entry, lang)
         if (lang != Lang.JA) return forms
         val romaji = fx(entry, lang)?.get("r")?.split('/').orEmpty()
-        return forms + romaji
+        return forms + romaji + romaji.map { it.replace(" ", "") }.filter { it !in romaji }
     }
 
     fun mapOfTranslations() = translations

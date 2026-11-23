@@ -37,6 +37,9 @@ V|A1|eat|eats|ate|manger|mange,manges,mange,mangeons,mangez,mangent|mangé|avoir
 V|A1|see|sees|saw|voir|vois,vois,voit,voyons,voyez,voient|vu|avoir|obj=PALV
 V|A1|go|goes|went|aller|vais,vas,va,allons,allez,vont|allé|être|loc=to:à
 V|A1|come|comes|came|venir|viens,viens,vient,venons,venez,viennent|venu|être|loc=to:à
+V|A1|must|must|-|devoir|dois,dois,doit,devons,devez,doivent|dû|avoir|modal=1
+V|A1|try|tries|tried|essayer|essaie,essaies,essaie,essayons,essayez,essaient|essayé|avoir|inf=to:de
+V|A1|live|lives|lived|habiter|habite,habites,habite,habitons,habitez,habitent|habité|avoir|loc=in:dans
 V|A1|can|can|-|pouvoir|peux,peux,peut,pouvons,pouvez,peuvent|pu|avoir|modal=1
 V|A1|want|wants|wanted|vouloir|veux,veux,veut,voulons,voulez,veulent|voulu|avoir|obj=F|inf=to:
 V|A1|decide|decides|decided|décider|décide,décides,décide,décidons,décidez,décident|décidé|avoir|inf=to:de
@@ -54,7 +57,11 @@ fun miniLexicon(lang: Lang, translations: String): Lexicon {
  * Generates many sentences French → [lang] (prompt in French, answer in [lang]) and checks that every
  * French pattern is rendered with the expected pattern in [lang].
  */
-fun checkPairs(lex: Lexicon, lang: Lang, pairs: List<Pair<String, String>>, samples: Int = 30000, toFrench: Boolean = false) {
+fun checkPairs(
+    lex: Lexicon, lang: Lang, pairs: List<Pair<String, String>>, samples: Int = 30000, toFrench: Boolean = false,
+    /** French sentences matching this are not checked (e.g. clause order differs). */
+    skipIf: Regex? = null,
+) {
     val direction = Direction.of(lang, toFrench)
     val seen = HashSet<String>()
     val entries = lex.forCourse(lang).entries
@@ -64,6 +71,7 @@ fun checkPairs(lex: Lexicon, lang: Lang, pairs: List<Pair<String, String>>, samp
         if (!c.stage.isSentence) return@repeat
         val src = (if (toFrench) c.answer else c.prompt).lowercase().replace(Regex("\\s*\\([^)]*\\)"), "")
         val dst = (if (toFrench) c.prompt else c.answer).lowercase()
+        if (skipIf != null && skipIf.containsMatchIn(src)) return@repeat
         for ((frRe, foRe) in pairs) {
             if (!Regex("(?U)$frRe").containsMatchIn(src)) continue
             assertTrue("'$src' should be /$foRe/ but was '$dst'", Regex("(?U)$foRe").containsMatchIn(dst))

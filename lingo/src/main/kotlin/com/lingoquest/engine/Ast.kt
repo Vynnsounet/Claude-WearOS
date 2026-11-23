@@ -68,6 +68,10 @@ internal data class Caps(
     val pastNeedsGender: Boolean = false,
     /** "can" / "must" agree with the subject's gender (Russian "должен / должна"). */
     val modalNeedsGender: Boolean = false,
+    /** Whether noun phrases may carry a "with" / "in" complement. */
+    val modifiers: Boolean = true,
+    /** Verbs that may be the infinitive after a modal or "want / start…" (Japanese cannot use すき or ほしい there). */
+    val innerVerb: (Verb) -> Boolean = { true },
 )
 
 /** Collects what a realizer used: grammar rules and plausible wrong tiles. */

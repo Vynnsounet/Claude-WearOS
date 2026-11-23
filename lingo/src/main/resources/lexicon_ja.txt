@@ -1,0 +1,448 @@
+# Japanese translations (hiragana / katakana + rōmaji). Format: id|forms (first = canonical)|key=value…
+# r= rōmaji (accepted when typing). Nouns have no gender or plural.
+# adjectives: c=i (い-adjective), na (な-adjective), no (attributive with の, e.g. ほかの), bare (おなじ); st= stem of an irregular い-adjective (いい → よ)
+# verbs: c=1 (ichidan), 5 (godan), or a verb ending in する / くる; c=si / sna = stative verb used like an adjective (ほしい, すき);
+#        loc=ni|de particle of the place, op=ga|ni particle of the object (default を), ti=1 when the present is "te + います",
+#        inf=tai|stem|koto|te how the verb is used as the main verb of "want to / start to / decide to / try to…"
+# adverbs: t=1 for time adverbs
+
+n:dog|いぬ|r=inu
+n:house|いえ|r=ie
+n:apple|りんご|r=ringo
+n:man|おとこのひと|r=otokonohito
+n:water|みず|r=mizu
+n:woman|おんなのひと|r=onnanohito
+n:cat|ねこ|r=neko
+n:bread|パン|r=pan
+n:child|こども|r=kodomo
+n:car|くるま|r=kuruma
+n:book|ほん|r=hon
+n:friend|ともだち|r=tomodachi
+n:school|がっこう|r=gakkou
+n:milk|ぎゅうにゅう|r=gyuunyuu
+n:girl|おんなのこ|r=onnanoko
+n:boy|おとこのこ|r=otokonoko
+n:table|テーブル|r=teeburu
+n:city|まち|r=machi
+n:bird|とり|r=tori
+n:door|ドア|r=doa
+n:coffee|コーヒー|r=koohii
+n:mother|おかあさん|r=okaasan
+n:father|おとうさん|r=otousan
+n:chair|いす|r=isu
+n:street|みち|r=michi
+n:garden|にわ|r=niwa
+n:window|まど|r=mado
+n:horse|うま|r=uma
+n:tea|おちゃ|r=ocha
+n:brother|おにいさん|r=oniisan
+n:sister|おねえさん|r=oneesan
+n:fish|さかな|r=sakana
+n:egg|たまご|r=tamago
+n:cheese|チーズ|r=chiizu
+n:bed|ベッド|r=beddo
+n:bag|かばん|r=kaban
+n:phone|でんわ|r=denwa
+n:baby|あかちゃん|r=akachan
+n:teacher|せんせい|r=sensei
+n:doctor|いしゃ|r=isha
+n:meat|にく|r=niku
+n:fruit|くだもの|r=kudamono
+n:hat|ぼうし|r=boushi
+n:shirt|シャツ|r=shatsu
+n:pen|ペン|r=pen
+n:flower|はな|r=hana
+n:tree|き|r=ki
+n:train|でんしゃ|r=densha
+n:bus|バス|r=basu
+n:boat|ふね|r=fune
+n:bike|じてんしゃ|r=jitensha
+n:shop|みせ|r=mise
+n:kitchen|だいどころ|r=daidokoro
+n:park|こうえん|r=kouen
+n:station|えき|r=eki
+n:restaurant|レストラン|r=resutoran
+n:hospital|びょういん|r=byouin
+n:bank|ぎんこう|r=ginkou
+n:hotel|ホテル|r=hoteru
+n:beach|ビーチ|r=biichi
+n:mountain|やま|r=yama
+n:river|かわ|r=kawa
+n:sea|うみ|r=umi
+n:forest|もり|r=mori
+n:farm|のうじょう|r=noujou
+n:rice|ごはん|r=gohan
+n:soup|スープ|r=suupu
+n:cake|ケーキ|r=keeki
+n:salad|サラダ|r=sarada
+n:chicken|とりにく|r=torinikku
+n:orange|オレンジ|r=orenji
+n:vegetable|やさい|r=yasai
+n:juice|ジュース|r=juusu
+n:wine|ワイン|r=wain
+n:beer|ビール|r=biiru
+n:key|かぎ|r=kagi
+n:letter|てがみ|r=tegami
+n:newspaper|しんぶん|r=shinbun
+n:photo|しゃしん|r=shashin
+n:ball|ボール|r=booru
+n:box|はこ|r=hako
+n:glass|グラス|r=gurasu
+n:cup|カップ|r=kappu
+n:plate|さら|r=sara
+n:knife|ナイフ|r=naifu
+n:computer|コンピューター|r=konpyuutaa
+n:lamp|ランプ|r=ranpu
+n:neighbor|となりのひと|r=tonarinohito
+n:student|がくせい|r=gakusei
+n:farmer|のうか|r=nouka
+n:king|おうさま|r=ousama
+n:queen|じょおう|r=joou
+n:uncle|おじさん|r=ojisan
+n:aunt|おばさん|r=obasan
+n:grandmother|おばあさん|r=obaasan
+n:grandfather|おじいさん|r=ojiisan
+n:cow|うし|r=ushi
+n:pig|ぶた|r=buta
+n:sheep|ひつじ|r=hitsuji
+n:rabbit|うさぎ|r=usagi
+n:mouse|ねずみ|r=nezumi
+n:lion|ライオン|r=raion
+n:elephant|ぞう|r=zou
+n:bear|くま|r=kuma
+n:monkey|さる|r=saru
+n:duck|あひる|r=ahiru
+n:airport|くうこう|r=kuukou
+n:museum|はくぶつかん|r=hakubutsukan
+n:library|としょかん|r=toshokan
+n:church|きょうかい|r=kyoukai
+n:bridge|はし|r=hashi
+n:village|むら|r=mura
+n:island|しま|r=shima
+n:country|くに|r=kuni
+n:office|じむしょ|r=jimusho
+n:market|いちば|r=ichiba
+n:world|せかい|r=sekai
+n:customer|おきゃくさん|r=okyakusan
+n:singer|かしゅ|r=kashu
+n:artist|げいじゅつか|r=geijutsuka
+n:lawyer|べんごし|r=bengoshi
+n:engineer|エンジニア|r=enjinia
+n:nurse|かんごし|r=kangoshi
+n:driver|うんてんしゅ|r=untenshu
+n:thief|どろぼう|r=dorobou
+n:baker|パンや|r=panya
+n:problem|もんだい|r=mondai
+n:idea|アイデア|r=aidea
+n:question|しつもん|r=shitsumon
+n:story|はなし|r=hanashi
+n:song|うた|r=uta
+n:film|えいが|r=eiga
+n:game|ゲーム|r=geemu
+n:gift|プレゼント|r=purezento
+n:suitcase|スーツケース|r=suutsukeesu
+n:ticket|きっぷ|r=kippu
+n:umbrella|かさ|r=kasa
+n:painting|え|r=e
+n:trip|りょこう|r=ryokou
+n:government|せいふ|r=seifu
+n:economy|けいざい|r=keizai
+n:society|しゃかい|r=shakai
+n:decision|けってい|r=kettei
+n:opportunity|きかい|r=kikai
+n:experience|けいけん|r=keiken
+n:project|プロジェクト|r=purojekuto
+n:goal|もくひょう|r=mokuhyou
+n:solution|かいけつさく|r=kaiketsusaku
+n:risk|リスク|r=risuku
+n:habit|しゅうかん|r=shuukan
+n:mistake|まちがい|r=machigai
+n:environment|かんきょう|r=kankyou
+n:politician|せいじか|r=seijika
+n:journalist|きしゃ|r=kisha
+n:scientist|かがくしゃ|r=kagakusha
+n:neighborhood|きんじょ|r=kinjo
+n:harbor|みなと|r=minato
+n:theater|げきじょう|r=gekijou
+n:castle|しろ|r=shiro
+n:magazine|ざっし|r=zasshi
+n:novel|しょうせつ|r=shousetsu
+n:engine|エンジン|r=enjin
+n:tool|どうぐ|r=dougu
+n:achievement|せいか|r=seika
+n:challenge|ちょうせん|r=chousen
+n:dilemma|ジレンマ|r=jirenma
+n:consequence|けっか|r=kekka
+n:behavior|こうどう|r=koudou
+n:compromise|だきょう|r=dakyou
+n:ambition|やぼう|r=yabou
+n:secret|ひみつ|r=himitsu
+n:dream|ゆめ|r=yume
+n:plan|けいかく|r=keikaku
+n:truth|しんじつ|r=shinjitsu
+n:freedom|じゆう|r=jiyuu
+n:wisdom|ちえ|r=chie
+n:heritage|いさん|r=isan
+n:landscape|けしき|r=keshiki
+n:negotiation|こうしょう|r=koushou
+n:investigation|そうさ|r=sousa
+n:inhabitant|じゅうみん|r=juumin
+n:ambassador|たいし|r=taishi
+n:architect|けんちくか|r=kenchikuka
+n:philosopher|てつがくしゃ|r=tetsugakusha
+n:lighthouse|とうだい|r=toudai
+n:monument|きねんひ|r=kinenhi
+n:manuscript|げんこう|r=genkou
+
+a:big|おおきい|r=ookii|c=i
+a:good|いい|r=ii|c=i|st=よ
+a:small|ちいさい|r=chiisai|c=i
+a:new|あたらしい|r=atarashii|c=i
+a:red|あかい|r=akai|c=i
+a:old|ふるい|r=furui|c=i
+a:blue|あおい|r=aoi|c=i
+a:young|わかい|r=wakai|c=i
+a:beautiful|きれい|r=kirei|c=na
+a:bad|わるい|r=warui|c=i
+a:black|くろい|r=kuroi|c=i
+a:white|しろい|r=shiroi|c=i
+a:happy|うれしい|r=ureshii|c=i
+a:green|みどりの|r=midori no|c=no
+a:yellow|きいろい|r=kiiroi|c=i
+a:hot|あつい|r=atsui|c=i
+a:cold|つめたい|r=tsumetai|c=i
+a:fast|はやい|r=hayai|c=i
+a:slow|おそい|r=osoi|c=i
+a:kind|やさしい|r=yasashii|c=i
+a:easy|かんたん|r=kantan|c=na
+a:difficult|むずかしい|r=muzukashii|c=i
+a:expensive|たかい|r=takai|c=i
+a:cheap|やすい|r=yasui|c=i
+a:clean|せいけつ|r=seiketsu|c=na
+a:dirty|きたない|r=kitanai|c=i
+a:empty|からの|r=kara no|c=no
+a:full|いっぱいの|r=ippai no|c=no
+a:strong|つよい|r=tsuyoi|c=i
+a:weak|よわい|r=yowai|c=i
+a:rich|おかねもちの|r=okanemochi no|c=no
+a:quiet|しずか|r=shizuka|c=na
+a:funny|おかしい|r=okashii|c=i
+a:famous|ゆうめい|r=yuumei|c=na
+a:sad|かなしい|r=kanashii|c=i
+a:sick|びょうきの|r=byouki no|c=no
+a:heavy|おもい|r=omoi|c=i
+a:pretty|かわいい|r=kawaii|c=i
+a:long|ながい|r=nagai|c=i
+a:other|ほかの|r=hoka no|c=no
+a:same|おなじ|r=onaji|c=bare
+a:important|じゅうよう|r=juuyou|c=na
+a:different|べつの|r=betsu no|c=no
+a:dangerous|あぶない|r=abunai|c=i
+a:interesting|おもしろい|r=omoshiroi|c=i
+a:serious|まじめ|r=majime|c=na
+a:clever|かしこい|r=kashikoi|c=i
+a:brave|ゆうかん|r=yuukan|c=na
+a:lucky|ラッキー|r=rakkii|c=na
+a:polite|ていねい|r=teinei|c=na
+a:proud|ほこらしい|r=hokorashii|c=i
+a:last|さいごの|r=saigo no|c=no
+a:first|さいしょの|r=saisho no|c=no
+a:next|つぎの|r=tsugi no|c=no
+a:honest|しょうじき|r=shoujiki|c=na
+a:patient|がまんづよい|r=gamanzuyoi|c=i
+a:ancient|こだいの|r=kodai no|c=no
+a:huge|きょだい|r=kyodai|c=na
+a:tiny|ちっぽけ|r=chippoke|c=na
+a:generous|かんだい|r=kandai|c=na
+a:curious|ものずき|r=monozuki|c=na
+a:wise|けんめい|r=kenmei|c=na
+a:silent|むごんの|r=mugon no|c=no
+a:possible|かのう|r=kanou|c=na
+a:necessary|ひつよう|r=hitsuyou|c=na
+a:careful|しんちょう|r=shinchou|c=na
+a:foolish|ばか|r=baka|c=na
+a:lazy|なまけものの|r=namakemono no|c=no
+a:reliable|たしか|r=tashika|c=na
+a:ambitious|やぼうてき|r=yabouteki|c=na
+a:stubborn|がんこ|r=ganko|c=na
+a:fragile|こわれやすい|r=kowareyasui|c=i
+a:ordinary|ふつうの|r=futsuu no|c=no
+a:remarkable|すばらしい|r=subarashii|c=i
+a:modest|けんそん|r=kenson|c=na
+a:mysterious|ふしぎ|r=fushigi|c=na
+a:ruthless|ざんこく|r=zankoku|c=na
+a:wealthy|ゆうふく|r=yuufuku|c=na
+
+v:have|もつ|r=motsu|c=5|ti=1
+v:eat|たべる|r=taberu|c=1
+v:see|みる|r=miru|c=1
+v:drink|のむ|r=nomu|c=5
+v:go|いく|r=iku|c=5|loc=ni
+v:like|すき|r=suki|c=sna|op=ga
+v:want|ほしい|r=hoshii|c=si|op=ga|inf=tai
+v:read|よむ|r=yomu|c=5
+v:live|すむ|r=sumu|c=5|ti=1|loc=ni
+v:sleep|ねる|r=neru|c=1|loc=de
+v:work|はたらく|r=hataraku|c=5|loc=de
+v:walk|あるく|r=aruku|c=5|loc=de
+v:speak|はなす|r=hanasu|c=5
+v:love|だいすき|r=daisuki|c=sna|op=ga
+v:run|はしる|r=hashiru|c=5|loc=de
+v:buy|かう|r=kau|c=5
+v:open|あける|r=akeru|c=1
+v:can|できる|r=dekiru|c=1
+v:take|とる|r=toru|c=5
+v:come|くる|r=kuru|c=kuru|loc=ni
+v:play|あそぶ|r=asobu|c=5|loc=de
+v:cook|りょうりする|r=ryouri suru|c=suru
+v:find|みつける|r=mitsukeru|c=1
+v:write|かく|r=kaku|c=5
+v:drive|うんてんする|r=unten suru|c=suru
+v:must|なければならない|r=nakereba naranai|c=1
+v:arrive|つく|r=tsuku|c=5|loc=ni
+v:stay|のこる|r=nokoru|c=5|loc=ni
+v:leave|でる|r=deru|c=1
+v:close|しめる|r=shimeru|c=1
+v:wash|あらう|r=arau|c=5
+v:sing|うたう|r=utau|c=5
+v:swim|およぐ|r=oyogu|c=5|loc=de
+v:dance|おどる|r=odoru|c=5
+v:try|ためす|r=tamesu|c=5|inf=te
+v:start|はじめる|r=hajimeru|c=1|inf=stem
+v:learn|ならう|r=narau|c=5
+v:choose|えらぶ|r=erabu|c=5
+v:build|たてる|r=tateru|c=1
+v:sell|うる|r=uru|c=5
+v:lose|なくす|r=nakusu|c=5
+v:understand|わかる|r=wakaru|c=5|op=ga
+v:forget|わすれる|r=wasureru|c=1
+v:visit|ほうもんする|r=houmon suru|c=suru
+v:meet|あう|r=au|c=5|op=ni
+v:help|てつだう|r=tetsudau|c=5
+v:carry|はこぶ|r=hakobu|c=5
+v:keep|とっておく|r=totteoku|c=5
+v:bring|もってくる|r=motte kuru|c=kuru
+v:catch|つかまえる|r=tsukamaeru|c=1
+v:fall|おちる|r=ochiru|c=1
+v:enter|はいる|r=hairu|c=5|loc=ni
+v:decide|きめる|r=kimeru|c=1|inf=koto
+v:promise|やくそくする|r=yakusoku suru|c=suru
+v:continue|つづける|r=tsuzukeru|c=1|inf=stem
+v:discover|はっけんする|r=hakken suru|c=suru
+v:lend|かす|r=kasu|c=5
+v:repair|なおす|r=naosu|c=5
+v:offer|ていきょうする|r=teikyou suru|c=suru
+v:achieve|たっせいする|r=tassei suru|c=suru
+v:reveal|あかす|r=akasu|c=5
+v:share|シェアする|r=shea suru|c=suru
+v:improve|かいぜんする|r=kaizen suru|c=suru
+v:avoid|さける|r=sakeru|c=1
+
+d:today|きょう|r=kyou|t=1
+d:now|いま|r=ima|t=1
+d:tomorrow|あした|r=ashita|t=1
+d:yesterday|きのう|r=kinou|t=1
+d:tonight|こんばん|r=konban|t=1
+d:well|じょうずに|r=jouzu ni
+d:quickly|はやく|r=hayaku
+d:slowly|ゆっくり|r=yukkuri
+d:together|いっしょに|r=issho ni
+d:badly|へたに|r=heta ni
+
+w:hello|こんにちは|r=konnichiwa
+w:yes|はい|r=hai
+w:goodbye|さようなら|r=sayounara
+w:no|いいえ|r=iie
+w:please|おねがいします|r=onegaishimasu
+w:thank you|ありがとう|r=arigatou
+w:one|いち|r=ichi
+w:two|に|r=ni
+w:three|さん|r=san
+w:four|よん|r=yon
+w:five|ご|r=go
+w:six|ろく|r=roku
+w:seven|なな|r=nana
+w:eight|はち|r=hachi
+w:nine|きゅう|r=kyuu
+w:ten|じゅう|r=juu
+w:good night|おやすみなさい|r=oyasuminasai
+w:sorry|ごめんなさい|r=gomennasai
+w:welcome|ようこそ|r=youkoso
+w:and|そして|r=soshite
+w:but|しかし|r=shikashi
+w:or|または|r=mataha
+w:with|と|r=to
+w:without|なしで|r=nashi de
+w:in|のなか|r=no naka
+w:on|のうえ|r=no ue
+w:under|のした|r=no shita
+w:for|のために|r=no tame ni
+w:very|とても|r=totemo
+w:more|もっと|r=motto
+w:less|すくなく|r=sukunaku
+w:all|ぜんぶ|r=zenbu
+w:Monday|げつようび|r=getsuyoubi
+w:Tuesday|かようび|r=kayoubi
+w:Wednesday|すいようび|r=suiyoubi
+w:Thursday|もくようび|r=mokuyoubi
+w:Friday|きんようび|r=kinyoubi
+w:Saturday|どようび|r=doyoubi
+w:Sunday|にちようび|r=nichiyoubi
+w:morning|あさ|r=asa
+w:evening|ゆうがた|r=yuugata
+w:night|よる|r=yoru
+w:week|しゅう|r=shuu
+w:year|ねん|r=nen
+w:eleven|じゅういち|r=juuichi
+w:twelve|じゅうに|r=juuni
+w:twenty|にじゅう|r=nijuu
+w:where|どこ|r=doko
+w:why|なぜ|r=naze
+w:how|どう|r=dou
+w:who|だれ|r=dare
+w:when|いつ|r=itsu
+w:always|いつも|r=itsumo
+w:never|ぜんぜん|r=zenzen
+w:often|よく|r=yoku
+w:sometimes|ときどき|r=tokidoki
+w:already|もう|r=mou
+w:maybe|たぶん|r=tabun
+w:because|なぜなら|r=nazenara
+w:if|もし|r=moshi
+w:nothing|なにも|r=nanimo
+w:something|なにか|r=nanika
+w:someone|だれか|r=dareka
+w:near|ちかく|r=chikaku
+w:far|とおく|r=tooku
+w:inside|うちがわ|r=uchigawa
+w:outside|そとがわ|r=sotogawa
+w:behind|うしろ|r=ushiro
+w:between|あいだ|r=aida
+w:during|のあいだ|r=no aida
+w:after|あと|r=ato
+w:before|まえ|r=mae
+w:January|いちがつ|r=ichigatsu
+w:February|にがつ|r=nigatsu
+w:March|さんがつ|r=sangatsu
+w:April|しがつ|r=shigatsu
+w:spring|はる|r=haru
+w:summer|なつ|r=natsu
+w:autumn|あき|r=aki
+w:winter|ふゆ|r=fuyu
+w:hundred|ひゃく|r=hyaku
+w:however|しかしながら|r=shikashinagara
+w:therefore|だから|r=dakara
+w:although|けれども|r=keredomo
+w:despite|にもかかわらず|r=nimokakawarazu
+w:towards|へ|r=e
+w:against|はんたい|r=hantai
+w:since|から|r=kara
+w:until|まで|r=made
+w:enough|じゅうぶん|r=juubun
+w:too much|あまりにも|r=amarinimo
+w:nevertheless|それでも|r=soredemo
+w:meanwhile|そのあいだに|r=sono aida ni
+w:besides|そのうえ|r=sono ue
+w:whereas|いっぽう|r=ippou
+w:rather|むしろ|r=mushiro
+w:anyway|とにかく|r=tonikaku

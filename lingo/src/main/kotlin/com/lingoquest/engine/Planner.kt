@@ -107,7 +107,7 @@ internal class Planner(
 
         var np = NpNode(noun, plural, det, adjective.sortedByDescending { it.before }, rnd.nextBoolean())
         if (allowRelative && caps.relative) np = withRelative(np) ?: np
-        if (modifiers && rnd.nextDouble() < 0.6) np = withModifier(np) ?: np
+        if (modifiers && caps.modifiers && rnd.nextDouble() < 0.6) np = withModifier(np) ?: np
         return np
     }
 
@@ -166,8 +166,8 @@ internal class Planner(
         if (nouns.any { it.hasTag("L") }) patterns += Pattern.COPULA_LOC
         if (verbs.any { it.transitive && !it.modal }) repeat(5) { patterns += Pattern.TRANSITIVE }
         if (plain.any { !it.transitive }) repeat(2) { patterns += Pattern.INTRANSITIVE }
-        if (spec.modal && tense == Tense.PRESENT && verbs.any { it.modal } && plain.isNotEmpty()) repeat(2) { patterns += Pattern.MODAL }
-        if (spec.infinitiveComplement && tense != Tense.FUTURE && verbs.any { it.infEn != null && caps.infinitive(it) } && plain.isNotEmpty()) {
+        if (spec.modal && tense == Tense.PRESENT && verbs.any { it.modal } && plain.any { caps.innerVerb(it) }) repeat(2) { patterns += Pattern.MODAL }
+        if (spec.infinitiveComplement && tense != Tense.FUTURE && verbs.any { it.infEn != null && caps.infinitive(it) } && plain.any { caps.innerVerb(it) }) {
             repeat(2) { patterns += Pattern.INFINITIVE }
         }
         if (patterns.isEmpty()) return null
@@ -223,7 +223,7 @@ internal class Planner(
 
     private fun modal(neg: Boolean): ClauseNode? {
         val modalVerb = pick(verbs.filter { it.modal }) ?: return null
-        val inner = pick(verbs.filter { it.isPlain }) ?: return null
+        val inner = pick(verbs.filter { it.isPlain && caps.innerVerb(it) }) ?: return null
         val tags = modalVerb.subjTags.filter { it in inner.subjTags }
         if (tags.isEmpty()) return null
         val s = subject(tags, caps.modalNeedsGender)
@@ -233,7 +233,7 @@ internal class Planner(
 
     private fun infinitive(tense: Tense, neg: Boolean): ClauseNode? {
         val outer = pick(verbs.filter { it.infEn != null && caps.infinitive(it) }) ?: return null
-        val inner = pick(verbs.filter { it.isPlain }) ?: return null
+        val inner = pick(verbs.filter { it.isPlain && caps.innerVerb(it) }) ?: return null
         val tags = outer.subjTags.filter { it in inner.subjTags }
         if (tags.isEmpty()) return null
         val s = subject(tags, needsGender(tense, outer))
