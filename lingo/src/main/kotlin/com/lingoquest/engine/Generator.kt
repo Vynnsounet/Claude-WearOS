@@ -39,6 +39,9 @@ class Generator(private val rnd: Random = Random.Default) {
         val ids = ArrayList<String>()
         val altEn = ArrayList<String>()
         val altFr = ArrayList<String>()
+        val rules = ArrayList<Rule>()
+
+        fun rule(r: Rule) { if (r !in rules) rules += r }
 
         fun <E : Entry> pick(list: List<E>): E? {
             if (list.isEmpty()) return null
@@ -95,6 +98,7 @@ class Generator(private val rnd: Random = Random.Default) {
             answer = entry.display(direction.to),
             accepted = entry.forms(direction.to),
             bank = emptyList(), entryIds = listOf(entry.id), step = ctx.step,
+            notes = listOfNotNull(Notes.forEntry(entry, direction.to)),
         )
     }
 
@@ -103,6 +107,7 @@ class Generator(private val rnd: Random = Random.Default) {
     private fun build(ctx: Ctx, piece: Piece, direction: Direction, distractors: Int): Challenge? {
         val frTokens = Spelling.french(piece.fr)
         val enTokens = Spelling.english(piece.en.map { it.s })
+        if (frTokens.size != piece.fr.size || frTokens != piece.fr || enTokens != piece.en.map { it.s }) ctx.rule(Rule.ELISION)
         // Re-attach the English hints (the a/an pass keeps the token count).
         val enShown = piece.en.mapIndexed { i, t -> T(enTokens[i], t.hint) }
         if (frTokens.size > 26 || enTokens.size > 26) return null
@@ -121,8 +126,13 @@ class Generator(private val rnd: Random = Random.Default) {
             accepted = listOf(Spelling.join(answerTokens)),
             bank = tiles(ctx, answerTokens, altPool, direction.to, distractors),
             entryIds = ctx.ids.distinct(), step = ctx.step,
+            rules = ctx.rules.toList(), notes = notesFor(ctx, direction.to),
         )
     }
+
+    private fun notesFor(ctx: Ctx, lang: Lang): List<String> =
+        ctx.ids.distinct().mapNotNull { id -> ctx.unlocked.firstOrNull { it.id == id } }
+            .sortedBy { it.pos.ordinal }.mapNotNull { Notes.forEntry(it, lang) }.take(6)
 
     private fun tiles(ctx: Ctx, answer: List<String>, confusers: List<String>, lang: Lang, count: Int): List<String> {
         val used = answer.map { it.lowercase() }.toHashSet()
@@ -180,6 +190,12 @@ class Generator(private val rnd: Random = Random.Default) {
 
     private fun determiner(ctx: Ctx, det: Det, noun: Noun, plural: Boolean): Piece {
         val g = noun.gender
+        when (det) {
+            Det.THE, Det.A -> ctx.rule(Rule.ARTICLE)
+            Det.THIS -> ctx.rule(Rule.DEMONSTRATIVE)
+            else -> ctx.rule(Rule.POSSESSIVE)
+        }
+        if (det == Det.A && plural) ctx.rule(Rule.SOME_DES)
         fun fr(m: String, f: String, pl: String) = if (plural) pl else if (g == Gender.M) m else f
         return when (det) {
             Det.THE -> {
@@ -230,6 +246,8 @@ class Generator(private val rnd: Random = Random.Default) {
         if (det == Det.A && adjective.any { it.en[0] == "other" }) det = Det.THE
         val detPiece = determiner(ctx, det, noun, plural)
 
+        if (plural) ctx.rule(Rule.PLURAL)
+        if (adjective.isNotEmpty()) { ctx.rule(Rule.ADJ_AGREEMENT); ctx.rule(Rule.ADJ_PLACEMENT) }
         // English order: a "before" adjective (size, age, beauty) goes first.
         val ordered = adjective.sortedByDescending { it.before }
         val frBefore = ordered.filter { it.before }
@@ -243,10 +261,11 @@ class Generator(private val rnd: Random = Random.Default) {
         val en = ArrayList<T>(detPiece.en)
         val fr = ArrayList<String>(detPiece.fr)
         // "de bons amis", not "des bons amis".
-        if (det == Det.A && plural && frBefore.isNotEmpty()) fr[0] = "de"
+        if (det == Det.A && plural && frBefore.isNotEmpty()) { fr[0] = "de"; ctx.rule(Rule.DE_ADJ) }
         val enAdj = ordered.map { it.en[0] }
         if (enAdj.size == 2 && frAfter.size == 2) {
             en += T(enAdj[0]); en += T("and"); en += T(enAdj[1])
+            ctx.rule(Rule.ADJ_AND)
         } else {
             enAdj.forEach { en += T(it) }
         }
@@ -255,6 +274,7 @@ class Generator(private val rnd: Random = Random.Default) {
         val nounStartsVowel = Spelling.frVowelStart(nounFr)
         for (a in frBefore) {
             val form = a.fr(noun.gender, plural, nounStartsVowel)
+            if (form != a.fr(noun.gender, plural, false)) ctx.rule(Rule.ADJ_BEL)
             form.split(' ').forEach { fr += it }
             ctx.altFr += a.allFrForms
         }
@@ -291,6 +311,7 @@ class Generator(private val rnd: Random = Random.Default) {
         val (enPrep, frPrep, compTags) = options[rnd.nextInt(options.size)]
         val simple = listOf(Det.THE, Det.A)
         val comp = nounPhrase(ctx, compTags, simple, 0, false, false) ?: return null
+        ctx.rule(Rule.PREP_NP)
         return Np(
             head.en + T(enPrep) + comp.en,
             head.fr + frPrep + comp.fr,
@@ -312,6 +333,7 @@ class Generator(private val rnd: Random = Random.Default) {
             Piece(obj.en, obj.fr)
         } else Piece.EMPTY
         val pred = predicate(ctx, subj, v, Tense.PRESENT, false, rest)
+        ctx.rule(Rule.RELATIVE)
         return Np(head.en + T("that") + pred.en, head.fr + "qui" + pred.fr, head.gender, head.plural, head.noun)
     }
 
@@ -354,6 +376,7 @@ class Generator(private val rnd: Random = Random.Default) {
             }
         }
         val p = pronounChoices[rnd.nextInt(pronounChoices.size)]
+        ctx.rule(Rule.PRONOUNS)
         ctx.altEn += pronouns.flatMap { it.en.map(T::s) }
         ctx.altFr += pronouns.flatMap { it.fr }
         return p
@@ -375,8 +398,10 @@ class Generator(private val rnd: Random = Random.Default) {
         val p = s.person
         ctx.altEn += listOf(base, v.en3, v.enPast).filter { it != "-" }
         ctx.altFr += v.present + v.fr[0] + v.participle
+        if (neg) ctx.rule(Rule.NEGATION)
         when {
             v.modal -> {
+                ctx.rule(Rule.MODAL)
                 if (neg) {
                     if (base == "can") en += T("cannot") else { en += T(base); en += T("not") }
                     fr += listOf("ne", v.present[p], "pas")
@@ -386,6 +411,7 @@ class Generator(private val rnd: Random = Random.Default) {
                 }
             }
             tense == Tense.PRESENT -> {
+                ctx.rule(Rule.PRESENT)
                 if (neg) {
                     en += listOf(T(if (s.thirdSg) "does" else "do"), T("not"), T(base))
                     fr += listOf("ne", v.present[p], "pas")
@@ -395,6 +421,7 @@ class Generator(private val rnd: Random = Random.Default) {
                 }
             }
             tense == Tense.PAST -> {
+                ctx.rule(if (v.aux == Aux.ETRE) Rule.PASSE_COMPOSE_ETRE else Rule.PASSE_COMPOSE)
                 val aux = if (v.aux == Aux.ETRE) etrePres[p] else avoirPres[p]
                 val ptcp = agreeParticiple(v, s)
                 ctx.altFr += (if (v.aux == Aux.ETRE) etrePres else avoirPres)
@@ -407,6 +434,7 @@ class Generator(private val rnd: Random = Random.Default) {
                 }
             }
             tense == Tense.FUTURE -> {
+                ctx.rule(Rule.FUTURE)
                 en += T(enBe(s, Tense.PRESENT))
                 if (neg) en += T("not")
                 en += listOf(T("going"), T("to"), T(base))
@@ -420,6 +448,9 @@ class Generator(private val rnd: Random = Random.Default) {
         val en = ArrayList<T>()
         val fr = ArrayList<String>()
         val p = s.person
+        ctx.rule(Rule.COPULA)
+        if (neg) ctx.rule(Rule.NEGATION)
+        if (tense == Tense.FUTURE) ctx.rule(Rule.FUTURE)
         ctx.altEn += listOf("is", "are", "am", "was", "were", "not")
         ctx.altFr += etrePres + etreImparfait
         when (tense) {
@@ -441,6 +472,7 @@ class Generator(private val rnd: Random = Random.Default) {
 
     private fun locativePhrase(ctx: Ctx, enPrep: String?, frPrep: String, tags: String = "L"): Piece? {
         val np = nounPhrase(ctx, tags, ctx.spec.dets, 0, false, false) ?: return null
+        ctx.rule(Rule.PLACE_PREP)
         val en = ArrayList<T>()
         if (!enPrep.isNullOrEmpty()) en += T(enPrep)
         en += np.en
@@ -470,7 +502,7 @@ class Generator(private val rnd: Random = Random.Default) {
         if (patterns.isEmpty()) return null
 
         repeat(10) {
-            val mark = Triple(ctx.ids.size, ctx.altEn.size, ctx.altFr.size)
+            val mark = intArrayOf(ctx.ids.size, ctx.altEn.size, ctx.altFr.size, ctx.rules.size)
             val result = when (patterns[rnd.nextInt(patterns.size)]) {
                 Pattern.COPULA_ADJ -> copulaAdj(ctx, tense, neg)
                 Pattern.COPULA_LOC -> copulaLoc(ctx, tense, neg)
@@ -480,9 +512,10 @@ class Generator(private val rnd: Random = Random.Default) {
                 Pattern.INFINITIVE -> infinitive(ctx, tense, neg)
             }
             if (result != null) return result
-            ctx.ids.subList(mark.first, ctx.ids.size).clear()
-            ctx.altEn.subList(mark.second, ctx.altEn.size).clear()
-            ctx.altFr.subList(mark.third, ctx.altFr.size).clear()
+            ctx.ids.subList(mark[0], ctx.ids.size).clear()
+            ctx.altEn.subList(mark[1], ctx.altEn.size).clear()
+            ctx.altFr.subList(mark[2], ctx.altFr.size).clear()
+            ctx.rules.subList(mark[3], ctx.rules.size).clear()
         }
         return null
     }
@@ -501,6 +534,7 @@ class Generator(private val rnd: Random = Random.Default) {
         if (!ctx.spec.adverbs || rnd.nextDouble() > 0.4) return Piece.EMPTY
         val ok = ctx.advs.filter { it.fits(tense) && (!it.manner || intransitiveBare) }
         val adv = ctx.pick(ok) ?: return Piece.EMPTY
+        ctx.rule(Rule.ADVERB)
         return Piece(adv.en[0].split(' ').map { T(it) }, adv.fr[0].split(' '))
     }
 
@@ -553,6 +587,7 @@ class Generator(private val rnd: Random = Random.Default) {
         if (tags.isEmpty()) return null
         val s = subjectFor(ctx, tags, false) ?: return null
         val tail = innerVerbPiece(ctx, inner) ?: return null
+        ctx.rule(Rule.INFINITIVE)
         val enRest = ArrayList<T>()
         if (!outer.infEn.isNullOrEmpty()) enRest += T(outer.infEn)
         enRest += T(inner.en[0])
@@ -569,6 +604,7 @@ class Generator(private val rnd: Random = Random.Default) {
         val s = subjectFor(ctx, "PA", true) ?: return null
         val adj = ctx.pick(ctx.adjs.filter { adjFits(it, "P") }) ?: return null
         val form = adj.fr(s.gender, s.plural)
+        ctx.rule(Rule.ADJ_AGREEMENT)
         ctx.altFr += adj.allFrForms
         val rest = Piece(adj.en[0].split(' ').map { T(it) }, form.split(' '))
         return complete(s, copula(ctx, s, tense, neg, rest))
@@ -594,6 +630,7 @@ class Generator(private val rnd: Random = Random.Default) {
         }
         // "if" clauses stay in the present; the other clauses share one tense.
         val tense = if (joiners.firstOrNull() == Conn.IF) Tense.PRESENT else chooseTense(ctx)
+        if (joiners.isNotEmpty()) ctx.rule(Rule.CONNECTORS)
         val clauses = ArrayList<Clause>()
         repeat(count) { clauses += clause(ctx, tense) ?: return null }
 

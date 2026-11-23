@@ -32,6 +32,7 @@ mécanique de jeu : XP, niveaux, vocabulaire à débloquer et séries à 3 vies.
   courant, chaque niveau du joueur débloque une nouvelle tranche de mots (par ordre de fréquence). Le
   premier niveau de chaque palier en donne au moins 12 (A1) ou 5, le dernier complète le palier.
   L'écran « Mes mots » liste tout, avec le niveau qui débloque chaque mot.
+- **Explications après une erreur.** L'écran de correction montre ta réponse, la bonne réponse, puis « Comprendre l'erreur » : les faits sur les mots (genre, pluriel, table de conjugaison, auxiliaire) et les règles de grammaire de la phrase (articles, accord des adjectifs, place de l'adjectif, élision, passé composé avec être, négation, futur proche, verbe + infinitif, etc.), avec un exemple. Le générateur note les règles au moment où il construit la phrase, donc l'explication correspond à la phrase posée.
 - Les mots ratés reviennent plus souvent, ainsi que les mots tout juste débloqués.
 - **Deux sens** au choix : Français → English (par défaut) ou English → Français.
 

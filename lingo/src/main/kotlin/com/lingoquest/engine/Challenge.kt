@@ -114,6 +114,10 @@ data class Challenge(
     /** Lexicon entries used, so mistakes can be tracked per word. */
     val entryIds: List<String>,
     val step: Int,
+    /** Grammar points involved, explained to the player after a mistake. */
+    val rules: List<Rule> = emptyList(),
+    /** Facts about the words used (gender, plural, conjugation) in the answer language. */
+    val notes: List<String> = emptyList(),
 ) {
     val typed get() = bank.isEmpty()
 }

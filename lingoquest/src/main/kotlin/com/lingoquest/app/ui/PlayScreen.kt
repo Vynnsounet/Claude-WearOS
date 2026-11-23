@@ -45,6 +45,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
@@ -249,57 +250,87 @@ private fun FeedbackPanel(feedback: Feedback, onNext: () -> Unit) {
     val container = if (outcome.correct) MaterialTheme.game.goodContainer else MaterialTheme.colorScheme.errorContainer
     val content = if (outcome.correct) MaterialTheme.game.onGoodContainer else MaterialTheme.colorScheme.onErrorContainer
     Surface(color = container, contentColor = content, shape = MaterialTheme.shapes.large) {
-        Column(
-            Modifier.fillMaxWidth().padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Icon(if (outcome.correct) Icons.Rounded.Check else Icons.Rounded.Close, contentDescription = null)
-                Text(
-                    if (outcome.correct) "Bravo !  +${outcome.xpGained} XP" else "Raté…",
-                    style = MaterialTheme.typography.titleLarge,
-                )
-            }
-            if (outcome.milestoneBonus > 0) {
-                Text("Bonus de série : +${outcome.milestoneBonus} XP", style = MaterialTheme.typography.titleMedium)
-            }
-            if (!outcome.correct) {
-                Text("La bonne réponse :", style = MaterialTheme.typography.labelLarge)
-                Text(outcome.expected, style = MaterialTheme.typography.titleLarge)
-                if (outcome.runOver) {
-                    Text("Dernière vie perdue : la série s'arrête.", style = MaterialTheme.typography.bodyMedium)
-                } else {
+        Column(Modifier.fillMaxWidth().heightIn(max = 460.dp).padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Column(
+                Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Icon(if (outcome.correct) Icons.Rounded.Check else Icons.Rounded.Close, contentDescription = null)
                     Text(
-                        "Il te reste ${outcome.lives} vie" + if (outcome.lives > 1) "s." else ".",
-                        style = MaterialTheme.typography.bodyMedium,
+                        if (outcome.correct) "Bravo !  +${outcome.xpGained} XP" else "Raté…",
+                        style = MaterialTheme.typography.titleLarge,
                     )
                 }
-            } else if (outcome.accentWarning) {
-                Text("Attention aux accents : ${outcome.expected}", style = MaterialTheme.typography.bodyMedium)
-            }
-            outcome.levelUp?.let { up ->
-                Text(
-                    "Niveau ${up.level} !" + if (up.cefrChanged) "  Tu passes au niveau ${up.cefr.name} !" else "",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                )
-                if (up.newWords.isNotEmpty()) {
-                    val shown = up.newWords.take(8).joinToString(", ") { it.pairText() }
-                    val more = up.newWords.size - 8
+                if (outcome.milestoneBonus > 0) {
+                    Text("Bonus de série : +${outcome.milestoneBonus} XP", style = MaterialTheme.typography.titleMedium)
+                }
+                if (!outcome.correct) {
+                    Text("Ta réponse :", style = MaterialTheme.typography.labelLarge)
+                    Text(feedback.given, style = MaterialTheme.typography.titleMedium)
+                    Text("La bonne réponse :", style = MaterialTheme.typography.labelLarge)
+                    Text(outcome.expected, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                    if (outcome.runOver) {
+                        Text("Dernière vie perdue : la série s'arrête.", style = MaterialTheme.typography.bodyMedium)
+                    } else {
+                        Text(
+                            "Il te reste ${outcome.lives} vie" + if (outcome.lives > 1) "s." else ".",
+                            style = MaterialTheme.typography.bodyMedium,
+                        )
+                    }
+                    Explanation(feedback.challenge, content)
+                } else if (outcome.accentWarning) {
+                    Text("Attention aux accents : ${outcome.expected}", style = MaterialTheme.typography.bodyMedium)
+                }
+                outcome.levelUp?.let { up ->
                     Text(
-                        "Nouveaux mots : $shown" + if (more > 0) " (+$more)" else "",
-                        style = MaterialTheme.typography.bodyMedium,
+                        "Niveau ${up.level} !" + if (up.cefrChanged) "  Tu passes au niveau ${up.cefr.name} !" else "",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
                     )
+                    if (up.newWords.isNotEmpty()) {
+                        val shown = up.newWords.take(8).joinToString(", ") { it.pairText() }
+                        val more = up.newWords.size - 8
+                        Text(
+                            "Nouveaux mots : $shown" + if (more > 0) " (+$more)" else "",
+                            style = MaterialTheme.typography.bodyMedium,
+                        )
+                    }
                 }
             }
             Button(
                 onClick = onNext,
                 modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = content,
-                    contentColor = container,
-                ),
+                colors = ButtonDefaults.buttonColors(containerColor = content, contentColor = container),
             ) { Text(if (outcome.runOver) "Voir le bilan" else "Continuer", style = MaterialTheme.typography.titleMedium) }
+        }
+    }
+}
+
+/** After a mistake: the facts about the words and the grammar rules behind the sentence. */
+@Composable
+private fun Explanation(challenge: Challenge, accent: Color) {
+    if (challenge.notes.isEmpty() && challenge.rules.isEmpty()) return
+    Surface(
+        shape = MaterialTheme.shapes.medium,
+        color = accent.copy(alpha = 0.10f),
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Text("Comprendre l'erreur", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+            if (challenge.notes.isNotEmpty()) {
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text("Les mots", style = MaterialTheme.typography.labelLarge)
+                    challenge.notes.forEach { Text("• $it", style = MaterialTheme.typography.bodyMedium) }
+                }
+            }
+            challenge.rules.forEach { rule ->
+                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    Text(rule.title, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
+                    Text(rule.text, style = MaterialTheme.typography.bodyMedium)
+                    Text(rule.example, style = MaterialTheme.typography.bodySmall, fontStyle = FontStyle.Italic)
+                }
+            }
         }
     }
 }
