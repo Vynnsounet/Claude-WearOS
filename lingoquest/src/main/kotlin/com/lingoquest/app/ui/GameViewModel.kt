@@ -9,6 +9,7 @@ import com.lingoquest.engine.Direction
 import com.lingoquest.engine.Entry
 import com.lingoquest.engine.GameSession
 import com.lingoquest.engine.Judge
+import com.lingoquest.engine.Lang
 import com.lingoquest.engine.Lexicon
 import com.lingoquest.engine.Outcome
 import com.lingoquest.engine.Profile
@@ -20,13 +21,13 @@ import kotlinx.coroutines.flow.asStateFlow
 enum class Screen { HOME, PLAY, WORDS }
 
 /** What the player just answered, shown until they tap "Continuer". */
-data class Feedback(val outcome: Outcome, val challenge: Challenge, val given: String)
+data class Feedback(val outcome: Outcome, val challenge: Challenge, val given: String, val newWords: List<String> = emptyList())
 
 /** End-of-series recap, shown after the third mistake. */
 data class RunSummary(val reached: Int, val xp: Int, val best: Int, val newBest: Boolean)
 
-/** A lexicon entry with the player level at which it unlocks. */
-data class WordRow(val entry: Entry, val unlockLevel: Int)
+/** A word of the course with the player level at which it unlocks. */
+data class WordRow(val entry: Entry, val unlockLevel: Int, val foreign: String, val french: String)
 
 data class UiState(
     val screen: Screen,
@@ -41,6 +42,8 @@ data class UiState(
     val totalWords: Int,
     /** Words the next level will unlock. */
     val nextLevelWords: Int,
+    /** Player level in every course, for the language picker. */
+    val courseLevels: Map<Lang, Int>,
     val challenge: Challenge?,
     val step: Int,
     val lives: Int,
@@ -59,14 +62,21 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
     private val session = GameSession(lexicon, store.load())
     private var pendingSummary: RunSummary? = null
 
-    /** Every word with the level that unlocks it, for the vocabulary screen. */
-    val wordRows: List<WordRow> by lazy {
+    private val wordRowsCache = HashMap<Lang, List<WordRow>>()
+
+    /** Every word of [course] with the level that unlocks it, for the vocabulary screen. */
+    fun wordRows(course: Lang): List<WordRow> = wordRowsCache.getOrPut(course) {
+        val vocabulary = lexicon.forCourse(course)
         val unlockLevel = HashMap<String, Int>()
         for (level in 1..Progression.MAX_LEVEL) {
-            Progression.newWordsAt(lexicon, level).forEach { unlockLevel.putIfAbsent(it.id, level) }
+            Progression.newWordsAt(vocabulary, level).forEach { unlockLevel.putIfAbsent(it.id, level) }
         }
-        lexicon.entries.map { WordRow(it, unlockLevel[it.id] ?: Progression.MAX_LEVEL) }
+        vocabulary.entries.map {
+            WordRow(it, unlockLevel[it.id] ?: Progression.MAX_LEVEL, lexicon.display(it, course), lexicon.display(it, Lang.FR))
+        }
     }
+
+    private fun describe(entry: Entry, course: Lang) = "${lexicon.display(entry, course)} → ${lexicon.display(entry, Lang.FR)}"
 
     private val _ui = MutableStateFlow(snapshot(Screen.HOME))
     val ui: StateFlow<UiState> = _ui.asStateFlow()
@@ -74,6 +84,7 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
     private fun snapshot(screen: Screen): UiState {
         val profile = session.profile
         val level = session.level
+        val vocabulary = session.lexicon
         return UiState(
             screen = screen,
             profile = profile,
@@ -82,9 +93,10 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
             levelProgress = Progression.levelProgress(profile.xp),
             xpInLevel = profile.xp - Progression.xpForLevel(level),
             xpForNext = if (level >= Progression.MAX_LEVEL) 0 else Progression.xpToNext(level),
-            unlockedWords = Progression.unlockedCount(lexicon, level),
-            totalWords = lexicon.entries.size,
-            nextLevelWords = if (level >= Progression.MAX_LEVEL) 0 else Progression.newWordsAt(lexicon, level + 1).size,
+            unlockedWords = Progression.unlockedCount(vocabulary, level),
+            totalWords = vocabulary.entries.size,
+            nextLevelWords = if (level >= Progression.MAX_LEVEL) 0 else Progression.newWordsAt(vocabulary, level + 1).size,
+            courseLevels = Lang.courses.associateWith { profile.progressOf(it).level },
             challenge = session.challenge,
             step = session.step,
             lives = session.lives,
@@ -117,6 +129,9 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
         pendingSummary = null
         _ui.value = snapshot(Screen.HOME)
     }
+
+    /** Picks the language to learn, keeping the direction (towards French or from French). */
+    fun setCourse(course: Lang) = setDirection(Direction.of(course, session.profile.toFrench))
 
     fun setDirection(direction: Direction) {
         if (direction == session.profile.direction) return
@@ -159,7 +174,9 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
         pendingSummary = if (outcome.runOver) {
             RunSummary(outcome.step, session.runXp, session.profile.bestStep, outcome.step > bestBefore)
         } else null
-        _ui.value = snapshot(Screen.PLAY).copy(feedback = Feedback(outcome, challenge, answer))
+        val course = session.profile.course
+        val newWords = outcome.levelUp?.newWords.orEmpty().map { describe(it, course) }
+        _ui.value = snapshot(Screen.PLAY).copy(feedback = Feedback(outcome, challenge, answer, newWords))
     }
 
     /** "Continuer": moves on to the next challenge, or to the recap when the series is over. */

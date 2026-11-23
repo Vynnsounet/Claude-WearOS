@@ -18,8 +18,8 @@ needs no phone app.
   get a clear message on the watch.
 
 > This repository also contains **LingoQuest** (`lingoquest/`, engine in `lingo/`), a language-learning
-> game for Android: translate words, phrases and ever-longer sentences to earn XP, unlock vocabulary and
-> climb from A1 to C1. See [lingoquest/README.md](lingoquest/README.md).
+> game for Android: translate words, phrases and ever-longer sentences (English, Spanish, German, Japanese or
+> Russian ↔ French) to earn XP, unlock vocabulary and climb from A1 to C1. See [lingoquest/README.md](lingoquest/README.md).
 >
 > It also contains **MédiPote** (`medipote/`), a separate Android
 > phone app that turns taking medication into caring for a virtual pet. See
@@ -30,7 +30,7 @@ needs no phone app.
 | Module | What it is |
 |---|---|
 | `core/` | Plain Kotlin/JVM library around the official [Anthropic Java SDK](https://github.com/anthropics/anthropic-sdk-java): `ClaudeChat` (conversation history and streaming as a `Flow<ChatEvent>`) and `ChatConfig`. It has no Android dependencies, so it is unit-tested on the JVM against a local fake server. |
-| `lingo/` | The LingoQuest game engine: lexicon, bilingual sentence generator, XP and levels. Plain Kotlin/JVM with unit tests. |
+| `lingo/` | The LingoQuest game engine: lexicon, multilingual sentence generator (French ↔ English, Spanish, German, Japanese, Russian), XP and levels. Plain Kotlin/JVM with unit tests. |
 | `lingoquest/` | LingoQuest, a standalone Android phone app built on `lingo/` (see its README). |
 | `medipote/` | MédiPote, a standalone Android phone app for medication reminders (see its README). |
 | `app/` | The Wear OS app: Compose for Wear OS (Material 3), a `ChatViewModel`, voice and keyboard input, and settings. The API key is kept in DataStore. |

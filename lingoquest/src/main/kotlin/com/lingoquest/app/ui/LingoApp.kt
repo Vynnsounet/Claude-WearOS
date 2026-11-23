@@ -5,7 +5,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.lingoquest.app.ui.theme.LingoTheme
-import com.lingoquest.engine.Entry
 import com.lingoquest.engine.Lang
 import com.lingoquest.engine.Pos
 import com.lingoquest.engine.Stage
@@ -18,7 +17,7 @@ fun LingoApp(vm: GameViewModel) {
         when (state.screen) {
             Screen.HOME -> HomeScreen(state, vm)
             Screen.PLAY -> PlayScreen(state, vm)
-            Screen.WORDS -> WordsScreen(state, vm.wordRows, onBack = vm::back)
+            Screen.WORDS -> WordsScreen(state, vm.wordRows(state.profile.course), onBack = vm::back)
         }
     }
 }
@@ -40,7 +39,4 @@ fun Pos.label(): String = when (this) {
     Pos.WORD -> "mot"
 }
 
-fun Lang.label(): String = if (this == Lang.EN) "anglais" else "français"
-
-/** "house → maison" */
-fun Entry.pairText(): String = "${display(Lang.EN)} → ${display(Lang.FR)}"
+fun Lang.label(): String = nameFr

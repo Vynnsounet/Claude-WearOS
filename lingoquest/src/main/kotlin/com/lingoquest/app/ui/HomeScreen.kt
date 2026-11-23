@@ -2,6 +2,8 @@ package com.lingoquest.app.ui
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -16,6 +18,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -33,6 +36,7 @@ import androidx.compose.ui.unit.dp
 import com.lingoquest.app.ui.theme.game
 import com.lingoquest.engine.Cefr
 import com.lingoquest.engine.Direction
+import com.lingoquest.engine.Lang
 import com.lingoquest.engine.Progression
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -56,19 +60,7 @@ fun HomeScreen(state: UiState, vm: GameViewModel) {
                 StatCard("Séries jouées", "${state.profile.runs}", Modifier.weight(1f))
             }
 
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("Je traduis", style = MaterialTheme.typography.titleMedium)
-                SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
-                    val options = listOf(Direction.FR_TO_EN to "Français → English", Direction.EN_TO_FR to "English → Français")
-                    options.forEachIndexed { index, (direction, label) ->
-                        SegmentedButton(
-                            selected = state.profile.direction == direction,
-                            onClick = { vm.setDirection(direction) },
-                            shape = SegmentedButtonDefaults.itemShape(index, options.size),
-                        ) { Text(label) }
-                    }
-                }
-            }
+            CoursePicker(state, vm)
 
             Button(onClick = vm::startRun, modifier = Modifier.fillMaxWidth().height(56.dp)) {
                 Icon(Icons.Rounded.PlayArrow, contentDescription = null)
@@ -82,6 +74,36 @@ fun HomeScreen(state: UiState, vm: GameViewModel) {
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
+@Composable
+private fun CoursePicker(state: UiState, vm: GameViewModel) {
+    val course = state.profile.course
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text("Je veux apprendre", style = MaterialTheme.typography.titleMedium)
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            for (lang in Lang.courses) {
+                FilterChip(
+                    selected = lang == course,
+                    onClick = { vm.setCourse(lang) },
+                    label = { Text("${lang.nameFr.replaceFirstChar { it.uppercase() }} · niv. ${state.courseLevels[lang] ?: 1}") },
+                )
+            }
+        }
+        Text("Je traduis", style = MaterialTheme.typography.titleMedium)
+        SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
+            val name = course.nameFr.replaceFirstChar { it.uppercase() }
+            val options = listOf(Direction.of(course, false) to "Français → $name", Direction.of(course, true) to "$name → Français")
+            options.forEachIndexed { index, (direction, label) ->
+                SegmentedButton(
+                    selected = state.profile.direction == direction,
+                    onClick = { vm.setDirection(direction) },
+                    shape = SegmentedButtonDefaults.itemShape(index, options.size),
+                ) { Text(label) }
+            }
+        }
+    }
+}
+
 @Composable
 private fun LevelCard(state: UiState) {
     Card(
@@ -90,7 +112,7 @@ private fun LevelCard(state: UiState) {
     ) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
-                Text("Niveau ${state.level}", style = MaterialTheme.typography.headlineSmall, color = MaterialTheme.colorScheme.onPrimaryContainer)
+                Text("${state.profile.course.nameFr.replaceFirstChar { it.uppercase() }} · niveau ${state.level}", style = MaterialTheme.typography.headlineSmall, color = MaterialTheme.colorScheme.onPrimaryContainer)
                 Surface(shape = MaterialTheme.shapes.small, color = MaterialTheme.colorScheme.primary) {
                     Text(
                         state.cefr.name,
@@ -134,10 +156,10 @@ private fun HowToPlay() {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Text("Comment jouer", style = MaterialTheme.typography.titleMedium)
             val rules = listOf(
-                "Traduis chaque mot, groupe nominal ou phrase. Les défis s'allongent à chaque bonne réponse.",
+                "Choisis une langue (anglais, espagnol, allemand, japonais ou russe) et traduis chaque mot, groupe nominal ou phrase. Les défis s'allongent à chaque bonne réponse.",
                 "Chaque bonne réponse rapporte de l'XP, de plus en plus loin dans la série.",
                 "3 erreurs : la série s'arrête et tu repars de zéro (ton XP et ton niveau sont conservés).",
-                "Chaque niveau débloque de nouveaux mots ; tous les 25 niveaux, le niveau de langue monte (A1 → A2 → B1 → B2 → C1).",
+                "Chaque langue a sa propre progression. Chaque niveau débloque de nouveaux mots ; tous les 25 niveaux, le niveau de langue monte (A1 → A2 → B1 → B2 → C1).",
             )
             rules.forEach { Text("• $it", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant) }
         }

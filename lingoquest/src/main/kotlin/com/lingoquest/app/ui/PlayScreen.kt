@@ -179,7 +179,7 @@ private fun TypedAnswer(challenge: Challenge, state: UiState, vm: GameViewModel,
         onValueChange = vm::onTyped,
         enabled = enabled,
         singleLine = true,
-        label = { Text("Ta traduction en ${challenge.direction.to.label()}") },
+        label = { Text("Ta traduction en ${challenge.direction.to.label()}" + if (challenge.direction.to == Lang.JA) " (kana ou rōmaji)" else "") },
         keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.None, imeAction = ImeAction.Done),
         keyboardActions = KeyboardActions(onDone = { vm.submit() }),
         modifier = Modifier.fillMaxWidth().focusRequester(focus),
@@ -288,9 +288,9 @@ private fun FeedbackPanel(feedback: Feedback, onNext: () -> Unit) {
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                     )
-                    if (up.newWords.isNotEmpty()) {
-                        val shown = up.newWords.take(8).joinToString(", ") { it.pairText() }
-                        val more = up.newWords.size - 8
+                    if (feedback.newWords.isNotEmpty()) {
+                        val shown = feedback.newWords.take(8).joinToString(", ")
+                        val more = feedback.newWords.size - 8
                         Text(
                             "Nouveaux mots : $shown" + if (more > 0) " (+$more)" else "",
                             style = MaterialTheme.typography.bodyMedium,

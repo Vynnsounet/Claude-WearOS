@@ -1,7 +1,7 @@
 # LingoQuest
 
-Une application Android (téléphone) pour apprendre l'anglais ou le français en **traduisant**, avec une
-mécanique de jeu : XP, niveaux, vocabulaire à débloquer et séries à 3 vies.
+Une application Android (téléphone) pour apprendre l'**anglais, l'espagnol, l'allemand, le japonais ou le russe** en
+**traduisant** depuis ou vers le français, avec une mécanique de jeu : XP, niveaux, vocabulaire à débloquer et séries à 3 vies.
 
 ## Le principe
 
@@ -34,7 +34,7 @@ mécanique de jeu : XP, niveaux, vocabulaire à débloquer et séries à 3 vies.
   L'écran « Mes mots » liste tout, avec le niveau qui débloque chaque mot.
 - **Explications après une erreur.** L'écran de correction montre ta réponse, la bonne réponse, puis « Comprendre l'erreur » : les faits sur les mots (genre, pluriel, table de conjugaison, auxiliaire) et les règles de grammaire de la phrase (articles, accord des adjectifs, place de l'adjectif, élision, passé composé avec être, négation, futur proche, verbe + infinitif, etc.), avec un exemple. Le générateur note les règles au moment où il construit la phrase, donc l'explication correspond à la phrase posée.
 - Les mots ratés reviennent plus souvent, ainsi que les mots tout juste débloqués.
-- **Deux sens** au choix : Français → English (par défaut) ou English → Français.
+- **Cinq langues, deux sens.** Chaque langue est un cours indépendant (son XP, son niveau, ses mots débloqués, ses records). Le français est toujours un des deux côtés : on traduit *Français → langue* ou *langue → Français*.
 
 ## Le générateur de phrases
 
@@ -56,12 +56,24 @@ mécanique de jeu : XP, niveaux, vocabulaire à débloquer et séries à 3 vies.
 
 ### Ajouter des mots
 
-Ajouter une ligne dans `lexicon.txt` (le format est décrit en tête du fichier). L'ordre dans le fichier
+Ajouter une ligne dans `lexicon.txt` (le format est décrit en tête du fichier), puis sa traduction dans `lexicon_es.txt`, `lexicon_de.txt`, `lexicon_ru.txt` et `lexicon_ja.txt` (un mot sans traduction est simplement absent du cours concerné). L'ordre dans le fichier
 est l'ordre de déblocage dans un niveau CEFR. Les tests vérifient les doublons et la cohérence des formes.
+
+## Les langues
+
+| Langue | Ce que le moteur sait écrire | Particularités / limites |
+|---|---|---|
+| Anglais | tout (articles, pluriels, temps, négation, modaux, relatives, subordonnées) | cours d'origine, ≈ 450 mots |
+| Espagnol | genre, pluriels, accord et place des adjectifs, *ser / estar*, *a* personnel, *al / del*, passé composé (*he comido*), futur proche (*voy a*), négation, modaux, infinitifs, relatives, subordonnées | variante d'Espagne (*vosotros*, *he comido*) ; « aimer » est traduit par *apreciar* (*gustar* a une construction inversée) |
+| Allemand | genre, 3 cas (nominatif, accusatif, datif), terminaisons des adjectifs, ordre V2 et verbe final des subordonnées, Perfekt (*haben* / *sein*), futur (*werden*), *nicht* / *kein*, modaux, *zu* + infinitif, verbes séparables, datif après *helfen / folgen*, contractions *im / ins*, relatives | pas de virgules ; le pluriel indéfini est sans article (*Hunde*) |
+| Russe | genres, cas (nominatif, accusatif avec les animés, prépositionnel, instrumental), pluriels, adjectifs durs / mixtes / mous, possessifs, passé accordé, futur composé (*буду*), *мочь / должен*, relatives (*который*) | pas d'articles : en russe → français, un indice « défini / indéfini » est affiché ; aspect imperfectif uniquement ; la négation n'est utilisée que sans complément d'objet (le génitif de la négation n'est pas géré) |
+| Japonais | ordre sujet-objet-verbe, particules は を に で が の, style poli (ます), groupes verbaux, passé, négation, adjectifs en い / な, です, います / あります, たい, ことができる, なければならない, はじめる, relatives | écrit en **hiragana / katakana** avec **rōmaji** accepté pour les mots tapés (pas de kanji) ; pas d'articles ni de pluriel, donc un indice « défini / indéfini / pl. » est affiché ; pas de compléments « avec / dans » ; connecteurs *et, mais, parce que* seulement |
+
+Le français est le pivot : il n'y a pas de cours anglais ↔ espagnol directement.
 
 ## Limites connues
 
-- La liste de mots est **écrite à la main** (≈450 mots) : l'ordre de fréquence est approximatif, ce n'est
+- La liste de mots est **écrite à la main** (≈450 mots en anglais, ≈ 435–447 dans chaque autre langue : quelques mots sans équivalent simple ne sont pas traduits) : l'ordre de fréquence est approximatif, ce n'est
   pas un corpus statistique. Pour une vraie liste de fréquence, il suffit de la convertir au format du lexique.
 - Une traduction française → anglaise n'a qu'une réponse canonique (les tuiles ne permettent pas les
   synonymes) ; seuls les mots tapés acceptent plusieurs réponses (*big / large / tall*).

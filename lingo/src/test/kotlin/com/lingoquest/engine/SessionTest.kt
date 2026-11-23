@@ -180,4 +180,48 @@ class SessionTest {
         assertEquals(150, s.step)
         assertTrue(s.profile.xp > Progression.xpForLevel(100))
     }
+
+    @Test
+    fun everyCourseHasItsOwnProgress() {
+        val s = session()
+        s.startRun()
+        repeat(6) { s.answerRight() }
+        val englishXp = s.profile.xp
+        assertTrue(englishXp > 0)
+
+        s.setDirection(Direction.FR_TO_JA)
+        assertEquals(Lang.JA, s.profile.course)
+        assertEquals(0L, s.profile.xp)
+        assertNull(s.challenge)
+        assertEquals(0, s.step)
+        val first = s.startRun()
+        assertEquals(Direction.FR_TO_JA, first.direction)
+        repeat(3) { assertTrue(s.answerRight().correct) }
+        assertTrue(s.profile.xp > 0)
+
+        s.setDirection(Direction.EN_TO_FR)
+        assertEquals(englishXp, s.profile.xp)
+        assertEquals(true, s.profile.toFrench)
+        assertTrue(s.profile.progressOf(Lang.JA).xp > 0)
+    }
+
+    @Test
+    fun everyCourseCanPlayALongSeries() {
+        for (lang in Lang.courses) for (toFrench in listOf(false, true)) {
+            val s = GameSession(lexicon, Profile(course = lang, toFrench = toFrench), Random(lang.ordinal))
+            s.startRun()
+            repeat(45) { assertTrue("$lang step ${s.step}", s.answerRight().correct) }
+            assertEquals(45, s.step)
+        }
+    }
+
+    @Test
+    fun profileSurvivesJson() {
+        val p = Profile(course = Lang.RU, toFrench = true)
+            .update { it.copy(xp = 1234, bestStep = 17, missed = mapOf("n:dog" to 2)) }
+        val json = kotlinx.serialization.json.Json { encodeDefaults = true }
+        val text = json.encodeToString(Profile.serializer(), p)
+        assertEquals(p, json.decodeFromString(Profile.serializer(), text))
+        assertEquals(1234L, json.decodeFromString(Profile.serializer(), text).xp)
+    }
 }

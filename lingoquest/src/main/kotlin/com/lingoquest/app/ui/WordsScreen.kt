@@ -24,7 +24,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.lingoquest.engine.Cefr
-import com.lingoquest.engine.Lang
 
 /** All the words of the game: unlocked ones with their translation, locked ones with the level that opens them. */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -72,8 +71,8 @@ private fun WordItem(row: WordRow, unlocked: Boolean) {
         ) {
             if (unlocked) {
                 Column(Modifier.weight(1f)) {
-                    Text(row.entry.display(Lang.EN), style = MaterialTheme.typography.titleMedium)
-                    Text(row.entry.display(Lang.FR), style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(row.foreign, style = MaterialTheme.typography.titleMedium)
+                    Text(row.french, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 Text(row.entry.pos.label(), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.outline)
             } else {
