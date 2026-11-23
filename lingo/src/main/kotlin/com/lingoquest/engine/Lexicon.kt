@@ -5,12 +5,55 @@ enum class Cefr { A1, A2, B1, B2, C1 }
 
 enum class Gender { M, F }
 
-enum class Lang { EN, FR }
+enum class Lang(val code: String, val nameFr: String) {
+    EN("en", "anglais"),
+    FR("fr", "français"),
+    ES("es", "espagnol"),
+    DE("de", "allemand"),
+    JA("ja", "japonais"),
+    RU("ru", "russe"),
+    ;
 
-/** Which language the player reads (`from`) and which one they must write (`to`). */
+    /** The language being learned: every course is French ↔ another language. */
+    val isCourse get() = this != FR
+
+    companion object {
+        val courses = listOf(EN, ES, DE, JA, RU)
+    }
+}
+
+/** Which language the player reads (`from`) and which one they must write (`to`). French is always one side. */
 enum class Direction(val from: Lang, val to: Lang) {
     FR_TO_EN(Lang.FR, Lang.EN),
     EN_TO_FR(Lang.EN, Lang.FR),
+    FR_TO_ES(Lang.FR, Lang.ES),
+    ES_TO_FR(Lang.ES, Lang.FR),
+    FR_TO_DE(Lang.FR, Lang.DE),
+    DE_TO_FR(Lang.DE, Lang.FR),
+    FR_TO_JA(Lang.FR, Lang.JA),
+    JA_TO_FR(Lang.JA, Lang.FR),
+    FR_TO_RU(Lang.FR, Lang.RU),
+    RU_TO_FR(Lang.RU, Lang.FR),
+    ;
+
+    /** The foreign language of this direction. */
+    val course: Lang get() = if (from == Lang.FR) to else from
+    val toFrench: Boolean get() = to == Lang.FR
+
+    companion object {
+        fun of(course: Lang, toFrench: Boolean): Direction =
+            entries.first { it.course == course && it.toFrench == toFrench }
+    }
+}
+
+/**
+ * Translation of a base entry into a foreign language (Spanish, German, Japanese, Russian):
+ * accepted forms (first = canonical) and language-specific options such as gender or conjugation.
+ */
+class Fx(val forms: List<String>, private val opts: Map<String, String>) {
+    operator fun get(key: String): String? = opts[key]
+    fun has(key: String) = key in opts
+    val text get() = forms[0]
 }
 
 enum class Pos { NOUN, VERB, ADJ, ADV, WORD }
@@ -110,7 +153,7 @@ class Word(level: Cefr, rank: Int, val en: List<String>, val fr: List<String>) :
     override fun forms(lang: Lang) = if (lang == Lang.EN) en else fr
 }
 
-class Lexicon(entries: List<Entry>) {
+class Lexicon(entries: List<Entry>, private val translations: Map<Lang, Map<String, Fx>> = emptyMap()) {
     /** Entries sorted by CEFR level then frequency rank. */
     val entries: List<Entry> = entries.sortedWith(compareBy({ it.level.ordinal }, { it.rank }))
     private val byId = this.entries.associateBy { it.id }
@@ -119,11 +162,63 @@ class Lexicon(entries: List<Entry>) {
 
     fun countAt(level: Cefr) = entries.count { it.level == level }
 
+    /** Foreign translation of [entry]; null for English/French or when the word is not translated yet. */
+    fun fx(entry: Entry, lang: Lang): Fx? = translations[lang]?.get(entry.id)
+
+    /** The words available in the course for [lang]: those that have a translation. */
+    fun forCourse(lang: Lang): Lexicon =
+        if (lang == Lang.EN || lang == Lang.FR) this
+        else Lexicon(entries.filter { fx(it, lang) != null }, translations)
+
+    /** Accepted translations of [entry] in [lang]; the first one is canonical. */
+    fun forms(entry: Entry, lang: Lang): List<String> =
+        if (lang == Lang.EN || lang == Lang.FR) entry.forms(lang) else fx(entry, lang)?.forms.orEmpty()
+
+    /** How the word is shown when it is the whole challenge. */
+    fun display(entry: Entry, lang: Lang): String = when (lang) {
+        Lang.EN, Lang.FR -> entry.display(lang)
+        Lang.JA -> fx(entry, lang)?.let { f -> f["r"]?.let { "${f.text} ($it)" } ?: f.text } ?: ""
+        else -> fx(entry, lang)?.text ?: ""
+    }
+
+    /** Everything accepted when the word is typed: for Japanese also the rōmaji. */
+    fun accepted(entry: Entry, lang: Lang): List<String> {
+        val forms = forms(entry, lang)
+        if (lang != Lang.JA) return forms
+        val romaji = fx(entry, lang)?.get("r")?.split('/').orEmpty()
+        return forms + romaji
+    }
+
+    fun mapOfTranslations() = translations
+
     companion object {
         fun load(): Lexicon {
             val stream = Lexicon::class.java.getResourceAsStream("/lexicon.txt")
                 ?: error("lexicon.txt is missing from the resources")
-            return parse(stream.bufferedReader(Charsets.UTF_8).use { it.readText() })
+            val base = parse(stream.bufferedReader(Charsets.UTF_8).use { it.readText() })
+            val translations = HashMap<Lang, Map<String, Fx>>()
+            for (lang in listOf(Lang.ES, Lang.DE, Lang.JA, Lang.RU)) {
+                val res = Lexicon::class.java.getResourceAsStream("/lexicon_${lang.code}.txt") ?: continue
+                translations[lang] = parseTranslations(res.bufferedReader(Charsets.UTF_8).use { it.readText() }, base)
+            }
+            return Lexicon(base.entries, translations)
+        }
+
+        /** `id|form/form|key=value|…`, one translation per line. */
+        fun parseTranslations(text: String, base: Lexicon): Map<String, Fx> {
+            val out = LinkedHashMap<String, Fx>()
+            text.lineSequence().map { it.trim() }.filter { it.isNotEmpty() && !it.startsWith("#") }.forEach { line ->
+                val p = line.split('|')
+                val id = p[0]
+                require(base.find(id) != null) { "Unknown word '$id' in translation: $line" }
+                require(p.size >= 2 && p[1].isNotBlank()) { "Bad translation line: $line" }
+                val opts = p.drop(2).filter { it.isNotEmpty() }
+                    .associate { it.substringBefore('=') to it.substringAfter('=', "") }
+                require(out.put(id, Fx(p[1].split('/').map { it.trim() }.filter { it.isNotEmpty() }, opts)) == null) {
+                    "Duplicate translation of $id"
+                }
+            }
+            return out
         }
 
         fun parse(text: String): Lexicon {

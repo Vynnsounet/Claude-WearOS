@@ -8,13 +8,16 @@ import org.junit.Test
 class RulesTest {
     private val lexicon = Lexicon.load()
 
+    private fun has(c: Challenge, r: Rule) = c.rules.any { it.key == r.name }
+
     private fun gen(seed: Int, level: Int, step: Int, d: Direction = Direction.FR_TO_EN) =
         Generator(Random(seed)).generate(Progression.unlocked(lexicon, level), Stage.forStep(step), Progression.cefrFor(level), step, d)
 
     @Test
     fun everyRuleIsExplained() {
         for (r in Rule.entries) {
-            assertTrue(r.name, r.title.isNotBlank() && r.text.length > 30 && r.example.isNotBlank())
+            val info = r.info(Lang.EN)
+            assertTrue(r.name, info.title.isNotBlank() && info.text.length > 30 && info.example.isNotBlank())
         }
     }
 
@@ -28,19 +31,19 @@ class RulesTest {
 
     @Test
     fun rulesMatchWhatIsInTheSentence() {
-        val seen = HashSet<Rule>()
+        val seen = HashSet<String>()
         repeat(4000) { seed ->
             val step = 20 + seed % 60
             val c = gen(seed, 125, step, Direction.EN_TO_FR)
-            seen += c.rules
+            seen += c.rules.map { it.key }
             val en = c.prompt.lowercase()
-            if (" not " in en || "cannot" in en) assertTrue(c.prompt, Rule.NEGATION in c.rules)
-            if ("going to" in en) assertTrue(c.prompt, Rule.FUTURE in c.rules)
-            if (c.answer.contains(" est allé") || c.answer.contains(" sont allé")) assertTrue(c.answer, Rule.PASSE_COMPOSE_ETRE in c.rules)
-            if (" because " in en || " but " in en || " and " in en) assertTrue(c.prompt, Rule.CONNECTORS in c.rules || Rule.ADJ_AND in c.rules)
-            if (c.answer.replace("aujourd'hui", "").contains("'")) assertTrue(c.answer, Rule.ELISION in c.rules)
+            if (" not " in en || "cannot" in en) assertTrue(c.prompt, has(c, Rule.NEGATION))
+            if ("going to" in en) assertTrue(c.prompt, has(c, Rule.FUTURE))
+            if (c.answer.contains(" est allé") || c.answer.contains(" sont allé")) assertTrue(c.answer, has(c, Rule.PASSE_COMPOSE_ETRE))
+            if (" because " in en || " but " in en || " and " in en) assertTrue(c.prompt, has(c, Rule.CONNECTORS) || has(c, Rule.ADJ_AND))
+            if (c.answer.replace("aujourd'hui", "").contains("'")) assertTrue(c.answer, has(c, Rule.ELISION))
         }
-        val missing = Rule.entries.filter { it !in seen }
+        val missing = Rule.entries.filter { it.name !in seen }
         assertTrue("rules never produced: $missing", missing.isEmpty())
     }
 

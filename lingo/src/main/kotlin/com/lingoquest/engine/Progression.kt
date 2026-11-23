@@ -71,16 +71,43 @@ object Progression {
     fun milestoneBonus(stepAfter: Int): Int = if (stepAfter > 0 && stepAfter % 10 == 0) stepAfter * 5 else 0
 }
 
+/** Progress in one language course. */
 @Serializable
-data class Profile(
+data class CourseProgress(
     val xp: Long = 0,
     val bestStep: Int = 0,
     val runs: Int = 0,
     val correct: Int = 0,
     val wrong: Int = 0,
-    val direction: Direction = Direction.FR_TO_EN,
     /** Word id → how many times it was missed recently; those words come back more often. */
     val missed: Map<String, Int> = emptyMap(),
 ) {
     val level: Int get() = Progression.levelFor(xp)
+}
+
+/** The player: which course and direction is selected, and the progress of every course. */
+@Serializable
+data class Profile(
+    val course: Lang = Lang.EN,
+    /** True: the player translates into French; false: into the learned language. */
+    val toFrench: Boolean = false,
+    val courses: Map<Lang, CourseProgress> = emptyMap(),
+) {
+    val progress: CourseProgress get() = courses[course] ?: CourseProgress()
+    val direction: Direction get() = Direction.of(course, toFrench)
+    val xp get() = progress.xp
+    val bestStep get() = progress.bestStep
+    val runs get() = progress.runs
+    val correct get() = progress.correct
+    val wrong get() = progress.wrong
+    val missed get() = progress.missed
+    val level: Int get() = progress.level
+
+    fun progressOf(lang: Lang): CourseProgress = courses[lang] ?: CourseProgress()
+
+    /** Changes the progress of the selected course. */
+    fun update(change: (CourseProgress) -> CourseProgress): Profile =
+        copy(courses = courses + (course to change(progress)))
+
+    fun with(direction: Direction): Profile = copy(course = direction.course, toFrench = direction.toFrench)
 }

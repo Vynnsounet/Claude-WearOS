@@ -70,7 +70,7 @@ internal object Spelling {
         ) "an" else t
     }
 
-    /** Shows tokens as a normal line of text: no space after an apostrophe. */
+    /** Shows tokens as a normal line of text: no space after an apostrophe (French elision). */
     fun join(tokens: List<String>): String {
         val sb = StringBuilder()
         for ((i, t) in tokens.withIndex()) {
@@ -91,9 +91,17 @@ internal object Spelling {
         s.lowercase().replace('’', '\'').replace(Regex("[.,;:!?¿¡]"), " ")
             .replace(Regex("\\s+"), " ").trim()
 
-    /** [normalize] plus accents removed, to tell "missing accent" from "wrong word". */
-    fun fold(s: String): String {
+    /**
+     * [normalize] plus accents removed, to tell "missing accent" from "wrong word".
+     * Japanese is left alone (removing the dakuten would turn が into か); Russian only loses ё/й marks.
+     */
+    fun fold(s: String, lang: Lang = Lang.FR): String {
         val n = normalize(s).replace("œ", "oe").replace("æ", "ae")
-        return Normalizer.normalize(n, Normalizer.Form.NFD).replace(Regex("\\p{Mn}+"), "")
+        return when (lang) {
+            Lang.JA -> n
+            Lang.RU -> n.replace('ё', 'е')
+            Lang.DE -> n.replace("ß", "ss").let { Normalizer.normalize(it, Normalizer.Form.NFD).replace(Regex("\\p{Mn}+"), "") }
+            else -> Normalizer.normalize(n, Normalizer.Form.NFD).replace(Regex("\\p{Mn}+"), "")
+        }
     }
 }

@@ -115,7 +115,7 @@ data class Challenge(
     val entryIds: List<String>,
     val step: Int,
     /** Grammar points involved, explained to the player after a mistake. */
-    val rules: List<Rule> = emptyList(),
+    val rules: List<RuleInfo> = emptyList(),
     /** Facts about the words used (gender, plural, conjugation) in the answer language. */
     val notes: List<String> = emptyList(),
 ) {
@@ -139,10 +139,11 @@ object Judge {
         // A single word may be typed with its article ("la maison", "to eat").
         val stripped = ARTICLES.firstOrNull { given.startsWith(it) }?.let { given.removePrefix(it).trim() }
         if (challenge.typed && !stripped.isNullOrEmpty() && stripped in accepted) return Verdict(true)
-        val folded = challenge.accepted.map(Spelling::fold)
-        val foldedGiven = Spelling.fold(input)
+        val lang = challenge.direction.to
+        val folded = challenge.accepted.map { Spelling.fold(it, lang) }
+        val foldedGiven = Spelling.fold(input, lang)
         if (foldedGiven in folded) return Verdict(true, accentWarning = true)
-        if (challenge.typed && !stripped.isNullOrEmpty() && Spelling.fold(stripped) in folded) {
+        if (challenge.typed && !stripped.isNullOrEmpty() && Spelling.fold(stripped, lang) in folded) {
             return Verdict(true, accentWarning = true)
         }
         return Verdict(false)

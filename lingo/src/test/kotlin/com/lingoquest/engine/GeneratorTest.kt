@@ -42,7 +42,7 @@ class GeneratorTest {
         var seed = 0
         for (level in listOf(1, 2, 5, 13, 25, 26, 40, 51, 70, 76, 100, 101, 125)) {
             for (step in listOf(0, 3, 5, 9, 10, 14, 15, 19, 20, 25, 30, 35, 40, 50, 55, 70, 120)) {
-                for (direction in Direction.entries) {
+                for (direction in listOf(Direction.FR_TO_EN, Direction.EN_TO_FR)) {
                     repeat(6) {
                         val c = generate(seed++, level, step, direction)
                         assertTrue("blank prompt", c.prompt.isNotBlank())

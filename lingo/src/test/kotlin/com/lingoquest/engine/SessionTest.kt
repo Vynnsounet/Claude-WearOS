@@ -11,6 +11,8 @@ import org.junit.Test
 class SessionTest {
     private val lexicon = Lexicon.load()
 
+    private fun withXp(xp: Long) = Profile().update { it.copy(xp = xp) }
+
     private fun session(profile: Profile = Profile(), seed: Int = 1) = GameSession(lexicon, profile, Random(seed))
 
     private fun GameSession.answerRight() = submit(challenge!!.accepted.first())
@@ -98,7 +100,7 @@ class SessionTest {
 
     @Test
     fun levelingUpUnlocksWordsAndReportsThem() {
-        val s = session(Profile(xp = 70))
+        val s = session(withXp(70))
         s.startRun()
         var up: LevelUp? = null
         while (up == null) up = s.answerRight().levelUp
@@ -111,7 +113,7 @@ class SessionTest {
 
     @Test
     fun reachingLevel26MovesToA2() {
-        val s = session(Profile(xp = Progression.xpForLevel(26) - 5))
+        val s = session(withXp(Progression.xpForLevel(26) - 5))
         assertEquals(Cefr.A1, s.cefr)
         s.startRun()
         var up: LevelUp? = null
@@ -172,7 +174,7 @@ class SessionTest {
 
     @Test
     fun aLongSeriesNeverBreaks() {
-        val s = session(Profile(xp = Progression.xpForLevel(100)), seed = 9)
+        val s = session(withXp(Progression.xpForLevel(100)), seed = 9)
         s.startRun()
         repeat(150) { assertTrue(s.answerRight().correct) }
         assertEquals(150, s.step)

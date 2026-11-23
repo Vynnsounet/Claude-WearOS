@@ -30,11 +30,14 @@ data class Outcome(
  * levels are kept between series.
  */
 class GameSession(
-    val lexicon: Lexicon,
+    private val fullLexicon: Lexicon,
     profile: Profile = Profile(),
     random: Random = Random.Default,
 ) {
-    private val generator = Generator(random)
+    private val generator = Generator(random, fullLexicon)
+
+    /** The words of the selected course (those that have a translation). */
+    val lexicon: Lexicon get() = fullLexicon.forCourse(profile.course)
 
     var profile: Profile = profile
         private set
@@ -51,9 +54,18 @@ class GameSession(
     val cefr get() = Progression.cefrFor(level)
     val stage get() = Stage.forStep(step)
 
+    /** Changes the course or the direction; a different course ends the series in progress. */
     fun setDirection(direction: Direction) {
-        profile = profile.copy(direction = direction)
-        if (challenge != null) challenge = nextChallenge()
+        val courseChanged = direction.course != profile.course
+        profile = profile.with(direction)
+        if (courseChanged) {
+            step = 0
+            lives = MAX_LIVES
+            runXp = 0
+            challenge = null
+        } else if (challenge != null) {
+            challenge = nextChallenge()
+        }
     }
 
     /** Starts a new series from zero. */
@@ -70,6 +82,7 @@ class GameSession(
         val verdict = Judge.check(current, answer)
         val levelBefore = profile.level
         val missed = profile.missed.toMutableMap()
+        val vocabulary = lexicon
 
         if (verdict.correct) {
             val xp = Progression.reward(current.stage, step)
@@ -80,14 +93,16 @@ class GameSession(
                 val n = (missed[id] ?: 0) - 1
                 if (n > 0) missed[id] = n else missed.remove(id)
             }
-            profile = profile.copy(
-                xp = profile.xp + xp + bonus,
-                bestStep = maxOf(profile.bestStep, step),
-                correct = profile.correct + 1,
-                missed = missed,
-            )
+            profile = profile.update {
+                it.copy(
+                    xp = it.xp + xp + bonus,
+                    bestStep = maxOf(it.bestStep, step),
+                    correct = it.correct + 1,
+                    missed = missed,
+                )
+            }
             val levelAfter = profile.level
-            val up = if (levelAfter > levelBefore) levelUp(levelBefore, levelAfter) else null
+            val up = if (levelAfter > levelBefore) levelUp(vocabulary, levelBefore, levelAfter) else null
             challenge = nextChallenge()
             return Outcome(true, verdict.accentWarning, current.answer, xp, bonus, up, lives, false, step)
         }
@@ -95,7 +110,7 @@ class GameSession(
         lives--
         current.entryIds.forEach { id -> missed[id] = minOf((missed[id] ?: 0) + 1, 5) }
         val over = lives <= 0
-        profile = profile.copy(wrong = profile.wrong + 1, missed = missed, runs = profile.runs + if (over) 1 else 0)
+        profile = profile.update { it.copy(wrong = it.wrong + 1, missed = missed, runs = it.runs + if (over) 1 else 0) }
         val reached = step
         if (over) {
             challenge = null
@@ -106,8 +121,8 @@ class GameSession(
         return Outcome(false, false, current.answer, 0, 0, null, lives.coerceAtLeast(0), over, reached)
     }
 
-    private fun levelUp(from: Int, to: Int): LevelUp {
-        val words = (from + 1..to).flatMap { Progression.newWordsAt(lexicon, it) }
+    private fun levelUp(vocabulary: Lexicon, from: Int, to: Int): LevelUp {
+        val words = (from + 1..to).flatMap { Progression.newWordsAt(vocabulary, it) }
         return LevelUp(to, Progression.cefrFor(to), Progression.cefrFor(to) != Progression.cefrFor(from), words)
     }
 
