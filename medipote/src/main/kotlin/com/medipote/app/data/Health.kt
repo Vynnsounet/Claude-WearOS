@@ -193,6 +193,12 @@ data class SleepSettings(
     /** A soft reminder in the evening to get ready for sleep, with an idea waiting for a hard night. */
     val windDown: Boolean = false,
     val windDownMinute: Int = 21 * 60 + 30,
+    /** « Ma soirée »: the factors the person put away (ids), so the list stays short. */
+    val hiddenFactors: List<String> = emptyList(),
+    /** Factors the person wrote themselves. */
+    val customFactors: List<String> = emptyList(),
+    /** Substances and sexual activity stay out of sight until the person turns them on. */
+    val sensitiveFactors: Boolean = false,
 )
 
 /** Waking up during the night: when, for how long, and why if known. */

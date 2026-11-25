@@ -55,6 +55,8 @@ data class AppState(
     val sleepRecipe: List<String> = emptyList(),
     /** « Une idée, un souci ? »: what the person noted about the app, kept here and shared only if they choose. */
     val ideas: List<Idea> = emptyList(),
+    /** « Ma soirée »: what the evening of each day held (ISO date → factors), read with the night that follows. */
+    val evenings: Map<String, List<String>> = emptyMap(),
     /** Blood test values, newest first. */
     val labs: List<LabResult> = emptyList(),
     /** Things to do from time to time (dentist, blood test…). */

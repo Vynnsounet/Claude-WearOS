@@ -327,6 +327,11 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     // ── Sleep ──
 
     /** « Nuit blanche » in one tap; the night can be edited later if sleep finally came. */
+    /** « Ma soirée »: what the evening of [date] held, noted before the night. */
+    fun setEvening(date: LocalDate, tags: List<String>) {
+        repo.update { com.medipote.app.domain.SleepFactors.setEvening(it, date, tags) }
+    }
+
     fun saveBlankNight() {
         saveSleep(com.medipote.app.domain.Sleep.blankNight(state.value, repo.now().toLocalDate()))
         _events.trySend(UiEvent.Message("Nuit blanche notée. Tu peux la modifier si tu t'endors plus tard."))
@@ -334,7 +339,11 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     fun saveSleep(night: com.medipote.app.data.SleepNight) {
         var bonus = 0
-        repo.update { s -> com.medipote.app.domain.Sleep.save(s, night, repo.now()).let { (u, b) -> bonus = b; u } }
+        repo.update { s ->
+            // The evening's factors live with the evening: the night keeps none of its own once saved.
+            val factors = com.medipote.app.domain.SleepFactors.setEvening(s, night.date.minusDays(1), night.tags)
+            com.medipote.app.domain.Sleep.save(factors, night.copy(tags = emptyList()), repo.now()).let { (u, b) -> bonus = b; u }
+        }
         if (night.date == repo.now().toLocalDate()) Notifications.cancelSleep(getApplication())
         _events.trySend(UiEvent.Message(if (bonus > 0) "Nuit enregistrée : +$bonus pts" else "Nuit enregistrée"))
         if (bonus > 0) _events.trySend(UiEvent.Points(bonus))

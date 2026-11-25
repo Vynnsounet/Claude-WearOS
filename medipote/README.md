@@ -444,6 +444,21 @@ et « Jour par jour » a rejoint le journal. Une carte ouverte montre où l'on e
 
 ![](docs/labs.png) ![](docs/lab_detail.png) ![](docs/travel.png) ![](docs/emergency.png)
 
+## Ma soirée : ce qui change tes nuits
+
+Dans la fiche de nuit (section « Ma soirée ») ou sur la carte « 🌆 Ma soirée » de la page Sommeil, note ce qui a compté : café (et à
+quelle heure), thé, alcool, repas (tôt ou tard, beaucoup ou peu, sain ou gras), soirée, sport, écrans, chaleur, bruit… avec tes propres
+facteurs si tu veux. L'appli repère aussi seule l'humeur, les symptômes, l'eau, une prise tardive et la phase du cycle.
+
+Dans Statistiques › Sommeil, **« 🔍 Ce qui change tes nuits »** compare tes nuits avec et sans chaque facteur (au moins 5 de chaque
+côté, sur trois mois) et ne dit quelque chose que si l'écart est net. Ce sont des choses qui vont ensemble dans tes notes, **pas des
+causes**.
+
+**Substances et rapport sexuel** sont cachés tant que tu ne les actives pas (« ⚙️ Personnaliser ma liste »). Ils restent sur ton
+téléphone et ne vont pas dans le rapport pour le médecin, sauf si tu coches « Sommeil : facteurs plus personnels ».
+
+![](docs/factors.png) ![](docs/factor_effects.png)
+
 ## Heure fixe ou plage horaire
 
 Chaque prise d'un traitement (fiche du traitement › Posologie › « 🕐 À heure fixe ») peut être **à heure fixe** ou **dans une plage**

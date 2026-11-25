@@ -543,6 +543,8 @@ fun MediPoteApp(vm: AppViewModel) {
                                 onOpenNap = { nav.navigate("nap_log?id=${it.id}") },
                                 onNightHelp = { nav.navigate("sleep_help") },
                                 onBlankNight = vm::saveBlankNight,
+                                onEvening = vm::setEvening,
+                                onSleepSettings = { t -> vm.updateSettings { it.copy(sleep = t(it.sleep)) } },
                             )
                             "suivi:symptoms" -> com.medipote.app.ui.wellbeing.SymptomsScreen(
                                 state, now,
@@ -864,6 +866,7 @@ fun MediPoteApp(vm: AppViewModel) {
                             nav.popBackStack()
                         },
                         onBack = { nav.popBackStack() },
+                        onSettings = { t -> vm.updateSettings { it.copy(sleep = t(it.sleep)) } },
                     )
                 }
                 composable(

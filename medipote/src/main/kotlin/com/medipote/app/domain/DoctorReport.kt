@@ -19,6 +19,8 @@ enum class ReportPart(val label: String) {
     MEASURES("Mesures de santé"),
     LABS("Analyses (prises de sang)"),
     SLEEP("Sommeil"),
+    /** Off unless ticked: substances and sexual activity noted with the evenings. */
+    SLEEP_PRIVATE("Sommeil : facteurs plus personnels"),
     JOURNAL("Journal : forme et symptômes"),
     CYCLE("Cycle menstruel"),
     SYMPTOMS("Symptômes suivis"),
@@ -55,6 +57,7 @@ object DoctorReports {
             ReportPart.MEASURES -> state.measurements.isNotEmpty()
             ReportPart.LABS -> state.labs.isNotEmpty()
             ReportPart.SLEEP -> state.sleep.isNotEmpty() || state.naps.isNotEmpty()
+            ReportPart.SLEEP_PRIVATE -> state.settings.sleep.sensitiveFactors && state.sleep.any { n -> SleepFactors.noted(state, n).any(SleepFactors::isSensitive) }
             ReportPart.JOURNAL -> state.journal.any { e -> e.hasJournal }
             ReportPart.SYMPTOMS -> state.symptomLog.isNotEmpty()
             ReportPart.CYCLE -> state.profile?.menstruating == true && state.profile.cycle?.periodStarts?.isNotEmpty() == true
@@ -74,6 +77,7 @@ object DoctorReports {
             if (ReportPart.MEASURES in parts) measures(state, today, days)?.let(::add)
             if (ReportPart.LABS in parts) labs(state)?.let(::add)
             if (ReportPart.SLEEP in parts) sleep(state, today, days)?.let(::add)
+            if (ReportPart.SLEEP_PRIVATE in parts) sleepPrivate(state, today, days)?.let(::add)
             if (ReportPart.JOURNAL in parts) journal(state, start, today)?.let(::add)
             if (ReportPart.SYMPTOMS in parts) symptoms(state, today, days)?.let(::add)
             if (ReportPart.CYCLE in parts) cycle(state, today)?.let(::add)
@@ -287,7 +291,24 @@ object DoctorReports {
             },
             r.averageDailyTotal?.let { "Sommeil par jour, siestes comprises" to Sleep.format(it) },
         )
-        return ReportSection(ReportPart.SLEEP.label, listOf(ReportBlock.Facts(facts)))
+        val blocks = mutableListOf<ReportBlock>(ReportBlock.Facts(facts))
+        // What went with better or worse nights, from the evenings the person noted (never the private ones, never as a cause).
+        val effects = SleepFactors.effects(state, state.sleep.filter { !it.date.isBefore(today.minusDays(89)) && !it.date.isAfter(today) }).filter { !it.sensitive }.take(3)
+        effects.forEach { blocks += ReportBlock.Paragraph("• ${it.label} : ${it.sentence}") }
+        if (effects.isNotEmpty()) blocks += ReportBlock.Paragraph("Observations de ses notes sur 3 mois : ce qui va ensemble, pas des causes.", muted = true)
+        return ReportSection(ReportPart.SLEEP.label, blocks)
+    }
+
+    /** Only on request: how often the person noted substances or sexual activity before nights, and nothing of what it "does". */
+    private fun sleepPrivate(state: AppState, today: LocalDate, days: Int): ReportSection? {
+        val nights = state.sleep.filter { !it.date.isBefore(today.minusDays(days - 1L)) && !it.date.isAfter(today) }
+        val counts = nights.flatMap { n -> SleepFactors.noted(state, n).filter(SleepFactors::isSensitive).map(SleepFactors::label) }
+            .groupingBy { it }.eachCount().entries.sortedByDescending { it.value }
+        if (counts.isEmpty()) return null
+        return ReportSection(ReportPart.SLEEP_PRIVATE.label, listOf(
+            ReportBlock.Facts(counts.map { it.key to "${it.value} soir${if (it.value > 1) "s" else ""} sur ${nights.size} nuits notées" }),
+            ReportBlock.Paragraph("Notés par la personne avant ses nuits, à sa demande.", muted = true),
+        ))
     }
 
     private fun journal(state: AppState, start: LocalDate, today: LocalDate): ReportSection? {

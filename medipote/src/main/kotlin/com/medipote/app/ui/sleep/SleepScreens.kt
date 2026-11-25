@@ -238,6 +238,9 @@ fun SleepScreen(
     onOpenNap: (com.medipote.app.data.Nap) -> Unit = {},
     onNightHelp: () -> Unit = {},
     onBlankNight: () -> Unit = {},
+    /** « Ma soirée », noted from this page. */
+    onEvening: (LocalDate, List<String>) -> Unit = { _, _ -> },
+    onSleepSettings: ((com.medipote.app.data.SleepSettings) -> com.medipote.app.data.SleepSettings) -> Unit = {},
 ) {
     val today = now.toLocalDate()
     var period by rememberSaveable { mutableStateOf(SleepPeriod.WEEK) }
@@ -263,6 +266,9 @@ fun SleepScreen(
                 }
             }
         }
+        // The evening still going on (until 4:00): what it holds is read with the night that follows.
+        val evening = Rules.gameDay(now)
+        EveningCard(state.evenings[evening.toString()].orEmpty(), state.settings.sleep, { onEvening(evening, it) }, onSleepSettings)
         if (lastNight == null) {
             Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow), modifier = Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -642,6 +648,7 @@ fun SleepEditorScreen(
     onSave: (SleepNight) -> Unit,
     onDelete: () -> Unit,
     onBack: () -> Unit,
+    onSettings: ((com.medipote.app.data.SleepSettings) -> com.medipote.app.data.SleepSettings) -> Unit = {},
 ) {
     val initial = remember { existing ?: Sleep.newNight(state, date) }
     var day by rememberSaveable { mutableStateOf(initial.date) }
@@ -655,7 +662,7 @@ fun SleepEditorScreen(
     var quality by rememberSaveable { mutableStateOf(initial.quality) }
     var rested by rememberSaveable { mutableStateOf(initial.rested) }
     var pleasant by rememberSaveable { mutableStateOf(initial.pleasant) }
-    val tags = remember { mutableStateListOf<String>().apply { addAll(initial.tags) } }
+    val tags = remember { mutableStateListOf<String>().apply { addAll(com.medipote.app.domain.SleepFactors.noted(state, initial)) } }
     var notes by rememberSaveable { mutableStateOf(initial.notes) }
     var picking by remember { mutableStateOf<Pair<String, Int>?>(null) } // "bed" / "wake" / "a<index>"
     var confirmDelete by remember { mutableStateOf(false) }
@@ -819,18 +826,8 @@ fun SleepEditorScreen(
                         )
                     }
                 }
-                SectionTitle("Ce qui a pu jouer")
-                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    (Sleep.TAGS + tags.filter { it !in Sleep.TAGS }).forEach { t ->
-                        val on = t in tags
-                        FilterChip(
-                            selected = on,
-                            onClick = { if (on) tags.remove(t) else tags.add(t) },
-                            label = { Text(t) },
-                            leadingIcon = if (on) ({ Icon(Icons.Rounded.Check, null, Modifier.size(FilterChipDefaults.IconSize)) }) else null,
-                        )
-                    }
-                }
+                SectionTitle("Ma soirée")
+                FactorPicker(tags.toList(), state.settings.sleep, { tags.clear(); tags.addAll(it) }, onSettings)
                 OutlinedTextField(
                     value = notes,
                     onValueChange = { notes = it },
@@ -952,6 +949,10 @@ fun SleepStatsTab(state: AppState, today: LocalDate, days: Int, periodLabel: Str
     DurationChart(r, today)
     NapsCard(r)
     com.medipote.app.ui.stats.InsightsCard(r.insights)
+    // The comparison reads three months of nights, whatever the period shown: more nights make it steadier.
+    val factorNights = remember(state.sleep, today) { state.sleep.filter { !it.date.isBefore(today.minusDays(89)) && !it.date.isAfter(today) } }
+    val effects = remember(state, factorNights) { com.medipote.app.domain.SleepFactors.shown(state, factorNights) }
+    FactorEffectsCard(effects, factorNights.size, anyNoted = factorNights.any { com.medipote.app.domain.SleepFactors.noted(state, it).isNotEmpty() })
     Text(
         "Sur $periodLabel · le détail (réveils, causes, nuits une à une) est dans Suivi › Sommeil.",
         style = MaterialTheme.typography.bodySmall,

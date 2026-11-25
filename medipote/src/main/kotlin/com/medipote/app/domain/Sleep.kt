@@ -224,7 +224,7 @@ object Sleep {
             awakeningHours = hours,
             typicalAwakening = if (awakenings.size >= 3) Reports.circularMean(awakenings.map { minuteOf(it.at) }, 0.6) else null,
             reasons = ranked(awakenings.map { it.reason }),
-            tags = ranked(nights.flatMap { it.tags }),
+            tags = ranked(nights.flatMap { n -> SleepFactors.noted(state, n).filter { !SleepFactors.isSensitive(it) || state.settings.sleep.sensitiveFactors }.map(SleepFactors::label) }),
             previousAverageAsleep = if (previous.size >= 3) avg(previous.map { it.asleepMinutes }) else null,
             weekdayAverage = if (weekday.size >= 2) avg(weekday.map { it.asleepMinutes }) else null,
             weekendAverage = if (weekend.size >= 2) avg(weekend.map { it.asleepMinutes }) else null,
@@ -294,15 +294,10 @@ object Sleep {
         if (we != null && wd != null && we - wd >= 45) {
             out += Insight("Le week-end, tu dors ${format(we - wd)} de plus qu'en semaine : signe d'un manque de sommeil en semaine.", Tone.INFO)
         }
-        // The tag that goes with the shortest nights.
-        r.tags.mapNotNull { (tag, n) ->
-            val with = r.nights.filter { tag in it.tags }
-            val without = r.nights.filter { tag !in it.tags }
-            if (n < 2 || without.size < 2) null
-            else tag to (with.map { it.asleepMinutes }.average() - without.map { it.asleepMinutes }.average()).roundToInt()
-        }.minByOrNull { it.second }?.let { (tag, diff) ->
-            if (diff <= -30) out += Insight("Les nuits marquées « ${tag.lowercase()} », tu dors ${format(-diff)} de moins que les autres.", Tone.INFO)
-        }
+        // What goes with the best and the worst nights (never said as a cause).
+        val effects = SleepFactors.shown(state, r.nights, limit = 8)
+        effects.filter { !it.good }.maxByOrNull { it.strength }?.let { out += Insight("Les nuits avec « ${it.label.lowercase()} » : ${it.sentence.replaceFirstChar { c -> c.lowercase() }}", Tone.INFO) }
+        effects.filter { it.good }.maxByOrNull { it.strength }?.let { out += Insight("Les nuits avec « ${it.label.lowercase()} » : ${it.sentence.replaceFirstChar { c -> c.lowercase() }}", Tone.GOOD) }
         // What makes the nights restful.
         val rated = r.nights.filter { it.rested != null }
         if (rated.size >= 5) {

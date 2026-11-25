@@ -69,7 +69,8 @@ fun ReportScreen(state: AppState, now: LocalDateTime, onMessage: (String) -> Uni
     val scope = rememberCoroutineScope()
     val available = remember(state) { DoctorReports.availableParts(state) }
     var days by rememberSaveable { mutableStateOf(90) }
-    var parts by remember { mutableStateOf(available.toSet()) }
+    // The private sleep factors are never ticked for the person: they choose to add them.
+    var parts by remember { mutableStateOf(available.toSet() - com.medipote.app.domain.ReportPart.SLEEP_PRIVATE) }
     var busy by remember { mutableStateOf(false) }
     var pdf by remember { mutableStateOf<File?>(null) }
 

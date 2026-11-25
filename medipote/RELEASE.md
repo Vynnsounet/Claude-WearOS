@@ -66,6 +66,18 @@ L'optimiseur de R8 reste désactivé (`-dontoptimize`) : APK de 3,8 Mo au lieu d
 le dex livré peut être reconverti et exécuté hors appareil pour vérification (voir plus bas),
 ce que l'optimiseur empêche. Il pourra être réactivé après des essais sur téléphone.
 
+### 1.33.0 — Ma soirée : ce qui change les nuits
+
+- `SleepFactors` : une trentaine de facteurs rangés par thème (boissons, repas, soirée, autour du lit, plus personnel), avec
+  précisions (café après 16 h), choix uniques (quantité, heure du repas), texte libre (« quelle substance ? »), facteurs à soi.
+  Les anciennes étiquettes des nuits sont reprises. Stockage : `AppState.evenings` (soirée → facteurs), lu avec la nuit suivante.
+- Saisie : fiche de nuit (section « Ma soirée ») et carte « 🌆 Ma soirée » de la page Sommeil, sans attendre le matin.
+- Facteurs repérés sans saisie : humeur, symptômes, eau, prise tardive, phase du cycle, rapport noté dans le journal du cycle.
+- Analyse prudente (`SleepFactors.effects`) : nuits avec / sans, au moins 5 de chaque côté, écart d'au moins 30 min de sommeil,
+  10 min d'endormissement ou 0,5 point de note ; trois mois de nuits ; jamais présenté comme une cause.
+- Confidentialité : substances et rapport sexuel cachés tant qu'ils ne sont pas activés ; jamais dans le rapport pour le médecin
+  sauf l'option « Sommeil : facteurs plus personnels » (décochée par défaut).
+
 ### 1.32.0 (téléphone) · 1.16.0 (montre) — une plage horaire par prise
 
 - `DoseTime.untilMinute` / `remindEnd` : une prise peut être « à heure fixe » (comme avant, sans rien changer aux sauvegardes
