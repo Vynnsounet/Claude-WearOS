@@ -66,6 +66,16 @@ L'optimiseur de R8 reste désactivé (`-dontoptimize`) : APK de 3,8 Mo au lieu d
 le dex livré peut être reconverti et exécuté hors appareil pour vérification (voir plus bas),
 ce que l'optimiseur empêche. Il pourra être réactivé après des essais sur téléphone.
 
+### 1.37.0 — Ma période
+
+- `Timeline` : une ligne de temps avec le sommeil (barres), le moral (points) et les symptômes (bande), et les événements marqués :
+  débuts / fins / changements de dose de traitement (`Treatment.changes`), analyses, rendez-vous passés, maladies (regroupées),
+  nuits blanches, périodes difficiles (3 jours de suite de moral bas ou de symptôme fort), début des règles.
+- « Avant / après » d'un changement de traitement : moyennes des 14 jours avant et des 14 jours depuis (sommeil, moral, forme,
+  chaque symptôme suivi, eau), au moins 5 jours notés de chaque côté, au moins une semaine de recul ; formulé comme des repères,
+  pas des conclusions.
+- Une seule porte : carte « 🕰️ Ma période » de la page Suivi (et la recherche).
+
 ### 1.36.0 — « Ce qui change tes jours »
 
 - `DayFactors` : le moteur de comparaison de « Ma soirée » étendu à l'humeur, la forme physique, l'énergie et chaque symptôme suivi.

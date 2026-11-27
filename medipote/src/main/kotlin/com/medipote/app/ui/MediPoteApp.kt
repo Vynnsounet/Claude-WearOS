@@ -502,6 +502,7 @@ fun MediPoteApp(vm: AppViewModel) {
                         HubCard("suivi:journal", "📖", "Journal", HubPreviews.journal(state, now)),
                         HubCard("suivi:calendar", "🗓️", "Calendrier", "Tes prises, ton humeur et tes symptômes, mois par mois"),
                         HubCard("suivi:labs", "🧪", "Analyses", HubPreviews.labs(state)),
+                        HubCard("suivi:timeline", "🕰️", "Ma période", HubPreviews.timeline(state, today)),
                         HubCard("suivi:checkup", "🔎", "Comprendre", HubPreviews.checkup(state, today)),
                         HubCard("suivi:sleep", "🌙", "Sommeil", HubPreviews.sleep(state, now)),
                         HubCard("suivi:measures", "🩺", "Mesures", HubPreviews.measures(state)).takeIf { state.settings.measures.isNotEmpty() },
@@ -520,6 +521,11 @@ fun MediPoteApp(vm: AppViewModel) {
                                 state,
                                 onOpen = { nav.navigate("lab/${Uri.encode(it)}") },
                                 onAdd = { nav.navigate("lab_edit") },
+                            )
+                            "suivi:timeline" -> com.medipote.app.ui.timeline.TimelineScreen(
+                                state, today,
+                                onOpenLab = { nav.navigate("lab/${Uri.encode(it)}") },
+                                onOpenTreatment = { nav.navigate(if (state.treatments.firstOrNull { t -> t.id == it }?.pill != null) "pill_setup" else "editor?treatment=$it") },
                             )
                             "suivi:checkup" -> com.medipote.app.ui.understand.CheckupScreen(
                                 state, today,

@@ -45,13 +45,13 @@ object DayFactors {
     const val MIN_DIFF = 0.7
     const val MIN_DIFF_ENERGY = 0.5
 
-    private fun outcomes(state: AppState): List<String> = buildList {
+    internal fun outcomes(state: AppState): List<String> = buildList {
         add("mood"); add("physical")
         if (state.energyLog.isNotEmpty() || state.energy != null) add("energy")
         if (Wellbeing.enabled(state)) Wellbeing.tracked(state).forEach { add("symptom:$it") }
     }
 
-    private fun label(outcome: String) = when {
+    internal fun label(outcome: String) = when {
         outcome == "mood" -> "Moral"
         outcome == "physical" -> "Forme physique"
         outcome == "energy" -> "Énergie"
@@ -61,7 +61,7 @@ object DayFactors {
     private fun scaleMax(outcome: String) = if (outcome == "energy") 3 else 5
 
     /** The day's value of [outcome], null when the day says nothing about it. */
-    private fun value(state: AppState, date: LocalDate, outcome: String): Double? {
+    internal fun value(state: AppState, date: LocalDate, outcome: String): Double? {
         val entry = state.entryFor(date)
         return when {
             outcome == "mood" -> entry.mental?.toDouble()

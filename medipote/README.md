@@ -444,6 +444,16 @@ et « Jour par jour » a rejoint le journal. Une carte ouverte montre où l'on e
 
 ![](docs/labs.png) ![](docs/lab_detail.png) ![](docs/travel.png) ![](docs/emergency.png)
 
+## Ma période : tout sur une ligne
+
+La carte **« 🕰️ Ma période »** de la page Suivi met sur **une seule ligne de temps** (1 mois à 1 an) ton sommeil, ton moral et tes
+symptômes jour par jour, avec les repères : début ou changement de traitement, prise de sang, rendez-vous, maladie, nuit blanche, période
+difficile, règles. Pour chaque changement de traitement, **« Voir avant / après »** compare les 14 jours d'avant et ceux d'après
+(sommeil, moral, forme, symptômes, eau). C'est fait pour répondre à « depuis quand ? » et « qu'est-ce qui avait changé avant ? », par
+exemple pour un rendez-vous. Ce sont des moyennes de tes notes : d'autres choses ont pu changer en même temps.
+
+![](docs/timeline.png)
+
 ## Ce qui change tes jours
 
 Comme pour les nuits, l'appli compare tes jours **avec et sans** chaque facteur (la nuit d'avant, ta soirée, peu d'eau, les règles) pour
