@@ -90,7 +90,7 @@ object HubCatalog {
     /** Every card of the app, whoever you are: what "ce qui compte pour toi" starts from. */
     val EVERYTHING: List<CardDef> = listOf(
         CardDef("soins:treatments", "💊", "Traitements"), CardDef("soins:pill", "🔁", "Pilule"), CardDef("soins:agenda", "📅", "Agenda"),
-        CardDef("soins:docs", "📂", "Carnet de santé"),
+        CardDef("soins:docs", "📂", "Carnet de santé"), CardDef("soins:vaccines", "💉", "Vaccins"),
         CardDef("suivi:journal", "📖", "Journal"), CardDef("suivi:calendar", "🗓️", "Calendrier"), CardDef("suivi:labs", "🧪", "Analyses"), CardDef("suivi:timeline", "🕰️", "Ma période"), CardDef("suivi:checkup", "🔎", "Comprendre"), CardDef("suivi:sleep", "🌙", "Sommeil"), CardDef("suivi:measures", "🩺", "Mesures"),
         CardDef("suivi:cycle", "🩸", "Cycle"), CardDef("suivi:symptoms", "🌡️", "Symptômes"),
         CardDef("mieux:softday", "💛", "Journée douce"), CardDef("mieux:feel", "💭", "Ce que je ressens"),
@@ -113,6 +113,7 @@ object HubCatalog {
                 CardDef("soins:pill", "🔁", "Pilule").takeIf { menstruating || hasPill },
                 CardDef("soins:agenda", "📅", "Agenda"),
                 CardDef("soins:docs", "📂", "Carnet de santé"),
+                CardDef("soins:vaccines", "💉", "Vaccins"),
             ),
             SUIVI to listOfNotNull(
                 CardDef("suivi:journal", "📖", "Journal"),
@@ -172,6 +173,15 @@ object HubPreviews {
 
     fun sleep(state: AppState, now: LocalDateTime): String =
         state.sleep.firstOrNull { it.date == now.toLocalDate() }?.let { "Cette nuit : ${Sleep.label(it)}" } ?: "Nuit pas encore notée"
+
+    fun vaccines(state: AppState, today: java.time.LocalDate): String {
+        val pending = com.medipote.app.domain.Vaccines.cards(state, today).filter { it.status == com.medipote.app.domain.VaccineStatus.DUE }
+        return when {
+            pending.isNotEmpty() -> "À faire : ${pending.joinToString(", ") { it.name.lowercase() }}"
+            state.vaccinations.isNotEmpty() -> "Dernier : ${com.medipote.app.domain.Vaccines.name(state.vaccinations.maxByOrNull { it.date }!!.vaccine)}"
+            else -> "Ton calendrier selon ton âge"
+        }
+    }
 
     fun timeline(state: AppState, today: java.time.LocalDate): String {
         val events = com.medipote.app.domain.Timeline.events(state, today.minusDays(89), today)
@@ -363,7 +373,7 @@ enum class Interest(val emoji: String, val label: String) {
     companion object {
         private val ALWAYS = setOf("soins:treatments", "soins:agenda", "suivi:journal", "suivi:calendar", "suivi:checkup", "suivi:timeline", "moi:stats", "moi:year", "moi:shop", "moi:badges")
         private val COVERS = mapOf(
-            TREATMENTS to setOf("soins:pill", "soins:docs", "suivi:measures", "suivi:labs"),
+            TREATMENTS to setOf("soins:pill", "soins:docs", "soins:vaccines", "suivi:measures", "suivi:labs"),
             CYCLE to setOf("suivi:cycle", "soins:pill"),
             MENTAL to setOf("mieux:softday", "mieux:feel", "mieux:rituals", "mieux:me", "suivi:symptoms"),
             SLEEP to setOf("suivi:sleep"),

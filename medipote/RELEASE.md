@@ -66,6 +66,17 @@ L'optimiseur de R8 reste désactivé (`-dontoptimize`) : APK de 3,8 Mo au lieu d
 le dex livré peut être reconverti et exécuté hors appareil pour vérification (voir plus bas),
 ce que l'optimiseur empêche. Il pourra être réactivé après des essais sur téléphone.
 
+### 1.38.0 — Vaccins
+
+- `Vaccines` : calendrier simplifié des vaccinations françaises pour adultes (DTP : rappels à 25, 45, 65 ans puis tous les 10 ans ;
+  grippe et Covid-19 chaque automne dès 65 ans ou à risque ; pneumocoque ; zona 2 doses dès 65 ans ; ROR 2 doses pour les nés depuis
+  1980 ; HPV de 11 à 19 ans). L'âge vient de `Profile.birthYear` (ou de l'âge du profil, à un an près). **Règles à faire relire par
+  un professionnel de santé** (texte dans l'écran).
+- `AppState.vaccinations` (date, note), `Profile.vaccineRisk`, `Settings.vaccineReminders`.
+- Rappel doux le 15 octobre à 10 h pour la grippe et le Covid-19 (`AlarmKind.VACCINE`) tant que la dose de la saison n'est pas notée,
+  et un mot sur l'accueil quand un vaccin est « à faire ».
+- Une porte : carte « 💉 Vaccins » de la page Soins, à côté du Carnet de santé.
+
 ### 1.37.0 — Ma période
 
 - `Timeline` : une ligne de temps avec le sommeil (barres), le moral (points) et les symptômes (bande), et les événements marqués :

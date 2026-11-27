@@ -125,6 +125,7 @@ fun HomeScreen(
     /** Water noted drink by drink: add [ml] (hot or not), take one back, take the last back. */
     onAddDrink: (Int, Boolean) -> Unit = { _, _ -> },
     /** « You usually take it around 8:40 »: move the reminder, or not now. */
+    onOpenVaccines: () -> Unit = {},
     onApplyHabit: (com.medipote.app.domain.HabitSuggestion) -> Unit = {},
     onDismissHabit: (com.medipote.app.domain.HabitSuggestion) -> Unit = {},
     onRemoveDrink: (Int) -> Unit = {},
@@ -343,12 +344,17 @@ fun HomeScreen(
     val followUp = com.medipote.app.domain.HomeRules.followUpDue(state, now)
     val checkupsDue = remember(state.checkups, date) { com.medipote.app.domain.Checkups.pending(state, date) }
     val travelText = state.travel?.let { com.medipote.app.domain.Travel.todayText(it, date) }
+    val vaccinesDue = remember(state.vaccinations, state.profile, state.settings.vaccineReminders, date) { com.medipote.app.domain.Vaccines.pending(state, date) }
     val habit = remember(state.doseLogs, state.treatments, state.settings.dismissedChecks, date) { com.medipote.app.domain.Habits.suggestion(state, now) }
     val alerts: (@Composable () -> Unit)? =
         if (recap == null && low.isEmpty() && renewals.isEmpty() && !blocked && !quiet && forgotten.isEmpty() && !pausedNow && concern == null &&
-            followUp == null && checkupsDue.isEmpty() && travelText == null && habit == null
+            followUp == null && checkupsDue.isEmpty() && travelText == null && habit == null && vaccinesDue.isEmpty()
         ) null
         else { {
+            if (vaccinesDue.isNotEmpty()) Notice(
+                null, MaterialTheme.colorScheme.primary, "Vaccins : ${vaccinesDue.first().name.lowercase()}" + if (vaccinesDue.size > 1) " (et ${vaccinesDue.size - 1} autre${if (vaccinesDue.size > 2) "s" else ""})" else "",
+                vaccinesDue.first().headline, emoji = "💉", onClick = onOpenVaccines,
+            )
             habit?.let { h ->
                 Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow), modifier = Modifier.fillMaxWidth()) {
                     Column(Modifier.padding(horizontal = 16.dp, vertical = 14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {

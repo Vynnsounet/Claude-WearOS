@@ -445,6 +445,15 @@ data class DoseChange(
 
 // ─────────────────────────── Regular check-ups ───────────────────────────
 
+/** A vaccine received: [vaccine] is the id of one of the calendar (« dtp », « flu »…) or the name the person wrote. */
+@Serializable
+data class Vaccination(
+    val id: String,
+    val vaccine: String,
+    @Serializable(with = LocalDateSerializer::class) val date: LocalDate,
+    val note: String = "",
+)
+
 /** Something to do from time to time: a dentist visit, a yearly blood test. The person sets the rhythm. */
 @Serializable
 data class RegularCheckup(

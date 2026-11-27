@@ -444,6 +444,17 @@ et « Jour par jour » a rejoint le journal. Une carte ouverte montre où l'on e
 
 ![](docs/labs.png) ![](docs/lab_detail.png) ![](docs/travel.png) ![](docs/emergency.png)
 
+## Vaccins
+
+La carte **« 💉 Vaccins »** (Soins, à côté du Carnet de santé) montre ce que le calendrier français conseille **à ton âge** : rappels
+de diphtérie-tétanos-polio à 25, 45 et 65 ans puis tous les 10 ans, grippe et Covid-19 chaque automne dès 65 ans ou si tu es à risque,
+pneumocoque, zona, ROR, HPV. Chaque vaccin dit où tu en es (**à faire**, **bientôt**, **à vérifier**, **à jour**) ; tu notes la date quand
+c'est fait, et tu peux ajouter d'autres vaccins (voyage, hépatite…). Un mot doux le 15 octobre pour la grippe et le Covid-19, et un avis sur
+l'accueil quand quelque chose est à faire (désactivable). Calendrier **simplifié, à faire relire par un professionnel de santé** : ton
+carnet de vaccination, ton médecin ou ton pharmacien ont le dernier mot.
+
+![](docs/vaccines.png)
+
 ## Ma période : tout sur une ligne
 
 La carte **« 🕰️ Ma période »** de la page Suivi met sur **une seule ligne de temps** (1 mois à 1 an) ton sommeil, ton moral et tes

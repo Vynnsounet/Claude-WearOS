@@ -55,6 +55,8 @@ data class AppState(
     val sleepRecipe: List<String> = emptyList(),
     /** « Une idée, un souci ? »: what the person noted about the app, kept here and shared only if they choose. */
     val ideas: List<Idea> = emptyList(),
+    /** Vaccines the person had, with their date. */
+    val vaccinations: List<Vaccination> = emptyList(),
     /** The energy of each day (ISO date → 1 to 3), for the last year: [energy] is only today's. */
     val energyLog: Map<String, Int> = emptyMap(),
     /** « Ma soirée »: what the evening of each day held (ISO date → factors), read with the night that follows. */
@@ -85,6 +87,10 @@ data class Profile(
     val cycle: CycleInfo? = null,
     /** Shown on the emergency card, e.g. "O+". */
     val bloodGroup: String = "",
+    /** For the vaccine calendar: age is worked out from it, so it stays right as years go by. */
+    val birthYear: Int? = null,
+    /** « My doctor told me I am concerned by the recommendations for people at risk » (chronic illness, pregnancy…). */
+    val vaccineRisk: Boolean = false,
 )
 
 @Serializable
@@ -437,6 +443,8 @@ data class Settings(
     val dynamicColor: Boolean = false,
     val water: WaterSettings = WaterSettings(),
     val sleep: SleepSettings = SleepSettings(),
+    /** A soft reminder when a vaccine of the calendar is due, and a word on the home page. */
+    val vaccineReminders: Boolean = true,
     /** Usual wake-up, meals and bedtime: the times anchored doses follow. */
     val routine: Routine = Routine(),
     /** Measurement kinds shown in the app; none by default. */

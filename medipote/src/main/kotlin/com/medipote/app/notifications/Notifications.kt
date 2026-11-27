@@ -28,7 +28,7 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
-enum class AlarmKind { DOSE, FOLLOW_UP, APPOINTMENT, WATER, STOCK, TEST, PRN_CHECK, SLEEP, SNOOZE, RENEWAL, RITUAL, RECAP, PRODUCT, SUPPORT, WIND_DOWN, RESUME, CHECKUP, WINDOW_END }
+enum class AlarmKind { DOSE, FOLLOW_UP, APPOINTMENT, WATER, STOCK, TEST, PRN_CHECK, SLEEP, SNOOZE, RENEWAL, RITUAL, RECAP, PRODUCT, SUPPORT, WIND_DOWN, RESUME, CHECKUP, WINDOW_END, VACCINE }
 
 /** One planned alarm. [ref] identifies what it is about (an appointment id, for instance). */
 data class AlarmSpec(val kind: AlarmKind, val time: LocalDateTime, val ref: String = "") {
@@ -186,6 +186,9 @@ object ReminderPlanner {
             if (t.isAfter(now)) alarms += AlarmSpec(AlarmKind.CHECKUP, t, c.id)
         }
 
+        // Vaccines of the season (flu, Covid-19): a soft word on 15 October if this season's is not done.
+        com.medipote.app.domain.Vaccines.seasonReminders(state, now).forEach { (t, id) -> alarms += AlarmSpec(AlarmKind.VACCINE, t, id) }
+
         // Low stock: a daily reminder at 10:00 until a box is bought.
         if (state.treatments.any { it.isLowStock }) {
             val today = now.toLocalDate().atTime(STOCK_CHECK)
@@ -217,7 +220,7 @@ object ReminderPlanner {
             when {
                 !q.contains(a.time) -> a
                 a.kind == AlarmKind.WATER || a.kind == AlarmKind.WIND_DOWN -> null
-                a.kind in setOf(AlarmKind.STOCK, AlarmKind.RENEWAL, AlarmKind.CHECKUP, AlarmKind.RITUAL, AlarmKind.RECAP, AlarmKind.SLEEP) -> a.copy(time = q.endAfter(a.time))
+                a.kind in setOf(AlarmKind.STOCK, AlarmKind.RENEWAL, AlarmKind.CHECKUP, AlarmKind.VACCINE, AlarmKind.RITUAL, AlarmKind.RECAP, AlarmKind.SLEEP) -> a.copy(time = q.endAfter(a.time))
                 else -> a
             }
         }.distinctBy { it.key }
@@ -472,6 +475,17 @@ object Notifications {
         )
     }
 
+    fun showVaccine(context: Context, state: AppState, id: String, now: LocalDateTime) {
+        if (!state.settings.vaccineReminders) return
+        val card = com.medipote.app.domain.Vaccines.cards(state, now.toLocalDate()).firstOrNull { it.id == id && it.status == com.medipote.app.domain.VaccineStatus.DUE } ?: return
+        post(
+            context, CHANNEL_APPOINTMENTS, "vaccine:$id".hashCode(),
+            "C'est la saison : ${card.name.lowercase()} 💉",
+            "La campagne est ouverte. Parles-en à ton médecin, à ton pharmacien ou à ton infirmier·ère, et note-le dans l'appli quand c'est fait.",
+            route = "treatments?card=soins:vaccines",
+        )
+    }
+
     fun showCheckup(context: Context, state: AppState, id: String) {
         val c = state.checkups.firstOrNull { it.id == id } ?: return
         post(
@@ -667,6 +681,7 @@ class ReminderReceiver : BroadcastReceiver() {
                 AlarmKind.WIND_DOWN -> Notifications.showWindDown(context, state)
                 AlarmKind.RENEWAL -> Notifications.showRenewal(context, state, spec.ref, repo.now())
                 AlarmKind.CHECKUP -> Notifications.showCheckup(context, state, spec.ref)
+                AlarmKind.VACCINE -> Notifications.showVaccine(context, state, spec.ref, repo.now())
                 AlarmKind.RITUAL -> Notifications.showRitual(context, state, spec.ref, repo.now())
                 AlarmKind.RECAP -> Notifications.showRecap(context, state, repo.now())
                 AlarmKind.PRODUCT -> Notifications.showProduct(context, state, spec.ref, repo.now())

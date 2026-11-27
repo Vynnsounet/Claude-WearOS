@@ -388,6 +388,7 @@ fun MediPoteApp(vm: AppViewModel) {
                         onUnpin = vm::togglePin,
                         onAddWater = vm::addWater,
                         onAddDrink = vm::addDrink,
+                        onOpenVaccines = { nav.navigate("treatments?card=soins:vaccines") { popUpTo("home") } },
                         onApplyHabit = vm::applyHabit,
                         onDismissHabit = vm::dismissHabit,
                         onRemoveDrink = vm::removeDrink,
@@ -450,6 +451,7 @@ fun MediPoteApp(vm: AppViewModel) {
                         HubCard("soins:pill", "🔁", "Pilule", "Plaquette, pauses et rappels").takeIf { menstruating || hasPill },
                         HubCard("soins:agenda", "📅", "Agenda", HubPreviews.agenda(state, now)),
                         HubCard("soins:docs", "📂", "Carnet de santé", HubPreviews.documents(state)),
+                        HubCard("soins:vaccines", "💉", "Vaccins", HubPreviews.vaccines(state, today)),
                     )
                     CardHub("Soins", cards, hiddenCards, openProfile, openSettings, { nav.navigate("cards_layout") }, onSearch = openSearch, onSupport = openSupport, initialOpen = cardEntry.arguments?.getString("card"), tools = hubTools) { key ->
                         when (key) {
@@ -479,6 +481,13 @@ fun MediPoteApp(vm: AppViewModel) {
                                 checkups = state.checkups,
                                 onCheckupDone = vm::checkupDone, onCheckupSave = vm::saveCheckup,
                                 onCheckupAdd = vm::addCheckup, onCheckupDelete = vm::deleteCheckup,
+                            )
+                            "soins:vaccines" -> com.medipote.app.ui.vaccines.VaccinesScreen(
+                                state, today,
+                                onAdd = vm::addVaccination,
+                                onRemove = vm::removeVaccination,
+                                onProfile = vm::setVaccineProfile,
+                                onReminders = vm::setVaccineReminders,
                             )
                             else -> DocumentsScreen(
                                 state.documents,

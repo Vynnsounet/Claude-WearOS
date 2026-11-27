@@ -137,6 +137,17 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         if (fed != null) checkAchievements()
     }
 
+    fun addVaccination(vaccine: String, date: java.time.LocalDate, note: String) {
+        repo.update { com.medipote.app.domain.Vaccines.add(it, vaccine, date, note, java.util.UUID.randomUUID().toString()) }
+        _events.trySend(UiEvent.Message("Vaccin noté"))
+    }
+
+    fun removeVaccination(id: String) = repo.update { com.medipote.app.domain.Vaccines.remove(it, id) }.let { }
+
+    fun setVaccineProfile(birthYear: Int?, risk: Boolean) = repo.update { com.medipote.app.domain.Vaccines.setProfile(it, birthYear, risk) }.let { reschedule() }
+
+    fun setVaccineReminders(on: Boolean) = updateSettings { it.copy(vaccineReminders = on) }
+
     fun saveProfile(profile: Profile) {
         repo.update { it.copy(profile = profile) }
     }
