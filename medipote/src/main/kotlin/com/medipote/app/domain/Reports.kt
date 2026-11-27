@@ -177,8 +177,9 @@ object Reports {
 
         // Water and wellbeing over the period
         val entries = state.journal.filter { !it.date.isBefore(today.minusDays(days - 1L)) && !it.date.isAfter(today) }
-        val water = entries.filter { it.waterGlasses > 0 }
-        val goal = state.settings.water.goalGlasses
+        val waterSettings = state.settings.water
+        val water = entries.filter { Water.ml(it, waterSettings) > 0 }
+        val goal = Water.goalMl(waterSettings)
         val physical = entries.mapNotNull { it.physical }
         val mental = entries.mapNotNull { it.mental }
 
@@ -202,8 +203,8 @@ object Reports {
             daysWithDoses = daily.count { it.planned > 0 },
             weekly = weekly,
             heatmap = history.takeLast(84),
-            waterAverage = if (water.isEmpty()) null else water.map { it.waterGlasses }.average().toFloat(),
-            waterGoalDays = water.count { it.waterGlasses >= goal },
+            waterAverage = if (water.isEmpty()) null else water.map { Water.ml(it, waterSettings) }.average().toFloat(),
+            waterGoalDays = water.count { Water.ml(it, waterSettings) >= goal },
             waterDays = water.size,
             physicalAverage = physical.takeIf { it.isNotEmpty() }?.average()?.toFloat(),
             mentalAverage = mental.takeIf { it.isNotEmpty() }?.average()?.toFloat(),

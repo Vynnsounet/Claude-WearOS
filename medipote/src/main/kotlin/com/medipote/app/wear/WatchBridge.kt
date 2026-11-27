@@ -88,8 +88,11 @@ object WatchBridge {
             reminders = reminders,
             waterEnabled = water.enabled,
             waterDate = today.toString(),
-            glasses = state.entryFor(today).waterGlasses,
-            goal = water.goalGlasses,
+            glasses = com.medipote.app.domain.Water.glasses(com.medipote.app.domain.Water.ml(state, today), water),
+            goal = com.medipote.app.domain.Water.glasses(com.medipote.app.domain.Water.goalMl(water), water).coerceAtLeast(1),
+            waterMl = com.medipote.app.domain.Water.ml(state, today),
+            goalMl = com.medipote.app.domain.Water.goalMl(water),
+            glassMl = water.glassMl,
             prn = prn,
             product = state.productSession?.let { s ->
                 WatchProduct(s.product.label, s.product.emoji, s.since.toString(), PeriodCare.changeAt(s).toString(), PeriodCare.maxAt(s).toString())

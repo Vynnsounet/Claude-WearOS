@@ -383,9 +383,9 @@ class ScreensTest {
         compose.onNodeWithText("Sombre").assertExists()
         compose.onNodeWithText("Jeu et récompenses").performScrollTo().performClick()
         // The scoring rules are folded: one tap shows them.
-        compose.onNodeWithText("Verre d'eau (même après l'objectif, jusqu'au double)").assertDoesNotExist()
+        compose.onNodeWithText("Eau : chaque tranche de 250 ml (même après l'objectif, jusqu'au double)").assertDoesNotExist()
         compose.onNodeWithText("Points, série et compagnon : le barème").performScrollTo().performClick()
-        compose.onNodeWithText("Verre d'eau (même après l'objectif, jusqu'au double)").assertExists()
+        compose.onNodeWithText("Eau : chaque tranche de 250 ml (même après l'objectif, jusqu'au double)").assertExists()
     }
 
 

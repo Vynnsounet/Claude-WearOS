@@ -66,6 +66,15 @@ L'optimiseur de R8 reste désactivé (`-dontoptimize`) : APK de 3,8 Mo au lieu d
 le dex livré peut être reconverti et exécuté hors appareil pour vérification (voir plus bas),
 ce que l'optimiseur empêche. Il pourra être réactivé après des essais sur téléphone.
 
+### 1.34.0 (téléphone) · 1.17.0 (montre) — l'eau en millilitres
+
+- `DayEntry.drinks` (heure, quantité, boisson chaude) : le total est la somme des boissons. Les verres notés avant restent lus
+  à la taille du verre de la personne puis sont repliés en une ligne au premier ajout (`Water.normalized`).
+- `WaterSettings.goalMl` (0 = suit les anciens verres × leur taille), `countHotDrinks`. Points par tranche de 250 ml, jusqu'au double
+  de l'objectif ; retirer une boisson ne reprend pas les points et ne les fait pas payer deux fois.
+- Le bouton « verre » des notifications, widgets et de la montre note un verre à la taille du verre ; l'affichage est en L.
+- Montre : `WatchSnapshot.waterMl/goalMl/glassMl` (une ancienne montre continue d'afficher des verres).
+
 ### 1.33.0 — Ma soirée : ce qui change les nuits
 
 - `SleepFactors` : une trentaine de facteurs rangés par thème (boissons, repas, soirée, autour du lit, plus personnel), avec

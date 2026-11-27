@@ -30,7 +30,7 @@ object HomeRules {
         .maxByOrNull { it.dateTime }
 
     fun showWater(state: AppState, date: LocalDate): Boolean =
-        state.settings.water.enabled || state.entryFor(date).waterGlasses > 0
+        state.settings.water.enabled || Water.ml(state, date) > 0
 
     /** As-needed medications taken in the last 24 hours: their timing matters for the next one. */
     fun recentPrn(state: AppState, now: LocalDateTime) = state.treatments.filter { t ->

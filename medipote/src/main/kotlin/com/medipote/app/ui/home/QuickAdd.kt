@@ -105,7 +105,7 @@ fun QuickAddContent(state: AppState, now: LocalDateTime, actions: QuickAddAction
                     "😴", if (napRunning) "Terminer ma sieste" else "Une sieste",
                     if (napRunning) "Elle est en cours" else null, more = !napRunning,
                 ) { if (napRunning) done(actions.onNapWake) else page = QuickPage.NAP }
-                QuickRow("💧", "Un verre d'eau", "${entry.waterGlasses} / ${state.settings.water.goalGlasses} aujourd'hui", onClick = { done(actions.onWater) })
+                QuickRow("💧", "Un verre d'eau", "${com.medipote.app.domain.Water.progress(com.medipote.app.domain.Water.ml(entry, state.settings.water), com.medipote.app.domain.Water.goalMl(state.settings.water))} aujourd'hui", onClick = { done(actions.onWater) })
                 if (menstruating) {
                     QuickRow(
                         "🩸", "Une protection",

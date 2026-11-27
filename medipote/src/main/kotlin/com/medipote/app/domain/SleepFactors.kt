@@ -178,7 +178,7 @@ object SleepFactors {
             if (low != null && low <= 2) add("auto_lowmood")
             if (listOfNotNull(entry.physical, entry.mental).minOrNull().let { it != null && it >= 4 }) add("auto_goodmood")
             state.symptomLog.filter { it.date == evening && it.intensity >= 3 }.forEach { add("auto_symptom_${it.symptom}") }
-            if (state.settings.water.enabled && entry.waterGlasses > 0 && entry.waterGlasses < state.settings.water.goalGlasses / 2) add("auto_lowwater")
+            Water.ml(entry, state.settings.water).let { ml -> if (state.settings.water.enabled && ml > 0 && ml < Water.goalMl(state.settings.water) / 2) add("auto_lowwater") }
             if (state.doseLogs.any { it.takenAt.toLocalDate() == evening && it.takenAt.hour * 60 + it.takenAt.minute >= 22 * 60 }) add("auto_latedose")
             state.profile?.cycle?.takeIf { state.profile.menstruating }?.let { c ->
                 Cycle.status(c, evening)?.let { st ->

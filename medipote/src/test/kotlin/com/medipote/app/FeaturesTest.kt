@@ -121,7 +121,7 @@ class FeaturesTest {
         // Past the goal, glasses still earn points…
         assertEquals(listOf(2, 2, 2, 2), rewards.map { it.glassPoints })
         assertEquals(listOf(0, 0, Rules.WATER_BONUS, 0), rewards.map { it.goalBonus })
-        assertEquals(4, state.entryFor(day).waterGlasses)
+        assertEquals(4 * 250, com.medipote.app.domain.Water.ml(state, day))
         assertEquals(4 * Rules.WATER_GLASS_POINTS + Rules.WATER_BONUS, state.game.points)
         assertEquals(0, state.game.journalRewardDays.size)
         // …up to twice the goal.
@@ -129,8 +129,8 @@ class FeaturesTest {
         assertEquals(listOf(2, 2, 0), more)
         assertEquals(6 * Rules.WATER_GLASS_POINTS + Rules.WATER_BONUS, state.game.points)
         // Removing then re-adding glasses doesn't pay twice
-        state = Game.addWater(state, -10, at(16)).first
-        assertEquals(0, state.entryFor(day).waterGlasses)
+        repeat(10) { state = Game.addWater(state, -1, at(16)).first }
+        assertEquals(0, com.medipote.app.domain.Water.ml(state, day))
         val (again, r) = Game.addWater(state, 1, at(17))
         assertEquals(0, r.total)
         assertEquals(6 * Rules.WATER_GLASS_POINTS + Rules.WATER_BONUS, again.game.points)

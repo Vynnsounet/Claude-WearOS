@@ -120,7 +120,7 @@ class WidgetsTest {
     @Test
     fun waterWidget() {
         val t = texts(render(WaterWidget(), "water", 130, 130))
-        assertTrue(t.toString(), t.contains("5 / 8"))
+        assertTrue(t.toString(), t.contains("1,25 L / 2 L"))
         render(WaterWidget(), "water_wide", 250, 130)
     }
 
@@ -154,7 +154,7 @@ class WidgetsTest {
         assertTrue(after.game.points > before.game.points)
 
         WidgetActions.water(context, 1)
-        assertEquals(6, context.repository.state.value.entryFor(now.toLocalDate()).waterGlasses)
+        assertEquals(6 * 250, com.medipote.app.domain.Water.ml(context.repository.state.value, now.toLocalDate()))
     }
 
     @Test

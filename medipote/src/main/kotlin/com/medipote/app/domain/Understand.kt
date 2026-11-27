@@ -95,9 +95,10 @@ object Understand {
 
         // Water.
         val water = state.settings.water
-        val last2 = (0..1).map { state.entryFor(today.minusDays(it.toLong())).waterGlasses }
-        if (symptom in DEHYDRATION && (water.enabled || last2.any { it > 0 }) && last2.average() < water.goalGlasses / 2.0) {
-            add(Factor("💧", "Peu d'eau", "Tu as noté ${f1(last2.average())} verre${if (last2.average() >= 2) "s" else ""} par jour ces 2 derniers jours, pour un objectif de ${water.goalGlasses}.", "Un grand verre d'eau maintenant, puis un petit à chaque heure."))
+        val last2 = (0..1).map { Water.ml(state, today.minusDays(it.toLong())) }
+        val waterGoal = Water.goalMl(water)
+        if (symptom in DEHYDRATION && (water.enabled || last2.any { it > 0 }) && last2.average() < waterGoal / 2.0) {
+            add(Factor("💧", "Peu d'eau", "Tu as noté ${Water.format(last2.average().toInt())} par jour ces 2 derniers jours, pour un objectif de ${Water.format(waterGoal)}.", "Un grand verre d'eau maintenant, puis un petit à chaque heure."))
         }
 
         // A treatment begun recently.

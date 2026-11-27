@@ -310,18 +310,19 @@ private fun JournalStep(entry: DayEntry, onSave: (DayEntry) -> Unit) {
 
 @Composable
 private fun WaterStep(state: AppState, now: LocalDateTime, onAdd: (Int) -> Unit) {
-    val glasses = state.entryFor(now.toLocalDate()).waterGlasses
-    val goal = state.settings.water.goalGlasses
+    val water = state.settings.water
+    val drunk = com.medipote.app.domain.Water.ml(state, now.toLocalDate())
+    val goal = com.medipote.app.domain.Water.goalMl(water)
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
-        FilledTonalIconButton(onClick = { onAdd(-1) }, enabled = glasses > 0, modifier = Modifier.size(56.dp)) { Icon(Icons.Rounded.Remove, "Retirer un verre") }
+        FilledTonalIconButton(onClick = { onAdd(-1) }, enabled = drunk > 0, modifier = Modifier.size(56.dp)) { Icon(Icons.Rounded.Remove, "Retirer la dernière boisson") }
         Column(Modifier.padding(horizontal = 24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-            Text("$glasses", style = MaterialTheme.typography.displayMedium)
-            Text("verre${if (glasses > 1) "s" else ""} sur $goal", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(com.medipote.app.domain.Water.format(drunk), style = MaterialTheme.typography.displayMedium)
+            Text("sur ${com.medipote.app.domain.Water.format(goal)}", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         FilledIconButton(onClick = { onAdd(1) }, modifier = Modifier.size(56.dp)) { Icon(Icons.Rounded.Add, "Ajouter un verre") }
     }
     Text(
-        if (glasses >= goal) "Objectif atteint, bravo 💧" else "Encore ${goal - glasses} pour l'objectif. Un dernier verre avant de dormir ?",
+        if (drunk >= goal) "Objectif atteint, bravo 💧" else "Encore ${com.medipote.app.domain.Water.format(goal - drunk)} pour l'objectif. Un dernier verre avant de dormir ?",
         style = MaterialTheme.typography.bodyMedium,
         textAlign = TextAlign.Center,
         modifier = Modifier.fillMaxWidth(),

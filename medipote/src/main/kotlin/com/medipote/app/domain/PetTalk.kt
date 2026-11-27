@@ -89,8 +89,8 @@ object PetTalk {
                 ?.let { add("Prochaine prise ${it.occurrence.dose.whenText} : ${it.occurrence.treatment.name}.") }
             if (state.game.streak >= 2) add("Déjà ${state.game.streak} jours d'affilée, on fait une super équipe !")
             val water = state.settings.water
-            val glasses = state.entryFor(now.toLocalDate()).waterGlasses
-            if (glasses < water.goalGlasses && now.hour in 8..21) add("Un petit verre d'eau ? 💧 On en est à $glasses / ${water.goalGlasses}.")
+            val drunk = Water.ml(state, now.toLocalDate())
+            if (drunk < Water.goalMl(water) && now.hour in 8..21) add("Un petit verre d'eau ? 💧 On en est à ${Water.progress(drunk, Water.goalMl(water))}.")
             state.appointments
                 .filter { it.dateTime.isAfter(now) && ChronoUnit.DAYS.between(now.toLocalDate(), it.dateTime.toLocalDate()) <= 2 }
                 .minByOrNull { it.dateTime }

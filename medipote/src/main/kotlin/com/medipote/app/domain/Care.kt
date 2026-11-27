@@ -59,7 +59,7 @@ object Care {
     /** Whether [date] had at least one thing done for oneself (never a dose: those have their own points). */
     fun gentleDay(state: AppState, date: LocalDate): Boolean {
         val entry = state.entryFor(date)
-        return entry.hasJournal || entry.mental != null || entry.waterGlasses > 0 ||
+        return entry.hasJournal || entry.mental != null || entry.waterGlasses > 0 || entry.drinks.isNotEmpty() ||
             state.symptomLog.any { it.date == date } || state.wins.any { it.date == date } ||
             state.sleep.any { it.date == date } || state.measurements.any { it.at.toLocalDate() == date } ||
             state.game.ritualsDone.any { it.startsWith(date.toString()) }

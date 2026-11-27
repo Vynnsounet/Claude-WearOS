@@ -195,7 +195,7 @@ class NotificationsTest {
         val glass = com.medipote.sync.WatchAction("w1", com.medipote.sync.WatchAction.WATER, now.toString(), value = 1.0)
         assertTrue(link.record(context, glass))
         assertTrue(!link.record(context, glass))
-        assertEquals(1, repo.state.value.entryFor(now.toLocalDate()).waterGlasses)
+        assertEquals(250, com.medipote.app.domain.Water.ml(repo.state.value, now.toLocalDate()))
 
         // The dose validated on the watch: recorded, and its reminder leaves the phone.
         val keys = com.medipote.app.wear.WatchBridge.snapshot(repo.state.value, now).doses.filter { it.at == doseTime }.map { it.key }

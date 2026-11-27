@@ -52,11 +52,23 @@ data class PillPack(
 
 // ─────────────────────────── Water ───────────────────────────
 
+/** One drink: when, how much, and whether it was a hot one (counted only if the person chose so). */
+@Serializable
+data class Drink(
+    @Serializable(with = LocalDateTimeSerializer::class) val at: LocalDateTime,
+    val ml: Int,
+    val hot: Boolean = false,
+)
+
 @Serializable
 data class WaterSettings(
     val enabled: Boolean = false,
     val goalGlasses: Int = 8,
     val glassMl: Int = 250,
+    /** The goal in millilitres; 0 = not set yet, so it follows [goalGlasses] × [glassMl]. */
+    val goalMl: Int = 0,
+    /** Unsweetened hot drinks (tea, herbal tea) can be noted too and count in the total. */
+    val countHotDrinks: Boolean = false,
     val startMinute: Int = 9 * 60,
     val endMinute: Int = 21 * 60,
     val intervalMinutes: Int = 120,
@@ -89,7 +101,10 @@ data class DayEntry(
     val flow: Flow? = null,
     val cycleSymptoms: List<String> = emptyList(),
     val intercourse: Intercourse? = null,
+    /** Glasses noted before 1.34, when water was counted in glasses: read as [WaterSettings.glassMl] each, then folded into [drinks]. */
     val waterGlasses: Int = 0,
+    /** What was drunk, one line each: the total is their sum. */
+    val drinks: List<Drink> = emptyList(),
     /** Glasses already rewarded today, so removing and re-adding a glass doesn't pay twice. */
     val waterRewarded: Int = 0,
     /** Answer to the question of the day. */
@@ -101,7 +116,7 @@ data class DayEntry(
 
     val hasCycleData: Boolean get() = flow != null || cycleSymptoms.isNotEmpty() || intercourse != null
 
-    val isEmpty: Boolean get() = !hasJournal && !hasCycleData && waterGlasses == 0 && waterRewarded == 0
+    val isEmpty: Boolean get() = !hasJournal && !hasCycleData && waterGlasses == 0 && waterRewarded == 0 && drinks.isEmpty()
 }
 
 // ─────────────────────────── Appointments ───────────────────────────

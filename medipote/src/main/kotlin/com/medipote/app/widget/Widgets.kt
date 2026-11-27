@@ -408,17 +408,17 @@ private val WaterBlue = ColorProvider(Color(0xFF3A9BDC))
 fun WaterContent(state: AppState, now: LocalDateTime) {
     val wide = LocalSize.current.width >= 200.dp
     val compact = LocalSize.current.height < 150.dp
-    val goal = state.settings.water.goalGlasses
-    val glasses = state.entryFor(now.toLocalDate()).waterGlasses
+    val goal = com.medipote.app.domain.Water.goalMl(state.settings.water)
+    val glasses = com.medipote.app.domain.Water.ml(state, now.toLocalDate())
     Card {
         Column(GlanceModifier.fillMaxSize().padding(12.dp)) {
             Text("💧 Hydratation", style = muted, maxLines = 1)
             Text(
-                "$glasses / $goal",
-                style = TextStyle(color = GlanceTheme.colors.onSurface, fontSize = 22.sp, fontWeight = FontWeight.Bold),
+                com.medipote.app.domain.Water.progress(glasses, goal),
+                style = TextStyle(color = GlanceTheme.colors.onSurface, fontSize = 18.sp, fontWeight = FontWeight.Bold),
                 maxLines = 1,
             )
-            if (!compact) Text(if (glasses >= goal) "Objectif atteint 🎉" else "verres aujourd'hui", style = muted, maxLines = 1)
+            if (!compact) Text(if (glasses >= goal) "Objectif atteint 🎉" else "d'eau aujourd'hui", style = muted, maxLines = 1)
             Spacer(GlanceModifier.height(4.dp))
             LinearProgressIndicator(
                 progress = (glasses.toFloat() / goal).coerceAtMost(1f),

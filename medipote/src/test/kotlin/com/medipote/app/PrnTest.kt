@@ -192,7 +192,7 @@ class PrnTest {
         assertEquals(8, r.completeDays)
         // 28 morning doses 5 min late, 8 evening doses 30 min late: 380 / 36 ≈ 11 min.
         assertEquals(11, r.averageDelayMinutes)
-        assertEquals(6f, r.waterAverage!!, 0.001f)
+        assertEquals(1500f, r.waterAverage!!, 0.001f)
         assertEquals(5, r.waterGoalDays)
         assertTrue(r.insights.any { it.text.contains("du soir") && it.tone == Tone.WARN })
         assertTrue(r.insights.any { it.text.contains("Statine") })

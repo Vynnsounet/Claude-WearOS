@@ -552,7 +552,7 @@ private fun WellbeingTab(state: AppState, today: java.time.LocalDate, period: Pe
         anything = true
         StatCard("Bien-être et hydratation", subtitle = "Moyennes sur ${period.label}") {
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                MiniValue("Verres d'eau / jour", report.waterAverage?.let { decimal(it) } ?: "—", Modifier.weight(1f))
+                MiniValue("Eau par jour", report.waterAverage?.let { com.medipote.app.domain.Water.format(it.toInt()) } ?: "—", Modifier.weight(1f))
                 MiniValue("Objectif atteint", if (report.waterDays == 0) "—" else "${report.waterGoalDays}/${report.waterDays} j", Modifier.weight(1f))
             }
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {

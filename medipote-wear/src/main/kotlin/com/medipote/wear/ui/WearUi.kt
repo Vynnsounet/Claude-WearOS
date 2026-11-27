@@ -252,7 +252,7 @@ fun HomeScreen(
                 val glasses = WatchPlanner.glasses(snapshot, now.toLocalDate())
                 FilledTonalButton(
                     onClick = actions.onWater,
-                    label = { Text("💧 $glasses / ${snapshot.goal} verres") },
+                    label = { Text("💧 ${WatchPlanner.waterText(snapshot, now.toLocalDate())}") },
                     secondaryLabel = { Text("Toucher : +1 verre") },
                     modifier = Modifier.fillMaxWidth(),
                 )

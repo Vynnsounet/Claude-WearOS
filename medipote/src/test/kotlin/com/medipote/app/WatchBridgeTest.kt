@@ -74,7 +74,7 @@ class WatchBridgeTest {
         assertEquals(s, WatchBridge.apply(s, WatchAction("1", WatchAction.TAKE, at(8, 5).toString(), doseKeys = listOf(key)), at(11)))
 
         s = WatchBridge.apply(s, WatchAction("2", WatchAction.WATER, at(9).toString(), value = 1.0), at(11))
-        assertEquals(1, s.entryFor(day).waterGlasses)
+        assertEquals(250, com.medipote.app.domain.Water.ml(s, day))
 
         s = WatchBridge.apply(s, WatchAction("3", WatchAction.PRN, at(10).toString(), treatmentId = "ibu"), at(11))
         assertEquals(at(10), s.prnIntakes.single().takenAt)

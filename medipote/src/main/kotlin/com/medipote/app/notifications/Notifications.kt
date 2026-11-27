@@ -427,11 +427,12 @@ object Notifications {
 
     fun showWater(context: Context, state: AppState, now: LocalDateTime) {
         val water = state.settings.water
-        val glasses = state.entryFor(now.toLocalDate()).waterGlasses
-        if (!water.enabled || glasses >= water.goalGlasses) return
+        val drunk = com.medipote.app.domain.Water.ml(state, now.toLocalDate())
+        val goal = com.medipote.app.domain.Water.goalMl(water)
+        if (!water.enabled || drunk >= goal) return
         post(
             context, CHANNEL_WATER, WATER_ID, "Un verre d'eau ? 💧",
-            "${state.game.petName} a soif ! Tu en es à $glasses / ${water.goalGlasses} verres aujourd'hui.",
+            "${state.game.petName} a soif ! Tu en es à ${com.medipote.app.domain.Water.progress(drunk, goal)} aujourd'hui.",
             actions = listOf(NotificationActions.action(context, "J'ai bu un verre", NotificationActions.water(context, WATER_ID))),
             onWatchToo = true,
         )

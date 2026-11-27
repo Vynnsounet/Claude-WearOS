@@ -287,10 +287,14 @@ fun SettingsScreen(
                 val w = settings.water
                 fun update(f: (com.medipote.app.data.WaterSettings) -> com.medipote.app.data.WaterSettings) = onChange { it.copy(water = f(it.water)) }
                 SwitchRow("Rappels pour boire de l'eau", w.enabled, supporting = "Une notification régulière tant que l'objectif du jour n'est pas atteint") { v -> update { it.copy(enabled = v) } }
-                com.medipote.app.ui.components.NumberStepper("Objectif", w.goalGlasses, { v -> update { it.copy(goalGlasses = v) } }, 1..20, suffix = " verres")
-                com.medipote.app.ui.components.NumberStepper("Taille d'un verre", w.glassMl / 50, { v -> update { it.copy(glassMl = v * 50) } }, 2..10, display = { "${it * 50} mL" })
+                com.medipote.app.ui.components.NumberStepper(
+                    "Objectif par jour", (com.medipote.app.domain.Water.goalMl(w) / 250).coerceIn(2, 24),
+                    { v -> update { it.copy(goalMl = v * 250) } }, 2..24, display = { com.medipote.app.domain.Water.format(it * 250) },
+                )
+                com.medipote.app.ui.components.NumberStepper("Taille de mon verre", w.glassMl / 50, { v -> update { it.copy(glassMl = v * 50) } }, 2..10, display = { "${it * 50} ml" })
+                SwitchRow("Compter les boissons chaudes", w.countHotDrinks, supporting = "Thé, tisane, café sans sucre : tu peux les noter avec l'eau et elles comptent dans le total") { v -> update { it.copy(countHotDrinks = v) } }
                 Text(
-                    "Soit ${"%.1f".format(java.util.Locale.FRANCE, w.goalGlasses * w.glassMl / 1000.0)} L par jour.",
+                    "Le bouton « verre » des rappels, des widgets et de la montre note un verre de ${w.glassMl} ml.",
                     style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 if (w.enabled) {
@@ -510,7 +514,7 @@ fun SettingsScreen(
                 Rule("Très en retard (plus de ${Rules.LATE_MINUTES / 60} h)", "+${Rules.POINTS_VERY_LATE} pts")
                 Rule("Noté « Déjà pris » plus de ${Rules.EARLY_WINDOW_MINUTES} min en avance", "+${Rules.POINTS_EARLY} pts")
                 Rule("Journée parfaite (tout à l'heure)", "+${Rules.PERFECT_DAY_BONUS} pts")
-                Rule("Verre d'eau (même après l'objectif, jusqu'au double)", "+${Rules.WATER_GLASS_POINTS} pts")
+                Rule("Eau : chaque tranche de 250 ml (même après l'objectif, jusqu'au double)", "+${Rules.WATER_GLASS_POINTS} pts")
                 Rule("Objectif d'hydratation atteint", "+${Rules.WATER_BONUS} pts")
                 Rule("Journal du jour rempli", "+${Rules.JOURNAL_BONUS} pts")
                 Rule("Nuit notée le matin même", "+${Rules.SLEEP_BONUS} pts")

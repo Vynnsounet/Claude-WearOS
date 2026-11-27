@@ -40,6 +40,7 @@ import androidx.compose.material.icons.rounded.WaterDrop
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.History
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.Medication
@@ -121,6 +122,9 @@ fun HomeScreen(
     onOpenSettings: () -> Unit,
     animate: Boolean = true,
     onAddWater: (Int) -> Unit = {},
+    /** Water noted drink by drink: add [ml] (hot or not), take one back, take the last back. */
+    onAddDrink: (Int, Boolean) -> Unit = { _, _ -> },
+    onRemoveDrink: (Int) -> Unit = {},
     onOpenJournal: () -> Unit = {},
     onOpenAppointment: (com.medipote.app.data.Appointment) -> Unit = {},
     onOpenTreatments: () -> Unit = {},
@@ -295,7 +299,8 @@ fun HomeScreen(
         HomeSection.MEASURES -> if (state.settings.measures.isEmpty()) null else { { com.medipote.app.ui.measures.HomeMeasuresCard(state, now, onAddMeasure, onOpenMeasure) } }
         HomeSection.WATER -> if (!com.medipote.app.domain.HomeRules.showWater(state, date)) null else { {
             val water = state.settings.water
-            WaterCard(state.entryFor(date).waterGlasses, water.goalGlasses, water.glassMl, onAddWater)
+            val entry = com.medipote.app.domain.Water.normalized(state.entryFor(date), water)
+            WaterCard(com.medipote.app.domain.Water.ml(entry, water), com.medipote.app.domain.Water.goalMl(water), entry.drinks, water, onAddDrink, onRemoveDrink)
         } }
         HomeSection.PROMPTS -> {
             // Not twice the same invitation: the ritual and mood cards already ask when they are shown.
@@ -875,43 +880,93 @@ private fun PrnCard(
     }
 }
 
-/** Water of the day: one drop per glass, tap + after each glass. */
+/** Water of the day, drink by drink: a tap for the usual quantities, your own number, and the list of what was drunk. */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun WaterCard(glasses: Int, goal: Int, glassMl: Int, onAdd: (Int) -> Unit) {
-    val water = Color(0xFF3A9BDC)
+private fun WaterCard(
+    ml: Int,
+    goal: Int,
+    drinks: List<com.medipote.app.data.Drink>,
+    settings: com.medipote.app.data.WaterSettings,
+    onAdd: (Int, Boolean) -> Unit,
+    onRemove: (Int) -> Unit,
+) {
+    val blue = Color(0xFF3A9BDC)
+    var hot by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
+    var other by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
+    var custom by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf("") }
+    var detail by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
+    val presets = (com.medipote.app.domain.Water.PRESETS + settings.glassMl).distinct().sorted()
     Card(
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
         modifier = Modifier.fillMaxWidth(),
     ) {
-        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
                     Text("Hydratation", style = MaterialTheme.typography.titleMedium)
                     Text(
-                        "$glasses / $goal verres · ${"%.2f".format(java.util.Locale.FRANCE, glasses * glassMl / 1000.0).trimEnd('0').trimEnd(',')} L" +
+                        com.medipote.app.domain.Water.progress(ml, goal) +
                             when {
-                                glasses >= com.medipote.app.domain.Rules.waterRewardedGlasses(goal) -> " · bravo, belle hydratation 🎉"
-                                glasses >= goal -> " · objectif atteint 🎉 · +${com.medipote.app.domain.Rules.WATER_GLASS_POINTS} pts par verre en plus"
-                                else -> " · +${com.medipote.app.domain.Rules.WATER_GLASS_POINTS} pts par verre"
+                                ml >= goal * 2 -> " · bravo, belle hydratation 🎉"
+                                ml >= goal -> " · objectif atteint 🎉"
+                                else -> ""
                             },
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
-                androidx.compose.material3.FilledTonalIconButton(onClick = { onAdd(-1) }, enabled = glasses > 0) {
-                    Icon(Icons.Rounded.Remove, "Retirer un verre")
+                androidx.compose.material3.FilledTonalIconButton(onClick = { onRemove(drinks.lastIndex) }, enabled = drinks.isNotEmpty()) {
+                    Icon(Icons.Rounded.Remove, "Retirer la dernière boisson")
                 }
-                Spacer(Modifier.width(4.dp))
-                androidx.compose.material3.FilledIconButton(onClick = { onAdd(1) }) { Icon(Icons.Rounded.Add, "Ajouter un verre") }
             }
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                repeat(maxOf(goal, glasses)) { i ->
-                    Icon(
-                        Icons.Rounded.WaterDrop, null,
-                        tint = if (i < glasses) water else MaterialTheme.colorScheme.outlineVariant,
-                        modifier = Modifier.size(24.dp),
+            androidx.compose.material3.LinearProgressIndicator(
+                progress = { (ml.toFloat() / goal.coerceAtLeast(1)).coerceAtMost(1f) },
+                color = blue,
+                modifier = Modifier.fillMaxWidth(),
+            )
+            if (settings.countHotDrinks) {
+                androidx.compose.material3.FilterChip(selected = hot, onClick = { hot = !hot }, label = { Text("☕ Boisson chaude (sans sucre)") })
+            }
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                presets.forEach { p ->
+                    androidx.compose.material3.FilledTonalButton(onClick = { onAdd(p, hot) }) { Text("+ $p ml") }
+                }
+                androidx.compose.material3.OutlinedButton(onClick = { other = !other }) { Text("Autre quantité") }
+            }
+            if (other) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    androidx.compose.material3.OutlinedTextField(
+                        value = custom,
+                        onValueChange = { v -> custom = v.filter { it.isDigit() }.take(4) },
+                        label = { Text("Quantité en ml") },
+                        singleLine = true,
+                        keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Number),
+                        modifier = Modifier.weight(1f),
                     )
+                    androidx.compose.material3.Button(
+                        onClick = { custom.toIntOrNull()?.let { onAdd(it, hot); custom = ""; other = false } },
+                        enabled = custom.toIntOrNull()?.let(com.medipote.app.domain.Water::valid) == true,
+                    ) { Text("Ajouter") }
+                }
+            }
+            if (drinks.isNotEmpty()) {
+                androidx.compose.material3.TextButton(onClick = { detail = !detail }) {
+                    Text(if (detail) "Masquer le détail" else "Voir ce que j'ai bu (${drinks.size})")
+                }
+                if (detail) {
+                    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                        drinks.forEachIndexed { i, d ->
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    "${d.at.format(com.medipote.app.ui.components.hourMinute)} · ${if (d.hot) "☕ " else ""}${d.ml} ml" +
+                                        if (d.hot && !settings.countHotDrinks) " (non compté)" else "",
+                                    style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f),
+                                )
+                                androidx.compose.material3.IconButton(onClick = { onRemove(i) }) { Icon(Icons.Rounded.Close, "Retirer cette boisson") }
+                            }
+                        }
+                    }
                 }
             }
         }

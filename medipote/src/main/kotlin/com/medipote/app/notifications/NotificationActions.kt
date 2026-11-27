@@ -95,8 +95,8 @@ class NotificationActionReceiver : BroadcastReceiver() {
                 repo.update { s -> Game.addWater(s, 1, now).let { (u, r) -> total = r.total; u } }
                 manager.cancel(id)
                 val water = repo.state.value
-                val glasses = water.entryFor(now.toLocalDate()).waterGlasses
-                Notifications.confirm(context, id, "Verre noté : $glasses / ${water.settings.water.goalGlasses}" + if (total > 0) " · +$total pts 💧" else " 💧")
+                val drunk = com.medipote.app.domain.Water.ml(water, now.toLocalDate())
+                Notifications.confirm(context, id, "Verre noté : ${com.medipote.app.domain.Water.progress(drunk, com.medipote.app.domain.Water.goalMl(water.settings.water))}" + if (total > 0) " · +$total pts 💧" else " 💧")
             }
         }
         val state = repo.state.value

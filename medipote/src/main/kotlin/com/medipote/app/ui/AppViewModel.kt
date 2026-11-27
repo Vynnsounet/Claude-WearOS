@@ -242,6 +242,25 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         checkAchievements()
     }
 
+    /** Notes a drink of [ml] today, from the water card. */
+    fun addDrink(ml: Int, hot: Boolean = false) = water { s -> com.medipote.app.domain.Game.addDrink(s, ml, repo.now(), hot = hot) }
+
+    fun removeDrink(index: Int) = water { s -> com.medipote.app.domain.Game.removeDrink(s, index, repo.now()) }
+
+    fun undoDrink() = water { s -> com.medipote.app.domain.Game.undoDrink(s, repo.now()) }
+
+    private fun water(change: (com.medipote.app.data.AppState) -> Pair<com.medipote.app.data.AppState, com.medipote.app.domain.WaterReward>) {
+        var reward: com.medipote.app.domain.WaterReward? = null
+        repo.update { s -> change(s).let { (u, r) -> reward = r; u } }
+        val r = reward ?: return
+        if (r.total > 0) _events.trySend(UiEvent.Points(r.total))
+        if (r.goalBonus > 0) {
+            Notifications.cancelWater(getApplication())
+            _events.trySend(UiEvent.Message("Objectif d'hydratation atteint : +${r.goalBonus} pts bonus 💧"))
+        }
+        checkAchievements()
+    }
+
     /** Petting or hugging the companion: a little bonus the first time each day. */
     /** "Already taken": a dose planned later today, taken in advance. */
     fun giveEarly(item: DoseItem) = give(item, early = true)

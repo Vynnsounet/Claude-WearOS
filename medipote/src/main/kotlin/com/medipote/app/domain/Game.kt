@@ -3,6 +3,7 @@ package com.medipote.app.domain
 import com.medipote.app.data.AppState
 import com.medipote.app.data.DayEntry
 import com.medipote.app.data.DoseLog
+import com.medipote.app.data.Drink
 import com.medipote.app.data.GameState
 import com.medipote.app.data.PointEvent
 import com.medipote.app.data.TakeStatus
@@ -194,22 +195,48 @@ object Game {
     }
 
     /**
-     * Adds (or removes, with a negative delta) a glass of water today. Each new glass earns points,
-     * past the goal too (up to twice the goal), and reaching the goal earns a bonus, each only once a day.
+     * Notes a drink of [ml] today (at [at], now by default). Each 250 ml earns points, past the goal too (up to twice the
+     * goal), and reaching the goal earns a bonus, each only once a day: removing a drink never takes points back,
+     * and noting it again doesn't pay twice.
      */
-    fun addWater(state: AppState, delta: Int, now: LocalDateTime): Pair<AppState, WaterReward> {
+    fun addDrink(state: AppState, ml: Int, now: LocalDateTime, at: LocalDateTime = now, hot: Boolean = false): Pair<AppState, WaterReward> {
+        if (!Water.valid(ml)) return state to WaterReward(0, 0)
         val today = now.toLocalDate()
-        val goal = state.settings.water.goalGlasses
-        val entry = state.entryFor(today)
-        val glasses = (entry.waterGlasses + delta).coerceIn(0, 40)
-        val newlyRewarded = (minOf(glasses, Rules.waterRewardedGlasses(goal)) - entry.waterRewarded).coerceAtLeast(0)
+        val entry = Water.normalized(state.entryFor(today), state.settings.water)
+        val drinks = (entry.drinks + Drink(at, ml, hot)).sortedBy { it.at }
+        return settleWater(state, entry.copy(drinks = drinks), now)
+    }
+
+    /** Takes back the drink at [index] of today (as listed, oldest first), e.g. a tap made by mistake. */
+    fun removeDrink(state: AppState, index: Int, now: LocalDateTime): Pair<AppState, WaterReward> {
+        val entry = Water.normalized(state.entryFor(now.toLocalDate()), state.settings.water)
+        if (index !in entry.drinks.indices) return state to WaterReward(0, 0)
+        return settleWater(state, entry.copy(drinks = entry.drinks.filterIndexed { i, _ -> i != index }), now)
+    }
+
+    /** Takes back the last drink noted today. */
+    fun undoDrink(state: AppState, now: LocalDateTime): Pair<AppState, WaterReward> {
+        val entry = Water.normalized(state.entryFor(now.toLocalDate()), state.settings.water)
+        return if (entry.drinks.isEmpty()) state to WaterReward(0, 0) else removeDrink(state, entry.drinks.lastIndex, now)
+    }
+
+    /** One glass of the person's own size more (or less: the last drink goes): what the notification, widget and watch use. */
+    fun addWater(state: AppState, delta: Int, now: LocalDateTime): Pair<AppState, WaterReward> =
+        if (delta > 0) addDrink(state, state.settings.water.glassMl * delta, now) else undoDrink(state, now)
+
+    private fun settleWater(state: AppState, entry: DayEntry, now: LocalDateTime): Pair<AppState, WaterReward> {
+        val today = now.toLocalDate()
+        val w = state.settings.water
+        val goal = Water.goalMl(w)
+        val ml = Water.ml(entry, w)
+        val newlyRewarded = (minOf(ml / Water.UNIT_ML, Water.rewardedUnits(goal)) - entry.waterRewarded).coerceAtLeast(0)
         val glassPoints = newlyRewarded * Rules.WATER_GLASS_POINTS
-        val updatedEntry = entry.copy(waterGlasses = glasses, waterRewarded = entry.waterRewarded + newlyRewarded)
+        val updatedEntry = entry.copy(waterRewarded = entry.waterRewarded + newlyRewarded)
         // Water alone doesn't count as a journal entry, so this never earns the journal bonus.
         var updated = saveEntry(state, updatedEntry, now).first
-        if (glassPoints > 0) updated = updated.copy(game = addPoints(updated.game, glassPoints, "Verre d'eau", now))
+        if (glassPoints > 0) updated = updated.copy(game = addPoints(updated.game, glassPoints, "Eau", now))
         var bonus = 0
-        if (glasses >= goal && today !in updated.game.waterRewardDays) {
+        if (ml >= goal && today !in updated.game.waterRewardDays) {
             bonus = Rules.WATER_BONUS
             updated = updated.copy(
                 game = addPoints(updated.game, bonus, "Objectif d'hydratation atteint", now)

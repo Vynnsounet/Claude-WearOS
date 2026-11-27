@@ -444,6 +444,16 @@ et « Jour par jour » a rejoint le journal. Une carte ouverte montre où l'on e
 
 ![](docs/labs.png) ![](docs/lab_detail.png) ![](docs/travel.png) ![](docs/emergency.png)
 
+## L'eau, boisson par boisson
+
+La carte **Hydratation** de l'accueil note chaque boisson : touche **150, 250, 330 ou 500 ml**, ou **Autre quantité** pour ton chiffre.
+Le total se calcule (« 1,2 L / 2 L »), « Voir ce que j'ai bu » liste les boissons du jour avec leur heure, et chacune peut être retirée.
+Tu règles ton objectif (en litres) et la taille de **ton** verre dans Paramètres › Hydratation : le bouton « verre » des rappels, des
+widgets et de la montre note un verre de cette taille. Thé, tisane ou café sans sucre peuvent compter aussi si tu l'actives. Les verres
+déjà notés sont conservés.
+
+![](docs/water_card.png)
+
 ## Ma soirée : ce qui change tes nuits
 
 Dans la fiche de nuit (section « Ma soirée ») ou sur la carte « 🌆 Ma soirée » de la page Sommeil, note ce qui a compté : café (et à

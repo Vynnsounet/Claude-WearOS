@@ -387,6 +387,8 @@ fun MediPoteApp(vm: AppViewModel) {
                         onOpenShortcut = { id -> com.medipote.app.domain.AppSearch.CATALOG.firstOrNull { it.id == id }?.let(openEntry) },
                         onUnpin = vm::togglePin,
                         onAddWater = vm::addWater,
+                        onAddDrink = vm::addDrink,
+                        onRemoveDrink = vm::removeDrink,
                         onOpenJournal = { nav.navigate("day/$today") },
                         onOpenAppointment = { nav.navigate("appointment?id=${it.id}") },
                         onOpenTreatments = { nav.navigate("treatments") { launchSingleTop = true } },

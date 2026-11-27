@@ -84,6 +84,11 @@ data class WatchSnapshot(
     val waterDate: String = "",
     val glasses: Int = 0,
     val goal: Int = 8,
+    /** The day's water in millilitres and the goal, when the phone counts that way (0 = only glasses are known). */
+    val waterMl: Int = 0,
+    val goalMl: Int = 0,
+    /** The size of the person's glass, for the one-tap glass of the watch. */
+    val glassMl: Int = 0,
     val prn: List<WatchPrn> = emptyList(),
     val product: WatchProduct? = null,
     val lastHeartRate: Int? = null,
@@ -190,6 +195,19 @@ object WatchPlanner {
         return today.firstOrNull { state(it, now) != WatchDoseState.UPCOMING } ?: today.firstOrNull()
     }
 
+    /** « 1,2 L », « 850 ml ». */
+    fun litres(ml: Int): String = if (ml >= 1000) "%.2f".format(java.util.Locale.FRANCE, ml / 1000.0).trimEnd('0').trimEnd(',') + " L" else "$ml ml"
+
+    /** The day's water: « 1,2 L / 2 L » when the phone counts in millilitres, else « 3 / 8 verres ». */
+    fun waterText(snapshot: WatchSnapshot, date: LocalDate): String =
+        if (snapshot.goalMl > 0 && snapshot.waterDate == date.toString()) "${litres(snapshot.waterMl)} / ${litres(snapshot.goalMl)}"
+        else if (snapshot.goalMl > 0) "${litres(0)} / ${litres(snapshot.goalMl)}"
+        else "${glasses(snapshot, date)} / ${snapshot.goal} verres"
+
+    private fun waterDone(snapshot: WatchSnapshot, date: LocalDate): Boolean =
+        if (snapshot.goalMl > 0) (if (snapshot.waterDate == date.toString()) snapshot.waterMl else 0) >= snapshot.goalMl
+        else glasses(snapshot, date) >= snapshot.goal
+
     fun glasses(snapshot: WatchSnapshot, date: LocalDate): Int = if (snapshot.waterDate == date.toString()) snapshot.glasses else 0
 
     /** The doses a dose reminder is about, still to take. */
@@ -199,7 +217,7 @@ object WatchPlanner {
     /** Whether a reminder still has something to say when it rings. */
     fun relevant(snapshot: WatchSnapshot, reminder: WatchReminder, now: LocalDateTime): Boolean = when (reminder.kind) {
         WatchReminder.DOSE, WatchReminder.FOLLOW_UP, WatchReminder.WINDOW_END -> dosesOf(snapshot, reminder).isNotEmpty()
-        WatchReminder.WATER -> snapshot.waterEnabled && glasses(snapshot, now.toLocalDate()) < snapshot.goal
+        WatchReminder.WATER -> snapshot.waterEnabled && !waterDone(snapshot, now.toLocalDate())
         WatchReminder.PRODUCT -> snapshot.product != null
         else -> false
     }
@@ -222,7 +240,7 @@ object WatchPlanner {
                 else -> "C'est l'heure 💊" to list
             }
         }
-        WatchReminder.WATER -> "Un verre d'eau ? 💧" to "${glasses(snapshot, now.toLocalDate())} / ${snapshot.goal} verres aujourd'hui"
+        WatchReminder.WATER -> "Un verre d'eau ? 💧" to "${waterText(snapshot, now.toLocalDate())} aujourd'hui"
         else -> reminder.title to reminder.text
     }
 
@@ -231,7 +249,11 @@ object WatchPlanner {
         WatchAction.TAKE -> snapshot.copy(doses = snapshot.doses.map { if (it.key in action.doseKeys) it.copy(taken = true) else it })
         WatchAction.WATER -> {
             val date = action.time.toLocalDate()
-            snapshot.copy(waterDate = date.toString(), glasses = (glasses(snapshot, date) + action.value.toInt()).coerceAtLeast(0))
+            val ml = if (snapshot.waterDate == date.toString()) snapshot.waterMl else 0
+            snapshot.copy(
+                waterDate = date.toString(), glasses = (glasses(snapshot, date) + action.value.toInt()).coerceAtLeast(0),
+                waterMl = if (snapshot.goalMl > 0) (ml + action.value.toInt() * snapshot.glassMl).coerceAtLeast(0) else 0,
+            )
         }
         WatchAction.PRN -> snapshot.copy(prn = snapshot.prn.map { if (it.id == action.treatmentId) it.copy(lastTakenAt = action.at) else it })
         WatchAction.HEART_RATE -> snapshot.copy(lastHeartRate = action.value.toInt(), lastHeartRateAt = action.at)
