@@ -444,6 +444,15 @@ et « Jour par jour » a rejoint le journal. Une carte ouverte montre où l'on e
 
 ![](docs/labs.png) ![](docs/lab_detail.png) ![](docs/travel.png) ![](docs/emergency.png)
 
+## Ce qui change tes jours
+
+Comme pour les nuits, l'appli compare tes jours **avec et sans** chaque facteur (la nuit d'avant, ta soirée, peu d'eau, les règles) pour
+ton **moral**, ta **forme**, ton **énergie** et chacun de tes **symptômes** : « Mal de tête : plus intense les jours de peu d'eau
+(+1,2/5 · 6 jours avec, 14 sans) ». Il faut au moins 5 jours de chaque côté sur trois mois, et un écart net. Ce sont des choses qui vont
+ensemble dans tes notes, **pas des causes**. Tu les vois dans Statistiques › Symptômes et › Bien-être, et sur la page de chaque symptôme.
+
+![](docs/day_effects.png)
+
 ## Des prises liées au repas, au réveil, au coucher
 
 Pour la lévothyroxine, l'alendronate, la metformine… l'ordonnance dit « 30 minutes avant le petit-déjeuner », pas « 8 h 00 ». Dans la

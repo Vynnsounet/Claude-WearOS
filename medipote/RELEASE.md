@@ -66,6 +66,16 @@ L'optimiseur de R8 reste désactivé (`-dontoptimize`) : APK de 3,8 Mo au lieu d
 le dex livré peut être reconverti et exécuté hors appareil pour vérification (voir plus bas),
 ce que l'optimiseur empêche. Il pourra être réactivé après des essais sur téléphone.
 
+### 1.36.0 — « Ce qui change tes jours »
+
+- `DayFactors` : le moteur de comparaison de « Ma soirée » étendu à l'humeur, la forme physique, l'énergie et chaque symptôme suivi.
+  Facteurs : la nuit qui précède (courte, peu reposante, réveils), le soir d'avant (`SleepFactors`), peu d'eau, règles / phase lutéale.
+  Trois mois de notes ; au moins 5 jours avec et 5 sans ; écart d'au moins 0,7 point sur 5 (0,5 sur 3 pour l'énergie) ;
+  jamais présenté comme une cause. Facteurs « plus personnels » masqués tant qu'ils ne sont pas activés.
+- `AppState.energyLog` : l'énergie de chaque jour est gardée un an (avant, seule celle du jour existait).
+- Affichage : carte « 🔍 Ce qui change tes jours » dans Statistiques › Symptômes et › Bien-être ; et, sur la page d'un symptôme,
+  « D'après tes notes » dans « Chez toi, ça peut venir de… ».
+
 ### 1.35.0 — des prises liées au repas, au réveil, au coucher ; des rappels qui suivent les habitudes
 
 - `DoseTime.anchor` / `offsetMinutes` + `Settings.routine` (réveil, petit-déjeuner, déjeuner, dîner, coucher). `minuteOfDay` garde

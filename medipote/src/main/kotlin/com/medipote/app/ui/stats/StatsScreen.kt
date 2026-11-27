@@ -536,6 +536,8 @@ private fun SymptomsTab(state: AppState, today: java.time.LocalDate, period: Per
     }
     val links = remember(state.symptomLog, state.sleep, today) { Wellbeing.insights(state, today) }
     InsightsCard(links.map { Insight(it, Tone.INFO) }, title = "Liens avec ton sommeil")
+    val dayEffects = remember(state, today) { com.medipote.app.domain.DayFactors.shown(state, today, limit = 40).filter { it.outcome.startsWith("symptom:") }.take(5) }
+    com.medipote.app.ui.wellbeing.DayEffectsCard(dayEffects, anyNoted = state.symptomLog.isNotEmpty())
     Text(
         "Ce sont des observations de tes propres notes, pas un diagnostic : montre-les à ton médecin si tu veux.",
         style = MaterialTheme.typography.bodySmall,
@@ -608,6 +610,8 @@ private fun WellbeingTab(state: AppState, today: java.time.LocalDate, period: Pe
             }
         }
     }
+    val dayEffects = remember(state, today) { com.medipote.app.domain.DayFactors.shown(state, today, limit = 40).filter { !it.outcome.startsWith("symptom:") }.take(5) }
+    if (anything) com.medipote.app.ui.wellbeing.DayEffectsCard(dayEffects, anyNoted = state.journal.any { it.mental != null || it.physical != null })
     if (!anything) StatCard("Bien-être") { Text("Note ton humeur, ton eau ou ta forme : les statistiques apparaîtront ici.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant) }
 }
 

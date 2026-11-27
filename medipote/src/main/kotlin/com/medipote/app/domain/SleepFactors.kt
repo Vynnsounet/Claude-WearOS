@@ -211,7 +211,7 @@ object SleepFactors {
     }
 
     /** Every factor (chosen, then automatic) that went with [night], by tag: the unit of the comparison. */
-    private fun keysOf(state: AppState, night: SleepNight): Set<String> = buildSet {
+    internal fun keysOf(state: AppState, night: SleepNight): Set<String> = buildSet {
         noted(state, night).forEach { tag ->
             add(tag)
             // A factor with a precision also counts as itself: « café » and « café après 16 h ».

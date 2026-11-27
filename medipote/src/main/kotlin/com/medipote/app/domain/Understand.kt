@@ -137,6 +137,10 @@ object Understand {
 
         // Patterns in the notes.
         patterns(state, symptom, today).forEach(::add)
+
+        // What goes with its stronger days, from three months of notes (never said as a cause).
+        DayFactors.shown(state, today, limit = 30).filter { it.outcome == "symptom:$symptom" && it.worse }.take(2)
+            .forEach { add(Factor("🔍", "D'après tes notes : ${it.whenText}", it.sentence, null)) }
     }
 
     /** What the person's own past notes show about this symptom. */

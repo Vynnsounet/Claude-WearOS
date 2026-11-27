@@ -144,9 +144,14 @@ object Wellbeing {
 
     // ── Energy and heavy days ──
 
-    fun energyOn(state: AppState, date: LocalDate): Int? = state.energy?.takeIf { it.date == date }?.level
+    fun energyOn(state: AppState, date: LocalDate): Int? = state.energy?.takeIf { it.date == date }?.level ?: state.energyLog[date.toString()]
 
-    fun setEnergy(state: AppState, date: LocalDate, level: Int): AppState = state.copy(energy = EnergyNote(date, level.coerceIn(1, 3)))
+    /** Notes the energy of [date]; the last year of them is kept, to see what goes with low or high energy. */
+    fun setEnergy(state: AppState, date: LocalDate, level: Int): AppState {
+        val value = level.coerceIn(1, 3)
+        val limit = date.minusDays(400).toString()
+        return state.copy(energy = EnergyNote(date, value), energyLog = (state.energyLog + (date.toString() to value)).filterKeys { it >= limit })
+    }
 
     /** A day worth offering gentleness on: a strong symptom or very little energy. */
     fun heavyDay(state: AppState, date: LocalDate): Boolean =
