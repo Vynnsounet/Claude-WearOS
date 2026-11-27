@@ -187,6 +187,48 @@ data class DoseStep(
     val quantity: Double,
 )
 
+/** The moments of the day a dose can be tied to. */
+enum class Anchor(val id: String, val label: String, private val article: String, val offsets: List<Int>) {
+    WAKE("wake", "Réveil", "le réveil", listOf(0, 15, 30, 60)),
+    BREAKFAST("breakfast", "Petit-déjeuner", "le petit-déjeuner", listOf(-60, -30, 0, 30, 60)),
+    LUNCH("lunch", "Déjeuner", "le déjeuner", listOf(-60, -30, 0, 30, 60)),
+    DINNER("dinner", "Dîner", "le dîner", listOf(-60, -30, 0, 30, 60)),
+    BED("bed", "Coucher", "le coucher", listOf(-60, -30, 0));
+
+    /** « 30 min avant le petit-déjeuner », « au coucher », « 1 h après le dîner ». */
+    fun text(offset: Int): String {
+        val gap = offset.let { kotlin.math.abs(it) }.let { if (it % 60 == 0) "${it / 60} h" else "$it min" }
+        return when {
+            offset == 0 -> "au ${article.removePrefix("le ")}"
+            offset < 0 -> "$gap avant $article"
+            else -> "$gap après $article"
+        }
+    }
+
+    companion object {
+        fun of(id: String?): Anchor? = entries.firstOrNull { it.id == id }
+    }
+}
+
+/** The person's usual times, in minutes after midnight: what anchored doses follow. */
+@Serializable
+data class Routine(
+    val wake: Int = 7 * 60,
+    val breakfast: Int = 7 * 60 + 30,
+    val lunch: Int = 12 * 60 + 30,
+    val dinner: Int = 19 * 60 + 30,
+    val bed: Int = 23 * 60,
+) {
+    fun minute(anchor: Anchor): Int = when (anchor) {
+        Anchor.WAKE -> wake; Anchor.BREAKFAST -> breakfast; Anchor.LUNCH -> lunch; Anchor.DINNER -> dinner; Anchor.BED -> bed
+    }
+
+    fun with(anchor: Anchor, minute: Int): Routine = when (anchor) {
+        Anchor.WAKE -> copy(wake = minute); Anchor.BREAKFAST -> copy(breakfast = minute); Anchor.LUNCH -> copy(lunch = minute)
+        Anchor.DINNER -> copy(dinner = minute); Anchor.BED -> copy(bed = minute)
+    }
+}
+
 @Serializable
 data class DoseTime(
     /** Minutes after midnight, e.g. 8:30 → 510. */
@@ -210,7 +252,18 @@ data class DoseTime(
     val untilMinute: Int? = null,
     /** For a window: one more, quiet reminder shortly before it closes, if the dose is not taken yet. */
     val remindEnd: Boolean = false,
+    /**
+     * A dose tied to the day's rhythm instead of a clock time ("30 minutes before breakfast"): the [Anchor] id and the gap in
+     * minutes. [minuteOfDay] always holds the resulting time, kept up to date when the person's usual times change.
+     */
+    val anchor: String? = null,
+    val offsetMinutes: Int = 0,
 ) {
+    val isAnchored: Boolean get() = anchor != null && Anchor.of(anchor) != null
+
+    /** « 30 min avant le petit-déjeuner », « au réveil »; empty for a dose at a clock time. */
+    val anchorText: String get() = Anchor.of(anchor)?.text(offsetMinutes).orEmpty()
+
     /** Only windows that really span time count; a stray end at or before the start means a fixed time. */
     val isWindow: Boolean get() = untilMinute != null && untilMinute > minuteOfDay
 
@@ -382,6 +435,8 @@ data class Settings(
     val dynamicColor: Boolean = false,
     val water: WaterSettings = WaterSettings(),
     val sleep: SleepSettings = SleepSettings(),
+    /** Usual wake-up, meals and bedtime: the times anchored doses follow. */
+    val routine: Routine = Routine(),
     /** Measurement kinds shown in the app; none by default. */
     val measures: Set<MeasureType> = emptySet(),
     val backup: BackupSettings = BackupSettings(),

@@ -62,6 +62,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.medipote.app.data.Anchor
 import com.medipote.app.data.DoseTime
 import com.medipote.app.data.DoseUnit
 import com.medipote.app.data.Drug
@@ -104,6 +105,9 @@ fun TreatmentEditorScreen(
     today: LocalDate,
     /** The person's other treatments, to tell when two are taken too close to each other. */
     others: List<Treatment> = emptyList(),
+    /** The person's usual times (wake-up, meals, bedtime), for doses tied to them; [onRoutine] changes them. */
+    routine: com.medipote.app.data.Routine = com.medipote.app.data.Routine(),
+    onRoutine: ((com.medipote.app.data.Routine) -> com.medipote.app.data.Routine) -> Unit = {},
     onSave: (Treatment) -> Unit,
     onDelete: () -> Unit,
     onBack: () -> Unit,
@@ -120,6 +124,8 @@ fun TreatmentEditorScreen(
     var editingTime by remember { mutableStateOf<Int?>(null) }
     /** Whether the time being edited is the end of a window rather than the start. */
     var editingEnd by remember { mutableStateOf(false) }
+    /** The usual time (breakfast…) being changed. */
+    var editingRoutine by remember { mutableStateOf<com.medipote.app.data.Anchor?>(null) }
     var showInfo by remember { mutableStateOf(false) }
     var confirmDelete by remember { mutableStateOf(false) }
     var trackStock by remember { mutableStateOf(existing?.stock != null) }
@@ -202,7 +208,7 @@ fun TreatmentEditorScreen(
                                 name = name.trim(),
                                 strength = strength.trim(),
                                 unit = unit,
-                                doses = if (asNeeded) emptyList() else doses.sortedBy { it.minuteOfDay }.distinctBy { it.minuteOfDay },
+                                doses = if (asNeeded) emptyList() else doses.map { d -> Anchor.of(d.anchor)?.let { d.copy(minuteOfDay = com.medipote.app.domain.Routines.minuteFor(routine, it, d.offsetMinutes)) } ?: d }.sortedBy { it.minuteOfDay }.distinctBy { it.minuteOfDay },
                                 daysOfWeek = if (rhythm == 1) days else Treatment.ALL_DAYS,
                                 startDate = startDate,
                                 endDate = if (asNeeded) null else effectiveEnd,
@@ -331,7 +337,13 @@ fun TreatmentEditorScreen(
                     unit = unit,
                     onTime = { editingEnd = false; editingTime = index },
                     onEnd = { editingEnd = true; editingTime = index },
-                    onWindow = { until, remind -> doses[index] = dose.copy(untilMinute = until, remindEnd = remind) },
+                    onWindow = { until, remind -> doses[index] = dose.copy(untilMinute = until, remindEnd = remind, anchor = null, offsetMinutes = 0) },
+                    routine = routine,
+                    onAnchor = { a, off ->
+                        doses[index] = if (a == null) dose.copy(anchor = null, offsetMinutes = 0)
+                        else dose.copy(anchor = a.id, offsetMinutes = off, untilMinute = null, remindEnd = false, minuteOfDay = com.medipote.app.domain.Routines.minuteFor(routine, a, off))
+                    },
+                    onRoutineTime = { editingRoutine = it },
                     windowNote = com.medipote.app.domain.Precautions.windowNote(existing?.drugId ?: drug?.id),
                     onQuantity = { doses[index] = dose.copy(quantity = it) },
                     onRemove = if (doses.size > 1) ({ doses.removeAt(index) }) else null,
@@ -553,11 +565,19 @@ fun TreatmentEditorScreen(
                     // Moving the start carries the window along, keeping its length.
                     val length = dose.untilMinute?.let { it - dose.minuteOfDay }
                     val until = length?.takeIf { it > 0 }?.let { minute + it }?.takeIf { it <= 24 * 60 - 1 }
-                    dose.copy(minuteOfDay = minute, untilMinute = until, remindEnd = dose.remindEnd && until != null)
+                    // Choosing a clock time makes the dose a fixed one again.
+                    dose.copy(minuteOfDay = minute, untilMinute = until, remindEnd = dose.remindEnd && until != null, anchor = null, offsetMinutes = 0)
                 }
                 editingTime = null
             },
         )
+    }
+    editingRoutine?.let { anchor ->
+        TimePickerModal(
+            minuteOfDay = routine.minute(anchor),
+            title = "Heure de ton ${anchor.label.lowercase()}",
+            onDismiss = { editingRoutine = null },
+        ) { minute -> onRoutine { it.with(anchor, minute) }; editingRoutine = null }
     }
     if (confirmDelete) {
         AlertDialog(
@@ -625,8 +645,12 @@ private fun DoseRow(
     onWindow: (Int?, Boolean) -> Unit = { _, _ -> },
     /** Shown under a window for a medication whose time matters. */
     windowNote: String? = null,
+    routine: com.medipote.app.data.Routine = com.medipote.app.data.Routine(),
+    /** Ties the dose to a moment of the day (breakfast, bedtime…) with a gap; null gives it a clock time again. */
+    onAnchor: (Anchor?, Int) -> Unit = { _, _ -> },
+    onRoutineTime: (Anchor) -> Unit = {},
 ) {
-    var windowOpen by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(dose.isWindow) }
+    var windowOpen by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(dose.isWindow || dose.isAnchored) }
     var daysOpen by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(dose.days != null) }
     Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)) {
       Column {
@@ -650,17 +674,50 @@ private fun DoseRow(
         }
         // Fixed time or time window: "fixed" until asked, so the form stays light.
         TextButton(onClick = { windowOpen = !windowOpen }, modifier = Modifier.padding(start = 4.dp)) {
-            Text(if (dose.isWindow) "🕐  Entre ${dose.timeLabel} et ${dose.untilLabel}" else "🕐  À heure fixe")
+            Text(
+                when {
+                    dose.isWindow -> "🕐  Entre ${dose.timeLabel} et ${dose.untilLabel}"
+                    dose.isAnchored -> "🍽️  ${dose.anchorText.replaceFirstChar { it.titlecase(Locale.FRANCE) }} (${dose.timeLabel})"
+                    else -> "🕐  À heure fixe"
+                },
+            )
         }
         if (windowOpen) {
             Column(Modifier.padding(start = 12.dp, end = 12.dp, bottom = 10.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    FilterChip(selected = !dose.isWindow, onClick = { onWindow(null, false) }, label = { Text("À heure fixe") })
+                    FilterChip(selected = !dose.isWindow && !dose.isAnchored, onClick = { onWindow(null, false) }, label = { Text("À heure fixe") })
                     FilterChip(
                         selected = dose.isWindow,
                         onClick = { if (!dose.isWindow) onWindow((dose.minuteOfDay + 120).coerceAtMost(24 * 60 - 1).takeIf { it > dose.minuteOfDay }, true) },
                         label = { Text("Dans une plage") },
                     )
+                    FilterChip(
+                        selected = dose.isAnchored,
+                        onClick = { if (!dose.isAnchored) onAnchor(Anchor.BREAKFAST, -30) },
+                        label = { Text("Selon mes repas") },
+                    )
+                }
+                Anchor.of(dose.anchor)?.let { current ->
+                    Text("Se cale sur :", style = MaterialTheme.typography.labelLarge)
+                    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Anchor.entries.forEach { a ->
+                            FilterChip(selected = a == current, onClick = { onAnchor(a, if (dose.offsetMinutes in a.offsets) dose.offsetMinutes else 0) }, label = { Text(a.label) })
+                        }
+                    }
+                    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        current.offsets.forEach { off ->
+                            FilterChip(
+                                selected = off == dose.offsetMinutes,
+                                onClick = { onAnchor(current, off) },
+                                label = { Text(if (off == 0) (if (current == Anchor.WAKE) "Au réveil" else "Au moment") else current.text(off).substringBefore(" le ")) },
+                            )
+                        }
+                    }
+                    Text(
+                        "Ton ${current.label.lowercase()} est à ${"%02d:%02d".format(routine.minute(current) / 60, routine.minute(current) % 60)} : la prise suivra si tu le changes.",
+                        style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    TextButton(onClick = { onRoutineTime(current) }) { Text("Changer l'heure du ${current.label.lowercase()}") }
                 }
                 if (dose.isWindow) {
                     Text(

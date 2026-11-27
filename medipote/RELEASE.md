@@ -66,6 +66,17 @@ L'optimiseur de R8 reste désactivé (`-dontoptimize`) : APK de 3,8 Mo au lieu d
 le dex livré peut être reconverti et exécuté hors appareil pour vérification (voir plus bas),
 ce que l'optimiseur empêche. Il pourra être réactivé après des essais sur téléphone.
 
+### 1.35.0 — des prises liées au repas, au réveil, au coucher ; des rappels qui suivent les habitudes
+
+- `DoseTime.anchor` / `offsetMinutes` + `Settings.routine` (réveil, petit-déjeuner, déjeuner, dîner, coucher). `minuteOfDay` garde
+  l'heure calculée, donc planification, clés de prise, montre et widgets n'ont pas changé. `Routines.sync` (appliqué dans
+  `AppRepository.update`) recale les prises liées quand une heure habituelle change et déplace avec elles les prises déjà données.
+- Éditeur : « Selon mes repas » (ancre + écart) ; Paramètres › Rappels : « Mes repas et mon réveil » (réveil habituel proposé
+  d'après les nuits, au moins 5 nuits).
+- `Habits` : médiane des écarts entre l'heure prévue et l'heure réelle des 3 dernières semaines (au moins 7 prises, écart stable de
+  20 min ou plus) → carte sur l'accueil « on décale le rappel ? » ; « Pas maintenant » = silence pendant un mois. Jamais pour les
+  plages, les prises liées, les « si besoin » ni la pilule.
+
 ### 1.34.0 (téléphone) · 1.17.0 (montre) — l'eau en millilitres
 
 - `DayEntry.drinks` (heure, quantité, boisson chaude) : le total est la somme des boissons. Les verres notés avant restent lus

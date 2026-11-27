@@ -124,6 +124,9 @@ fun HomeScreen(
     onAddWater: (Int) -> Unit = {},
     /** Water noted drink by drink: add [ml] (hot or not), take one back, take the last back. */
     onAddDrink: (Int, Boolean) -> Unit = { _, _ -> },
+    /** « You usually take it around 8:40 »: move the reminder, or not now. */
+    onApplyHabit: (com.medipote.app.domain.HabitSuggestion) -> Unit = {},
+    onDismissHabit: (com.medipote.app.domain.HabitSuggestion) -> Unit = {},
     onRemoveDrink: (Int) -> Unit = {},
     onOpenJournal: () -> Unit = {},
     onOpenAppointment: (com.medipote.app.data.Appointment) -> Unit = {},
@@ -340,11 +343,27 @@ fun HomeScreen(
     val followUp = com.medipote.app.domain.HomeRules.followUpDue(state, now)
     val checkupsDue = remember(state.checkups, date) { com.medipote.app.domain.Checkups.pending(state, date) }
     val travelText = state.travel?.let { com.medipote.app.domain.Travel.todayText(it, date) }
+    val habit = remember(state.doseLogs, state.treatments, state.settings.dismissedChecks, date) { com.medipote.app.domain.Habits.suggestion(state, now) }
     val alerts: (@Composable () -> Unit)? =
         if (recap == null && low.isEmpty() && renewals.isEmpty() && !blocked && !quiet && forgotten.isEmpty() && !pausedNow && concern == null &&
-            followUp == null && checkupsDue.isEmpty() && travelText == null
+            followUp == null && checkupsDue.isEmpty() && travelText == null && habit == null
         ) null
         else { {
+            habit?.let { h ->
+                Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow), modifier = Modifier.fillMaxWidth()) {
+                    Column(Modifier.padding(horizontal = 16.dp, vertical = 14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text("⏰  Tu prends ${h.treatmentName} vers ${h.usualText}", style = MaterialTheme.typography.titleSmall)
+                        Text(
+                            "Ton rappel est à ${h.currentText}. Sur tes ${h.logs} dernières prises, tu le prends plutôt à ${h.usualText} : on décale le rappel ?",
+                            style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            androidx.compose.material3.FilledTonalButton(onClick = { onApplyHabit(h) }) { Text("Décaler à ${h.usualText}") }
+                            androidx.compose.material3.TextButton(onClick = { onDismissHabit(h) }) { Text("Pas maintenant") }
+                        }
+                    }
+                }
+            }
             if (travelText != null) Notice(null, MaterialTheme.colorScheme.primary, "Mode voyage", travelText, emoji = "✈️", onClick = onOpenTravel)
             followUp?.let { a -> Notice(null, MaterialTheme.colorScheme.primary, "Rendez-vous « ${a.title} » : et ensuite ?", "Note ce qui a été dit tant que tu t'en souviens.", emoji = "📝") { onOpenAfter(a) } }
             if (checkupsDue.isNotEmpty()) {
@@ -723,6 +742,7 @@ private fun DoseCard(item: DoseItem, now: LocalDateTime, onGive: (DoseItem) -> U
             Spacer(Modifier.width(8.dp))
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(t.displayName, style = MaterialTheme.typography.titleMedium, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                if (item.occurrence.dose.isAnchored) Text(item.occurrence.dose.anchorText.replaceFirstChar { it.titlecase(java.util.Locale.FRANCE) }, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         t.unit.format(item.occurrence.quantity),

@@ -242,6 +242,17 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         checkAchievements()
     }
 
+    /** The reminder follows when the dose is really taken. */
+    fun applyHabit(s: com.medipote.app.domain.HabitSuggestion) {
+        repo.update { com.medipote.app.domain.Habits.apply(it, s, repo.now()) }
+        reschedule()
+        _events.trySend(UiEvent.Message("Rappel décalé à ${s.usualText}"))
+    }
+
+    fun dismissHabit(s: com.medipote.app.domain.HabitSuggestion) {
+        repo.update { com.medipote.app.domain.Habits.dismiss(it, s, repo.now().toLocalDate()) }
+    }
+
     /** Notes a drink of [ml] today, from the water card. */
     fun addDrink(ml: Int, hot: Boolean = false) = water { s -> com.medipote.app.domain.Game.addDrink(s, ml, repo.now(), hot = hot) }
 

@@ -388,6 +388,8 @@ fun MediPoteApp(vm: AppViewModel) {
                         onUnpin = vm::togglePin,
                         onAddWater = vm::addWater,
                         onAddDrink = vm::addDrink,
+                        onApplyHabit = vm::applyHabit,
+                        onDismissHabit = vm::dismissHabit,
                         onRemoveDrink = vm::removeDrink,
                         onOpenJournal = { nav.navigate("day/$today") },
                         onOpenAppointment = { nav.navigate("appointment?id=${it.id}") },
@@ -786,6 +788,8 @@ fun MediPoteApp(vm: AppViewModel) {
                         allergies = state.profile?.allergies.orEmpty(),
                         today = today,
                         others = state.treatments,
+                        routine = state.settings.routine,
+                        onRoutine = { t -> vm.updateSettings { it.copy(routine = t(it.routine)) } },
                         onSave = {
                             vm.saveTreatment(it)
                             nav.popBackStack()
@@ -1344,6 +1348,7 @@ fun MediPoteApp(vm: AppViewModel) {
                     SettingsScreen(
                         openSection = settingsEntry.arguments?.getString("section"),
                         settings = state.settings,
+                        usualWake = com.medipote.app.domain.Routines.usualWake(state, today),
                         petName = pet,
                         notificationsAllowed = notificationsAllowed,
                         exactAlarmsAllowed = exactAllowed,

@@ -444,6 +444,19 @@ et « Jour par jour » a rejoint le journal. Une carte ouverte montre où l'on e
 
 ![](docs/labs.png) ![](docs/lab_detail.png) ![](docs/travel.png) ![](docs/emergency.png)
 
+## Des prises liées au repas, au réveil, au coucher
+
+Pour la lévothyroxine, l'alendronate, la metformine… l'ordonnance dit « 30 minutes avant le petit-déjeuner », pas « 8 h 00 ». Dans la
+fiche d'un traitement, une prise peut être **« Selon mes repas »** : tu choisis le moment (réveil, petit-déjeuner, déjeuner, dîner,
+coucher) et l'écart (30 min avant, au moment, 1 h après…). L'heure se calcule à partir de **tes** heures habituelles
+(Paramètres › Rappels › « Mes repas et mon réveil », ou « Changer l'heure du petit-déjeuner » directement dans la fiche) et suit si
+elles changent. Ton réveil habituel peut être repris de tes nuits.
+
+Et si tu prends toujours ton traitement 40 minutes après l'heure prévue, l'accueil te propose de **décaler le rappel** à ton heure
+réelle (calculée localement sur tes 3 dernières semaines). « Pas maintenant » et on ne t'en reparle pas avant un mois.
+
+![](docs/editor_anchor.png) ![](docs/routine_card.png)
+
 ## L'eau, boisson par boisson
 
 La carte **Hydratation** de l'accueil note chaque boisson : touche **150, 250, 330 ou 500 ml**, ou **Autre quantité** pour ton chiffre.

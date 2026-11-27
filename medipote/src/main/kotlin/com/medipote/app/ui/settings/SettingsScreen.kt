@@ -71,6 +71,8 @@ import com.medipote.app.ui.treatments.SwitchRow
 fun SettingsScreen(
     settings: Settings,
     petName: String,
+    /** The wake-up time the nights suggest, if there are enough of them. */
+    usualWake: Int? = null,
     notificationsAllowed: Boolean,
     exactAlarmsAllowed: Boolean,
     dynamicColorAvailable: Boolean,
@@ -149,6 +151,8 @@ fun SettingsScreen(
             }
 
             SettingsGroup("reminders", "🔔", "Rappels et notifications", openGroup, { openGroup = it }) {
+            SectionTitle("Mes repas et mon réveil")
+            SettingsCard { RoutineCard(settings.routine, usualWake) { r -> onChange { it.copy(routine = r) } } }
             SectionTitle("Pause")
             SettingsCard {
                 val clock = java.time.LocalDateTime.ofInstant(java.time.Instant.ofEpochMilli(nowMs), java.time.ZoneId.systemDefault())
