@@ -19,6 +19,13 @@ object Wishes {
         "hat_flower" to setOf(Season.SPRING), "toy_butterfly" to setOf(Season.SPRING, Season.SUMMER),
         "hat_straw" to setOf(Season.SUMMER), "glasses_sun" to setOf(Season.SUMMER), "bg_beach" to setOf(Season.SUMMER),
         "bg_meadow" to setOf(Season.SPRING),
+        "fx_snow" to setOf(Season.WINTER), "hat_antlers" to setOf(Season.WINTER), "toy_snowman" to setOf(Season.WINTER),
+        "neck_snowflake" to setOf(Season.WINTER), "neck_fur" to setOf(Season.WINTER), "neck_stripescarf" to setOf(Season.AUTUMN, Season.WINTER),
+        "fx_leaves" to setOf(Season.AUTUMN), "feet_rainboots" to setOf(Season.AUTUMN, Season.SPRING), "toy_umbrella" to setOf(Season.AUTUMN, Season.SPRING),
+        "fx_petals" to setOf(Season.SPRING), "toy_bouquet" to setOf(Season.SPRING), "bg_garden" to setOf(Season.SPRING, Season.SUMMER),
+        "neck_lei" to setOf(Season.SUMMER), "glasses_swim" to setOf(Season.SUMMER), "feet_flippers" to setOf(Season.SUMMER),
+        "toy_icecream" to setOf(Season.SUMMER), "neck_lifebuoy" to setOf(Season.SUMMER), "hat_bucket" to setOf(Season.SUMMER),
+        "glasses_ski" to setOf(Season.WINTER), "feet_skates" to setOf(Season.WINTER), "bg_mountain" to setOf(Season.WINTER, Season.SUMMER),
     )
 
     fun fits(item: ShopItem, season: Season): Boolean = SEASONS[item.id]?.let { season in it } ?: false

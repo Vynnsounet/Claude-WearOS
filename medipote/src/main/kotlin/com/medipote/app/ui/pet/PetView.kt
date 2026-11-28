@@ -40,7 +40,7 @@ import kotlin.math.cos
 import kotlin.math.min
 import kotlin.math.sin
 
-private data class BodyPalette(val base: Color, val belly: Color, val shade: Color, val galaxy: Boolean = false, val rainbow: Boolean = false)
+private data class BodyPalette(val base: Color, val belly: Color, val shade: Color, val galaxy: Boolean = false, val rainbow: Boolean = false, val gradient: Pair<Color, Color>? = null)
 
 private fun palette(colorId: String?): BodyPalette = when (colorId) {
     "color_peach" -> BodyPalette(Color(0xFFFFB38A), Color(0xFFFFE3D1), Color(0xFFE07B4F))
@@ -53,10 +53,23 @@ private fun palette(colorId: String?): BodyPalette = when (colorId) {
     "color_pink" -> BodyPalette(Color(0xFFFF9EC7), Color(0xFFFFE2EF), Color(0xFFD9578F))
     "color_night" -> BodyPalette(Color(0xFF5865B8), Color(0xFFB4BCF0), Color(0xFF2F3878))
     "color_rainbow" -> BodyPalette(Color(0xFFFFB3B3), Color(0xFFFFFFFF), Color(0xFF9C7BD1), rainbow = true)
+    "color_ocean" -> BodyPalette(Color(0xFF3FB8C9), Color(0xFFC7F0F5), Color(0xFF1C8798))
+    "color_forest" -> BodyPalette(Color(0xFF4E9A63), Color(0xFFCDE8CF), Color(0xFF2B6B40))
+    "color_grape" -> BodyPalette(Color(0xFF9A5BD0), Color(0xFFE6D2F6), Color(0xFF65339A))
+    "color_cream" -> BodyPalette(Color(0xFFF1DDB8), Color(0xFFFFF6E3), Color(0xFFC9AE7D))
+    "color_mango" -> BodyPalette(Color(0xFFFFA928), Color(0xFFFFE2A6), Color(0xFFD97A00))
+    "color_ice" -> BodyPalette(Color(0xFFBDE7F5), Color(0xFFF1FBFF), Color(0xFF7DB8D1))
+    "color_sunset" -> BodyPalette(Color(0xFFFF9A6B), Color(0xFFFFE6D0), Color(0xFFC25A8A), gradient = Color(0xFFFFB36B) to Color(0xFFE5619C))
+    "color_cotton" -> BodyPalette(Color(0xFFF9B7D6), Color(0xFFFFFFFF), Color(0xFF8CB8E8), gradient = Color(0xFFFFC2DE) to Color(0xFF9CCBF4))
+    "color_gold" -> BodyPalette(Color(0xFFF3C94B), Color(0xFFFFF1B8), Color(0xFFB98A00), gradient = Color(0xFFFFE27A) to Color(0xFFD9A21A))
+    "color_aurora" -> BodyPalette(Color(0xFF58D6A8), Color(0xFFD7F7EA), Color(0xFF5B3FA5), gradient = Color(0xFF5CE0B0) to Color(0xFF9B6BE8))
     else -> BodyPalette(Color(0xFF5CC9A7), Color(0xFFB5ECD9), Color(0xFF2E9E83))
 }
 
 private val Ink = Color(0xFF1D2B28)
+
+/** Hats that rise high or wide: the thought bubble of a hungry companion moves aside for them. */
+internal val TALL_HATS = setOf("hat_witch", "hat_top", "hat_party", "hat_sombrero", "hat_viking", "hat_antlers", "hat_unicorn", "hat_chef", "hat_graduation")
 private val Cheek = Color(0xFFF48FB1)
 private val SickTint = Color(0xFFA7B59A)
 
@@ -141,12 +154,12 @@ internal fun DrawScope.drawBackground(id: String?, time: com.medipote.app.domain
         drawMeadow(time)
         return
     }
-    drawScene(id)
+    if (id in EXTRA_SCENES) drawSceneExtra(id) else drawScene(id)
     // Scenes that are already night, space or underwater keep their own light.
-    if (id in setOf("bg_night", "bg_space", "bg_city", "bg_ocean")) return
+    if (id in setOf("bg_night", "bg_space", "bg_city", "bg_ocean") || id in OWN_LIGHT_SCENES) return
     val w = size.width
     val h = size.height
-    val outdoor = id in setOf("bg_beach", "bg_autumn", "bg_snow", "bg_rainbow", "bg_dawn")
+    val outdoor = id in setOf("bg_beach", "bg_autumn", "bg_snow", "bg_rainbow", "bg_dawn", "bg_forest", "bg_desert", "bg_mountain", "bg_garden", "bg_clouds")
     when (time) {
         com.medipote.app.domain.TimeOfDay.DAY -> Unit
         com.medipote.app.domain.TimeOfDay.DAWN ->
@@ -535,6 +548,8 @@ private fun DrawScope.drawPetBody(
         val bottom = cy + bh / 2
         val hw = bw / 2
 
+        val geo = PetGeo(cx, cy, bw, bh, s)
+        equipped["BACK"]?.let { drawBackItem(it, geo, loop, front = false) }
         if (equipped["NECK"] == "neck_cape") drawCapeBack(cx, cy, bw, bh, loop)
 
         // Feet
@@ -566,9 +581,12 @@ private fun DrawScope.drawPetBody(
                     Offset(cx - hw, top), Offset(cx + hw, bottom),
                 ),
             )
+        } else if (pal.gradient != null && tint == 0f) {
+            drawPath(body, Brush.verticalGradient(listOf(lerp(pal.gradient.first, Color.White, 0.12f), pal.gradient.second), top, bottom))
         } else {
             drawPath(body, Brush.verticalGradient(listOf(lerp(base, Color.White, 0.18f), base), top, bottom))
         }
+        equipped["PATTERN"]?.let { drawPatternItem(it, geo, body, shade) }
         drawPath(body, shade.copy(alpha = 0.55f), style = Stroke(s * 0.008f))
         // Belly
         drawOval(belly.copy(alpha = if (pal.galaxy || pal.rainbow) 0.4f else 0.9f), Offset(cx - bw * 0.27f, cy + bh * 0.02f), Size(bw * 0.54f, bh * 0.4f))
@@ -580,6 +598,9 @@ private fun DrawScope.drawPetBody(
 
         drawFace(mood, cx, cy, bw, bh, s, blink, loop, feed, shade, r, rp, look)
 
+        equipped["FACE"]?.let { drawFaceItem(it, geo) }
+        equipped["FEET"]?.let { drawFeetItem(it, geo, shade) }
+        equipped["BACK"]?.let { drawBackItem(it, geo, loop, front = true) }
         equipped["NECK"]?.let { drawNeck(it, cx, cy, bw, bh, s) }
         equipped["GLASSES"]?.let { drawGlasses(it, cx, cy, bw, bh, s) }
         equipped["HAT"]?.let { drawHat(it, cx, top, bw, s, base, cy, bh) }
@@ -597,7 +618,7 @@ private fun DrawScope.drawPetBody(
         drawZ(Offset(cx + s * 0.22f, size.height * 0.35f - z * s * 0.08f), s * 0.05f, 1f - z * 0.6f)
         drawZ(Offset(cx + s * 0.3f, size.height * 0.27f - z * s * 0.06f), s * 0.035f, 0.8f - z * 0.5f)
     }
-    if (mood == PetMood.HUNGRY && !feeding) drawPillBubble(cx + s * 0.28f, size.height * 0.27f + (breathe - 0.5f) * s * 0.02f, s)
+    if (mood == PetMood.HUNGRY && !feeding) drawPillBubble(cx + s * (if (equipped["HAT"] in TALL_HATS) 0.35f else 0.28f), size.height * 0.27f + (breathe - 0.5f) * s * 0.02f, s)
     if (feeding) drawFeeding(cx, cy, bh, s, feed)
     if (r != PetReaction.NONE) drawReaction(r, rp, cx, cy, bw, bh, s)
     equipped["EFFECT"]?.let { if (it != "fx_aura") drawEffect(it, cx, cy, bw, bh, s, loop) }
@@ -970,6 +991,7 @@ private fun DrawScope.drawGlasses(id: String, cx: Float, cy: Float, bw: Float, b
                 quadraticTo(c.x + r * 1.4f, c.y + r * 3f, c.x + r * 0.3f, c.y + r * 4f)
             }, gold, style = Stroke(s * 0.006f))
         }
+        else -> drawGlassesExtra(id, PetGeo(cx, cy, bw, bh, s))
     }
 }
 
@@ -1017,14 +1039,14 @@ private fun DrawScope.drawNeck(id: String, cx: Float, cy: Float, bw: Float, bh: 
             drawPath(Path().apply {
                 moveTo(cx - bw * 0.3f, y - bh * 0.12f)
                 quadraticTo(cx - bw * 0.25f, y + bh * 0.1f, cx, y + bh * 0.08f)
-                quadraticTo(cx + bw * 0.22f, y + bh * 0.06f, cx + bw * 0.18f, y + bh * 0.24f)
+                quadraticTo(cx + bw * 0.22f, y + bh * 0.04f, cx + bw * 0.18f, y + bh * 0.13f)
             }, tube, style = Stroke(s * 0.014f, cap = StrokeCap.Round))
             drawPath(Path().apply {
                 moveTo(cx + bw * 0.3f, y - bh * 0.12f)
                 quadraticTo(cx + bw * 0.25f, y + bh * 0.05f, cx, y + bh * 0.08f)
             }, tube, style = Stroke(s * 0.014f, cap = StrokeCap.Round))
-            drawCircle(Color(0xFFB0BEC5), s * 0.03f, Offset(cx + bw * 0.18f, y + bh * 0.27f))
-            drawCircle(Color(0xFF78909C), s * 0.03f, Offset(cx + bw * 0.18f, y + bh * 0.27f), style = Stroke(s * 0.006f))
+            drawCircle(Color(0xFFB0BEC5), s * 0.03f, Offset(cx + bw * 0.18f, y + bh * 0.16f))
+            drawCircle(Color(0xFF78909C), s * 0.03f, Offset(cx + bw * 0.18f, y + bh * 0.16f), style = Stroke(s * 0.006f))
         }
         "neck_bandana" -> {
             val red = Color(0xFFD32F2F)
@@ -1047,11 +1069,11 @@ private fun DrawScope.drawNeck(id: String, cx: Float, cy: Float, bw: Float, bh: 
             }
             val blade = Path().apply {
                 moveTo(cx - s * 0.02f, y + bh * 0.03f); lineTo(cx + s * 0.02f, y + bh * 0.03f)
-                lineTo(cx + s * 0.04f, y + bh * 0.3f); lineTo(cx, y + bh * 0.36f); lineTo(cx - s * 0.04f, y + bh * 0.3f); close()
+                lineTo(cx + s * 0.04f, y + bh * 0.14f); lineTo(cx, y + bh * 0.19f); lineTo(cx - s * 0.04f, y + bh * 0.14f); close()
             }
             drawPath(blade, blue)
             drawPath(knot, Color(0xFF16457F))
-            for (i in 1..3) drawLine(Color(0xFFFFCA28), Offset(cx - s * 0.025f, y + bh * (0.06f + i * 0.07f)), Offset(cx + s * 0.03f, y + bh * (0.02f + i * 0.07f)), s * 0.006f)
+            for (i in 1..2) drawLine(Color(0xFFFFCA28), Offset(cx - s * 0.025f, y + bh * (0.05f + i * 0.04f)), Offset(cx + s * 0.03f, y + bh * (0.02f + i * 0.04f)), s * 0.006f)
         }
         "neck_pearls" -> {
             for (i in 0..10) {
@@ -1064,8 +1086,16 @@ private fun DrawScope.drawNeck(id: String, cx: Float, cy: Float, bw: Float, bh: 
             }
         }
         "neck_cape" -> {
-            drawCircle(Color(0xFFFFC107), s * 0.022f, Offset(cx - bw * 0.3f, y - bh * 0.1f))
-            drawCircle(Color(0xFFFFC107), s * 0.022f, Offset(cx + bw * 0.3f, y - bh * 0.1f))
+            // A golden chain across the chest, held by a clasp at each shoulder (the cape itself is behind).
+            val gold = Color(0xFFFFC107)
+            drawPath(Path().apply {
+                moveTo(cx - bw * 0.43f, y - bh * 0.17f)
+                quadraticTo(cx, y + bh * 0.04f, cx + bw * 0.43f, y - bh * 0.17f)
+            }, gold, style = Stroke(s * 0.008f, cap = StrokeCap.Round))
+            drawCircle(gold, s * 0.022f, Offset(cx - bw * 0.43f, y - bh * 0.17f))
+            drawCircle(gold, s * 0.022f, Offset(cx + bw * 0.43f, y - bh * 0.17f))
+            drawCircle(Color(0xFFFFF8E1), s * 0.008f, Offset(cx - bw * 0.43f, y - bh * 0.17f))
+            drawCircle(Color(0xFFFFF8E1), s * 0.008f, Offset(cx + bw * 0.43f, y - bh * 0.17f))
         }
         "neck_star" -> {
             val c = Offset(cx, y + bh * 0.13f)
@@ -1081,6 +1111,7 @@ private fun DrawScope.drawNeck(id: String, cx: Float, cy: Float, bw: Float, bh: 
             drawCircle(Color(0xFFFFA000), s * 0.04f, c, style = Stroke(s * 0.006f))
             drawStar(c, s * 0.022f, Color(0xFFFFF8E1), 5, 0.45f)
         }
+        else -> drawNeckExtra(id, PetGeo(cx, cy, bw, bh, s), 0f)
     }
 }
 
@@ -1148,8 +1179,10 @@ private fun DrawScope.drawHat(id: String, cx: Float, top: Float, bw: Float, s: F
             drawRoundRect(Color(0xFF212121), Offset(cx - w * 0.85f, top + s * 0.005f), Size(w * 1.7f, s * 0.03f), CornerRadius(s * 0.015f))
         }
         "hat_headband" -> {
-            drawArc(Color(0xFFE53935), 205f, 130f, false, Offset(cx - bw * 0.46f, top + s * 0.015f), Size(bw * 0.92f, bh * 0.75f), style = Stroke(s * 0.04f))
-            drawArc(Color.White, 205f, 130f, false, Offset(cx - bw * 0.46f, top + s * 0.015f), Size(bw * 0.92f, bh * 0.75f), style = Stroke(s * 0.01f))
+            // Follows the outline of the head, a little above it, from one temple to the other.
+            val g = PetGeo(cx, cy, bw, bh, s)
+            drawPath(g.band(0.62f, out = 0.006f), Color(0xFFE53935), style = Stroke(s * 0.04f, cap = StrokeCap.Round))
+            drawPath(g.band(0.62f, out = 0.006f), Color.White, style = Stroke(s * 0.01f, cap = StrokeCap.Round))
         }
         "hat_straw" -> {
             val straw = Color(0xFFEBC46B)
@@ -1179,9 +1212,11 @@ private fun DrawScope.drawHat(id: String, cx: Float, top: Float, bw: Float, s: F
         }
         "hat_headphones" -> {
             val dark = Color(0xFF37474F)
-            drawArc(dark, 190f, 160f, false, Offset(cx - bw * 0.5f, top - s * 0.04f), Size(bw * 1.0f, bh * 0.9f), style = Stroke(s * 0.025f, cap = StrokeCap.Round))
+            // The band follows the head and ends on the ear cups, which sit against the sides of the body.
+            val g = PetGeo(cx, cy, bw, bh, s)
+            drawPath(g.band(0.88f, out = 0.022f), dark, style = Stroke(s * 0.025f, cap = StrokeCap.Round))
             for (side in listOf(-1f, 1f)) {
-                val c = Offset(cx + side * bw * 0.49f, cy - bh * 0.1f)
+                val c = g.dome(0.9f, side, out = 0.02f)
                 drawRoundRect(Color(0xFF26C6DA), c - Offset(s * 0.035f, s * 0.06f), Size(s * 0.07f, s * 0.12f), CornerRadius(s * 0.03f))
                 drawRoundRect(dark, c - Offset(s * 0.035f, s * 0.06f), Size(s * 0.07f, s * 0.12f), CornerRadius(s * 0.03f), style = Stroke(s * 0.008f))
             }
@@ -1238,6 +1273,7 @@ private fun DrawScope.drawHat(id: String, cx: Float, top: Float, bw: Float, s: F
             drawCircle(Color(0xFF1E88E5), s * 0.012f, Offset(cx - w * 0.3f, base - h * 0.3f))
             drawCircle(Color(0xFF43A047), s * 0.012f, Offset(cx + w * 0.3f, base - h * 0.3f))
         }
+        else -> drawHatExtra(id, PetGeo(cx, cy, bw, bh, s), base, 0f)
     }
 }
 
@@ -1272,8 +1308,8 @@ private fun DrawScope.drawToy(id: String, cx: Float, cy: Float, bw: Float, bh: F
             drawOval(Color.White.copy(alpha = 0.45f), b - Offset(s * 0.045f, s * 0.06f), Size(s * 0.03f, s * 0.05f))
             drawPath(Path().apply { moveTo(b.x - s * 0.012f, b.y + s * 0.095f); lineTo(b.x + s * 0.012f, b.y + s * 0.095f); lineTo(b.x, b.y + s * 0.08f); close() }, Color(0xFFD32F2F))
         }
-        "toy_teddy" -> scale(1.6f, Offset(cx - bw * 0.74f, ground)) {
-            val c = Offset(cx - bw * 0.74f, ground - s * 0.07f)
+        "toy_teddy" -> scale(1.35f, Offset(cx - bw * 0.68f, ground)) {
+            val c = Offset(cx - bw * 0.68f, ground - s * 0.07f)
             val brown = Color(0xFFA1704A)
             drawCircle(brown, s * 0.065f, c + Offset(0f, s * 0.02f))
             drawCircle(brown, s * 0.05f, c - Offset(0f, s * 0.075f))
@@ -1285,8 +1321,8 @@ private fun DrawScope.drawToy(id: String, cx: Float, cy: Float, bw: Float, bh: F
             drawCircle(Ink, s * 0.007f, c + Offset(s * 0.018f, -s * 0.085f))
             drawCircle(Ink, s * 0.006f, c + Offset(0f, -s * 0.065f))
         }
-        "toy_tea" -> scale(1.5f, Offset(cx + bw * 0.78f, ground)) {
-            val c = Offset(cx + bw * 0.78f, ground - s * 0.05f)
+        "toy_tea" -> scale(1.3f, Offset(cx - bw * 0.68f, ground)) {
+            val c = Offset(cx - bw * 0.68f, ground - s * 0.05f)
             val w = s * 0.1f
             drawRoundRect(Color(0xFFF5F0E6), Offset(c.x - w / 2, c.y - s * 0.03f), Size(w, s * 0.08f), CornerRadius(s * 0.025f))
             drawRoundRect(Color(0xFF8D6E63).copy(alpha = 0.85f), Offset(c.x - w / 2 + s * 0.006f, c.y - s * 0.03f), Size(w - s * 0.012f, s * 0.016f), CornerRadius(s * 0.008f))
@@ -1301,8 +1337,8 @@ private fun DrawScope.drawToy(id: String, cx: Float, cy: Float, bw: Float, bh: F
                 }, Color.White.copy(alpha = 0.75f * (1f - t * 0.5f)), style = Stroke(s * 0.006f, cap = StrokeCap.Round))
             }
         }
-        "toy_lantern" -> scale(1.5f, Offset(cx - bw * 0.78f, ground)) {
-            val c = Offset(cx - bw * 0.78f, ground - s * 0.07f)
+        "toy_lantern" -> scale(1.15f, Offset(cx - bw * 0.6f, ground)) {
+            val c = Offset(cx - bw * 0.6f, ground - s * 0.07f)
             val glow = 0.55f + 0.2f * sin(loop * 2 * PI).toFloat()
             drawCircle(Color(0xFFFFE082).copy(alpha = 0.22f * glow), s * 0.11f, c)
             drawRoundRect(Color(0xFF6D4C41), Offset(c.x - s * 0.04f, c.y + s * 0.045f), Size(s * 0.08f, s * 0.014f), CornerRadius(s * 0.005f))
@@ -1312,8 +1348,8 @@ private fun DrawScope.drawToy(id: String, cx: Float, cy: Float, bw: Float, bh: F
             drawArc(Color(0xFF6D4C41), 180f, 180f, false, Offset(c.x - s * 0.022f, c.y - s * 0.07f), Size(s * 0.044f, s * 0.05f), style = Stroke(s * 0.006f))
             drawCircle(Color.White.copy(alpha = 0.8f * glow), s * 0.012f, Offset(c.x, c.y + s * 0.005f))
         }
-        "toy_pillplush" -> scale(1.6f, Offset(cx + bw * 0.76f, ground)) {
-            val c = Offset(cx + bw * 0.76f, ground - s * 0.06f)
+        "toy_pillplush" -> scale(1.0f, Offset(cx - bw * 0.6f, ground)) {
+            val c = Offset(cx - bw * 0.6f, ground - s * 0.06f)
             rotate(-25f, c) {
                 drawRoundRect(Color.White, c - Offset(s * 0.1f, s * 0.05f), Size(s * 0.2f, s * 0.1f), CornerRadius(s * 0.05f))
                 drawPath(Path().apply {
@@ -1331,7 +1367,7 @@ private fun DrawScope.drawToy(id: String, cx: Float, cy: Float, bw: Float, bh: F
             scale(1.8f, c) { drawButterfly(c, s, a) }
         }
         "toy_trophy" -> {
-            val x = cx + bw * 0.78f
+            val x = cx - bw * 0.62f
             val gold = Color(0xFFFFC107)
             val dark = Color(0xFFFFA000)
             drawRect(Color(0xFF8D6E63), Offset(x - s * 0.06f, ground - s * 0.035f), Size(s * 0.12f, s * 0.035f))
@@ -1349,8 +1385,8 @@ private fun DrawScope.drawToy(id: String, cx: Float, cy: Float, bw: Float, bh: F
             val shine = (sin(loop * 2 * PI).toFloat() + 1) / 2
             drawStar(Offset(x + s * 0.06f, ground - s * 0.25f), s * 0.012f * (0.5f + shine), Color.White.copy(alpha = shine), 4, 0.35f)
         }
-        "toy_fishbowl" -> scale(1.4f, Offset(cx + bw * 0.78f, ground)) {
-            val c = Offset(cx + bw * 0.78f, ground - s * 0.09f)
+        "toy_fishbowl" -> scale(1.0f, Offset(cx - bw * 0.62f, ground)) {
+            val c = Offset(cx - bw * 0.62f, ground - s * 0.09f)
             val r = s * 0.1f
             drawCircle(Color(0xFFB3E5FC).copy(alpha = 0.7f), r, c)
             drawRect(Color(0xFF81D4FA).copy(alpha = 0.6f), Offset(c.x - r * 0.95f, c.y - r * 0.2f), Size(r * 1.9f, r * 0.9f))
@@ -1361,6 +1397,7 @@ private fun DrawScope.drawToy(id: String, cx: Float, cy: Float, bw: Float, bh: F
             drawCircle(Ink, r * 0.05f, Offset(fishX - r * 0.15f, c.y + r * 0.18f))
             drawRoundRect(Color(0xFF8D6E63), Offset(c.x - r * 0.7f, c.y + r * 0.85f), Size(r * 1.4f, r * 0.25f), CornerRadius(r * 0.1f))
         }
+        else -> drawToyExtra(id, PetGeo(cx, cy, bw, bh, s), loop)
     }
 }
 
@@ -1421,6 +1458,7 @@ private fun DrawScope.drawEffect(id: String, cx: Float, cy: Float, bw: Float, bh
                 }
             }
         }
+        else -> drawEffectExtra(id, PetGeo(cx, cy, bw, bh, s), loop)
     }
 }
 
@@ -1437,10 +1475,18 @@ fun ItemPreview(itemId: String, slot: String, modifier: Modifier = Modifier) {
         if (slot == "EFFECT") drawBackground("bg_night")
         val zoom = when (slot) {
             "HAT", "GLASSES" -> 1.25f
-            "TOY", "EFFECT" -> 0.85f
+            "FACE" -> 1.45f
+            "FEET" -> 1.35f
+            "TOY", "EFFECT", "BACK" -> 0.85f
             else -> 1f
         }
-        val shiftY = if (slot == "HAT") size.height * 0.12f else if (slot == "GLASSES") size.height * 0.02f else 0f
+        val shiftY = when (slot) {
+            "HAT" -> size.height * 0.12f
+            "GLASSES" -> size.height * 0.02f
+            "FACE" -> size.height * 0.03f
+            "FEET" -> -size.height * 0.16f
+            else -> 0f
+        }
         translate(0f, shiftY) {
             scale(zoom, Offset(size.width / 2, size.height / 2)) {
                 drawPet(PetMood.CONTENT, equipped, 0.5f, 0f, 0.3f, 1f)
@@ -1455,3 +1501,9 @@ internal object PetDrawing {
 }
 
 internal fun drawPetForTest(scope: DrawScope) = with(scope) { drawPet(PetMood.HAPPY, mapOf("COLOR" to "color_mint"), 0.5f, 0f, 0.3f, 1f) }
+
+/** Test hook: the pet with [equipped], at rest, on any canvas. */
+internal fun DrawScope.drawPetForPreview(equipped: Map<String, String>, mood: PetMood = PetMood.CONTENT, stage: Stage = Stage.BUD) {
+    drawBackground(equipped["BACKGROUND"])
+    drawPet(mood, equipped, 0.5f, 0f, 0.3f, 1f, stage = stage)
+}

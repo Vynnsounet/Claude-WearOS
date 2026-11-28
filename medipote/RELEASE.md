@@ -66,6 +66,18 @@ L'optimiseur de R8 reste désactivé (`-dontoptimize`) : APK de 3,8 Mo au lieu d
 le dex livré peut être reconverti et exécuté hors appareil pour vérification (voir plus bas),
 ce que l'optimiseur empêche. Il pourra être réactivé après des essais sur téléphone.
 
+### 1.39.0 — beaucoup plus d'objets pour le compagnon
+
+- La boutique passe de 61 à **180 objets** : couleurs (21, dont des dégradés), chapeaux (32), lunettes (15), cou (20), jouets (21), effets (13),
+  décors (20) et **quatre nouvelles catégories** : visage (12), pieds (8), dos (8) et motifs (10, dessinés à l'intérieur du corps).
+  Les prix montent jusqu'à 600 pts pour qu'il reste toujours quelque chose à viser.
+- `PetGeo` : la géométrie du corps (dôme de la tête, yeux, bouche, pieds) d'où tout ce qui se porte est placé, donc ça suit le
+  squash, le saut et le balancement. Le bandeau et le casque audio épousent maintenant la tête.
+- Corrections : jouets posés à gauche, dans l'image et loin de la plante (pilule, bocal, tasse, trophée, lanterne), cravate et
+  stéthoscope qui dépassaient du corps, agrafes de la cape, bulle de faim qui chevauchait les grands chapeaux.
+- `PetItemsTest` : chaque objet est dessiné, change bien le compagnon et reste dans l'image ; toute la garde-robe d'un coup, dans
+  chaque humeur et chaque stade.
+
 ### 1.38.0 — Vaccins
 
 - `Vaccines` : calendrier simplifié des vaccinations françaises pour adultes (DTP : rappels à 25, 45, 65 ans puis tous les 10 ans ;

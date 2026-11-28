@@ -444,6 +444,17 @@ et « Jour par jour » a rejoint le journal. Une carte ouverte montre où l'on e
 
 ![](docs/labs.png) ![](docs/lab_detail.png) ![](docs/travel.png) ![](docs/emergency.png)
 
+## Le compagnon : 180 objets pour le personnaliser
+
+Boutique de ton compagnon : **21 couleurs** (dont des dégradés), **32 chapeaux**, **15 paires de lunettes**, **20 objets pour le cou**, **12 détails
+de visage** (taches de rousseur, moustache, cache-œil…), **8 paires de chaussures**, **8 objets pour le dos** (sac, ailes, réacteur…),
+**10 motifs** (pois, rayures, étoiles…), **21 jouets**, **13 effets** et **20 décors**. Tout est dessiné pour épouser le corps du
+compagnon (et suivre ses mouvements) ; les prix vont de 60 à 600 points, avec de quoi viser longtemps.
+
+![](docs/pet_hats.png)
+![](docs/pet_toys.png)
+![](docs/pet_backgrounds.png)
+
 ## Vaccins
 
 La carte **« 💉 Vaccins »** (Soins, à côté du Carnet de santé) montre ce que le calendrier français conseille **à ton âge** : rappels
